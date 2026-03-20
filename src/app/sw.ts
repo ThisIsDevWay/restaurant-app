@@ -11,7 +11,7 @@ const serwist = new Serwist({
     ...defaultCache,
     {
       handler: "NetworkOnly" as const,
-      urlPattern: /\/api\/.*/,
+      matcher: ({ url }: { url: URL }) => url.pathname.startsWith("/api/"),
     },
   ],
 });
