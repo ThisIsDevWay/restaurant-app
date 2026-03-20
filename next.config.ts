@@ -15,7 +15,6 @@ const supabaseDomain = getSupabaseDomain();
 
 const nextConfig: NextConfig = {
   images: {
-    loaderFile: "./src/lib/supabase-image-loader.ts",
     remotePatterns: [
       {
         protocol: "https",
