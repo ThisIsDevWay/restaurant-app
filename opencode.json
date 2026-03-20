@@ -1,0 +1,34 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "openrouter": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OpenRouter",
+      "options": {
+        "baseURL": "https://openrouter.ai/api/v1",
+        "apiKey": "YOUR_OPENROUTER_API_KEY"
+      },
+      "models": {
+        "xiaomi/mimo-v2-flash:free": {
+          "name": "MiMo V2 Flash (gratis)"
+        },
+        "xiaomi/mimo-v2-pro": {
+          "name": "MiMo V2 Pro"
+        }
+      }
+    }
+  },
+  "mcp": {
+    "supabase": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
+        "sbp_41a7f8f1f27ee220092d3396fe854c375b422057"
+      ],
+      "enabled": true
+    }
+  }
+}
