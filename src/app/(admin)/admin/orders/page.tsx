@@ -5,7 +5,17 @@ import { OrdersClient } from "./OrdersClient";
 
 export default async function AdminOrdersPage() {
   const allOrders = await db
-    .select()
+    .select({
+      id: orders.id,
+      orderNumber: orders.orderNumber,
+      status: orders.status,
+      subtotalBsCents: orders.subtotalBsCents,
+      customerPhone: orders.customerPhone,
+      createdAt: orders.createdAt,
+      paymentMethod: orders.paymentMethod,
+      paymentProvider: orders.paymentProvider,
+      itemsSnapshot: orders.itemsSnapshot,
+    })
     .from(orders)
     .orderBy(desc(orders.createdAt))
     .limit(50);

@@ -116,7 +116,7 @@ const validInput = {
 };
 
 const validCheckoutItems = [
-  { id: ITEM_UUID, quantity: 1, selectedContorno: null, selectedAdicionales: [], categoryAllowAlone: true },
+  { id: ITEM_UUID, quantity: 1, selectedContorno: null, selectedAdicionales: [], removedComponents: [], categoryAllowAlone: true },
 ];
 
 describe("processCheckout with payment providers", () => {
@@ -254,7 +254,7 @@ describe("processCheckout with payment providers", () => {
 
   it("returns error when cart contains only restricted items", async () => {
     const restrictedItems = [
-      { id: ITEM_UUID, quantity: 1, selectedContorno: null, selectedAdicionales: [], categoryAllowAlone: false },
+      { id: ITEM_UUID, quantity: 1, selectedContorno: null, selectedAdicionales: [], removedComponents: [], categoryAllowAlone: false },
     ];
 
     const result = await processCheckout(validInput, restrictedItems);
@@ -268,8 +268,8 @@ describe("processCheckout with payment providers", () => {
 
   it("allows checkout when cart has mixed items including non-restricted", async () => {
     const mixedItems = [
-      { id: ITEM_UUID, quantity: 1, selectedContorno: null, selectedAdicionales: [], categoryAllowAlone: true },
-      { id: "b1b2c3d4-e5f6-7890-abcd-ef1234567891", quantity: 1, selectedContorno: null, selectedAdicionales: [], categoryAllowAlone: false },
+      { id: ITEM_UUID, quantity: 1, selectedContorno: null, selectedAdicionales: [], removedComponents: [], categoryAllowAlone: true },
+      { id: "b1b2c3d4-e5f6-7890-abcd-ef1234567891", quantity: 1, selectedContorno: null, selectedAdicionales: [], removedComponents: [], categoryAllowAlone: false },
     ];
 
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);

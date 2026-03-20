@@ -61,6 +61,7 @@ export function MenuItemCard({
       emoji,
       selectedContorno: null,
       selectedAdicionales: [],
+      removedComponents: [],
       categoryAllowAlone,
     });
 

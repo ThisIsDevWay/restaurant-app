@@ -13,7 +13,16 @@ interface KitchenOrder {
     id: string;
     name: string;
     selectedContorno: { id: string; name: string } | null;
-    selectedAdicionales: Array<{ id: string; name: string }>;
+    selectedAdicionales: Array<{
+      id: string;
+      name: string;
+      substitutesComponentId?: string;
+    }>;
+    removedComponents: Array<{
+      isRemoval: true;
+      componentId: string;
+      name: string;
+    }>;
     quantity: number;
   }>;
   status: "paid" | "kitchen" | "delivered" | "whatsapp";
@@ -217,14 +226,32 @@ export function KitchenQueue() {
                             )}
                             {item.name}
                           </p>
-                          {item.selectedContorno && (
+                          {/* Default contorno (not modified) */}
+                          {item.selectedContorno && !item.removedComponents?.length && !item.selectedAdicionales?.some(a => a.substitutesComponentId) && (
                             <p className="ml-8 mt-0.5 text-sm text-text-muted">
                               {item.selectedContorno.name}
                             </p>
                           )}
-                          {item.selectedAdicionales.length > 0 && (
+                          {/* Removed components */}
+                          {item.removedComponents?.map((r, rIdx) => (
+                            <div key={rIdx} className="ml-8 mt-1">
+                              <span className="inline-flex items-center rounded-lg bg-error/10 px-2 py-1 text-sm font-bold text-error border border-error/20">
+                                ✗ {r.name}
+                              </span>
+                            </div>
+                          ))}
+                          {/* Substitutions */}
+                          {item.selectedAdicionales?.filter(a => a.substitutesComponentId).map((ad, adIdx) => (
+                            <div key={`sub-${adIdx}`} className="ml-8 mt-1">
+                              <span className="inline-flex items-center rounded-lg bg-amber/10 px-2 py-1 text-sm font-bold text-amber border border-amber/20">
+                                ↺ {ad.name}
+                              </span>
+                            </div>
+                          ))}
+                          {/* Regular adicionales */}
+                          {item.selectedAdicionales?.filter(a => !a.substitutesComponentId).length > 0 && (
                             <div className="ml-8 mt-1.5 flex flex-wrap gap-1">
-                              {item.selectedAdicionales.map((ad, adIdx) => (
+                              {item.selectedAdicionales.filter(a => !a.substitutesComponentId).map((ad, adIdx) => (
                                 <span
                                   key={adIdx}
                                   className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-sm font-bold text-primary border border-primary/20"
@@ -302,14 +329,28 @@ export function KitchenQueue() {
                             )}
                             {item.name}
                           </p>
-                          {item.selectedContorno && (
+                          {item.selectedContorno && !item.removedComponents?.length && !item.selectedAdicionales?.some(a => a.substitutesComponentId) && (
                             <p className="ml-8 mt-0.5 text-sm text-text-muted">
                               {item.selectedContorno.name}
                             </p>
                           )}
-                          {item.selectedAdicionales.length > 0 && (
+                          {item.removedComponents?.map((r, rIdx) => (
+                            <div key={rIdx} className="ml-8 mt-1">
+                              <span className="inline-flex items-center rounded-lg bg-error/10 px-2 py-1 text-sm font-bold text-error border border-error/20">
+                                ✗ {r.name}
+                              </span>
+                            </div>
+                          ))}
+                          {item.selectedAdicionales?.filter(a => a.substitutesComponentId).map((ad, adIdx) => (
+                            <div key={`sub-${adIdx}`} className="ml-8 mt-1">
+                              <span className="inline-flex items-center rounded-lg bg-amber/10 px-2 py-1 text-sm font-bold text-amber border border-amber/20">
+                                ↺ {ad.name}
+                              </span>
+                            </div>
+                          ))}
+                          {item.selectedAdicionales?.filter(a => !a.substitutesComponentId).length > 0 && (
                             <div className="ml-8 mt-1.5 flex flex-wrap gap-1">
-                              {item.selectedAdicionales.map((ad, adIdx) => (
+                              {item.selectedAdicionales.filter(a => !a.substitutesComponentId).map((ad, adIdx) => (
                                 <span
                                   key={adIdx}
                                   className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-sm font-bold text-primary border border-primary/20"

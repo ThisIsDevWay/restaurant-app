@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { createMenuItem, updateMenuItem, generateUploadUrl, getPublicUrl } from "@/actions/menu";
+import { createMenuItem, updateMenuItem, generateUploadUrl, getPublicUrl, saveDishComponents } from "@/actions/menu";
 import { Image as ImageIcon, Upload } from "lucide-react";
+import { DishComponentsEditor, type DishComponent } from "@/components/admin/menu/DishComponentsEditor";
 
 const formSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, "Nombre requerido"), v.maxLength(100, "Máximo 100 caracteres")),
@@ -52,9 +53,11 @@ interface MenuItemData {
 interface MenuItemFormProps {
   categories: Category[];
   initialData?: MenuItemData;
+  initialComponents?: DishComponent[];
+  exchangeRate?: number;
 }
 
-export function MenuItemForm({ categories, initialData }: MenuItemFormProps) {
+export function MenuItemForm({ categories, initialData, initialComponents = [], exchangeRate = 0 }: MenuItemFormProps) {
   const isEdit = !!initialData;
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +67,7 @@ export function MenuItemForm({ categories, initialData }: MenuItemFormProps) {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dishComponents, setDishComponents] = useState<DishComponent[]>(initialComponents);
 
   const {
     register,
@@ -155,6 +159,22 @@ export function MenuItemForm({ categories, initialData }: MenuItemFormProps) {
         : await createMenuItem(payload);
 
       if (result.success) {
+        const itemId = isEdit ? initialData.id : result.item?.id;
+        if (itemId && dishComponents.length > 0) {
+          await saveDishComponents(
+            itemId,
+            dishComponents.map((c) => ({
+              name: c.name,
+              type: c.type,
+              removable: c.removable,
+              priceIfRemovedCents: c.priceIfRemovedCents,
+              allowPaidSubstitution: c.allowPaidSubstitution,
+              sortOrder: c.sortOrder,
+            })),
+          );
+        } else if (itemId && dishComponents.length === 0 && isEdit) {
+          await saveDishComponents(itemId, []);
+        }
         router.push("/admin/menu");
       } else {
         setError(result.error ?? "Error desconocido");
@@ -261,8 +281,15 @@ export function MenuItemForm({ categories, initialData }: MenuItemFormProps) {
               </div>
             </CardContent>
           </Card>
-        </div>
 
+          {/* Dish Components */}
+          <DishComponentsEditor
+            menuItemId={initialData?.id ?? ""}
+            initialComponents={dishComponents}
+            exchangeRate={exchangeRate}
+            onChange={setDishComponents}
+          />
+        </div>
         {/* Right Column - Media & Status (2/5) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Image Card */}

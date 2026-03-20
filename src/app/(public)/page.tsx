@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getMenuWithOptions, getCategories } from "@/db/queries/menu";
+import { getMenuWithOptionsAndComponents, getCategories } from "@/db/queries/menu";
 import { getActiveRate } from "@/db/queries/settings";
 import { HeaderCartButton } from "./HeaderCartButton";
 import { MenuGridSkeleton } from "@/components/client/MenuGridSkeleton";
@@ -10,7 +10,7 @@ export const revalidate = 300;
 
 export default async function MenuPage() {
   const [items, categories, rateData] = await Promise.all([
-    getMenuWithOptions(),
+    getMenuWithOptionsAndComponents(),
     getCategories(),
     getActiveRate(),
   ]);

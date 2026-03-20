@@ -29,6 +29,13 @@ export type CheckoutItem = {
     name: string;
     priceUsdCents: number;
     priceBsCents: number;
+    substitutesComponentId?: string;
+  }>;
+  removedComponents: Array<{
+    isRemoval: true;
+    componentId: string;
+    name: string;
+    priceUsdCents: number;
   }>;
   categoryAllowAlone: boolean;
 };
@@ -101,6 +108,13 @@ export async function processCheckout(
         name: string;
         priceUsdCents: number;
         priceBsCents: number;
+        substitutesComponentId?: string;
+      }>;
+      removedComponents: Array<{
+        isRemoval: true;
+        componentId: string;
+        name: string;
+        priceUsdCents: number;
       }>;
       quantity: number;
       itemTotalBsCents: number;
@@ -127,7 +141,14 @@ export async function processCheckout(
         name: string;
         priceUsdCents: number;
         priceBsCents: number;
+        substitutesComponentId?: string;
       }> = [];
+
+      // Process removed components (discounts)
+      let removalAdjustmentUsdCents = 0;
+      for (const removal of clientItem.removedComponents) {
+        removalAdjustmentUsdCents += removal.priceUsdCents; // negative = discount
+      }
 
       if (clientItem.selectedContorno) {
         for (const group of menuItem.optionGroups) {
@@ -149,6 +170,7 @@ export async function processCheckout(
                 name: opt.name,
                 priceUsdCents: opt.priceUsdCents,
                 priceBsCents: usdCentsToBsCents(opt.priceUsdCents, rate),
+                substitutesComponentId: ad.substitutesComponentId,
               });
               break;
             }
@@ -157,14 +179,14 @@ export async function processCheckout(
       }
 
       const itemUsdCents =
-        (menuItem.priceUsdCents + optionPriceUsdCents) *
+        (menuItem.priceUsdCents + optionPriceUsdCents + removalAdjustmentUsdCents) *
         clientItem.quantity;
       subtotalUsdCents += itemUsdCents;
 
       const itemBaseBsCents = usdCentsToBsCents(menuItem.priceUsdCents, rate);
       const itemTotalBsCents =
         usdCentsToBsCents(
-          menuItem.priceUsdCents + optionPriceUsdCents,
+          menuItem.priceUsdCents + optionPriceUsdCents + removalAdjustmentUsdCents,
           rate,
         ) * clientItem.quantity;
 
@@ -175,6 +197,7 @@ export async function processCheckout(
         priceBsCents: itemBaseBsCents,
         selectedContorno: clientItem.selectedContorno,
         selectedAdicionales,
+        removedComponents: clientItem.removedComponents,
         quantity: clientItem.quantity,
         itemTotalBsCents,
       });

@@ -29,6 +29,15 @@ interface MenuItem {
       sortOrder: number;
     }>;
   }>;
+  dishComponents: Array<{
+    id: string;
+    name: string;
+    type: "contorno" | "fixed";
+    removable: boolean;
+    priceIfRemovedCents: number | null;
+    allowPaidSubstitution: boolean;
+    sortOrder: number;
+  }>;
 }
 
 interface Category {

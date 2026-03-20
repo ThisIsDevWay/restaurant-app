@@ -23,6 +23,16 @@ interface OptionGroup {
   options: Option[];
 }
 
+interface DishComponent {
+  id: string;
+  name: string;
+  type: "contorno" | "fixed";
+  removable: boolean;
+  priceIfRemovedCents: number | null;
+  allowPaidSubstitution: boolean;
+  sortOrder: number;
+}
+
 interface MenuItem {
   id: string;
   name: string;
@@ -34,6 +44,7 @@ interface MenuItem {
   isAvailable: boolean;
   imageUrl: string | null;
   optionGroups: OptionGroup[];
+  dishComponents: DishComponent[];
 }
 
 interface ItemDetailModalProps {
@@ -50,27 +61,25 @@ export function ItemDetailModal({
   currentRateBsPerUsd,
 }: ItemDetailModalProps) {
   const addItem = useCartStore((s) => s.addItem);
-  const [selectedRadio, setSelectedRadio] = useState<
-    Record<string, string>
-  >({});
-  const [selectedCheckbox, setSelectedCheckbox] = useState<
-    Record<string, string[]>
-  >({});
+  const [selectedRadio, setSelectedRadio] = useState<Record<string, string>>({});
+  const [selectedCheckbox, setSelectedCheckbox] = useState<Record<string, string[]>>({});
+  const [removedComponents, setRemovedComponents] = useState<Set<string>>(new Set());
+  const [substitutions, setSubstitutions] = useState<Record<string, string | null>>({});
   const [quantity, setQuantity] = useState(1);
   const [closing, setClosing] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  // Reset state when opening
   useEffect(() => {
     if (isOpen) {
       setSelectedRadio({});
       setSelectedCheckbox({});
+      setRemovedComponents(new Set());
+      setSubstitutions({});
       setQuantity(1);
       setClosing(false);
     }
   }, [isOpen]);
 
-  // Escape key to close
   useEffect(() => {
     if (!isOpen) return;
     function handleKey(e: KeyboardEvent) {
@@ -80,7 +89,6 @@ export function ItemDetailModal({
     return () => document.removeEventListener("keydown", handleKey);
   }, [isOpen]);
 
-  // Prevent body scroll when open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -105,6 +113,35 @@ export function ItemDetailModal({
     });
   }
 
+  function toggleComponentRemoval(componentId: string) {
+    setRemovedComponents((prev) => {
+      const next = new Set(prev);
+      if (next.has(componentId)) {
+        next.delete(componentId);
+        // Clear substitution when re-adding component
+        setSubstitutions((s) => {
+          const ns = { ...s };
+          delete ns[componentId];
+          return ns;
+        });
+      } else {
+        next.add(componentId);
+      }
+      return next;
+    });
+  }
+
+  function setSubstitution(componentId: string, optionId: string | null) {
+    setSubstitutions((prev) => ({
+      ...prev,
+      [componentId]: optionId,
+    }));
+  }
+
+  // Separate components
+  const fixedComponents = item.dishComponents.filter((c) => c.type === "fixed");
+  const contornoComponents = item.dishComponents.filter((c) => c.type === "contorno");
+
   // Check required groups satisfaction
   const requiredGroups = item.optionGroups.filter((g) => g.required);
   const unsatisfiedGroup = requiredGroups.find(
@@ -112,38 +149,66 @@ export function ItemDetailModal({
   );
   const allRequiredSatisfied = unsatisfiedGroup === undefined;
 
-  // Calculate prices
-  const baseBsCents = Math.round(item.priceUsdCents * currentRateBsPerUsd);
-  let additionalUsdCents = 0;
-  let additionalBsCents = 0;
+  // Calculate price adjustments
+  let priceAdjustUsdCents = 0;
 
-  const selectedContornoOption = (() => {
-    const radioGroup = item.optionGroups.find(
-      (g) => g.type === "radio" && selectedRadio[g.id],
-    );
-    if (!radioGroup) return null;
-    const opt = radioGroup.options.find(
-      (o) => o.id === selectedRadio[radioGroup.id],
-    );
-    return opt ?? null;
-  })();
+  // Discounts from removed components
+  for (const comp of contornoComponents) {
+    if (removedComponents.has(comp.id) && comp.priceIfRemovedCents) {
+      priceAdjustUsdCents += comp.priceIfRemovedCents; // negative = discount
+    }
+  }
 
+  // Cost from substitutions
+  for (const [compId, optId] of Object.entries(substitutions)) {
+    if (optId) {
+      const comp = contornoComponents.find((c) => c.id === compId);
+      if (comp) {
+        const substitutionOption = comp.removable
+          ? item.optionGroups
+              .flatMap((g) => g.options)
+              .find((o) => o.id === optId)
+          : null;
+        if (substitutionOption) {
+          priceAdjustUsdCents += substitutionOption.priceUsdCents;
+        }
+      }
+    }
+  }
+
+  // Adicionales from option groups
   const selectedAdicionales: Array<{
     id: string;
     name: string;
     priceUsdCents: number;
     priceBsCents: number;
+    substitutesComponentId?: string;
   }> = [];
 
+  // Add substitutions as adicionales
+  for (const [compId, optId] of Object.entries(substitutions)) {
+    if (optId) {
+      const opt = item.optionGroups.flatMap((g) => g.options).find((o) => o.id === optId);
+      if (opt) {
+        selectedAdicionales.push({
+          id: opt.id,
+          name: opt.name,
+          priceUsdCents: opt.priceUsdCents,
+          priceBsCents: Math.round(opt.priceUsdCents * currentRateBsPerUsd),
+          substitutesComponentId: compId,
+        });
+      }
+    }
+  }
+
+  // Regular adicionales from checkbox groups
+  let additionalUsdCents = 0;
   for (const group of item.optionGroups) {
     if (group.type === "checkbox") {
       for (const optId of selectedCheckbox[group.id] ?? []) {
         const opt = group.options.find((o) => o.id === optId);
         if (opt) {
           additionalUsdCents += opt.priceUsdCents;
-          additionalBsCents += Math.round(
-            opt.priceUsdCents * currentRateBsPerUsd,
-          );
           selectedAdicionales.push({
             id: opt.id,
             name: opt.name,
@@ -155,15 +220,18 @@ export function ItemDetailModal({
     }
   }
 
-  const totalUsdCents =
-    (item.priceUsdCents + additionalUsdCents) * quantity;
-  const totalBsCents = (baseBsCents + additionalBsCents) * quantity;
+  // Removed components (as negative entries)
+  const removedComponentEntries = contornoComponents
+    .filter((c) => removedComponents.has(c.id))
+    .map((c) => ({
+      isRemoval: true as const,
+      componentId: c.id,
+      name: `Sin ${c.name}`,
+      priceUsdCents: c.priceIfRemovedCents ?? 0,
+    }));
 
-  // Summary text
-  const summaryParts: string[] = [];
-  if (selectedContornoOption) summaryParts.push(selectedContornoOption.name);
-  selectedAdicionales.forEach((a) => summaryParts.push(a.name));
-  const summaryText = summaryParts.join(" + ");
+  const totalUsdCents = (item.priceUsdCents + priceAdjustUsdCents + additionalUsdCents) * quantity;
+  const totalBsCents = Math.round(totalUsdCents * currentRateBsPerUsd);
 
   // Cart emoji fallback
   const CATEGORY_EMOJI: Record<string, string> = {
@@ -187,17 +255,15 @@ export function ItemDetailModal({
     addItem({
       id: item.id,
       name: item.name,
-      baseUsdCents: item.priceUsdCents + additionalUsdCents,
-      baseBsCents: baseBsCents + additionalBsCents,
+      baseUsdCents: item.priceUsdCents,
+      baseBsCents: Math.round(item.priceUsdCents * currentRateBsPerUsd),
       emoji,
-      selectedContorno: selectedContornoOption
-        ? { id: selectedContornoOption.id, name: selectedContornoOption.name }
-        : null,
+      selectedContorno: null,
       selectedAdicionales,
+      removedComponents: removedComponentEntries,
       categoryAllowAlone: item.categoryAllowAlone,
     });
 
-    // Vibrate and close
     if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate(30);
     }
@@ -206,10 +272,7 @@ export function ItemDetailModal({
 
   if (!isOpen && !closing) return null;
 
-  // Get item base Bs price
-  const itemBaseBsCents = Math.round(
-    item.priceUsdCents * currentRateBsPerUsd,
-  );
+  const itemBaseBsCents = Math.round(item.priceUsdCents * currentRateBsPerUsd);
 
   return (
     <div className="fixed inset-0 z-50">
@@ -274,7 +337,150 @@ export function ItemDetailModal({
             </div>
           </div>
 
-          {/* Option groups */}
+          {/* Fixed components */}
+          {fixedComponents.length > 0 && (
+            <div className="border-b border-border px-4 py-3">
+              <h3 className="mb-2 text-[14px] font-semibold text-text-main">
+                Viene con
+              </h3>
+              <div className="space-y-1">
+                {fixedComponents.map((comp) => (
+                  <div key={comp.id} className="flex items-center gap-2 text-[13px] text-text-muted">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-text-muted" />
+                    {comp.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Contorno components */}
+          {contornoComponents.length > 0 && (
+            <div className="border-b border-border px-4 py-3">
+              <h3 className="mb-2 text-[14px] font-semibold text-text-main">
+                Contornos
+              </h3>
+              <div className="space-y-2">
+                {contornoComponents.map((comp) => {
+                  const isRemoved = removedComponents.has(comp.id);
+                  const showSubstitutionOptions = comp.removable && comp.allowPaidSubstitution && isRemoved;
+                  const discountBs = comp.priceIfRemovedCents
+                    ? Math.round(Math.abs(comp.priceIfRemovedCents) * currentRateBsPerUsd)
+                    : null;
+
+                  return (
+                    <div key={comp.id}>
+                      <button
+                        onClick={() => {
+                          if (comp.removable) toggleComponentRemoval(comp.id);
+                        }}
+                        disabled={!comp.removable}
+                        className={`flex w-full items-center gap-3 rounded-input px-1 py-2.5 text-left transition-colors ${
+                          comp.removable ? "active:bg-bg-app" : "opacity-70"
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <div
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${
+                            !isRemoved
+                              ? "border-primary bg-primary"
+                              : "border-border bg-white"
+                          }`}
+                        >
+                          {!isRemoved && (
+                            <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-[14px] text-text-main">
+                            {comp.name}
+                          </span>
+                          {!comp.removable && (
+                            <p className="text-[11px] text-text-muted">
+                              No se puede quitar
+                            </p>
+                          )}
+                          {comp.removable && !isRemoved && discountBs && (
+                            <p className="text-[11px] text-text-muted">
+                              Al quitar: -{formatBs(discountBs)}
+                              {comp.priceIfRemovedCents && (
+                                <span className="ml-1">
+                                  ({formatRef(Math.abs(comp.priceIfRemovedCents))})
+                                </span>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-[12px] text-text-muted">
+                          {isRemoved ? "Quitado" : "Incluido"}
+                        </span>
+                      </button>
+
+                      {/* Substitution options when removed */}
+                      {showSubstitutionOptions && (
+                        <div className="ml-8 mt-1 space-y-1 animate-in">
+                          <p className="text-[12px] font-medium text-text-main">
+                            Sustituir por:
+                          </p>
+                          {/* None option */}
+                          <button
+                            onClick={() => setSubstitution(comp.id, null)}
+                            className="flex w-full items-center gap-3 rounded-input px-1 py-2 text-left active:bg-bg-app"
+                          >
+                            <div
+                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
+                                !substitutions[comp.id]
+                                  ? "border-primary bg-primary"
+                                  : "border-border"
+                              }`}
+                            >
+                              {!substitutions[comp.id] && (
+                                <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                              )}
+                            </div>
+                            <span className="text-[13px] text-text-muted">
+                              (ninguno)
+                            </span>
+                          </button>
+                          {/* Available adicionales as substitutes */}
+                          {item.optionGroups
+                            .flatMap((g) => g.options)
+                            .filter((o) => o.isAvailable)
+                            .map((opt) => (
+                              <button
+                                key={opt.id}
+                                onClick={() => setSubstitution(comp.id, opt.id)}
+                                className="flex w-full items-center gap-3 rounded-input px-1 py-2 text-left active:bg-bg-app"
+                              >
+                                <div
+                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
+                                    substitutions[comp.id] === opt.id
+                                      ? "border-primary bg-primary"
+                                      : "border-border"
+                                  }`}
+                                >
+                                  {substitutions[comp.id] === opt.id && (
+                                    <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                                  )}
+                                </div>
+                                <span className="flex-1 text-[13px] text-text-main">
+                                  {opt.name}
+                                </span>
+                                <span className="text-[12px] text-price-green">
+                                  +{formatBs(Math.round(opt.priceUsdCents * currentRateBsPerUsd))}
+                                </span>
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Option groups (adicionales) */}
           {item.optionGroups.map((group) => (
             <div
               key={group.id}
@@ -310,7 +516,6 @@ export function ItemDetailModal({
                         }
                         className="flex items-center gap-3 rounded-input px-1 py-2.5 text-left transition-colors active:bg-bg-app"
                       >
-                        {/* Radio circle */}
                         <div
                           className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
                             selectedRadio[group.id] === option.id
@@ -355,7 +560,6 @@ export function ItemDetailModal({
                           }
                           className="flex items-center gap-3 rounded-input px-1 py-2.5 text-left transition-colors active:bg-bg-app"
                         >
-                          {/* Checkbox */}
                           <div
                             className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${
                               isChecked
@@ -392,7 +596,7 @@ export function ItemDetailModal({
           ))}
         </div>
 
-        {/* Footer (fixed, no scroll) */}
+        {/* Footer (fixed) */}
         <div className="shrink-0 border-t border-border bg-white px-4 py-3">
           {/* Quantity */}
           <div className="mb-3 flex items-center justify-center gap-4">
@@ -429,13 +633,6 @@ export function ItemDetailModal({
               ? `Agregar · ${formatBs(totalBsCents)}`
               : unsatisfiedGroup?.name ?? "Selecciona una opción"}
           </button>
-
-          {/* Summary */}
-          {summaryText && (
-            <p className="mt-1 truncate text-center text-[11px] text-text-muted">
-              {summaryText}
-            </p>
-          )}
         </div>
       </div>
     </div>

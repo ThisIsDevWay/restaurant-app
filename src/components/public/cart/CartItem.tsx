@@ -46,6 +46,12 @@ export function CartItem({
             </p>
           )}
 
+          {(item.removedComponents ?? []).map((r) => (
+            <p key={r.componentId} className="text-xs text-text-muted">
+              {r.name}
+            </p>
+          ))}
+
           {item.selectedAdicionales.length > 0 && (
             <p className="text-xs text-text-muted">
               + {item.selectedAdicionales.map((a) => a.name).join(", ")}

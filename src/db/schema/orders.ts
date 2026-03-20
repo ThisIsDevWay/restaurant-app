@@ -6,12 +6,14 @@ import {
   jsonb,
   timestamp,
   numeric,
+  serial,
 } from "drizzle-orm/pg-core";
 import { exchangeRates } from "./exchangeRates";
 import { paymentsLog } from "./payments-log";
 
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
+  orderNumber: serial("order_number").notNull(),
   customerPhone: text("customer_phone").notNull(),
   itemsSnapshot: jsonb("items_snapshot").notNull().$type<
     Array<{
@@ -25,6 +27,13 @@ export const orders = pgTable("orders", {
         name: string;
         priceUsdCents: number;
         priceBsCents: number;
+        substitutesComponentId?: string;
+      }>;
+      removedComponents: Array<{
+        isRemoval: true;
+        componentId: string;
+        name: string;
+        priceUsdCents: number;
       }>;
       quantity: number;
       itemTotalBsCents: number;
@@ -42,6 +51,7 @@ export const orders = pgTable("orders", {
       | "expired"
       | "failed"
       | "whatsapp"
+      | "cancelled"
     >()
     .default("pending"),
   paymentMethod: text("payment_method")

@@ -142,4 +142,23 @@
   .animate-in {
     animation: fade-in 150ms ease-out;
   }
+
+  .status-badge {
+    transition: background-color 300ms ease, color 300ms ease;
+  }
+}
+
+@media print {
+  nav, aside, [data-actions], [data-timeline] {
+    display: none !important;
+  }
+  [data-print-order] {
+    display: block !important;
+  }
+  body {
+    background: white !important;
+  }
+  .ring-1 {
+    box-shadow: none !important;
+  }
 }

@@ -29,6 +29,15 @@ interface MenuItem {
       sortOrder: number;
     }>;
   }>;
+  dishComponents: Array<{
+    id: string;
+    name: string;
+    type: "contorno" | "fixed";
+    removable: boolean;
+    priceIfRemovedCents: number | null;
+    allowPaidSubstitution: boolean;
+    sortOrder: number;
+  }>;
 }
 
 interface MenuGridProps {
@@ -51,6 +60,10 @@ export function MenuGrid({ items, rate }: MenuGridProps) {
     <div className="grid grid-cols-2 gap-3 px-4 pb-4">
       {sortedItems.map((item) => {
         const hasRequiredOptions = item.optionGroups.some((g) => g.required);
+        const hasInteractiveComponents = item.dishComponents.some(
+          (c) => c.type === "contorno" && c.removable
+        );
+        const needsDetailModal = hasRequiredOptions || hasInteractiveComponents;
         const priceBsCents = rate
           ? Math.round(item.priceUsdCents * rate)
           : 0;
@@ -67,7 +80,7 @@ export function MenuGrid({ items, rate }: MenuGridProps) {
             categoryAllowAlone={item.categoryAllowAlone}
             isAvailable={item.isAvailable}
             imageUrl={item.imageUrl}
-            hasRequiredOptions={hasRequiredOptions}
+            hasRequiredOptions={needsDetailModal}
             onOpenDetail={() => setSelectedItemId(item.id)}
           />
         );

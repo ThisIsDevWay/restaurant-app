@@ -66,7 +66,9 @@ export default function CheckoutPage() {
         name: a.name,
         priceUsdCents: a.priceUsdCents,
         priceBsCents: a.priceBsCents,
+        substitutesComponentId: a.substitutesComponentId,
       })),
+      removedComponents: item.removedComponents,
       categoryAllowAlone: item.categoryAllowAlone,
     }));
 

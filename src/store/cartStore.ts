@@ -1,6 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+export interface RemovedComponent {
+  isRemoval: true;
+  componentId: string;
+  name: string;
+  priceUsdCents: number;
+}
+
 export interface CartItem {
   id: string;
   name: string;
@@ -13,7 +20,9 @@ export interface CartItem {
     name: string;
     priceUsdCents: number;
     priceBsCents: number;
+    substitutesComponentId?: string;
   }>;
+  removedComponents: RemovedComponent[];
   quantity: number;
   itemTotalBsCents: number;
   categoryAllowAlone: boolean;
@@ -42,11 +51,29 @@ function computeItemTotal(
   item: Omit<CartItem, "quantity" | "itemTotalBsCents">,
   quantity: number,
 ): number {
-  const adicionalesBs = item.selectedAdicionales.reduce(
+  const adicionalesBs = (item.selectedAdicionales ?? []).reduce(
     (sum, a) => sum + a.priceBsCents,
     0,
   );
-  return (item.baseBsCents + adicionalesBs) * quantity;
+  const removalsBs = (item.removedComponents ?? []).reduce(
+    (sum, r) => sum + Math.round(r.priceUsdCents * (item.baseBsCents / Math.max(item.baseUsdCents, 1))),
+    0,
+  );
+  return (item.baseBsCents + adicionalesBs + removalsBs) * quantity;
+}
+
+function computeItemUsdCents(
+  item: Omit<CartItem, "quantity" | "itemTotalBsCents">,
+): number {
+  const adicionalesUsd = (item.selectedAdicionales ?? []).reduce(
+    (sum, a) => sum + a.priceUsdCents,
+    0,
+  );
+  const removalsUsd = (item.removedComponents ?? []).reduce(
+    (sum, r) => sum + r.priceUsdCents,
+    0,
+  );
+  return item.baseUsdCents + adicionalesUsd + removalsUsd;
 }
 
 export const useCartStore = create<CartState>()(
@@ -66,8 +93,10 @@ export const useCartStore = create<CartState>()(
             i.id === item.id &&
             JSON.stringify(i.selectedContorno) ===
               JSON.stringify(item.selectedContorno) &&
-            JSON.stringify(i.selectedAdicionales) ===
-              JSON.stringify(item.selectedAdicionales),
+            JSON.stringify(i.selectedAdicionales ?? []) ===
+              JSON.stringify(item.selectedAdicionales ?? []) &&
+            JSON.stringify(i.removedComponents ?? []) ===
+              JSON.stringify(item.removedComponents ?? []),
         );
 
         if (existingIndex !== -1) {
@@ -115,14 +144,7 @@ export const useCartStore = create<CartState>()(
 
       totalUsdCents: () =>
         get().items.reduce(
-          (sum, i) =>
-            sum +
-            (i.baseUsdCents +
-              i.selectedAdicionales.reduce(
-                (a, ad) => a + ad.priceUsdCents,
-                0,
-              )) *
-              i.quantity,
+          (sum, i) => sum + computeItemUsdCents(i) * i.quantity,
           0,
         ),
 
