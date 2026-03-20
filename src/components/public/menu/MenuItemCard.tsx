@@ -71,9 +71,10 @@ export function MenuItemCard({
 
   return (
     <div
+      onClick={handleAdd}
       className={cn(
-        "relative overflow-hidden rounded-[14px] border border-border bg-bg-card shadow-card transition-all duration-150 active:scale-[0.98] active:border-primary-hover",
-        !isAvailable && "opacity-80",
+        "relative cursor-pointer overflow-hidden rounded-[14px] border border-border bg-bg-card shadow-card transition-all duration-150 active:scale-[0.98] active:border-primary-hover",
+        !isAvailable && "cursor-default opacity-80",
       )}
     >
       {/* Image area */}
@@ -132,10 +133,10 @@ export function MenuItemCard({
           </div>
 
           <button
-            onClick={handleAdd}
+            onClick={(e) => { e.stopPropagation(); handleAdd(); }}
             disabled={!isAvailable}
             className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-full transition-colors",
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors",
               isAvailable
                 ? "bg-primary text-white active:bg-primary-hover"
                 : "bg-border text-text-muted",
