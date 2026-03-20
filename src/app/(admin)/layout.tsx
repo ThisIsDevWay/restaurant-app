@@ -1,5 +1,6 @@
 import { QueryProvider } from "@/providers/QueryProvider";
 import { Sidebar } from "@/components/admin/layout/Sidebar";
+import { AdminHeader } from "@/components/admin/layout/AdminHeader";
 import { requireAdmin } from "@/lib/auth";
 
 export default async function AdminLayout({
@@ -11,9 +12,14 @@ export default async function AdminLayout({
 
   return (
     <QueryProvider>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen bg-bg-app">
         <Sidebar />
-        <main className="flex-1 overflow-auto bg-bg-app p-6">{children}</main>
+        <div className="flex flex-1 flex-col min-w-0">
+          <AdminHeader />
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 lg:pt-6">
+            {children}
+          </main>
+        </div>
       </div>
     </QueryProvider>
   );

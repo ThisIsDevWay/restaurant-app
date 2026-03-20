@@ -7,7 +7,10 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { createMenuItem, updateMenuItem, generateUploadUrl, getPublicUrl } from "@/actions/menu";
+import { Image as ImageIcon, Upload } from "lucide-react";
 
 const formSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, "Nombre requerido"), v.maxLength(100, "Máximo 100 caracteres")),
@@ -66,6 +69,7 @@ export function MenuItemForm({ categories, initialData }: MenuItemFormProps) {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: valibotResolver(formSchema),
@@ -81,6 +85,8 @@ export function MenuItemForm({ categories, initialData }: MenuItemFormProps) {
       imageUrl: initialData?.imageUrl ?? "",
     },
   });
+
+  const isAvailable = watch("isAvailable");
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -161,130 +167,198 @@ export function MenuItemForm({ categories, initialData }: MenuItemFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-lg">
+    <form onSubmit={handleSubmit(onSubmit)}>
       {error && (
-        <div className="rounded-input border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+        <div className="mb-6 rounded-xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
           {error}
         </div>
       )}
 
-      <div>
-        <label className="mb-1 block text-sm font-semibold text-text-main">
-          Nombre *
-        </label>
-        <Input {...register("name")} placeholder="Ej: Pollo Guisado" />
-        {errors.name && (
-          <p className="mt-1 text-xs text-error">{errors.name.message}</p>
-        )}
+      <div className="grid gap-6 lg:grid-cols-5">
+        {/* Left Column - Basic Info (3/5) */}
+        <div className="lg:col-span-3 space-y-6">
+          <Card className="ring-1 ring-border">
+            <CardHeader className="border-b border-border">
+              <CardTitle>Información básica</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5 pt-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-text-main">
+                  Nombre *
+                </label>
+                <Input {...register("name")} placeholder="Ej: Pollo Guisado" />
+                {errors.name && (
+                  <p className="mt-1 text-xs text-error">{errors.name.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-text-main">
+                  Descripción
+                </label>
+                <textarea
+                  {...register("description")}
+                  placeholder="Descripción del plato..."
+                  rows={3}
+                  className="w-full rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-text-main placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                  maxLength={300}
+                />
+                {errors.description && (
+                  <p className="mt-1 text-xs text-error">{errors.description.message}</p>
+                )}
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-text-main">
+                    Categoría *
+                  </label>
+                  <select
+                    {...register("categoryId")}
+                    className="w-full rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-text-main focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  >
+                    <option value="">Seleccionar</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.categoryId && (
+                    <p className="mt-1 text-xs text-error">{errors.categoryId.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-text-main">
+                    Precio (USD) *
+                  </label>
+                  <Input
+                    {...register("priceUsdDollars")}
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    inputMode="decimal"
+                  />
+                  {errors.priceUsdDollars && (
+                    <p className="mt-1 text-xs text-error">{errors.priceUsdDollars.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-text-main">
+                  Orden de aparición
+                </label>
+                <Input
+                  {...register("sortOrder", { valueAsNumber: true })}
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  className="w-32"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Media & Status (2/5) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Image Card */}
+          <Card className="ring-1 ring-border">
+            <CardHeader className="border-b border-border">
+              <CardTitle>Imagen</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {previewUrl ? (
+                <div className="relative mb-4 group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="h-48 w-full rounded-xl object-cover ring-1 ring-border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewUrl(null);
+                      setValue("imageUrl", "");
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="mb-4 flex h-48 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-bg-app/50 hover:border-primary/40 hover:bg-primary/5 transition-all"
+                >
+                  <Upload className="mb-2 h-8 w-8 text-text-muted" />
+                  <p className="text-sm font-medium text-text-muted">
+                    Subir imagen
+                  </p>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    PNG o JPG, máx 2MB
+                  </p>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg"
+                onChange={handleImageUpload}
+                disabled={uploading}
+                className="hidden"
+              />
+              {uploading && (
+                <p className="text-xs text-text-muted">Subiendo imagen...</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Status Card */}
+          <Card className="ring-1 ring-border">
+            <CardHeader className="border-b border-border">
+              <CardTitle>Estado</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-text-main">
+                    Disponible para venta
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    {isAvailable
+                      ? "Visible en el menú público"
+                      : "Oculto del menú público"}
+                  </p>
+                </div>
+                <Switch
+                  checked={isAvailable}
+                  onCheckedChange={(val) => setValue("isAvailable", val)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-semibold text-text-main">
-          Descripción
-        </label>
-        <textarea
-          {...register("description")}
-          placeholder="Descripción del plato..."
-          rows={3}
-          className="w-full rounded-input border border-border bg-white px-3 py-2 text-sm text-text-main placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          maxLength={300}
-        />
-        {errors.description && (
-          <p className="mt-1 text-xs text-error">{errors.description.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-semibold text-text-main">
-          Categoría *
-        </label>
-        <select
-          {...register("categoryId")}
-          className="w-full rounded-input border border-border bg-white px-3 py-2 text-sm text-text-main focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+      {/* Submit Button */}
+      <div className="mt-6 flex justify-end gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/admin/menu")}
         >
-          <option value="">Seleccionar categoría</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-        {errors.categoryId && (
-          <p className="mt-1 text-xs text-error">{errors.categoryId.message}</p>
-        )}
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={submitting || uploading} className="min-w-[140px]">
+          {submitting ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear item"}
+        </Button>
       </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-semibold text-text-main">
-          Precio (USD) *
-        </label>
-        <Input
-          {...register("priceUsdDollars")}
-          type="number"
-          step="0.01"
-          min="0.01"
-          placeholder="0.00"
-          inputMode="decimal"
-        />
-        {errors.priceUsdDollars && (
-          <p className="mt-1 text-xs text-error">{errors.priceUsdDollars.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-semibold text-text-main">
-          Imagen
-        </label>
-        {previewUrl && (
-          <div className="mb-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={previewUrl}
-              alt="Preview"
-              className="h-32 w-32 rounded-card object-cover border border-border"
-            />
-          </div>
-        )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/png,image/jpeg"
-          onChange={handleImageUpload}
-          disabled={uploading}
-          className="block w-full text-sm text-text-muted file:mr-4 file:rounded-input file:border-0 file:bg-bg-image file:px-4 file:py-2 file:text-sm file:font-semibold file:text-text-main hover:file:bg-border"
-        />
-        {uploading && (
-          <p className="mt-1 text-xs text-text-muted">Subiendo imagen...</p>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          {...register("isAvailable")}
-          id="isAvailable"
-          className="h-4 w-4 rounded border-border accent-primary"
-        />
-        <label htmlFor="isAvailable" className="text-sm font-medium text-text-main">
-          Disponible para venta
-        </label>
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-semibold text-text-main">
-          Orden de aparición
-        </label>
-        <Input
-          {...register("sortOrder", { valueAsNumber: true })}
-          type="number"
-          min={0}
-          placeholder="0"
-        />
-      </div>
-
-      <Button type="submit" disabled={submitting || uploading} className="w-full">
-        {submitting ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear item"}
-      </Button>
     </form>
   );
 }

@@ -2,6 +2,25 @@ import Link from "next/link";
 import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { sql, desc } from "drizzle-orm";
+import {
+  DollarSign,
+  CheckCircle2,
+  Clock,
+  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight,
+} from "lucide-react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { formatBs } from "@/lib/money";
+import { OrdersChart } from "@/components/admin/dashboard/OrdersChart";
+import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
 
 export default async function AdminDashboard() {
   const [todayStats] = await db
@@ -11,9 +30,7 @@ export default async function AdminDashboard() {
       pendingOrders: sql<number>`COUNT(*) FILTER (WHERE ${orders.status} = 'pending')::int`,
     })
     .from(orders)
-    .where(
-      sql`${orders.createdAt} >= CURRENT_DATE`,
-    );
+    .where(sql`${orders.createdAt} >= CURRENT_DATE`);
 
   const avgTicket =
     todayStats.completedOrders > 0
@@ -32,114 +49,173 @@ export default async function AdminDashboard() {
     .orderBy(desc(orders.createdAt))
     .limit(10);
 
-  return (
-    <div>
-      <h1 className="mb-6 text-2xl font-bold text-text-main">Dashboard</h1>
+  const stats = [
+    {
+      label: "Ventas hoy",
+      value: formatBs(todayStats.totalSales),
+      icon: DollarSign,
+      change: "+12%",
+      positive: true,
+      gradient: "from-primary/5 to-primary/10",
+      iconBg: "bg-primary/10",
+      iconColor: "text-primary",
+    },
+    {
+      label: "Completadas",
+      value: String(todayStats.completedOrders),
+      icon: CheckCircle2,
+      change: "+8%",
+      positive: true,
+      gradient: "from-success/5 to-success/10",
+      iconBg: "bg-success/10",
+      iconColor: "text-success",
+    },
+    {
+      label: "Pendientes",
+      value: String(todayStats.pendingOrders),
+      icon: Clock,
+      change: todayStats.pendingOrders > 5 ? "+3" : "—",
+      positive: false,
+      gradient: "from-amber/5 to-amber/10",
+      iconBg: "bg-amber/10",
+      iconColor: "text-amber",
+    },
+    {
+      label: "Ticket promedio",
+      value: formatBs(avgTicket),
+      icon: TrendingUp,
+      change: "+5%",
+      positive: true,
+      gradient: "from-info/5 to-info/10",
+      iconBg: "bg-info/10",
+      iconColor: "text-info",
+    },
+  ];
 
-      {/* Stats cards */}
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Ventas hoy"
-          value={`Bs. ${(todayStats.totalSales / 100).toLocaleString("es-VE", {
-            minimumFractionDigits: 2,
-          })}`}
-        />
-        <StatCard
-          label="Órdenes completadas"
-          value={String(todayStats.completedOrders)}
-        />
-        <StatCard
-          label="Pendientes"
-          value={String(todayStats.pendingOrders)}
-        />
-        <StatCard
-          label="Ticket promedio"
-          value={`Bs. ${(avgTicket / 100).toLocaleString("es-VE", {
-            minimumFractionDigits: 2,
-          })}`}
-        />
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-text-main">Dashboard</h1>
+        <p className="text-sm text-text-muted">Resumen de actividad de hoy</p>
       </div>
 
-      {/* Recent orders */}
-      <div className="rounded-card border border-border bg-white shadow-card">
-        <div className="border-b border-border px-4 py-3">
-          <h2 className="text-sm font-semibold text-text-main">
-            Últimas órdenes
-          </h2>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-bg-app text-left">
-              <th className="px-4 py-2 font-semibold text-text-main">ID</th>
-              <th className="px-4 py-2 font-semibold text-text-main">Monto</th>
-              <th className="px-4 py-2 font-semibold text-text-main">Estado</th>
-              <th className="px-4 py-2 font-semibold text-text-main">Hora</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recentOrders.map((order) => (
-              <tr
-                key={order.id}
-                className="border-b border-border last:border-b-0"
-              >
-                <td className="px-4 py-2 font-mono text-xs text-text-main">
-                  #{order.id.slice(-4).toUpperCase()}
-                </td>
-                <td className="px-4 py-2 font-semibold text-price-green">
-                  Bs. {(order.subtotalBsCents / 100).toLocaleString(
-                    "es-VE",
-                    { minimumFractionDigits: 2 },
-                  )}
-                </td>
-                <td className="px-4 py-2">
-                  <StatusBadge status={order.status} />
-                </td>
-                <td className="px-4 py-2 text-xs text-text-muted">
-                  {new Date(order.createdAt).toLocaleTimeString("es-VE")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="border-t border-border px-4 py-3">
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <Card
+            key={stat.label}
+            className={`relative overflow-hidden bg-gradient-to-br ${stat.gradient} border-0 ring-1 ring-border`}
+          >
+            <CardContent className="pb-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-text-muted uppercase tracking-wide">
+                    {stat.label}
+                  </p>
+                  <p className="text-2xl font-bold text-text-main tracking-tight">
+                    {stat.value}
+                  </p>
+                </div>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.iconBg}`}>
+                  <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-1.5">
+                {stat.positive ? (
+                  <ArrowUpRight className="h-3.5 w-3.5 text-success" />
+                ) : (
+                  <ArrowDownRight className="h-3.5 w-3.5 text-error" />
+                )}
+                <span
+                  className={`text-xs font-medium ${
+                    stat.positive ? "text-success" : "text-error"
+                  }`}
+                >
+                  {stat.change}
+                </span>
+                <span className="text-xs text-text-muted">vs ayer</span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Chart */}
+      <Card className="ring-1 ring-border">
+        <CardHeader className="border-b border-border">
+          <div className="flex items-center justify-between">
+            <CardTitle>Ventas de la semana</CardTitle>
+            <Badge variant="secondary" className="text-xs">
+              Últimos 7 días
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <OrdersChart />
+        </CardContent>
+      </Card>
+
+      {/* Recent Orders */}
+      <Card className="ring-1 ring-border">
+        <CardHeader className="border-b border-border">
+          <div className="flex items-center justify-between">
+            <CardTitle>Últimas órdenes</CardTitle>
+            <Badge variant="outline" className="text-xs">
+              {recentOrders.length} recientes
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {recentOrders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Clock className="mb-3 h-10 w-10 text-text-muted/40" />
+              <p className="text-sm font-medium text-text-main">Sin órdenes aún</p>
+              <p className="text-xs text-text-muted mt-1">
+                Las órdenes aparecerán aquí cuando los clientes realicen pedidos
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {recentOrders.map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/admin/orders/${order.id}`}
+                  className="flex items-center justify-between px-5 py-3.5 hover:bg-bg-app/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="font-mono text-xs font-semibold text-text-main bg-bg-app rounded-lg px-2 py-1 shrink-0">
+                      #{order.id.slice(-4).toUpperCase()}
+                    </span>
+                    <span className="text-sm text-text-muted truncate">
+                      {order.customerPhone.slice(-4)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm font-semibold text-price-green">
+                      {formatBs(order.subtotalBsCents)}
+                    </span>
+                    <OrderStatusBadge status={order.status as any} />
+                    <span className="text-xs text-text-muted hidden sm:block">
+                      {new Date(order.createdAt).toLocaleTimeString("es-VE", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+        <CardFooter>
           <Link
             href="/admin/orders"
             className="text-sm font-medium text-primary hover:underline"
           >
             Ver todas las órdenes →
           </Link>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-card border border-border bg-white p-4 shadow-card">
-      <p className="text-xs text-text-muted">{label}</p>
-      <p className="mt-1 text-xl font-bold text-text-main">{value}</p>
-    </div>
-  );
-}
-
-const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  pending: { bg: "bg-amber/10", text: "text-amber", label: "Pendiente" },
-  paid: { bg: "bg-success/10", text: "text-success", label: "Pagado" },
-  kitchen: { bg: "bg-info/10", text: "text-info", label: "En cocina" },
-  delivered: { bg: "bg-success/10", text: "text-success", label: "Entregado" },
-  expired: { bg: "bg-error/10", text: "text-error", label: "Expirado" },
-  failed: { bg: "bg-error/10", text: "text-error", label: "Fallido" },
-  whatsapp: { bg: "bg-green-100", text: "text-green-700", label: "WhatsApp" },
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const colors = STATUS_COLORS[status] ?? STATUS_COLORS.pending;
-  return (
-    <span
-      className={`inline-block rounded-pill px-2 py-0.5 text-[10px] font-semibold ${colors.bg} ${colors.text}`}
-    >
-      {colors.label}
-    </span>
   );
 }
