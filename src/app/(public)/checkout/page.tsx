@@ -24,6 +24,7 @@ type CheckoutState =
 export default function CheckoutPage() {
   const items = useCartStore((s) => s.items);
   const totalBsCents = useCartStore((s) => s.totalBsCents());
+  const totalUsdCents = useCartStore((s) => s.totalUsdCents());
   const clearCart = useCartStore((s) => s.clearCart);
   const router = useRouter();
   const [state, setState] = useState<CheckoutState>({ type: "form" });
@@ -151,6 +152,7 @@ export default function CheckoutPage() {
         <CheckoutForm
           items={items}
           totalBsCents={totalBsCents}
+          totalUsdCents={totalUsdCents}
           isSubmitting={isSubmitting}
           error={error}
           onSubmit={handleSubmit}

@@ -8,6 +8,7 @@ import type { CartItem } from "@/store/cartStore";
 interface CheckoutFormProps {
   items: CartItem[];
   totalBsCents: number;
+  totalUsdCents: number;
   isSubmitting: boolean;
   error: string | null;
   onSubmit: (phone: string, paymentMethod: "pago_movil" | "transfer") => void;
@@ -16,6 +17,7 @@ interface CheckoutFormProps {
 export function CheckoutForm({
   items,
   totalBsCents,
+  totalUsdCents,
   isSubmitting,
   error,
   onSubmit,
@@ -58,7 +60,7 @@ export function CheckoutForm({
         >
           <span className="text-[13px] text-text-muted">
             {itemCount} {itemCount === 1 ? "item" : "items"} ·{" "}
-            {formatBs(totalBsCents)}
+            {formatBs(totalBsCents)} · {formatRef(totalUsdCents)}
           </span>
           <ChevronDown
             size={16}
@@ -184,7 +186,8 @@ export function CheckoutForm({
             setPhone(e.target.value);
             setPhoneError(null);
           }}
-          placeholder="04141234567"
+          placeholder="0414 123 4567"
+          maxLength={11}
           className={`w-full rounded-input border px-4 py-3 text-sm outline-none transition-colors ${
             phoneError ? "border-error" : "border-border focus:border-primary"
           }`}

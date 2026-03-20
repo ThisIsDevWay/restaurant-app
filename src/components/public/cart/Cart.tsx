@@ -32,20 +32,21 @@ export function Cart() {
     <>
       {/* Bottom bar trigger */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-white px-4 py-3 shadow-elevated">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-text-muted">
-              Mi pedido ({items.reduce((s, i) => s + i.quantity, 0)}{" "}
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline gap-2">
+              <p className="text-[15px] font-extrabold text-text-main">
+                {formatBs(totalBsCents)}
+              </p>
+              <p className="text-[11px] font-semibold text-primary/70">
+                {formatRef(totalUsdCents)}
+              </p>
+            </div>
+            <p className="text-[11px] text-text-muted">
+              {items.reduce((s, i) => s + i.quantity, 0)}{" "}
               {items.reduce((s, i) => s + i.quantity, 0) === 1
                 ? "item"
                 : "items"}
-              )
-            </p>
-            <p className="text-[15px] font-extrabold text-text-main">
-              {formatBs(totalBsCents)}
-            </p>
-            <p className="text-[11px] text-text-muted">
-              {formatRef(totalUsdCents)}
             </p>
           </div>
           <button

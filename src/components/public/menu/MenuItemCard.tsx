@@ -72,7 +72,7 @@ export function MenuItemCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[14px] border border-border bg-bg-card shadow-card transition-transform active:scale-[0.98]",
+        "relative overflow-hidden rounded-[14px] border border-border bg-bg-card shadow-card transition-all duration-150 active:scale-[0.98] active:border-primary-hover",
         !isAvailable && "opacity-80",
       )}
     >
@@ -126,7 +126,7 @@ export function MenuItemCard({
             <p className="text-[22px] font-extrabold leading-tight text-text-main">
               {formatBs(priceBsCents)}
             </p>
-            <p className="mt-0.5 text-[11px] text-text-muted">
+            <p className="mt-0.5 text-[11px] font-semibold text-primary/70">
               {formatRef(priceUsdCents)}
             </p>
           </div>

@@ -247,7 +247,7 @@ export function ItemDetailModal({
             )}
             <button
               onClick={handleClose}
-              className="absolute left-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm"
+              className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white shadow-md backdrop-blur-sm"
               aria-label="Cerrar"
             >
               <X className="h-4 w-4" />
@@ -357,7 +357,7 @@ export function ItemDetailModal({
                         >
                           {/* Checkbox */}
                           <div
-                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[10px] border-2 transition-colors ${
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${
                               isChecked
                                 ? "border-primary bg-primary"
                                 : "border-border"
@@ -427,7 +427,7 @@ export function ItemDetailModal({
           >
             {allRequiredSatisfied
               ? `Agregar · ${formatBs(totalBsCents)}`
-              : `Elige un ${unsatisfiedGroup?.name ?? "contorno"}`}
+              : unsatisfiedGroup?.name ?? "Selecciona una opción"}
           </button>
 
           {/* Summary */}

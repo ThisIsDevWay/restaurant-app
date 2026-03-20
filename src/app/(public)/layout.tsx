@@ -1,6 +1,5 @@
 import { QueryProvider } from "@/providers/QueryProvider";
 import { OfflineBanner } from "@/components/client/OfflineBanner";
-import { Cart } from "@/components/public/cart/Cart";
 
 export default function PublicLayout({
   children,
@@ -11,7 +10,6 @@ export default function PublicLayout({
     <QueryProvider>
       <OfflineBanner />
       {children}
-      <Cart />
     </QueryProvider>
   );
 }

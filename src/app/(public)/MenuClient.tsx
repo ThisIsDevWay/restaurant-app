@@ -52,11 +52,13 @@ export function MenuClient({ items, categories, rate }: MenuClientProps) {
 
   return (
     <>
-      <CategoryFilter
-        categories={categories}
-        activeCategory={activeCategory}
-        onSelect={setActiveCategory}
-      />
+      <div className="sticky top-[52px] z-20 bg-bg-app shadow-card">
+        <CategoryFilter
+          categories={categories}
+          activeCategory={activeCategory}
+          onSelect={setActiveCategory}
+        />
+      </div>
       <MenuGrid items={filteredItems} rate={rate} />
     </>
   );
