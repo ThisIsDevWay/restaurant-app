@@ -30,6 +30,9 @@ function usePaymentPolling(
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     let active = true;
+    let attempt = 0;
+    const BASE_INTERVAL = 5000;
+    const MAX_INTERVAL = 30000;
 
     const poll = async () => {
       if (!active) return;
@@ -39,6 +42,7 @@ function usePaymentPolling(
         if (res.ok) {
           const data = await res.json();
           setStatus(data.status);
+          attempt = 0;
 
           if (data.status === "paid") {
             onPaid();
@@ -54,7 +58,9 @@ function usePaymentPolling(
       }
 
       if (active) {
-        timeoutId = setTimeout(poll, 3000);
+        attempt++;
+        const delay = Math.min(BASE_INTERVAL * Math.pow(2, attempt - 1), MAX_INTERVAL);
+        timeoutId = setTimeout(poll, delay);
       }
     };
 

@@ -74,6 +74,9 @@ export function WaitingPayment({
   useEffect(() => {
     let active = true;
     let timeoutId: NodeJS.Timeout;
+    let attempt = 0;
+    const BASE_INTERVAL = 5000;
+    const MAX_INTERVAL = 30000;
 
     const poll = async () => {
       if (!active) return;
@@ -82,6 +85,7 @@ export function WaitingPayment({
         const res = await fetch(`/api/orders/${orderId}/status`);
         if (res.ok) {
           const data = await res.json();
+          attempt = 0;
 
           if (data.status === "paid") {
             onPaid();
@@ -96,7 +100,9 @@ export function WaitingPayment({
       }
 
       if (active) {
-        timeoutId = setTimeout(poll, 3000);
+        attempt++;
+        const delay = Math.min(BASE_INTERVAL * Math.pow(2, attempt - 1), MAX_INTERVAL);
+        timeoutId = setTimeout(poll, delay);
       }
     };
 

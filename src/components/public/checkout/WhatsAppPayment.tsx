@@ -27,6 +27,9 @@ export function WhatsAppPayment({
   useEffect(() => {
     let active = true;
     let timeoutId: NodeJS.Timeout;
+    let attempt = 0;
+    const BASE_INTERVAL = 8000;
+    const MAX_INTERVAL = 30000;
 
     const poll = async () => {
       if (!active) return;
@@ -36,6 +39,7 @@ export function WhatsAppPayment({
         if (res.ok) {
           const data = await res.json();
           setStatus(data.status);
+          attempt = 0;
 
           if (data.status === "paid") {
             onPaid();
@@ -47,7 +51,9 @@ export function WhatsAppPayment({
       }
 
       if (active) {
-        timeoutId = setTimeout(poll, 5000);
+        attempt++;
+        const delay = Math.min(BASE_INTERVAL * Math.pow(2, attempt - 1), MAX_INTERVAL);
+        timeoutId = setTimeout(poll, delay);
       }
     };
 

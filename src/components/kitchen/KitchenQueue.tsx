@@ -43,8 +43,8 @@ export function KitchenQueue() {
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["kitchen-orders"],
     queryFn: fetchKitchenOrders,
-    refetchInterval: 5000,
-    staleTime: 2000,
+    refetchInterval: 15000,
+    staleTime: 10000,
   });
 
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
