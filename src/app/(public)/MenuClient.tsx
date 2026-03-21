@@ -29,13 +29,20 @@ interface MenuItem {
       sortOrder: number;
     }>;
   }>;
-  dishComponents: Array<{
+  adicionales: Array<{
     id: string;
     name: string;
-    type: "contorno" | "fixed";
+    priceUsdCents: number;
+    isAvailable: boolean;
+    sortOrder: number;
+  }>;
+  contornos: Array<{
+    id: string;
+    name: string;
+    priceUsdCents: number;
+    isAvailable: boolean;
     removable: boolean;
-    priceIfRemovedCents: number | null;
-    allowPaidSubstitution: boolean;
+    substituteContornoIds: string[];
     sortOrder: number;
   }>;
 }
@@ -46,13 +53,22 @@ interface Category {
   allowAlone: boolean;
 }
 
+interface ContornoOption {
+  id: string;
+  name: string;
+  priceUsdCents: number;
+  isAvailable: boolean;
+  sortOrder: number;
+}
+
 interface MenuClientProps {
   items: MenuItem[];
   categories: Category[];
   rate: number | null;
+  allContornos: ContornoOption[];
 }
 
-export function MenuClient({ items, categories, rate }: MenuClientProps) {
+export function MenuClient({ items, categories, rate, allContornos }: MenuClientProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const filteredItems = activeCategory
@@ -68,7 +84,7 @@ export function MenuClient({ items, categories, rate }: MenuClientProps) {
           onSelect={setActiveCategory}
         />
       </div>
-      <MenuGrid items={filteredItems} rate={rate} />
+      <MenuGrid items={filteredItems} rate={rate} allContornos={allContornos} />
     </>
   );
 }

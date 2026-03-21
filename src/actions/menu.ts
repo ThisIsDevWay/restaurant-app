@@ -7,17 +7,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase";
 import { menuItemSchema, optionGroupSchema } from "@/lib/validations/menu-item";
-import { upsertDishComponents } from "@/db/queries/dish-components";
 import * as v from "valibot";
-
-const dishComponentInputSchema = v.object({
-  name: v.pipe(v.string(), v.minLength(1)),
-  type: v.picklist(["contorno", "fixed"]),
-  removable: v.boolean(),
-  priceIfRemovedCents: v.nullable(v.number()),
-  allowPaidSubstitution: v.boolean(),
-  sortOrder: v.number(),
-});
 
 export async function createMenuItem(data: unknown) {
   await requireAdmin();
@@ -140,29 +130,4 @@ export async function generateUploadUrl(
 export async function getPublicUrl(path: string): Promise<string> {
   const { data } = supabase.storage.from("menu").getPublicUrl(path);
   return data.publicUrl;
-}
-
-export async function saveDishComponents(
-  menuItemId: string,
-  components: unknown[],
-) {
-  await requireAdmin();
-
-  try {
-    const parsed = components.map((c) => {
-      const result = v.safeParse(dishComponentInputSchema, c);
-      if (!result.success) throw new Error(result.issues[0].message);
-      return result.output;
-    });
-
-    await upsertDishComponents(menuItemId, parsed);
-    revalidatePath("/");
-    revalidatePath("/admin/menu");
-    return { success: true };
-  } catch (e) {
-    return {
-      success: false,
-      error: e instanceof Error ? e.message : "Error al guardar componentes",
-    };
-  }
 }

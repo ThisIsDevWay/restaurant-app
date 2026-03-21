@@ -126,7 +126,7 @@ describe("processCheckout with payment providers", () => {
 
   it("returns enter_reference screen for banesco_reference provider", async () => {
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString() });
+    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
     vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
 
@@ -145,7 +145,7 @@ describe("processCheckout with payment providers", () => {
       activePaymentProvider: "whatsapp_manual",
     };
     vi.mocked(getSettings).mockResolvedValue(whatsappSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString() });
+    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
     vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue({
       ...mockOrder,
@@ -168,7 +168,7 @@ describe("processCheckout with payment providers", () => {
       activePaymentProvider: "whatsapp_manual",
     };
     vi.mocked(getSettings).mockResolvedValue(whatsappSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString() });
+    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
     vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue({
       ...mockOrder,
@@ -188,7 +188,7 @@ describe("processCheckout with payment providers", () => {
 
   it("creates order with pending status for banesco provider", async () => {
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString() });
+    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
     vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
 
@@ -204,7 +204,7 @@ describe("processCheckout with payment providers", () => {
 
   it("does not include dynamicCentsSurcharge or exactAmountBsCents", async () => {
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString() });
+    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
     vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
 
@@ -225,7 +225,7 @@ describe("processCheckout with payment providers", () => {
 
   it("returns error for unavailable item", async () => {
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString() });
+    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
     vi.mocked(getMenuItemWithOptions).mockResolvedValue({
       ...mockMenuItem,
       isAvailable: false,
@@ -241,7 +241,7 @@ describe("processCheckout with payment providers", () => {
 
   it("returns error for missing item in DB", async () => {
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString() });
+    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
     vi.mocked(getMenuItemWithOptions).mockResolvedValue(null as any);
 
     const result = await processCheckout(validInput, validCheckoutItems);
@@ -273,7 +273,7 @@ describe("processCheckout with payment providers", () => {
     ];
 
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString() });
+    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
     vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
 

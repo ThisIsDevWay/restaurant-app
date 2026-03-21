@@ -46,6 +46,7 @@ export const optionGroups = pgTable(
     type: text("type").notNull().$type<"radio" | "checkbox">(),
     required: boolean("required").notNull().default(false),
     sortOrder: integer("sort_order").notNull().default(0),
+    migratedAt: timestamp("migrated_at", { withTimezone: true }),
   },
 );
 

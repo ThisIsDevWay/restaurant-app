@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { updateSettings as updateSettingsDb } from "@/db/queries/settings";
 import { settingsSchema } from "@/lib/validations/settings";
 import * as v from "valibot";
+import { revalidatePath } from "next/cache";
 
 type ActionResult =
   | { success: true; error?: never }
@@ -18,7 +19,16 @@ export async function saveSettings(data: unknown): Promise<ActionResult> {
   }
 
   try {
-    await updateSettingsDb(parsed.output);
+    const updatePayload = { ...parsed.output } as any;
+
+    // Drizzle ignores undefined values in updates. To clear the manual rate,
+    // we must explicitly send null to the database.
+    if (updatePayload.rateOverrideBsPerUsd === undefined) {
+      updatePayload.rateOverrideBsPerUsd = null;
+    }
+
+    await updateSettingsDb(updatePayload);
+    revalidatePath("/");
     return { success: true };
   } catch {
     return { success: false, error: "Error al guardar configuración" };

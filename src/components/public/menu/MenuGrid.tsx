@@ -29,23 +29,39 @@ interface MenuItem {
       sortOrder: number;
     }>;
   }>;
-  dishComponents: Array<{
+  adicionales: Array<{
     id: string;
     name: string;
-    type: "contorno" | "fixed";
-    removable: boolean;
-    priceIfRemovedCents: number | null;
-    allowPaidSubstitution: boolean;
+    priceUsdCents: number;
+    isAvailable: boolean;
     sortOrder: number;
   }>;
+  contornos: Array<{
+    id: string;
+    name: string;
+    priceUsdCents: number;
+    isAvailable: boolean;
+    removable: boolean;
+    substituteContornoIds: string[];
+    sortOrder: number;
+  }>;
+}
+
+interface ContornoOption {
+  id: string;
+  name: string;
+  priceUsdCents: number;
+  isAvailable: boolean;
+  sortOrder: number;
 }
 
 interface MenuGridProps {
   items: MenuItem[];
   rate: number | null;
+  allContornos: ContornoOption[];
 }
 
-export function MenuGrid({ items, rate }: MenuGridProps) {
+export function MenuGrid({ items, rate, allContornos }: MenuGridProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   const availableItems = items.filter((i) => i.isAvailable);
@@ -59,11 +75,10 @@ export function MenuGrid({ items, rate }: MenuGridProps) {
   return (
     <div className="grid grid-cols-2 gap-3 px-4 pb-4">
       {sortedItems.map((item) => {
+        const hasContornos = item.contornos.some((c) => c.isAvailable);
         const hasRequiredOptions = item.optionGroups.some((g) => g.required);
-        const hasInteractiveComponents = item.dishComponents.some(
-          (c) => c.type === "contorno" && c.removable
-        );
-        const needsDetailModal = hasRequiredOptions || hasInteractiveComponents;
+        const hasAdicionales = item.adicionales.some((a) => a.isAvailable);
+        const needsDetailModal = hasContornos || hasRequiredOptions || hasAdicionales;
         const priceBsCents = rate
           ? Math.round(item.priceUsdCents * rate)
           : 0;
@@ -92,6 +107,7 @@ export function MenuGrid({ items, rate }: MenuGridProps) {
           isOpen={!!selectedItem}
           onClose={() => setSelectedItemId(null)}
           currentRateBsPerUsd={rate}
+          allContornos={allContornos}
         />
       )}
     </div>

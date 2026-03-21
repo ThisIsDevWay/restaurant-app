@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { exchangeRates, settings } from "@/db/schema";
 import { invalidateSettingsCache } from "@/db/queries/settings";
 import { logger } from "@/lib/logger";
+import { fetchBCVRates } from "@/lib/bcv";
 import { eq } from "drizzle-orm";
 
 export async function GET(req: Request) {
@@ -13,61 +14,76 @@ export async function GET(req: Request) {
   }
 
   try {
-    // Try to fetch rate from BCV or PyDolarVenezuela
-    let rateValue: number | null = null;
-
-    try {
-      const response = await fetch(
-        "https://pydolarve.org/api/v1/dollar?monitor=bcv",
-        { next: { revalidate: 0 } },
-      );
-      if (response.ok) {
-        const data = await response.json();
-        rateValue = data?.price ?? data?.monitors?.bcv?.price ?? null;
-      }
-    } catch {
-      logger.warn("Failed to fetch rate from PyDolarVenezuela");
-    }
-
-    if (!rateValue) {
-      return NextResponse.json(
-        { error: "Could not fetch exchange rate" },
-        { status: 500 },
-      );
-    }
-
-    // Insert new rate
+    // Fetch both USD and EUR rates from BCV official website
+    const bcvRates = await fetchBCVRates();
     const validDate = new Date().toISOString().split("T")[0];
-    const [newRate] = await db
-      .insert(exchangeRates)
-      .values({
-        rateBsPerUsd: rateValue.toString(),
-        validDate,
-        source: "pydolarve",
-      })
-      .returning();
+    const results: { currency: string; rate: number | null; success: boolean }[] = [];
 
-    // Update settings to point to new rate
-    await db
-      .update(settings)
-      .set({
-        currentRateId: newRate.id,
-        updatedAt: new Date(),
-      })
-      .where(eq(settings.id, 1));
+    // Insert USD rate
+    if (bcvRates.usd) {
+      const [usdRate] = await db
+        .insert(exchangeRates)
+        .values({
+          rateBsPerUsd: bcvRates.usd.rate.toString(),
+          currency: "usd",
+          validDate,
+          source: bcvRates.usd.source,
+        })
+        .returning();
+
+      // Update settings to point to USD rate
+      const s = await db.select().from(settings).limit(1);
+      const currentCurrency = s[0]?.rateCurrency ?? "usd";
+      if (currentCurrency === "usd") {
+        await db
+          .update(settings)
+          .set({ currentRateId: usdRate.id, updatedAt: new Date() })
+          .where(eq(settings.id, 1));
+      }
+
+      results.push({ currency: "usd", rate: bcvRates.usd.rate, success: true });
+      logger.info("USD rate updated", { rate: bcvRates.usd.rate });
+    }
+
+    // Insert EUR rate
+    if (bcvRates.eur) {
+      const [eurRate] = await db
+        .insert(exchangeRates)
+        .values({
+          rateBsPerUsd: bcvRates.eur.rate.toString(),
+          currency: "eur",
+          validDate,
+          source: bcvRates.eur.source,
+        })
+        .returning();
+
+      // Update settings to point to EUR rate if that's the active currency
+      const s = await db.select().from(settings).limit(1);
+      const currentCurrency = s[0]?.rateCurrency ?? "usd";
+      if (currentCurrency === "eur") {
+        await db
+          .update(settings)
+          .set({ currentRateId: eurRate.id, updatedAt: new Date() })
+          .where(eq(settings.id, 1));
+      }
+
+      results.push({ currency: "eur", rate: bcvRates.eur.rate, success: true });
+      logger.info("EUR rate updated", { rate: bcvRates.eur.rate });
+    }
 
     // Invalidate cache
     invalidateSettingsCache();
 
-    logger.info("Exchange rate updated", {
-      rate: rateValue,
-      rateId: newRate.id,
-    });
+    if (results.length === 0) {
+      return NextResponse.json(
+        { error: "Could not fetch any exchange rate from BCV" },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      rate: rateValue,
-      rateId: newRate.id,
+      rates: results,
     });
   } catch (err) {
     logger.error("Cron update-rate error", {

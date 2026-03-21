@@ -23,13 +23,14 @@ export type CheckoutResult =
 export type CheckoutItem = {
   id: string;
   quantity: number;
-  selectedContorno: { id: string; name: string } | null;
+  selectedContorno: { id: string; name: string; priceUsdCents: number; priceBsCents: number } | null;
   selectedAdicionales: Array<{
     id: string;
     name: string;
     priceUsdCents: number;
     priceBsCents: number;
     substitutesComponentId?: string;
+    substitutesComponentName?: string;
   }>;
   removedComponents: Array<{
     isRemoval: true;
@@ -102,13 +103,14 @@ export async function processCheckout(
       name: string;
       priceUsdCents: number;
       priceBsCents: number;
-      selectedContorno: { id: string; name: string } | null;
+      selectedContorno: { id: string; name: string; priceUsdCents: number; priceBsCents: number } | null;
       selectedAdicionales: Array<{
         id: string;
         name: string;
         priceUsdCents: number;
         priceBsCents: number;
         substitutesComponentId?: string;
+        substitutesComponentName?: string;
       }>;
       removedComponents: Array<{
         isRemoval: true;
@@ -142,6 +144,7 @@ export async function processCheckout(
         priceUsdCents: number;
         priceBsCents: number;
         substitutesComponentId?: string;
+        substitutesComponentName?: string;
       }> = [];
 
       // Process removed components (discounts)
@@ -150,13 +153,13 @@ export async function processCheckout(
         removalAdjustmentUsdCents += removal.priceUsdCents; // negative = discount
       }
 
+      // Validate and add contorno price
       if (clientItem.selectedContorno) {
-        for (const group of menuItem.optionGroups) {
-          for (const opt of group.options) {
-            if (opt.id === clientItem.selectedContorno.id) {
-              break;
-            }
-          }
+        const validContorno = menuItem.contornos.find(
+          (c) => c.id === clientItem.selectedContorno!.id && c.isAvailable
+        );
+        if (validContorno) {
+          optionPriceUsdCents += validContorno.priceUsdCents;
         }
       }
 
@@ -171,6 +174,7 @@ export async function processCheckout(
                 priceUsdCents: opt.priceUsdCents,
                 priceBsCents: usdCentsToBsCents(opt.priceUsdCents, rate),
                 substitutesComponentId: ad.substitutesComponentId,
+                substitutesComponentName: ad.substitutesComponentName,
               });
               break;
             }

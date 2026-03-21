@@ -1,29 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2, Pencil, MoreHorizontal, Tags } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Plus, Trash2, Pencil, GripVertical, Tags } from "lucide-react";
 import {
   createCategory,
   updateCategory,
   deleteCategory,
+  getCategoryUsageCount,
+  reorderCategories,
+  toggleCategoryAvailability,
 } from "@/actions/categories";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 
 interface Category {
@@ -31,15 +19,15 @@ interface Category {
   name: string;
   sortOrder: number;
   allowAlone: boolean;
+  isAvailable: boolean;
 }
 
 interface CategoryFormData {
   name: string;
-  sortOrder: number;
   allowAlone: boolean;
 }
 
-function CategoryFormModal({
+function CategorySheet({
   open,
   onClose,
   onSubmit,
@@ -53,28 +41,47 @@ function CategoryFormModal({
   title: string;
 }) {
   const [name, setName] = useState(initialData?.name ?? "");
-  const [sortOrder, setSortOrder] = useState(initialData?.sortOrder ?? 0);
   const [allowAlone, setAllowAlone] = useState(initialData?.allowAlone ?? true);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ name?: string }>({});
+
+  useEffect(() => {
+    if (open) {
+      setName(initialData?.name ?? "");
+      setAllowAlone(initialData?.allowAlone ?? true);
+      setErrors({});
+    }
+  }, [open, initialData?.id]);
+
+  function validate(): boolean {
+    const newErrors: { name?: string } = {};
+    if (!name.trim()) {
+      newErrors.name = "Nombre requerido";
+    } else if (name.trim().length > 100) {
+      newErrors.name = "Máximo 100 caracteres";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
 
   if (!open) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!validate()) return;
     setLoading(true);
-    await onSubmit({ name: name.trim(), sortOrder, allowAlone });
+    await onSubmit({ name: name.trim(), allowAlone });
     setLoading(false);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-elevated ring-1 ring-border mx-4 animate-in fade-in-0 zoom-in-95">
+      <div className="relative w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-white p-6 shadow-elevated ring-1 ring-border sm:mx-4 animate-in">
         <h2 className="text-lg font-semibold text-text-main mb-5">{title}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -84,30 +91,23 @@ function CategoryFormModal({
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
+              }}
               placeholder="Ej: Hamburguesas"
               autoFocus
-              className="w-full rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-text-main placeholder:text-text-muted outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+              className={`w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-text-main placeholder:text-text-muted outline-none transition-all ${
+                errors.name
+                  ? "border-error focus:border-error focus:ring-2 focus:ring-error/20"
+                  : "border-border focus:border-primary focus:ring-2 focus:ring-primary/20"
+              }`}
             />
+            {errors.name && (
+              <p className="mt-1 text-xs text-error">{errors.name}</p>
+            )}
           </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-text-main">
-              Orden de aparición
-            </label>
-            <input
-              type="number"
-              value={sortOrder}
-              onChange={(e) => setSortOrder(parseInt(e.target.value) || 0)}
-              className="w-full rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-text-main outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-            />
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
-            <div>
-              <p className="text-sm font-medium text-text-main">Permite pedir solo</p>
-              <p className="text-xs text-text-muted">Si el cliente puede ordenar solo esta categoría</p>
-            </div>
-            <Switch checked={allowAlone} onCheckedChange={setAllowAlone} />
-          </div>
+
           <div className="flex gap-3 pt-2">
             <Button
               type="button"
@@ -136,23 +136,82 @@ export function CategoriesClient({
 }: {
   categories: Category[];
 }) {
+  const [items, setItems] = useState(categories);
   const [modalState, setModalState] = useState<{
     type: "create" | "edit" | null;
     category?: Category;
   }>({ type: null });
+  const [deleteDialog, setDeleteDialog] = useState<{
+    id: string;
+    name: string;
+    itemCount: number;
+  } | null>(null);
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
 
   const handleCreate = async (data: CategoryFormData) => {
-    await createCategory(data.name, data.sortOrder, data.allowAlone);
+    const result = await createCategory(data.name, data.allowAlone);
+    if (result.success) {
+      setItems((prev) => [...prev, result.category!].sort((a, b) => a.sortOrder - b.sortOrder));
+    }
   };
 
   const handleUpdate = async (data: CategoryFormData) => {
     if (!modalState.category) return;
-    await updateCategory(modalState.category.id, data.name, data.sortOrder, data.allowAlone);
+    const result = await updateCategory(modalState.category.id, data.name, data.allowAlone);
+    if (result.success) {
+      setItems((prev) =>
+        prev.map((c) =>
+          c.id === modalState.category!.id
+            ? { ...c, name: data.name, allowAlone: data.allowAlone }
+            : c,
+        ),
+      );
+    }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar esta categoría?")) return;
-    await deleteCategory(id);
+  const handleDeleteClick = async (id: string, name: string) => {
+    const itemCount = await getCategoryUsageCount(id);
+    setDeleteDialog({ id, name, itemCount });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteDialog || deleteDialog.itemCount > 0) return;
+    await deleteCategory(deleteDialog.id);
+    setItems((prev) => prev.filter((c) => c.id !== deleteDialog.id));
+    setDeleteDialog(null);
+  };
+
+  const handleToggle = async (id: string, isAvailable: boolean) => {
+    setItems((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, isAvailable } : c)),
+    );
+    await toggleCategoryAvailability(id, isAvailable);
+  };
+
+  // Drag and drop
+  const handleDragStart = (idx: number) => {
+    dragItem.current = idx;
+  };
+
+  const handleDragEnter = (idx: number) => {
+    dragOverItem.current = idx;
+  };
+
+  const handleDragEnd = async () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    if (dragItem.current === dragOverItem.current) return;
+
+    const newItems = [...items];
+    const draggedItem = newItems.splice(dragItem.current, 1)[0];
+    newItems.splice(dragOverItem.current, 0, draggedItem);
+    const reordered = newItems.map((item, i) => ({ ...item, sortOrder: i }));
+
+    setItems(reordered);
+    dragItem.current = null;
+    dragOverItem.current = null;
+
+    await reorderCategories(reordered.map((i) => i.id));
   };
 
   return (
@@ -161,7 +220,7 @@ export function CategoriesClient({
         <div>
           <h1 className="text-2xl font-bold text-text-main">Categorías</h1>
           <p className="text-sm text-text-muted">
-            {categories.length} categorías registradas
+            {items.length} categorías registradas
           </p>
         </div>
         <Button
@@ -175,7 +234,7 @@ export function CategoriesClient({
 
       <Card className="ring-1 ring-border">
         <CardContent className="p-0">
-          {categories.length === 0 ? (
+          {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/5">
                 <Tags className="h-7 w-7 text-primary/40" />
@@ -194,89 +253,125 @@ export function CategoriesClient({
               </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-bg-app/50">
-                  <TableHead className="font-semibold text-text-main pl-5">
-                    Nombre
-                  </TableHead>
-                  <TableHead className="font-semibold text-text-main">
-                    Orden
-                  </TableHead>
-                  <TableHead className="font-semibold text-text-main">
-                    Permite solo
-                  </TableHead>
-                  <TableHead className="font-semibold text-text-main text-right pr-5">
-                    Acciones
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.map((cat) => (
-                  <TableRow key={cat.id} className="border-border">
-                    <TableCell className="pl-5">
-                      <span className="font-medium text-text-main">{cat.name}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs font-mono">
-                        {cat.sortOrder}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          cat.allowAlone
-                            ? "bg-success/10 text-success border-transparent"
-                            : "bg-amber/10 text-amber border-transparent"
-                        }
-                      >
-                        {cat.allowAlone ? "Sí" : "No"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right pr-5">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() =>
-                            setModalState({ type: "edit", category: cat })
-                          }
-                          className="text-text-muted hover:text-primary"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => handleDelete(cat.id)}
-                          className="text-text-muted hover:text-error"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="divide-y divide-border">
+              {items.map((cat, idx) => (
+                <div
+                  key={cat.id}
+                  draggable
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragEnter={() => handleDragEnter(idx)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => e.preventDefault()}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-bg-app/50 transition-colors"
+                >
+                  <GripVertical className="h-4 w-4 text-text-muted shrink-0 cursor-grab" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-text-main truncate">
+                      {cat.name}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={cat.isAvailable}
+                    onCheckedChange={(val) => handleToggle(cat.id, val)}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setModalState({ type: "edit", category: cat })}
+                    className="text-text-muted hover:text-primary"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleDeleteClick(cat.id, cat.name)}
+                    className="text-text-muted hover:text-error"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
 
-      <CategoryFormModal
+      {/* Create/Edit Sheet */}
+      <CategorySheet
         open={modalState.type === "create"}
         onClose={() => setModalState({ type: null })}
         onSubmit={handleCreate}
         title="Nueva categoría"
       />
 
-      <CategoryFormModal
+      <CategorySheet
         open={modalState.type === "edit"}
         onClose={() => setModalState({ type: null })}
         onSubmit={handleUpdate}
         initialData={modalState.category}
         title="Editar categoría"
       />
+
+      {/* Delete confirmation dialog */}
+      {deleteDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={() => setDeleteDialog(null)}
+          />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated ring-1 ring-border mx-4">
+            <h3 className="text-lg font-semibold text-text-main mb-2">
+              {deleteDialog.itemCount > 0
+                ? "Categoría con platos"
+                : "Eliminar categoría"}
+            </h3>
+            <p className="text-sm text-text-muted mb-5">
+              {deleteDialog.itemCount > 0 ? (
+                <>
+                  &quot;{deleteDialog.name}&quot; tiene{" "}
+                  <strong>{deleteDialog.itemCount}</strong> plato
+                  {deleteDialog.itemCount !== 1 ? "s" : ""} asignado
+                  {deleteDialog.itemCount !== 1 ? "s" : ""}. Debes reasignarlos
+                  antes de eliminar.
+                </>
+              ) : (
+                <>
+                  ¿Eliminar &quot;{deleteDialog.name}&quot;? Esta acción no se
+                  puede deshacer.
+                </>
+              )}
+            </p>
+            <div className="flex gap-3">
+              {deleteDialog.itemCount > 0 ? (
+                <Button
+                  onClick={() => setDeleteDialog(null)}
+                  className="flex-1"
+                >
+                  Entendido
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setDeleteDialog(null)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleConfirmDelete}
+                    className="flex-1"
+                  >
+                    Eliminar
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,21 +1,26 @@
 import { Suspense } from "react";
 import { getMenuWithOptionsAndComponents, getCategories } from "@/db/queries/menu";
-import { getActiveRate } from "@/db/queries/settings";
+import { getAllContornos } from "@/db/queries/contornos";
+import { getActiveRate, getSettings } from "@/db/queries/settings";
 import { HeaderCartButton } from "./HeaderCartButton";
 import { MenuGridSkeleton } from "@/components/client/MenuGridSkeleton";
 import { MenuClient } from "./MenuClient";
 import { Cart } from "@/components/public/cart/Cart";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export default async function MenuPage() {
-  const [items, categories, rateData] = await Promise.all([
+  const [items, categories, rateData, allContornos, appSettings] = await Promise.all([
     getMenuWithOptionsAndComponents(),
     getCategories(),
     getActiveRate(),
+    getAllContornos(),
+    getSettings(),
   ]);
 
   const rate = rateData?.rate ?? null;
+  const showRate = rateData && appSettings?.showRateInMenu !== false;
+  const availableCategories = categories.filter((c) => c.isAvailable);
 
   return (
     <div className="min-h-screen bg-bg-app">
@@ -24,7 +29,7 @@ export default async function MenuPage() {
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="font-display text-2xl font-bold text-primary">G&M</h1>
           <div className="flex items-center gap-2">
-            {rateData && (
+            {showRate && (
               <RatePill rate={rateData.rate} fetchedAt={rateData.fetchedAt} />
             )}
             <HeaderCartButton />
@@ -34,7 +39,7 @@ export default async function MenuPage() {
 
       {/* Categories + Menu */}
       <Suspense fallback={<MenuGridSkeleton />}>
-        <MenuClient items={items} categories={categories} rate={rate} />
+        <MenuClient items={items} categories={availableCategories} rate={rate} allContornos={allContornos} />
       </Suspense>
 
       {/* Cart bottom bar + drawer */}

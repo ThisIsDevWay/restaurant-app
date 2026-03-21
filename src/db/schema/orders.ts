@@ -21,13 +21,14 @@ export const orders = pgTable("orders", {
       name: string;
       priceUsdCents: number;
       priceBsCents: number;
-      selectedContorno: { id: string; name: string } | null;
+      selectedContorno: { id: string; name: string; priceUsdCents: number; priceBsCents: number } | null;
       selectedAdicionales: Array<{
         id: string;
         name: string;
         priceUsdCents: number;
         priceBsCents: number;
         substitutesComponentId?: string;
+        substitutesComponentName?: string;
       }>;
       removedComponents: Array<{
         isRemoval: true;

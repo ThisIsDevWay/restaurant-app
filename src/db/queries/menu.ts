@@ -1,6 +1,6 @@
 import { db } from "../index";
-import { menuItems, optionGroups, options, categories, dishComponents } from "../schema";
-import { eq, and } from "drizzle-orm";
+import { menuItems, optionGroups, options, categories, adicionales, menuItemAdicionales, contornos, menuItemContornos } from "../schema";
+import { eq } from "drizzle-orm";
 
 export async function getMenuWithOptions() {
   const items = await db
@@ -109,6 +109,7 @@ export async function getMenuWithOptionsAndComponents() {
     })
     .from(menuItems)
     .innerJoin(categories, eq(menuItems.categoryId, categories.id))
+    .where(eq(categories.isAvailable, true))
     .orderBy(categories.sortOrder, menuItems.sortOrder);
 
   const groupRows = await db
@@ -129,10 +130,35 @@ export async function getMenuWithOptionsAndComponents() {
     .innerJoin(options, eq(optionGroups.id, options.groupId))
     .orderBy(optionGroups.sortOrder, options.sortOrder);
 
-  const componentRows = await db
-    .select()
-    .from(dishComponents)
-    .orderBy(dishComponents.sortOrder);
+  // Fetch adicionales assignments
+  const adicionalRows = await db
+    .select({
+      menuItemId: menuItemAdicionales.menuItemId,
+      id: adicionales.id,
+      name: adicionales.name,
+      priceUsdCents: adicionales.priceUsdCents,
+      isAvailable: adicionales.isAvailable,
+      sortOrder: adicionales.sortOrder,
+    })
+    .from(menuItemAdicionales)
+    .innerJoin(adicionales, eq(menuItemAdicionales.adicionalId, adicionales.id))
+    .orderBy(adicionales.sortOrder);
+
+  // Fetch contornos assignments
+  const contornoRows = await db
+    .select({
+      menuItemId: menuItemContornos.menuItemId,
+      id: contornos.id,
+      name: contornos.name,
+      priceUsdCents: contornos.priceUsdCents,
+      isAvailable: contornos.isAvailable,
+      sortOrder: contornos.sortOrder,
+      removable: menuItemContornos.removable,
+      substituteContornoIds: menuItemContornos.substituteContornoIds,
+    })
+    .from(menuItemContornos)
+    .innerJoin(contornos, eq(menuItemContornos.contornoId, contornos.id))
+    .orderBy(contornos.sortOrder);
 
   const optionsByItem = new Map<string, Array<{
     id: string;
@@ -180,20 +206,31 @@ export async function getMenuWithOptionsAndComponents() {
     });
   }
 
-  const componentsByItem = new Map<string, typeof componentRows>();
-  for (const comp of componentRows) {
-    let list = componentsByItem.get(comp.menuItemId);
+  const adicionalesByItem = new Map<string, typeof adicionalRows>();
+  for (const row of adicionalRows) {
+    let list = adicionalesByItem.get(row.menuItemId);
     if (!list) {
       list = [];
-      componentsByItem.set(comp.menuItemId, list);
+      adicionalesByItem.set(row.menuItemId, list);
     }
-    list.push(comp);
+    list.push(row);
+  }
+
+  const contornosByItem = new Map<string, typeof contornoRows>();
+  for (const row of contornoRows) {
+    let list = contornosByItem.get(row.menuItemId);
+    if (!list) {
+      list = [];
+      contornosByItem.set(row.menuItemId, list);
+    }
+    list.push(row);
   }
 
   return items.map((item) => ({
     ...item,
     optionGroups: optionsByItem.get(item.id) ?? [],
-    dishComponents: componentsByItem.get(item.id) ?? [],
+    adicionales: adicionalesByItem.get(item.id) ?? [],
+    contornos: contornosByItem.get(item.id) ?? [],
   }));
 }
 
@@ -240,7 +277,22 @@ export async function getMenuItemWithOptions(id: string) {
     }),
   );
 
-  return { ...item, optionGroups: groupsWithOptions };
+  // Fetch contornos assigned to this menu item
+  const itemContornos = await db
+    .select({
+      id: contornos.id,
+      name: contornos.name,
+      priceUsdCents: contornos.priceUsdCents,
+      isAvailable: contornos.isAvailable,
+      removable: menuItemContornos.removable,
+      substituteContornoIds: menuItemContornos.substituteContornoIds,
+    })
+    .from(menuItemContornos)
+    .innerJoin(contornos, eq(menuItemContornos.contornoId, contornos.id))
+    .where(eq(menuItemContornos.menuItemId, id))
+    .orderBy(contornos.sortOrder);
+
+  return { ...item, optionGroups: groupsWithOptions, contornos: itemContornos };
 }
 
 export async function getMenuItemWithOptionsAndComponents(id: string) {
@@ -269,13 +321,42 @@ export async function getMenuItemWithOptionsAndComponents(id: string) {
     }),
   );
 
-  const components = await db
-    .select()
-    .from(dishComponents)
-    .where(eq(dishComponents.menuItemId, id))
-    .orderBy(dishComponents.sortOrder);
+  // Fetch adicionales assigned to this menu item
+  const itemAdicionales = await db
+    .select({
+      id: adicionales.id,
+      name: adicionales.name,
+      priceUsdCents: adicionales.priceUsdCents,
+      isAvailable: adicionales.isAvailable,
+      sortOrder: adicionales.sortOrder,
+    })
+    .from(menuItemAdicionales)
+    .innerJoin(adicionales, eq(menuItemAdicionales.adicionalId, adicionales.id))
+    .where(eq(menuItemAdicionales.menuItemId, id))
+    .orderBy(adicionales.sortOrder);
 
-  return { ...item, optionGroups: groupsWithOptions, dishComponents: components };
+  // Fetch contornos assigned to this menu item
+  const itemContornos = await db
+    .select({
+      id: contornos.id,
+      name: contornos.name,
+      priceUsdCents: contornos.priceUsdCents,
+      isAvailable: contornos.isAvailable,
+      sortOrder: contornos.sortOrder,
+      removable: menuItemContornos.removable,
+      substituteContornoIds: menuItemContornos.substituteContornoIds,
+    })
+    .from(menuItemContornos)
+    .innerJoin(contornos, eq(menuItemContornos.contornoId, contornos.id))
+    .where(eq(menuItemContornos.menuItemId, id))
+    .orderBy(contornos.sortOrder);
+
+  return {
+    ...item,
+    optionGroups: groupsWithOptions,
+    adicionales: itemAdicionales,
+    contornos: itemContornos,
+  };
 }
 
 export async function getCategories() {
@@ -285,6 +366,7 @@ export async function getCategories() {
       name: categories.name,
       sortOrder: categories.sortOrder,
       allowAlone: categories.allowAlone,
+      isAvailable: categories.isAvailable,
     })
     .from(categories)
     .orderBy(categories.sortOrder);

@@ -17,6 +17,7 @@ interface KitchenOrder {
       id: string;
       name: string;
       substitutesComponentId?: string;
+      substitutesComponentName?: string;
     }>;
     removedComponents: Array<{
       isRemoval: true;
@@ -244,7 +245,7 @@ export function KitchenQueue() {
                           {item.selectedAdicionales?.filter(a => a.substitutesComponentId).map((ad, adIdx) => (
                             <div key={`sub-${adIdx}`} className="ml-8 mt-1">
                               <span className="inline-flex items-center rounded-lg bg-amber/10 px-2 py-1 text-sm font-bold text-amber border border-amber/20">
-                                ↺ {ad.name}
+                                ↺ {ad.substitutesComponentName ? `${ad.substitutesComponentName} → ${ad.name}` : ad.name}
                               </span>
                             </div>
                           ))}
@@ -344,7 +345,7 @@ export function KitchenQueue() {
                           {item.selectedAdicionales?.filter(a => a.substitutesComponentId).map((ad, adIdx) => (
                             <div key={`sub-${adIdx}`} className="ml-8 mt-1">
                               <span className="inline-flex items-center rounded-lg bg-amber/10 px-2 py-1 text-sm font-bold text-amber border border-amber/20">
-                                ↺ {ad.name}
+                                ↺ {ad.substitutesComponentName ? `${ad.substitutesComponentName} → ${ad.name}` : ad.name}
                               </span>
                             </div>
                           ))}

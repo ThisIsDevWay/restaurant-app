@@ -14,13 +14,14 @@ export interface CartItem {
   emoji: string;
   baseUsdCents: number;
   baseBsCents: number;
-  selectedContorno: { id: string; name: string } | null;
+  selectedContorno: { id: string; name: string; priceUsdCents: number; priceBsCents: number } | null;
   selectedAdicionales: Array<{
     id: string;
     name: string;
     priceUsdCents: number;
     priceBsCents: number;
     substitutesComponentId?: string;
+    substitutesComponentName?: string;
   }>;
   removedComponents: RemovedComponent[];
   quantity: number;
@@ -51,6 +52,7 @@ function computeItemTotal(
   item: Omit<CartItem, "quantity" | "itemTotalBsCents">,
   quantity: number,
 ): number {
+  const contornoBs = item.selectedContorno?.priceBsCents ?? 0;
   const adicionalesBs = (item.selectedAdicionales ?? []).reduce(
     (sum, a) => sum + a.priceBsCents,
     0,
@@ -59,12 +61,13 @@ function computeItemTotal(
     (sum, r) => sum + Math.round(r.priceUsdCents * (item.baseBsCents / Math.max(item.baseUsdCents, 1))),
     0,
   );
-  return (item.baseBsCents + adicionalesBs + removalsBs) * quantity;
+  return (item.baseBsCents + contornoBs + adicionalesBs + removalsBs) * quantity;
 }
 
 function computeItemUsdCents(
   item: Omit<CartItem, "quantity" | "itemTotalBsCents">,
 ): number {
+  const contornoUsd = item.selectedContorno?.priceUsdCents ?? 0;
   const adicionalesUsd = (item.selectedAdicionales ?? []).reduce(
     (sum, a) => sum + a.priceUsdCents,
     0,
@@ -73,7 +76,7 @@ function computeItemUsdCents(
     (sum, r) => sum + r.priceUsdCents,
     0,
   );
-  return item.baseUsdCents + adicionalesUsd + removalsUsd;
+  return item.baseUsdCents + contornoUsd + adicionalesUsd + removalsUsd;
 }
 
 export const useCartStore = create<CartState>()(

@@ -1,11 +1,15 @@
 import { getCategories } from "@/db/queries/menu";
+import { getAllAdicionales } from "@/db/queries/adicionales";
+import { getAllContornos } from "@/db/queries/contornos";
 import { getActiveRate } from "@/db/queries/settings";
 import { MenuItemForm } from "@/components/admin/menu/MenuItemForm";
 
 export default async function NewMenuItemPage() {
-  const [categories, rateResult] = await Promise.all([
+  const [categories, rateResult, allAdicionales, allContornos] = await Promise.all([
     getCategories(),
     getActiveRate(),
+    getAllAdicionales(),
+    getAllContornos(),
   ]);
 
   return (
@@ -14,6 +18,8 @@ export default async function NewMenuItemPage() {
       <MenuItemForm
         categories={categories}
         exchangeRate={rateResult?.rate ?? 0}
+        allAdicionales={allAdicionales}
+        allContornos={allContornos}
       />
     </div>
   );

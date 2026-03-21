@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
-import { getMenuItemById, getCategories, getMenuItemWithOptionsAndComponents } from "@/db/queries/menu";
+import { getMenuItemById, getCategories } from "@/db/queries/menu";
+import { getAllAdicionales, getAdicionalesByMenuItemId } from "@/db/queries/adicionales";
+import { getAllContornos, getContornosByMenuItemId } from "@/db/queries/contornos";
 import { getActiveRate } from "@/db/queries/settings";
 import { MenuItemForm } from "@/components/admin/menu/MenuItemForm";
 
@@ -9,18 +11,20 @@ export default async function EditMenuItemPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [item, categories, rateResult] = await Promise.all([
+  const [item, categories, rateResult, allAdicionales, allContornos] = await Promise.all([
     getMenuItemById(id),
     getCategories(),
     getActiveRate(),
+    getAllAdicionales(),
+    getAllContornos(),
   ]);
 
   if (!item) {
     notFound();
   }
 
-  // Fetch components separately for the form
-  const itemWithComponents = await getMenuItemWithOptionsAndComponents(id);
+  const itemAdicionales = await getAdicionalesByMenuItemId(id);
+  const itemContornos = await getContornosByMenuItemId(id);
 
   return (
     <div>
@@ -28,8 +32,16 @@ export default async function EditMenuItemPage({
       <MenuItemForm
         categories={categories}
         initialData={item}
-        initialComponents={itemWithComponents?.dishComponents ?? []}
         exchangeRate={rateResult?.rate ?? 0}
+        allAdicionales={allAdicionales}
+        initialSelectedAdicionalIds={itemAdicionales.map((a) => a.id)}
+        allContornos={allContornos}
+        initialSelectedContornos={itemContornos.map((c) => ({
+          id: c.id,
+          name: c.name,
+          removable: c.removable,
+          substituteContornoIds: c.substituteContornoIds,
+        }))}
       />
     </div>
   );

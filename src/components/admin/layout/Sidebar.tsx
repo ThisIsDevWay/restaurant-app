@@ -12,6 +12,8 @@ import {
   LogOut,
   X,
   ShoppingBag,
+  PlusCircle,
+  List,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +21,8 @@ const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/orders", label: "Órdenes", icon: ShoppingBag },
   { href: "/admin/menu", label: "Menú", icon: UtensilsCrossed },
+  { href: "/admin/contornos", label: "Contornos", icon: List },
+  { href: "/admin/adicionales", label: "Adicionales", icon: PlusCircle },
   { href: "/admin/categories", label: "Categorías", icon: Tags },
   { href: "/admin/settings", label: "Configuración", icon: Settings },
   { href: "/kitchen", label: "Cocina", icon: ChefHat },

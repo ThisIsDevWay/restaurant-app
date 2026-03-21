@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { createMenuItem, updateMenuItem, generateUploadUrl, getPublicUrl, saveDishComponents } from "@/actions/menu";
-import { Image as ImageIcon, Upload } from "lucide-react";
-import { DishComponentsEditor, type DishComponent } from "@/components/admin/menu/DishComponentsEditor";
+import { createMenuItem, updateMenuItem, generateUploadUrl, getPublicUrl } from "@/actions/menu";
+import { saveMenuItemAdicionales } from "@/actions/adicionales";
+import { saveMenuItemContornos } from "@/actions/contornos";
+import { Image as ImageIcon, Upload, ExternalLink } from "lucide-react";
+import { formatBs, formatRef } from "@/lib/money";
 
 const formSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, "Nombre requerido"), v.maxLength(100, "Máximo 100 caracteres")),
@@ -50,14 +52,46 @@ interface MenuItemData {
   sortOrder: number;
 }
 
+interface AdicionalOption {
+  id: string;
+  name: string;
+  priceUsdCents: number;
+  isAvailable: boolean;
+}
+
+interface ContornoOption {
+  id: string;
+  name: string;
+  priceUsdCents: number;
+  isAvailable: boolean;
+}
+
+interface SelectedContorno {
+  id: string;
+  name: string;
+  removable: boolean;
+  substituteContornoIds: string[];
+}
+
 interface MenuItemFormProps {
   categories: Category[];
   initialData?: MenuItemData;
-  initialComponents?: DishComponent[];
   exchangeRate?: number;
+  allAdicionales?: AdicionalOption[];
+  initialSelectedAdicionalIds?: string[];
+  allContornos?: ContornoOption[];
+  initialSelectedContornos?: SelectedContorno[];
 }
 
-export function MenuItemForm({ categories, initialData, initialComponents = [], exchangeRate = 0 }: MenuItemFormProps) {
+export function MenuItemForm({
+  categories,
+  initialData,
+  exchangeRate = 0,
+  allAdicionales = [],
+  initialSelectedAdicionalIds = [],
+  allContornos = [],
+  initialSelectedContornos = [],
+}: MenuItemFormProps) {
   const isEdit = !!initialData;
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +101,12 @@ export function MenuItemForm({ categories, initialData, initialComponents = [], 
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dishComponents, setDishComponents] = useState<DishComponent[]>(initialComponents);
+  const [selectedAdicionalIds, setSelectedAdicionalIds] = useState<string[]>(
+    initialSelectedAdicionalIds,
+  );
+  const [selectedContornos, setSelectedContornos] = useState<SelectedContorno[]>(
+    initialSelectedContornos,
+  );
 
   const {
     register,
@@ -91,6 +130,35 @@ export function MenuItemForm({ categories, initialData, initialComponents = [], 
   });
 
   const isAvailable = watch("isAvailable");
+
+  function toggleContorno(contorno: ContornoOption) {
+    setSelectedContornos((prev) => {
+      const existing = prev.find((c) => c.id === contorno.id);
+      if (existing) {
+        return prev.filter((c) => c.id !== contorno.id);
+      }
+      return [...prev, { id: contorno.id, name: contorno.name, removable: false, substituteContornoIds: [] }];
+    });
+  }
+
+  function toggleContornoRemovable(id: string) {
+    setSelectedContornos((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, removable: !c.removable } : c)),
+    );
+  }
+
+  function toggleSubstituteContorno(contornoId: string, substituteId: string) {
+    setSelectedContornos((prev) =>
+      prev.map((c) => {
+        if (c.id !== contornoId) return c;
+        const current = c.substituteContornoIds;
+        const next = current.includes(substituteId)
+          ? current.filter((id) => id !== substituteId)
+          : [...current, substituteId];
+        return { ...c, substituteContornoIds: next };
+      }),
+    );
+  }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -160,20 +228,20 @@ export function MenuItemForm({ categories, initialData, initialComponents = [], 
 
       if (result.success) {
         const itemId = isEdit ? initialData.id : result.item?.id;
-        if (itemId && dishComponents.length > 0) {
-          await saveDishComponents(
+        // Save adicionales assignment
+        if (itemId) {
+          await saveMenuItemAdicionales(itemId, selectedAdicionalIds);
+        }
+        // Save contornos assignment
+        if (itemId) {
+          await saveMenuItemContornos(
             itemId,
-            dishComponents.map((c) => ({
-              name: c.name,
-              type: c.type,
+            selectedContornos.map((c) => ({
+              contornoId: c.id,
               removable: c.removable,
-              priceIfRemovedCents: c.priceIfRemovedCents,
-              allowPaidSubstitution: c.allowPaidSubstitution,
-              sortOrder: c.sortOrder,
+              substituteContornoIds: c.substituteContornoIds,
             })),
           );
-        } else if (itemId && dishComponents.length === 0 && isEdit) {
-          await saveDishComponents(itemId, []);
         }
         router.push("/admin/menu");
       } else {
@@ -278,17 +346,239 @@ export function MenuItemForm({ categories, initialData, initialComponents = [], 
                   placeholder="0"
                   className="w-32"
                 />
+                {errors.sortOrder && (
+                  <p className="mt-1 text-xs text-error">{errors.sortOrder.message}</p>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Dish Components */}
-          <DishComponentsEditor
-            menuItemId={initialData?.id ?? ""}
-            initialComponents={dishComponents}
-            exchangeRate={exchangeRate}
-            onChange={setDishComponents}
-          />
+          {/* Contornos Selection */}
+          {allContornos.length > 0 && (
+            <Card className="ring-1 ring-border">
+              <CardHeader className="border-b border-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Contornos</CardTitle>
+                    <p className="text-xs text-text-muted mt-0.5">
+                      Selecciona cuáles aplican y si el cliente puede quitarlos
+                    </p>
+                  </div>
+                  <a
+                    href="/admin/contornos"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    Gestionar contornos
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="space-y-2">
+                  {allContornos.map((contorno) => {
+                    const selected = selectedContornos.find((c) => c.id === contorno.id);
+                    const isSelected = !!selected;
+                    const priceBs = Math.round(contorno.priceUsdCents * exchangeRate);
+                    return (
+                      <div
+                        key={contorno.id}
+                        className="rounded-xl border border-border bg-bg-app/30 p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => toggleContorno(contorno)}
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${
+                              isSelected
+                                ? "border-primary bg-primary"
+                                : "border-border bg-white"
+                            }`}
+                          >
+                            {isSelected && (
+                              <svg
+                                className="h-3 w-3 text-white"
+                                viewBox="0 0 12 12"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M2 6l3 3 5-5" />
+                              </svg>
+                            )}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium text-text-main">
+                              {contorno.name}
+                            </span>
+                            {!contorno.isAvailable && (
+                              <span className="ml-2 text-xs text-error">
+                                No disponible
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-text-muted">
+                            {formatRef(contorno.priceUsdCents)}
+                            {contorno.priceUsdCents > 0 && (
+                              <span className="ml-1">≈ {formatBs(priceBs)}</span>
+                            )}
+                          </span>
+                        </div>
+                        {isSelected && (
+                          <div className="mt-2 space-y-2 border-t border-border pt-2">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs text-text-main">
+                                El cliente puede quitarlo
+                              </label>
+                              <Switch
+                                checked={selected.removable}
+                                onCheckedChange={() => toggleContornoRemovable(contorno.id)}
+                              />
+                            </div>
+                            {selected.removable && (
+                              <div className="space-y-1">
+                                <p className="text-[11px] text-text-muted">
+                                  Sustituir por
+                                </p>
+                                {allContornos
+                                  .filter((c) => c.id !== contorno.id)
+                                  .map((sub) => {
+                                    const isChecked = selected.substituteContornoIds.includes(sub.id);
+                                    return (
+                                      <button
+                                        key={sub.id}
+                                        type="button"
+                                        onClick={() => toggleSubstituteContorno(contorno.id, sub.id)}
+                                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-bg-app/50"
+                                      >
+                                        <div
+                                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border-2 transition-colors ${
+                                            isChecked
+                                              ? "border-primary bg-primary"
+                                              : "border-border bg-white"
+                                          }`}
+                                        >
+                                          {isChecked && (
+                                            <svg
+                                              className="h-2.5 w-2.5 text-white"
+                                              viewBox="0 0 12 12"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              strokeWidth="2"
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                            >
+                                              <path d="M2 6l3 3 5-5" />
+                                            </svg>
+                                          )}
+                                        </div>
+                                        <span className="text-xs text-text-main">
+                                          {sub.name}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Adicionales Selection */}
+          {allAdicionales.length > 0 && (
+            <Card className="ring-1 ring-border">
+              <CardHeader className="border-b border-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Adicionales disponibles</CardTitle>
+                    <p className="text-xs text-text-muted mt-0.5">
+                      Selecciona cuáles aplican a este plato
+                    </p>
+                  </div>
+                  <a
+                    href="/admin/adicionales"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    Gestionar adicionales
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="space-y-1">
+                  {allAdicionales.map((adicional) => {
+                    const isChecked = selectedAdicionalIds.includes(adicional.id);
+                    const priceBs = Math.round(adicional.priceUsdCents * exchangeRate);
+                    return (
+                      <button
+                        key={adicional.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedAdicionalIds((prev) =>
+                            prev.includes(adicional.id)
+                              ? prev.filter((id) => id !== adicional.id)
+                              : [...prev, adicional.id],
+                          );
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-bg-app/50"
+                      >
+                        <div
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${
+                            isChecked
+                              ? "border-primary bg-primary"
+                              : "border-border bg-white"
+                          }`}
+                        >
+                          {isChecked && (
+                            <svg
+                              className="h-3 w-3 text-white"
+                              viewBox="0 0 12 12"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M2 6l3 3 5-5" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm text-text-main">
+                            {adicional.name}
+                          </span>
+                          {!adicional.isAvailable && (
+                            <span className="ml-2 text-xs text-error">
+                              No disponible
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-text-muted">
+                          {formatRef(adicional.priceUsdCents)}
+                          {adicional.priceUsdCents > 0 && (
+                            <span className="ml-1">
+                              ≈ {formatBs(priceBs)}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
         {/* Right Column - Media & Status (2/5) */}
         <div className="lg:col-span-2 space-y-6">

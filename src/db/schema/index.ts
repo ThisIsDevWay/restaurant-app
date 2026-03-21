@@ -5,4 +5,5 @@ export { exchangeRates } from "./exchangeRates";
 export { settings } from "./settings";
 export { orders } from "./orders";
 export { paymentsLog } from "./payments-log";
-export { dishComponents } from "./dish-components";
+export { adicionales, menuItemAdicionales } from "./adicionales";
+export { contornos, menuItemContornos } from "./contornos";

@@ -5,6 +5,7 @@ import {
   timestamp,
   uuid,
   numeric,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { exchangeRates } from "./exchangeRates";
 
@@ -23,6 +24,8 @@ export const settings = pgTable("settings", {
     precision: 18,
     scale: 8,
   }),
+  rateCurrency: text("rate_currency").notNull().default("usd"),
+  showRateInMenu: boolean("show_rate_in_menu").notNull().default(true),
   activePaymentProvider: text("active_payment_provider")
     .notNull()
     .default("banesco_reference"),

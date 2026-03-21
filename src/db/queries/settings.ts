@@ -2,35 +2,27 @@ import { db } from "../index";
 import { settings, exchangeRates } from "../schema";
 import { eq } from "drizzle-orm";
 
-let cachedSettings: typeof settings.$inferSelect | null = null;
-let cacheTimestamp = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
 export async function getSettings() {
-  const now = Date.now();
-  if (cachedSettings && now - cacheTimestamp < CACHE_TTL_MS) {
-    return cachedSettings;
-  }
-
-  const [row] = await db.select().from(settings).limit(1);
-  if (row) {
-    cachedSettings = row;
-    cacheTimestamp = now;
-  }
-  return row;
+  const [row] = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.id, 1))
+    .limit(1);
+  return row ?? null;
 }
 
 export function invalidateSettingsCache() {
-  cachedSettings = null;
-  cacheTimestamp = 0;
+  // No-op to preserve expected exports just in case it is imported elsewhere
 }
 
-export async function getActiveRate(): Promise<{ rate: number; fetchedAt: string } | null> {
+export async function getActiveRate(): Promise<{ rate: number; fetchedAt: string; currency: string } | null> {
   const s = await getSettings();
   if (!s) return null;
 
+  const currency = s.rateCurrency ?? "usd";
+
   if (s.rateOverrideBsPerUsd) {
-    return { rate: parseFloat(s.rateOverrideBsPerUsd), fetchedAt: s.updatedAt.toISOString() };
+    return { rate: parseFloat(s.rateOverrideBsPerUsd), fetchedAt: s.updatedAt.toISOString(), currency };
   }
 
   if (!s.currentRateId) return null;
@@ -41,7 +33,7 @@ export async function getActiveRate(): Promise<{ rate: number; fetchedAt: string
     .where(eq(exchangeRates.id, s.currentRateId))
     .limit(1);
 
-  return rate ? { rate: parseFloat(rate.rateBsPerUsd), fetchedAt: rate.fetchedAt.toISOString() } : null;
+  return rate ? { rate: parseFloat(rate.rateBsPerUsd), fetchedAt: rate.fetchedAt.toISOString(), currency } : null;
 }
 
 export async function updateSettings(data: Partial<typeof settings.$inferInsert>) {
