@@ -176,6 +176,12 @@ export default function CheckoutPage() {
           onClick={() => {
             if (state.type === "form") {
               router.back();
+            } else if (state.type === "success") {
+              router.push("/");
+            } else {
+              // Go back to form from payment screens
+              setState({ type: "form" });
+              setError(null);
             }
           }}
           className="text-text-main"
