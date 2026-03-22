@@ -187,7 +187,7 @@ export default async function AdminDashboard() {
                       #{order.id.slice(-4).toUpperCase()}
                     </span>
                     <span className="text-sm text-text-muted truncate">
-                      {order.customerPhone.slice(-4)}
+                      {order.customerPhone}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">

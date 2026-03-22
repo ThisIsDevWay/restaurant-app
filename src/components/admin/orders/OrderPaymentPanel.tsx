@@ -42,7 +42,7 @@ export function OrderPaymentPanel({
             <div className="flex items-center justify-between">
               <dt className="text-xs text-text-muted">Teléfono</dt>
               <dd className="text-sm font-mono font-medium text-text-main">
-                {maskPhone(order.customerPhone)}
+                {order.customerPhone}
               </dd>
             </div>
           </dl>
@@ -74,7 +74,7 @@ export function OrderPaymentPanel({
               <div className="flex items-center justify-between">
                 <dt className="text-xs text-text-muted">Emisor</dt>
                 <dd className="text-sm font-mono text-text-main">
-                  {maskPhone(latestLog.senderPhone)}
+                  {latestLog.senderPhone}
                 </dd>
               </div>
             )}

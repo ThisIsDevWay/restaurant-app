@@ -84,7 +84,7 @@ export function OrderTable({ orders }: { orders: OrderListItem[] }) {
             </TableCell>
             <TableCell>
               <span className="font-mono text-xs text-text-main">
-                {maskPhone(order.customerPhone)}
+                {order.customerPhone}
               </span>
             </TableCell>
             <TableCell>

@@ -269,7 +269,7 @@ export function KitchenQueue() {
                     {/* Footer */}
                     <div className="border-t border-border px-4 py-3">
                       <p className="mb-2 text-xs text-text-muted">
-                        {obfuscatePhone(order.customerPhone)}
+                        {order.customerPhone}
                       </p>
                       <button
                         onClick={() => handleTakeOrder(order.id)}
@@ -368,7 +368,7 @@ export function KitchenQueue() {
                     {/* Footer */}
                     <div className="border-t border-border px-4 py-3">
                       <p className="mb-2 text-xs text-text-muted">
-                        {obfuscatePhone(order.customerPhone)}
+                        {order.customerPhone}
                       </p>
                       <button
                         onClick={() => handleDeliver(order.id)}
