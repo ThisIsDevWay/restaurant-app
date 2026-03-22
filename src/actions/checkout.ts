@@ -13,17 +13,17 @@ import * as v from "valibot";
 
 export type CheckoutResult =
   | {
-      success: true;
-      orderId: string;
-      expiresAt: string;
-      initResult: PaymentInitResult;
-    }
+    success: true;
+    orderId: string;
+    expiresAt: string;
+    initResult: PaymentInitResult;
+  }
   | { success: false; error: string; field?: string };
 
 export type CheckoutItem = {
   id: string;
   quantity: number;
-  selectedContorno: { id: string; name: string; priceUsdCents: number; priceBsCents: number } | null;
+  fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
   selectedAdicionales: Array<{
     id: string;
     name: string;
@@ -103,7 +103,7 @@ export async function processCheckout(
       name: string;
       priceUsdCents: number;
       priceBsCents: number;
-      selectedContorno: { id: string; name: string; priceUsdCents: number; priceBsCents: number } | null;
+      fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
       selectedAdicionales: Array<{
         id: string;
         name: string;
@@ -138,6 +138,12 @@ export async function processCheckout(
       }
 
       let optionPriceUsdCents = 0;
+      const fixedContornos: Array<{
+        id: string;
+        name: string;
+        priceUsdCents: number;
+        priceBsCents: number;
+      }> = [];
       const selectedAdicionales: Array<{
         id: string;
         name: string;
@@ -153,13 +159,19 @@ export async function processCheckout(
         removalAdjustmentUsdCents += removal.priceUsdCents; // negative = discount
       }
 
-      // Validate and add contorno price
-      if (clientItem.selectedContorno) {
+      // Validate and add fixed contornos prices
+      for (const fc of clientItem.fixedContornos) {
         const validContorno = menuItem.contornos.find(
-          (c) => c.id === clientItem.selectedContorno!.id && c.isAvailable
+          (c) => c.id === fc.id && c.isAvailable
         );
         if (validContorno) {
           optionPriceUsdCents += validContorno.priceUsdCents;
+          fixedContornos.push({
+            id: validContorno.id,
+            name: validContorno.name,
+            priceUsdCents: validContorno.priceUsdCents,
+            priceBsCents: usdCentsToBsCents(validContorno.priceUsdCents, rate),
+          });
         }
       }
 
@@ -199,7 +211,7 @@ export async function processCheckout(
         name: menuItem.name,
         priceUsdCents: menuItem.priceUsdCents,
         priceBsCents: itemBaseBsCents,
-        selectedContorno: clientItem.selectedContorno,
+        fixedContornos,
         selectedAdicionales,
         removedComponents: clientItem.removedComponents,
         quantity: clientItem.quantity,

@@ -15,7 +15,7 @@ type ItemsSnapshot = Array<{
   name: string;
   priceUsdCents: number;
   priceBsCents: number;
-  selectedContorno: { id: string; name: string } | null;
+  fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
   selectedAdicionales: Array<{
     id: string;
     name: string;
@@ -39,7 +39,7 @@ export function OrderItemsTable({
 }) {
   const hasModifiers = items.some(
     (item) =>
-      item.selectedContorno || item.selectedAdicionales.length > 0,
+      item.fixedContornos.length > 0 || item.selectedAdicionales.length > 0,
   );
 
   return (
@@ -75,15 +75,13 @@ export function OrderItemsTable({
 
                     {hasModifiers && (
                       <div className="mt-2 space-y-1">
-                        {item.selectedContorno && (
-                          <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                        {item.fixedContornos.map((c, cIdx) => (
+                          <div key={cIdx} className="flex items-center gap-1.5 text-xs text-text-muted">
                             <span className="inline-block h-1 w-1 rounded-full bg-text-muted" />
-                            <span>{item.selectedContorno.name}</span>
-                            <span className="text-text-muted ml-auto">
-                              —
-                            </span>
+                            <span>{c.name}</span>
+                            <span className="text-text-muted ml-auto">—</span>
                           </div>
-                        )}
+                        ))}
                         {item.selectedAdicionales.map((ad, adIdx) => (
                           <div
                             key={adIdx}
@@ -98,17 +96,17 @@ export function OrderItemsTable({
                             </span>
                           </div>
                         ))}
-                        {(item.selectedContorno ||
+                        {(item.fixedContornos.length > 0 ||
                           item.selectedAdicionales.length > 0) && (
-                          <div className="flex items-center gap-1.5 pt-1 border-t border-border/50">
-                            <span className="text-xs text-text-muted">
-                              Subtotal ítem
-                            </span>
-                            <span className="text-xs font-semibold text-price-green ml-auto">
-                              = {formatBs(item.itemTotalBsCents)}
-                            </span>
-                          </div>
-                        )}
+                            <div className="flex items-center gap-1.5 pt-1 border-t border-border/50">
+                              <span className="text-xs text-text-muted">
+                                Subtotal ítem
+                              </span>
+                              <span className="text-xs font-semibold text-price-green ml-auto">
+                                = {formatBs(item.itemTotalBsCents)}
+                              </span>
+                            </div>
+                          )}
                       </div>
                     )}
                   </div>

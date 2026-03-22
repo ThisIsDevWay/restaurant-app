@@ -21,7 +21,7 @@ export const orders = pgTable("orders", {
       name: string;
       priceUsdCents: number;
       priceBsCents: number;
-      selectedContorno: { id: string; name: string; priceUsdCents: number; priceBsCents: number } | null;
+      fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
       selectedAdicionales: Array<{
         id: string;
         name: string;

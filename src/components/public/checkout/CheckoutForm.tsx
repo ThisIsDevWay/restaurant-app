@@ -64,47 +64,104 @@ export function CheckoutForm({
           </span>
           <ChevronDown
             size={16}
-            className={`text-text-muted transition-transform duration-200 ${
-              summaryExpanded ? "rotate-180" : ""
-            }`}
+            className={`text-text-muted transition-transform duration-200 ${summaryExpanded ? "rotate-180" : ""
+              }`}
           />
         </button>
         <div
-          className={`overflow-hidden transition-all duration-200 ${
-            summaryExpanded ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
-          }`}
+          className={`overflow-hidden transition-all duration-300 ${summaryExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
+            }`}
         >
           <div className="border-t border-border px-4 pb-3 pt-2">
             {items.map((item, idx) => (
               <div
                 key={idx}
-                className="flex items-start justify-between border-b border-border py-2 last:border-b-0"
+                className="flex items-start justify-between border-b border-border py-2.5 last:border-b-0"
               >
-                <div>
-                  <p className="text-sm text-text-main">
-                    {item.quantity}× {item.name}
+                <div className="flex-1 pr-4">
+                  <p className="text-sm text-text-main font-medium">
+                    {item.quantity > 1 ? `${item.quantity} servicios de ${item.name}` : item.name}
                   </p>
-                  {item.selectedContorno && (
-                    <p className="text-xs text-text-muted">
-                      {item.selectedContorno.name}
-                    </p>
-                  )}
-                  {item.selectedAdicionales.length > 0 && (
-                    <p className="text-xs text-text-muted">
-                      + {item.selectedAdicionales.map((a) => a.name).join(", ")}
-                    </p>
-                  )}
+
+                  <div className="mt-1 space-y-1">
+                    {/* Contornos */}
+                    {((item.fixedContornos ?? []).length > 0 || (item.contornoSubstitutions ?? []).length > 0) && (
+                      <div className="space-y-0.5">
+                        <p className="text-[11px] font-semibold text-text-main">Contornos</p>
+                        {(item.fixedContornos ?? []).map((c) => (
+                          <p key={c.id} className="text-[11px] text-text-muted">
+                            {c.name}
+                          </p>
+                        ))}
+                        {(item.contornoSubstitutions ?? []).map((s, idx) => (
+                          <p key={idx} className="text-[11px] text-text-muted">
+                            {s.substituteName}
+                            <span className="text-[10px] opacity-70 ml-1">
+                              (en vez de {s.originalName})
+                            </span>
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Removidos */}
+                    {(item.removedComponents ?? []).length > 0 && (
+                      <div className="space-y-0.5">
+                        {(item.removedComponents ?? []).map((r) => (
+                          <p key={r.componentId} className="text-[11px] text-error/70 italic">
+                            Sin {r.name}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Adicionales */}
+                    {item.selectedAdicionales.length > 0 && (
+                      <div className="space-y-0.5">
+                        <p className="text-[11px] font-semibold text-text-main">Adicionales</p>
+                        {item.selectedAdicionales.map((adicional) => (
+                          <p key={adicional.id} className="text-[11px] text-text-muted">
+                            + {adicional.name}
+                            {adicional.priceBsCents > 0 && (
+                              <span className="ml-1 text-[10px] font-medium text-price-green">
+                                ({formatBs(adicional.priceBsCents)} / {formatRef(adicional.priceUsdCents)})
+                              </span>
+                            )}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <p className="whitespace-nowrap text-sm font-semibold text-price-green">
-                  {formatBs(item.itemTotalBsCents)}
+                  {formatBs(item.itemTotalBsCents * item.quantity)}
                 </p>
               </div>
             ))}
-            <div className="mt-2 flex justify-between">
-              <span className="text-[14px] font-semibold text-text-main">Total</span>
-              <span className="text-[14px] font-bold text-price-green">
-                {formatBs(totalBsCents)}
-              </span>
+            {items.some((item) => item.quantity > 1) && (
+              <p className="mt-4 px-2 text-center text-[10px] text-text-muted/80 leading-tight italic animate-in fade-in slide-in-from-bottom-2 duration-300">
+                Para que cada plato tenga sus propios contornos o adicionales, agrégalos uno por uno.
+              </p>
+            )}
+            <div className="mt-1 space-y-1.5 border-t border-border pt-2.5">
+              <div className="flex justify-between">
+                <span className="text-xs text-text-muted">Base Imponible</span>
+                <span className="text-xs font-medium text-text-main">
+                  {formatBs(Math.round(totalBsCents / 1.16))}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-text-muted">IVA (16%)</span>
+                <span className="text-xs font-medium text-text-main">
+                  {formatBs(totalBsCents - Math.round(totalBsCents / 1.16))}
+                </span>
+              </div>
+              <div className="flex justify-between border-t border-border/50 pt-2">
+                <span className="text-[14px] font-semibold text-text-main">Total a Pagar</span>
+                <span className="text-[14px] font-bold text-price-green">
+                  {formatBs(totalBsCents)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -119,19 +176,17 @@ export function CheckoutForm({
         <button
           type="button"
           onClick={() => setPaymentMethod("pago_movil")}
-          className={`mb-2 w-full rounded-input border p-4 text-left transition-colors ${
-            paymentMethod === "pago_movil"
-              ? "border-primary bg-primary/5"
-              : "border-border bg-white"
-          }`}
+          className={`mb-2 w-full rounded-input border p-4 text-left transition-colors ${paymentMethod === "pago_movil"
+            ? "border-primary bg-primary/5"
+            : "border-border bg-white"
+            }`}
         >
           <div className="flex items-center gap-3">
             <div
-              className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-                paymentMethod === "pago_movil"
-                  ? "border-primary"
-                  : "border-border"
-              }`}
+              className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "pago_movil"
+                ? "border-primary"
+                : "border-border"
+                }`}
             >
               {paymentMethod === "pago_movil" && (
                 <div className="h-2.5 w-2.5 rounded-full bg-primary" />
@@ -149,19 +204,17 @@ export function CheckoutForm({
         <button
           type="button"
           onClick={() => setPaymentMethod("transfer")}
-          className={`w-full rounded-input border p-4 text-left transition-colors ${
-            paymentMethod === "transfer"
-              ? "border-primary bg-primary/5"
-              : "border-border bg-white"
-          }`}
+          className={`w-full rounded-input border p-4 text-left transition-colors ${paymentMethod === "transfer"
+            ? "border-primary bg-primary/5"
+            : "border-border bg-white"
+            }`}
         >
           <div className="flex items-center gap-3">
             <div
-              className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-                paymentMethod === "transfer"
-                  ? "border-primary"
-                  : "border-border"
-              }`}
+              className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "transfer"
+                ? "border-primary"
+                : "border-border"
+                }`}
             >
               {paymentMethod === "transfer" && (
                 <div className="h-2.5 w-2.5 rounded-full bg-primary" />
@@ -188,9 +241,8 @@ export function CheckoutForm({
           }}
           placeholder="0414 123 4567"
           maxLength={11}
-          className={`w-full rounded-input border px-4 py-3 text-sm outline-none transition-colors ${
-            phoneError ? "border-error" : "border-border focus:border-primary"
-          }`}
+          className={`w-full rounded-input border px-4 py-3 text-sm outline-none transition-colors ${phoneError ? "border-error" : "border-border focus:border-primary"
+            }`}
           disabled={isSubmitting}
         />
         <p className="mt-1 text-xs text-text-muted">

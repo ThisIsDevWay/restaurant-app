@@ -57,21 +57,37 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
     setError(null);
 
-    const checkoutItems: CheckoutItem[] = items.map((item) => ({
-      id: item.id,
-      quantity: item.quantity,
-      selectedContorno: item.selectedContorno,
-      selectedAdicionales: item.selectedAdicionales.map((a) => ({
+    const checkoutItems: CheckoutItem[] = items.map((item) => {
+      // Build adicionales array, converting contornoSubstitution back
+      // to the old format the backend/DB expects
+      const adicionales = item.selectedAdicionales.map((a) => ({
         id: a.id,
         name: a.name,
         priceUsdCents: a.priceUsdCents,
         priceBsCents: a.priceBsCents,
-        substitutesComponentId: a.substitutesComponentId,
-        substitutesComponentName: a.substitutesComponentName,
-      })),
-      removedComponents: item.removedComponents,
-      categoryAllowAlone: item.categoryAllowAlone,
-    }));
+      }));
+
+      // If there are contorno substitutions, add them as adicionales with substitutesComponentId
+      (item.contornoSubstitutions ?? []).forEach((s) => {
+        adicionales.unshift({
+          id: s.substituteId,
+          name: s.substituteName,
+          priceUsdCents: s.priceUsdCents,
+          priceBsCents: s.priceBsCents,
+          substitutesComponentId: s.originalId,
+          substitutesComponentName: s.originalName,
+        } as any);
+      });
+
+      return {
+        id: item.id,
+        quantity: item.quantity,
+        fixedContornos: item.fixedContornos,
+        selectedAdicionales: adicionales,
+        removedComponents: item.removedComponents,
+        categoryAllowAlone: item.categoryAllowAlone,
+      };
+    });
 
     const result: CheckoutResult = await processCheckout(
       { phone, paymentMethod, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })) },

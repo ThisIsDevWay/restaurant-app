@@ -14,7 +14,7 @@ export class WhatsAppManualProvider implements PaymentProvider {
   readonly id = "whatsapp_manual" as const;
   readonly mode = "active" as const;
 
-  constructor(_settings: SettingsRow) {}
+  constructor(_settings: SettingsRow) { }
 
   async initiatePayment(
     order: OrderRow,
@@ -23,7 +23,7 @@ export class WhatsAppManualProvider implements PaymentProvider {
     const snapshot = order.itemsSnapshot as Array<{
       name: string;
       quantity: number;
-      selectedContorno: { name: string } | null;
+      fixedContornos: Array<{ name: string }>;
       selectedAdicionales: Array<{ name: string }>;
       itemTotalBsCents: number;
     }>;
@@ -31,9 +31,12 @@ export class WhatsAppManualProvider implements PaymentProvider {
     const itemsText = snapshot
       .map((item) => {
         let line = `• ${item.quantity}× ${item.name}`;
-        if (item.selectedContorno) {
-          line += ` (${item.selectedContorno.name})`;
+
+        const contornoNames = item.fixedContornos.map(c => c.name);
+        if (contornoNames.length > 0) {
+          line += ` (${contornoNames.join(", ")})`;
         }
+
         if (item.selectedAdicionales.length > 0) {
           line += ` + ${item.selectedAdicionales.map((a) => a.name).join(", ")}`;
         }
@@ -66,8 +69,9 @@ export class WhatsAppManualProvider implements PaymentProvider {
       `□ Efectivo al recibir`,
     ].join("\n");
 
-    const waNumber = settings.whatsappNumber || "584140000000";
-    const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+    const originalNumber = settings.whatsappNumber || "584140000000";
+    const sanitizedNumber = originalNumber.replace(/\D/g, "");
+    const waLink = `https://wa.me/${sanitizedNumber}?text=${encodeURIComponent(message)}`;
 
     return {
       screen: "whatsapp",

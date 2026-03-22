@@ -53,9 +53,8 @@ export function Cart() {
             onClick={() => isOnline && openDrawer()}
             disabled={!isOnline}
             title={!isOnline ? "Necesitas conexión para hacer un pedido" : undefined}
-            className={`rounded-input bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors active:bg-primary-hover ${
-              !isOnline ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`rounded-input bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors active:bg-primary-hover ${!isOnline ? "opacity-50 cursor-not-allowed" : ""
+              }`}
           >
             Ver pedido →
           </button>
@@ -69,17 +68,15 @@ export function Cart() {
       >
         {/* Overlay */}
         <div
-          className={`absolute inset-0 pointer-events-auto bg-black/40 transition-opacity duration-200 ${
-            isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+          className={`absolute inset-0 pointer-events-auto bg-black/40 transition-opacity duration-200 ${isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
           onClick={() => closeDrawer()}
         />
 
         {/* Drawer panel */}
         <div
-          className={`absolute bottom-0 left-0 right-0 pointer-events-auto max-h-[80vh] overflow-y-auto rounded-t-[20px] bg-white shadow-modal transition-transform duration-200 ease-out ${
-            isDrawerOpen ? "translate-y-0" : "translate-y-full"
-          }`}
+          className={`absolute bottom-0 left-0 right-0 pointer-events-auto max-h-[80vh] overflow-y-auto rounded-t-[20px] bg-white shadow-modal transition-transform duration-200 ease-out ${isDrawerOpen ? "translate-y-0" : "translate-y-full"
+            }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -98,21 +95,38 @@ export function Cart() {
           <div className="px-4">
             {items.map((item, index) => (
               <CartItem
-                key={`${item.id}-${item.selectedContorno?.id ?? "none"}-${item.selectedAdicionales.map((a) => a.id).join(",")}-${index}`}
+                key={`${item.id}-${(item.fixedContornos ?? []).map((c) => c.id).join(",")}-${(item.contornoSubstitutions ?? []).map((s) => s.substituteId).join(",")}-${(item.selectedAdicionales ?? []).map((a) => a.id).join(",")}-${index}`}
                 item={item}
                 index={index}
                 onUpdateQuantity={updateQuantity}
                 onRemove={removeItem}
               />
             ))}
+            {items.some((item) => item.quantity > 1) && (
+              <p className="mt-4 px-2 text-center text-[10px] text-text-muted/80 leading-tight italic animate-in fade-in slide-in-from-bottom-2 duration-300">
+                Para que cada plato tenga sus propios contornos o adicionales, agrégalos uno por uno.
+              </p>
+            )}
           </div>
 
           {/* Summary + CTA */}
           <div className="sticky bottom-0 border-t border-border bg-white p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs text-text-muted">Base Imponible</span>
+              <p className="text-xs font-medium text-text-main">
+                {formatBs(Math.round(totalBsCents / 1.16))}
+              </p>
+            </div>
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-sm text-text-muted">Subtotal</span>
+              <span className="text-xs text-text-muted">IVA (16%)</span>
+              <p className="text-xs font-medium text-text-main">
+                {formatBs(totalBsCents - Math.round(totalBsCents / 1.16))}
+              </p>
+            </div>
+            <div className="mb-4 flex items-center justify-between border-t border-border/50 pt-2">
+              <span className="text-sm font-semibold text-text-main">Total a Pagar</span>
               <div className="text-right">
-                <p className="text-sm font-bold text-text-main">
+                <p className="text-sm font-bold text-price-green">
                   {formatBs(totalBsCents)}
                 </p>
                 <p className="text-[11px] text-text-muted">
@@ -129,8 +143,8 @@ export function Cart() {
             >
               Confirmar pedido →
             </button>
-            <p className="mt-1 text-center text-[11px] text-text-muted">
-              {formatBs(totalBsCents)}
+            <p className="mt-2 text-center text-[10px] text-text-muted/70">
+              * Pagos en divisas (efectivo/Zelle) generan 3% de IGTF adicional.
             </p>
           </div>
         </div>

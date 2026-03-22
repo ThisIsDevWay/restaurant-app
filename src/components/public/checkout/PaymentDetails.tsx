@@ -87,9 +87,8 @@ function CopyButton({ value }: { value: string }) {
   return (
     <button
       onClick={handleCopy}
-      className={`flex h-9 w-9 items-center justify-center rounded-input transition-colors ${
-        copied ? "bg-success/10 text-success" : "bg-bg-image text-text-muted"
-      }`}
+      className={`flex h-9 w-9 items-center justify-center rounded-input transition-colors ${copied ? "bg-success/10 text-success" : "bg-bg-image text-text-muted"
+        }`}
       aria-label="Copiar"
     >
       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -195,9 +194,14 @@ export function PaymentDetails({
             <p className="text-sm text-text-main">
               {item.quantity}× {item.name}
             </p>
-            {item.selectedContorno && (
+            {(item.fixedContornos ?? []).length > 0 && (
               <p className="text-xs text-text-muted">
-                {item.selectedContorno.name}
+                {(item.fixedContornos ?? []).map((c: any) => c.name).join(", ")}
+              </p>
+            )}
+            {(item.contornoSubstitutions ?? []).length > 0 && (
+              <p className="text-xs text-text-muted">
+                {(item.contornoSubstitutions ?? []).map((s: any) => s.substituteName).join(", ")}
               </p>
             )}
             {item.selectedAdicionales.length > 0 && (
@@ -215,9 +219,8 @@ export function PaymentDetails({
       {/* Timer */}
       <div className="mt-4 text-center">
         <p
-          className={`text-sm font-semibold ${
-            isUrgent ? "text-amber" : "text-text-muted"
-          }`}
+          className={`text-sm font-semibold ${isUrgent ? "text-amber" : "text-text-muted"
+            }`}
         >
           ⏱ Expira en {minutes}:{seconds.toString().padStart(2, "0")}
         </p>

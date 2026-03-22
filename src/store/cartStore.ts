@@ -8,20 +8,28 @@ export interface RemovedComponent {
   priceUsdCents: number;
 }
 
+export interface ContornoSubstitution {
+  originalId: string;
+  originalName: string;
+  substituteId: string;
+  substituteName: string;
+  priceUsdCents: number;
+  priceBsCents: number;
+}
+
 export interface CartItem {
   id: string;
   name: string;
   emoji: string;
   baseUsdCents: number;
   baseBsCents: number;
-  selectedContorno: { id: string; name: string; priceUsdCents: number; priceBsCents: number } | null;
+  fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
+  contornoSubstitutions: ContornoSubstitution[];
   selectedAdicionales: Array<{
     id: string;
     name: string;
     priceUsdCents: number;
     priceBsCents: number;
-    substitutesComponentId?: string;
-    substitutesComponentName?: string;
   }>;
   removedComponents: RemovedComponent[];
   quantity: number;
@@ -52,7 +60,8 @@ function computeItemTotal(
   item: Omit<CartItem, "quantity" | "itemTotalBsCents">,
   quantity: number,
 ): number {
-  const contornoBs = item.selectedContorno?.priceBsCents ?? 0;
+  const fixedContornosBs = (item.fixedContornos ?? []).reduce((sum, c) => sum + c.priceBsCents, 0);
+  const substitutionsBs = (item.contornoSubstitutions ?? []).reduce((sum, s) => sum + s.priceBsCents, 0);
   const adicionalesBs = (item.selectedAdicionales ?? []).reduce(
     (sum, a) => sum + a.priceBsCents,
     0,
@@ -61,13 +70,14 @@ function computeItemTotal(
     (sum, r) => sum + Math.round(r.priceUsdCents * (item.baseBsCents / Math.max(item.baseUsdCents, 1))),
     0,
   );
-  return (item.baseBsCents + contornoBs + adicionalesBs + removalsBs) * quantity;
+  return (item.baseBsCents + fixedContornosBs + substitutionsBs + adicionalesBs + removalsBs) * quantity;
 }
 
 function computeItemUsdCents(
   item: Omit<CartItem, "quantity" | "itemTotalBsCents">,
 ): number {
-  const contornoUsd = item.selectedContorno?.priceUsdCents ?? 0;
+  const fixedContornosUsd = (item.fixedContornos ?? []).reduce((sum, c) => sum + c.priceUsdCents, 0);
+  const substitutionsUsd = (item.contornoSubstitutions ?? []).reduce((sum, s) => sum + s.priceUsdCents, 0);
   const adicionalesUsd = (item.selectedAdicionales ?? []).reduce(
     (sum, a) => sum + a.priceUsdCents,
     0,
@@ -76,7 +86,7 @@ function computeItemUsdCents(
     (sum, r) => sum + r.priceUsdCents,
     0,
   );
-  return item.baseUsdCents + contornoUsd + adicionalesUsd + removalsUsd;
+  return item.baseUsdCents + fixedContornosUsd + substitutionsUsd + adicionalesUsd + removalsUsd;
 }
 
 export const useCartStore = create<CartState>()(
@@ -94,12 +104,14 @@ export const useCartStore = create<CartState>()(
         const existingIndex = get().items.findIndex(
           (i) =>
             i.id === item.id &&
-            JSON.stringify(i.selectedContorno) ===
-              JSON.stringify(item.selectedContorno) &&
+            JSON.stringify(i.fixedContornos) ===
+            JSON.stringify(item.fixedContornos) &&
+            JSON.stringify(i.contornoSubstitutions) ===
+            JSON.stringify(item.contornoSubstitutions) &&
             JSON.stringify(i.selectedAdicionales ?? []) ===
-              JSON.stringify(item.selectedAdicionales ?? []) &&
+            JSON.stringify(item.selectedAdicionales ?? []) &&
             JSON.stringify(i.removedComponents ?? []) ===
-              JSON.stringify(item.removedComponents ?? []),
+            JSON.stringify(item.removedComponents ?? []),
         );
 
         if (existingIndex !== -1) {

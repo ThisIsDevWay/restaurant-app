@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import { formatBs } from "@/lib/money";
+import { formatBs, formatRef } from "@/lib/money";
 import { type CartItem as CartItemType } from "@/store/cartStore";
 
 interface CartItemProps {
@@ -38,27 +38,62 @@ export function CartItem({
 
         {/* Info */}
         <div className="flex-1">
-          <h4 className="text-sm font-semibold text-text-main">{item.name}</h4>
+          <h4 className="text-sm font-semibold text-text-main leading-tight">
+            {item.quantity > 1 ? `${item.quantity} servicios de ${item.name}` : item.name}
+          </h4>
 
-          {item.selectedContorno && (
-            <p className="text-xs text-text-muted">
-              Contorno: {item.selectedContorno.name}
-            </p>
-          )}
+          <div className="mt-1.5 space-y-1.5">
+            {/* Contornos */}
+            {((item.fixedContornos ?? []).length > 0 || (item.contornoSubstitutions ?? []).length > 0) && (
+              <div className="space-y-0.5">
+                <p className="text-[11px] font-semibold text-text-main">Contornos</p>
+                {(item.fixedContornos ?? []).map((c) => (
+                  <p key={c.id} className="text-[11px] text-text-muted">
+                    {c.name}
+                  </p>
+                ))}
+                {(item.contornoSubstitutions ?? []).map((s, idx) => (
+                  <p key={idx} className="text-[11px] text-text-muted">
+                    {s.substituteName}
+                    <span className="text-[10px] opacity-70 ml-1">
+                      (en vez de {s.originalName})
+                    </span>
+                  </p>
+                ))}
+              </div>
+            )}
 
-          {(item.removedComponents ?? []).map((r) => (
-            <p key={r.componentId} className="text-xs text-text-muted">
-              {r.name}
-            </p>
-          ))}
+            {/* Removidos */}
+            {(item.removedComponents ?? []).length > 0 && (
+              <div className="space-y-0.5">
+                {(item.removedComponents ?? []).map((r) => (
+                  <p key={r.componentId} className="text-[11px] text-error/70 italic">
+                    Sin {r.name}
+                  </p>
+                ))}
+              </div>
+            )}
 
-          {item.selectedAdicionales.length > 0 && (
-            <p className="text-xs text-text-muted">
-              + {item.selectedAdicionales.map((a) => a.name).join(", ")}
-            </p>
-          )}
+            {/* Adicionales */}
+            {item.selectedAdicionales.length > 0 && (
+              <div className="space-y-0.5">
+                <p className="text-[11px] font-semibold text-text-main">Adicionales</p>
+                {item.selectedAdicionales.map((adicional) => (
+                  <p key={adicional.id} className="text-[11px] text-text-muted">
+                    + {adicional.name}
+                    {adicional.priceBsCents > 0 && (
+                      <span className="ml-1 text-[10px] font-medium text-price-green">
+                        ({formatBs(adicional.priceBsCents)} / {formatRef(adicional.priceUsdCents)})
+                      </span>
+                    )}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
 
-          <p className="mt-1 text-sm font-semibold text-price-green">
+          <p className="mt-1.5 text-sm font-bold text-price-green">
+            <span className="text-[10px] text-text-muted font-normal mr-1">Total:</span>
             {formatBs(item.itemTotalBsCents)}
           </p>
         </div>

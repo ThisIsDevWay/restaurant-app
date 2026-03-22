@@ -80,14 +80,27 @@ export function WhatsAppPayment({
         </p>
 
         <a
-          href={waLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex w-full items-center justify-center gap-2 rounded-input bg-green-600 py-4 text-base font-bold text-white"
+          href={`whatsapp://send?phone=${waLink.split("/").pop()?.split("?")[0]}&text=${encodeURIComponent(prefilledMessage)}`}
+          className="flex w-full items-center justify-center gap-2 rounded-input bg-green-600 py-4 text-base font-bold text-white shadow-lg active:scale-[0.98] transition-all"
         >
           <ExternalLink className="h-5 w-5" />
           Abrir WhatsApp
         </a>
+
+        {/* Fallback: web WhatsApp */}
+        <div className="mt-4 text-center">
+          <p className="text-[10px] text-text-muted">
+            ¿No se abre? Prueba{" "}
+            <a
+              href={waLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-primary underline"
+            >
+              WhatsApp Web
+            </a>
+          </p>
+        </div>
 
         <div className="mt-4 flex items-center justify-center gap-2">
           <span className="h-2 w-2 animate-pulse-dot rounded-full bg-success" />

@@ -16,7 +16,7 @@ type ItemsSnapshot = Array<{
   name: string;
   priceUsdCents: number;
   priceBsCents: number;
-  selectedContorno: { id: string; name: string } | null;
+  fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
   selectedAdicionales: Array<{
     id: string;
     name: string;
@@ -110,14 +110,14 @@ export default async function OrderDetailPage({
             latestLog={
               latestLog
                 ? {
-                    id: latestLog.id,
-                    providerId: latestLog.providerId,
-                    amountBsCents: latestLog.amountBsCents,
-                    reference: latestLog.reference,
-                    senderPhone: latestLog.senderPhone,
-                    outcome: latestLog.outcome,
-                    createdAt: latestLog.createdAt,
-                  }
+                  id: latestLog.id,
+                  providerId: latestLog.providerId,
+                  amountBsCents: latestLog.amountBsCents,
+                  reference: latestLog.reference,
+                  senderPhone: latestLog.senderPhone,
+                  outcome: latestLog.outcome,
+                  createdAt: latestLog.createdAt,
+                }
                 : null
             }
           />
