@@ -6,6 +6,8 @@ import { HeaderCartButton } from "./HeaderCartButton";
 import { MenuGridSkeleton } from "@/components/client/MenuGridSkeleton";
 import { MenuClient } from "./MenuClient";
 import { Cart } from "@/components/public/cart/Cart";
+import { ActiveOrdersBanner } from "@/components/public/ActiveOrdersBanner";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +31,12 @@ export default async function MenuPage() {
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="font-display text-2xl font-bold text-primary">G&M</h1>
           <div className="flex items-center gap-2">
+            <Link
+              href="/mis-pedidos"
+              className="flex items-center gap-1 rounded-full bg-bg-app px-3 py-1 text-xs font-medium text-text-muted"
+            >
+              📋 Pedidos
+            </Link>
             {showRate && (
               <RatePill rate={rateData.rate} fetchedAt={rateData.fetchedAt} />
             )}
@@ -36,6 +44,9 @@ export default async function MenuPage() {
           </div>
         </div>
       </header>
+
+      {/* Active order banner */}
+      <ActiveOrdersBanner />
 
       {/* Categories + Menu */}
       <Suspense fallback={<MenuGridSkeleton />}>

@@ -18,7 +18,7 @@ type CheckoutState =
   | { type: "enter_reference"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: { bankName: string; bankCode: string; accountPhone: string; accountRif: string } }
   | { type: "whatsapp"; orderId: string; waLink: string; prefilledMessage: string }
   | { type: "waiting_auto"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: { bankName: string; bankCode: string; accountPhone: string; accountRif: string } }
-  | { type: "success"; totalBsCents: number }
+  | { type: "success"; orderId: string; totalBsCents: number }
   | { type: "error"; message: string };
 
 export default function CheckoutPage() {
@@ -127,15 +127,36 @@ export default function CheckoutPage() {
   };
 
   const handlePaid = () => {
-    clearCart();
     if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate([100, 50, 200]);
     }
+
+    // Get orderId from current state
+    let orderId = "";
+    if (state.type === "enter_reference" || state.type === "waiting_auto") {
+      orderId = state.orderId;
+    } else if (state.type === "whatsapp") {
+      orderId = state.orderId;
+    }
+
+    // Store order in localStorage
+    if (orderId && typeof window !== "undefined") {
+      const orders = JSON.parse(localStorage.getItem("gm_orders") || "[]");
+      orders.unshift({
+        id: orderId,
+        totalBsCents,
+        createdAt: Date.now(),
+      });
+      // Keep only last 10 orders
+      localStorage.setItem("gm_orders", JSON.stringify(orders.slice(0, 10)));
+    }
+
     const bs =
       state.type === "enter_reference" || state.type === "waiting_auto"
         ? state.totalBsCents
         : totalBsCents;
-    setState({ type: "success", totalBsCents: bs });
+    setState({ type: "success", orderId, totalBsCents: bs });
+    clearCart();
   };
 
   const handleError = (message: string) => {
@@ -214,6 +235,7 @@ export default function CheckoutPage() {
 
       {state.type === "success" && (
         <PaymentSuccess
+          orderId={state.orderId}
           exactAmountBsCents={state.totalBsCents}
           items={items}
         />
