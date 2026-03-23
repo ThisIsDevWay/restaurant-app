@@ -18,6 +18,7 @@ interface SettingsFormData {
   activePaymentProvider: string;
   banescoApiKey: string;
   whatsappNumber: string;
+  whatsappMicroserviceUrl: string;
 }
 
 type FormErrors = Partial<Record<keyof SettingsFormData, string>>;
@@ -41,6 +42,7 @@ export function SettingsForm({
       activePaymentProvider: "banesco_reference",
       banescoApiKey: "",
       whatsappNumber: "",
+      whatsappMicroserviceUrl: "http://38.171.255.120:3333",
     },
   );
   const [isSaving, setIsSaving] = useState(false);
@@ -274,6 +276,22 @@ export function SettingsForm({
           {errors.whatsappNumber && (
             <p className="mt-1 text-xs text-error">{errors.whatsappNumber}</p>
           )}
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-text-main">
+            URL microservicio WhatsApp
+          </label>
+          <input
+            type="url"
+            value={form.whatsappMicroserviceUrl}
+            onChange={(e) => updateField("whatsappMicroserviceUrl", e.target.value)}
+            placeholder="http://38.171.255.120:3333"
+            className="w-full rounded-input border border-border px-4 py-2.5 text-sm outline-none focus:border-primary font-mono"
+          />
+          <p className="mt-1 text-xs text-text-muted">
+            URL del servidor Baileys para envío de mensajes
+          </p>
         </div>
       </div>
 

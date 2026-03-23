@@ -34,3 +34,27 @@ export async function saveSettings(data: unknown): Promise<ActionResult> {
     return { success: false, error: "Error al guardar configuración" };
   }
 }
+
+export async function toggleGlobalAdicionales(enabled: boolean) {
+  await requireAdmin();
+  try {
+    await updateSettingsDb({ adicionalesEnabled: enabled });
+    revalidatePath("/");
+    revalidatePath("/admin/catalogo");
+    return { success: true };
+  } catch {
+    return { success: false, error: "Error al actualizar la configuración" };
+  }
+}
+
+export async function toggleGlobalBebidas(enabled: boolean) {
+  await requireAdmin();
+  try {
+    await updateSettingsDb({ bebidasEnabled: enabled });
+    revalidatePath("/");
+    revalidatePath("/admin/catalogo");
+    return { success: true };
+  } catch {
+    return { success: false, error: "Error al actualizar la configuración" };
+  }
+}

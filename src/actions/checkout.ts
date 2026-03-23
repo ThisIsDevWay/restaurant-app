@@ -1,13 +1,18 @@
 "use server";
 
 import { getSettings, getActiveRate } from "@/db/queries/settings";
-import { getMenuItemWithOptions } from "@/db/queries/menu";
+import { getMenuItemWithOptionsAndComponents } from "@/db/queries/menu";
 import { createOrder } from "@/db/queries/orders";
+import { upsertCustomer } from "@/db/queries/customers";
+import { sendOrderMessage } from "@/lib/whatsapp/messages";
 import { usdCentsToBsCents } from "@/lib/money";
 import { checkoutSchema } from "@/lib/validations/checkout";
 import { getActiveProvider } from "@/lib/payment-providers";
 import type { PaymentInitResult } from "@/lib/payment-providers";
 import { rateLimiters } from "@/lib/rate-limit";
+import { db } from "@/db";
+import { adicionales, dailyAdicionales, dailyBebidas, menuItems, contornos } from "@/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import * as v from "valibot";
 
@@ -31,6 +36,12 @@ export type CheckoutItem = {
     priceBsCents: number;
     substitutesComponentId?: string;
     substitutesComponentName?: string;
+  }>;
+  selectedBebidas?: Array<{
+    id: string;
+    name: string;
+    priceUsdCents: number;
+    priceBsCents: number;
   }>;
   removedComponents: Array<{
     isRemoval: true;
@@ -69,7 +80,7 @@ export async function processCheckout(
       };
     }
 
-    const { phone, paymentMethod } = parsed.output;
+    const { phone, paymentMethod, name, cedula } = parsed.output;
 
     // 2.5. Validate that cart doesn't contain ONLY restricted items
     const allRestricted = items.every((item) => !item.categoryAllowAlone);
@@ -96,6 +107,54 @@ export async function processCheckout(
     }
     const rate = rateResult.rate;
 
+    // 2.5. Load daily pools for today
+    function formatLocalDate(date: Date): string {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+    const today = formatLocalDate(new Date());
+
+    // Daily adicionales pool
+    const dailyAdicionalRows = await db
+      .select({
+        id: adicionales.id,
+        name: adicionales.name,
+        priceUsdCents: adicionales.priceUsdCents,
+        isAvailable: adicionales.isAvailable,
+      })
+      .from(dailyAdicionales)
+      .innerJoin(adicionales, eq(dailyAdicionales.adicionalId, adicionales.id))
+      .where(eq(dailyAdicionales.date, today));
+
+    // Daily bebidas pool
+    const dailyBebidaRows = await db
+      .select({
+        id: menuItems.id,
+        name: menuItems.name,
+        priceUsdCents: menuItems.priceUsdCents,
+        isAvailable: menuItems.isAvailable,
+      })
+      .from(dailyBebidas)
+      .innerJoin(menuItems, eq(dailyBebidas.bebidaItemId, menuItems.id))
+      .where(eq(dailyBebidas.date, today));
+
+    // Build lookup maps
+    const dailyAdicionalMap = new Map(dailyAdicionalRows.map((a) => [a.id, a]));
+    const dailyBebidaMap = new Map(dailyBebidaRows.map((b) => [b.id, b]));
+
+    // Load global contornos (for contorno substitutions that aren't in menuItem.contornos)
+    const globalContornoRows = await db
+      .select({
+        id: contornos.id,
+        name: contornos.name,
+        priceUsdCents: contornos.priceUsdCents,
+        isAvailable: contornos.isAvailable,
+      })
+      .from(contornos);
+    const globalContornoMap = new Map(globalContornoRows.map((c) => [c.id, c]));
+
     // 3. Recalculate prices from DB — NEVER trust client prices
     let subtotalUsdCents = 0;
     const snapshotItems: Array<{
@@ -112,6 +171,12 @@ export async function processCheckout(
         substitutesComponentId?: string;
         substitutesComponentName?: string;
       }>;
+      selectedBebidas?: Array<{
+        id: string;
+        name: string;
+        priceUsdCents: number;
+        priceBsCents: number;
+      }>;
       removedComponents: Array<{
         isRemoval: true;
         componentId: string;
@@ -123,7 +188,7 @@ export async function processCheckout(
     }> = [];
 
     for (const clientItem of items) {
-      const menuItem = await getMenuItemWithOptions(clientItem.id);
+      const menuItem = await getMenuItemWithOptionsAndComponents(clientItem.id);
       if (!menuItem) {
         return {
           success: false,
@@ -152,6 +217,12 @@ export async function processCheckout(
         substitutesComponentId?: string;
         substitutesComponentName?: string;
       }> = [];
+      const selectedBebidas: Array<{
+        id: string;
+        name: string;
+        priceUsdCents: number;
+        priceBsCents: number;
+      }> = [];
 
       // Process removed components (discounts)
       let removalAdjustmentUsdCents = 0;
@@ -175,20 +246,128 @@ export async function processCheckout(
         }
       }
 
+      // Validate adicionales against daily pool (and legacy optionGroups fallback)
       for (const ad of clientItem.selectedAdicionales) {
-        for (const group of menuItem.optionGroups) {
-          for (const opt of group.options) {
-            if (opt.id === ad.id && opt.isAvailable) {
-              optionPriceUsdCents += opt.priceUsdCents;
-              selectedAdicionales.push({
-                id: opt.id,
-                name: opt.name,
-                priceUsdCents: opt.priceUsdCents,
-                priceBsCents: usdCentsToBsCents(opt.priceUsdCents, rate),
-                substitutesComponentId: ad.substitutesComponentId,
-                substitutesComponentName: ad.substitutesComponentName,
+        let found = false;
+
+        // First look in daily adicionales pool
+        const dailyAdicional = dailyAdicionalMap.get(ad.id);
+        if (dailyAdicional && dailyAdicional.isAvailable) {
+          optionPriceUsdCents += dailyAdicional.priceUsdCents;
+          selectedAdicionales.push({
+            id: dailyAdicional.id,
+            name: dailyAdicional.name,
+            priceUsdCents: dailyAdicional.priceUsdCents,
+            priceBsCents: usdCentsToBsCents(dailyAdicional.priceUsdCents, rate),
+            substitutesComponentId: ad.substitutesComponentId,
+            substitutesComponentName: ad.substitutesComponentName,
+          });
+          found = true;
+        }
+
+        // Fallback: look in menuItem adicionales (for backward compat)
+        if (!found) {
+          const validAdicional = menuItem.adicionales.find((a) => a.id === ad.id && a.isAvailable);
+          if (validAdicional) {
+            optionPriceUsdCents += validAdicional.priceUsdCents;
+            selectedAdicionales.push({
+              id: validAdicional.id,
+              name: validAdicional.name,
+              priceUsdCents: validAdicional.priceUsdCents,
+              priceBsCents: usdCentsToBsCents(validAdicional.priceUsdCents, rate),
+              substitutesComponentId: ad.substitutesComponentId,
+              substitutesComponentName: ad.substitutesComponentName,
+            });
+            found = true;
+          }
+        }
+
+        // Fallback: look in menuItem contornos (for contorno substitutions)
+        if (!found) {
+          const validContorno = menuItem.contornos.find((c) => c.id === ad.id && c.isAvailable);
+          if (validContorno) {
+            optionPriceUsdCents += validContorno.priceUsdCents;
+            selectedAdicionales.push({
+              id: validContorno.id,
+              name: validContorno.name,
+              priceUsdCents: validContorno.priceUsdCents,
+              priceBsCents: usdCentsToBsCents(validContorno.priceUsdCents, rate),
+              substitutesComponentId: ad.substitutesComponentId,
+              substitutesComponentName: ad.substitutesComponentName,
+            });
+            found = true;
+          }
+        }
+
+        // Fallback: look in global contornos table
+        if (!found) {
+          const globalContorno = globalContornoMap.get(ad.id);
+          if (globalContorno && globalContorno.isAvailable) {
+            optionPriceUsdCents += globalContorno.priceUsdCents;
+            selectedAdicionales.push({
+              id: globalContorno.id,
+              name: globalContorno.name,
+              priceUsdCents: globalContorno.priceUsdCents,
+              priceBsCents: usdCentsToBsCents(globalContorno.priceUsdCents, rate),
+              substitutesComponentId: ad.substitutesComponentId,
+              substitutesComponentName: ad.substitutesComponentName,
+            });
+            found = true;
+          }
+        }
+
+        // Fallback for legacy items that might still be in `optionGroups`
+        if (!found) {
+          for (const group of menuItem.optionGroups) {
+            for (const opt of group.options) {
+              if (opt.id === ad.id && opt.isAvailable) {
+                optionPriceUsdCents += opt.priceUsdCents;
+                selectedAdicionales.push({
+                  id: opt.id,
+                  name: opt.name,
+                  priceUsdCents: opt.priceUsdCents,
+                  priceBsCents: usdCentsToBsCents(opt.priceUsdCents, rate),
+                  substitutesComponentId: ad.substitutesComponentId,
+                  substitutesComponentName: ad.substitutesComponentName,
+                });
+                found = true;
+                break;
+              }
+            }
+            if (found) break;
+          }
+        }
+      }
+
+      // Validate bebidas against daily pool (and fallback to menuItem bebidas)
+      if (clientItem.selectedBebidas) {
+        for (const beb of clientItem.selectedBebidas) {
+          let found = false;
+
+          // First look in daily bebidas pool
+          const dailyBebida = dailyBebidaMap.get(beb.id);
+          if (dailyBebida && dailyBebida.isAvailable) {
+            optionPriceUsdCents += dailyBebida.priceUsdCents;
+            selectedBebidas.push({
+              id: dailyBebida.id,
+              name: dailyBebida.name,
+              priceUsdCents: dailyBebida.priceUsdCents,
+              priceBsCents: usdCentsToBsCents(dailyBebida.priceUsdCents, rate),
+            });
+            found = true;
+          }
+
+          // Fallback: look in menuItem bebidas
+          if (!found) {
+            const validBebida = menuItem.bebidas?.find((b) => b.id === beb.id && b.isAvailable);
+            if (validBebida) {
+              optionPriceUsdCents += validBebida.priceUsdCents;
+              selectedBebidas.push({
+                id: validBebida.id,
+                name: validBebida.name,
+                priceUsdCents: validBebida.priceUsdCents,
+                priceBsCents: usdCentsToBsCents(validBebida.priceUsdCents, rate),
               });
-              break;
             }
           }
         }
@@ -213,6 +392,7 @@ export async function processCheckout(
         priceBsCents: itemBaseBsCents,
         fixedContornos,
         selectedAdicionales,
+        selectedBebidas,
         removedComponents: clientItem.removedComponents,
         quantity: clientItem.quantity,
         itemTotalBsCents,
@@ -244,6 +424,21 @@ export async function processCheckout(
 
     // 6. Provider-specific init
     const initResult = await provider.initiatePayment(order, settings);
+
+    // 7. Save/upsert customer data
+    if (name || cedula) {
+      await upsertCustomer(phone, name ?? null, cedula ?? null);
+    }
+
+    // 8. Send WhatsApp confirmation (fire-and-forget)
+    sendOrderMessage(
+      "received",
+      phone,
+      String(order.orderNumber),
+      name ?? null,
+      snapshotItems,
+      subtotalBsCents,
+    ).catch(() => { });
 
     return {
       success: true,
