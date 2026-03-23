@@ -2,17 +2,21 @@ import { db } from "../index";
 import { settings, exchangeRates } from "../schema";
 import { eq } from "drizzle-orm";
 
+let cached: { data: typeof settings.$inferSelect; at: number } | null = null;
+
 export async function getSettings() {
+  if (cached && Date.now() - cached.at < 30_000) return cached.data;
   const [row] = await db
     .select()
     .from(settings)
     .where(eq(settings.id, 1))
     .limit(1);
+  if (row) cached = { data: row, at: Date.now() };
   return row ?? null;
 }
 
 export function invalidateSettingsCache() {
-  // No-op to preserve expected exports just in case it is imported elsewhere
+  cached = null;
 }
 
 export async function getActiveRate(): Promise<{ rate: number; fetchedAt: string; currency: string } | null> {

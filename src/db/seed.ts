@@ -2,6 +2,10 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 config({ path: ".env" });
 
+if (process.env.NODE_ENV === "production") {
+  throw new Error("Seed no permitido en producción.");
+}
+
 import bcrypt from "bcryptjs";
 import { db } from "./index";
 import { users, settings, exchangeRates, categories } from "./schema";

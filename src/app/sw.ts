@@ -8,11 +8,11 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [
-    ...defaultCache,
     {
       handler: "NetworkOnly" as const,
       matcher: ({ url }: { url: URL }) => url.pathname.startsWith("/api/"),
     },
+    ...defaultCache,
   ],
 });
 
