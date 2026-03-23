@@ -53,6 +53,8 @@ export default function CheckoutPage() {
   const handleSubmit = async (
     phone: string,
     paymentMethod: "pago_movil" | "transfer",
+    name?: string,
+    cedula?: string,
   ) => {
     setIsSubmitting(true);
     setError(null);
@@ -79,18 +81,27 @@ export default function CheckoutPage() {
         } as any);
       });
 
+      // Extract selected bebidas
+      const bebidas = (item.selectedBebidas ?? []).map((b) => ({
+        id: b.id,
+        name: b.name,
+        priceUsdCents: b.priceUsdCents,
+        priceBsCents: b.priceBsCents,
+      }));
+
       return {
         id: item.id,
         quantity: item.quantity,
         fixedContornos: item.fixedContornos,
         selectedAdicionales: adicionales,
+        selectedBebidas: bebidas,
         removedComponents: item.removedComponents,
         categoryAllowAlone: item.categoryAllowAlone,
       };
     });
 
     const result: CheckoutResult = await processCheckout(
-      { phone, paymentMethod, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })) },
+      { phone, paymentMethod, name, cedula, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })) },
       checkoutItems,
     );
 

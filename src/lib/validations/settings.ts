@@ -18,6 +18,7 @@ export const settingsSchema = v.object({
   ]),
   banescoApiKey: v.optional(v.string()),
   whatsappNumber: v.optional(v.string()),
+  whatsappMicroserviceUrl: v.optional(v.pipe(v.string(), v.url())),
 });
 
 export type SettingsInput = v.InferOutput<typeof settingsSchema>;

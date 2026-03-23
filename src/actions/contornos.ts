@@ -112,7 +112,7 @@ export async function saveMenuItemContornos(
   try {
     await setMenuItemContornosDb(menuItemId, items);
     revalidatePath("/");
-    revalidatePath("/admin/menu");
+    revalidatePath("/admin/catalogo");
     return { success: true };
   } catch {
     return { success: false, error: "Error al guardar contornos del plato" };

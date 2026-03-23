@@ -212,8 +212,7 @@ export function ContornosClient({
     name: string;
     count: number;
   } | null>(null);
-  const dragItem = useRef<number | null>(null);
-  const dragOverItem = useRef<number | null>(null);
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
 
   const handleCreate = async (data: { name: string; priceUsdCents: number; isAvailable: boolean; sortOrder: number }) => {
     const result = await createContorno(data);
@@ -254,18 +253,28 @@ export function ContornosClient({
     setDeleteWarning(null);
   };
 
-  const handleDragStart = (idx: number) => { dragItem.current = idx; };
-  const handleDragEnter = (idx: number) => { dragOverItem.current = idx; };
-  const handleDragEnd = async () => {
-    if (dragItem.current === null || dragOverItem.current === null) return;
-    if (dragItem.current === dragOverItem.current) return;
+  const handleDragStart = (idx: number) => {
+    setDraggingIdx(idx);
+  };
+
+  const handleDragEnter = (idx: number) => {
+    if (draggingIdx === null || draggingIdx === idx) return;
+
     const newItems = [...items];
-    const draggedItem = newItems.splice(dragItem.current, 1)[0];
-    newItems.splice(dragOverItem.current, 0, draggedItem);
-    const reordered = newItems.map((item, i) => ({ ...item, sortOrder: i }));
+    const draggedItem = newItems.splice(draggingIdx, 1)[0];
+    newItems.splice(idx, 0, draggedItem);
+
+    setItems(newItems);
+    setDraggingIdx(idx);
+  };
+
+  const handleDragEnd = async () => {
+    if (draggingIdx === null) return;
+
+    const reordered = items.map((item, i) => ({ ...item, sortOrder: i }));
     setItems(reordered);
-    dragItem.current = null;
-    dragOverItem.current = null;
+    setDraggingIdx(null);
+
     await reorderContornos(reordered.map((i) => i.id));
   };
 
@@ -316,23 +325,62 @@ export function ContornosClient({
                     onDragEnter={() => handleDragEnter(idx)}
                     onDragEnd={handleDragEnd}
                     onDragOver={(e) => e.preventDefault()}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-bg-app/50 transition-colors"
+                    className={`flex flex-col md:flex-row md:items-center gap-4 p-4 transition-all duration-200 group/row ${draggingIdx === idx
+                      ? "opacity-50 bg-primary/10 border-2 border-dashed border-primary/30 z-50 scale-[1.02] shadow-lg"
+                      : "hover:bg-bg-app/50"
+                      }`}
                   >
-                    <GripVertical className="h-4 w-4 text-text-muted shrink-0 cursor-grab" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-text-main truncate">{item.name}</p>
-                      <p className="text-xs text-text-muted">
-                        {formatRef(item.priceUsdCents)}
-                        {item.priceUsdCents > 0 && <span className="ml-1.5">≈ {formatBs(priceBs)}</span>}
-                      </p>
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <GripVertical className={`h-4 w-4 text-text-muted shrink-0 transition-opacity ${draggingIdx === idx ? "cursor-grabbing opacity-100" : "cursor-grab opacity-0 group-hover/row:opacity-100"
+                        }`} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-text-main truncate uppercase tracking-tight">
+                          {item.name}
+                        </p>
+                        <p className="text-xs text-text-muted mt-0.5 flex items-center gap-1.5">
+                          <span className="font-mono font-medium">{formatRef(item.priceUsdCents)}</span>
+                          {item.priceUsdCents > 0 && <span>≈ {formatBs(priceBs)}</span>}
+                        </p>
+                      </div>
                     </div>
-                    <Switch checked={item.isAvailable} onCheckedChange={(val) => handleToggle(item.id, val)} />
-                    <Button variant="ghost" size="icon-sm" onClick={() => setEditingId(item.id)} className="text-text-muted hover:text-primary">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon-sm" onClick={() => handleDeleteClick(item.id, item.name)} className="text-text-muted hover:text-error">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+
+                    <div className="flex items-center justify-between md:justify-end gap-6 pl-8 md:pl-0">
+                      <div className="flex items-center gap-6">
+                        {/* Visibility Switch */}
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="text-[10px] font-bold text-text-main uppercase leading-none tracking-wider">Visible</span>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={item.isAvailable}
+                              onCheckedChange={(val) => handleToggle(item.id, val)}
+                              className="scale-90 origin-left"
+                            />
+                            <span className={`text-[11px] font-medium leading-none ${item.isAvailable ? "text-success" : "text-text-muted text-opacity-50"}`}>
+                              {item.isAvailable ? "Disponible" : "No disp."}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0 pt-2 md:pt-0">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => setEditingId(item.id)}
+                          className="h-8 w-8 text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => handleDeleteClick(item.id, item.name)}
+                          className="h-8 w-8 text-text-muted hover:text-error hover:bg-error/10 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}

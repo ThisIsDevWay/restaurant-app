@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getOrderById, updateOrderStatus } from "@/db/queries/orders";
+import { getCustomerByPhone } from "@/db/queries/customers";
+import { sendOrderMessage } from "@/lib/whatsapp/messages";
+import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   pending: ["paid", "cancelled"],
   whatsapp: ["paid", "cancelled"],
   paid: ["kitchen"],
   kitchen: ["delivered"],
+};
+
+const STATUS_TO_TEMPLATE: Record<string, string> = {
+  paid: "paid",
+  kitchen: "kitchen",
+  delivered: "delivered",
 };
 
 export async function POST(
@@ -53,6 +62,21 @@ export async function POST(
       orderId,
       newStatus as "pending" | "paid" | "kitchen" | "delivered" | "expired" | "failed" | "whatsapp",
     );
+
+    const templateKey = STATUS_TO_TEMPLATE[newStatus];
+    if (templateKey) {
+      const customer = await getCustomerByPhone(order.customerPhone);
+      const snapshotItems = order.itemsSnapshot as SnapshotItem[];
+
+      sendOrderMessage(
+        templateKey,
+        order.customerPhone,
+        String(order.orderNumber),
+        customer?.name ?? null,
+        snapshotItems,
+        order.subtotalBsCents,
+      ).catch(() => {});
+    }
 
     return NextResponse.json({ success: true, status: newStatus });
   } catch {

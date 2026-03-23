@@ -8,11 +8,27 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { createMenuItem, updateMenuItem, generateUploadUrl, getPublicUrl } from "@/actions/menu";
 import { saveMenuItemAdicionales } from "@/actions/adicionales";
 import { saveMenuItemContornos } from "@/actions/contornos";
-import { Image as ImageIcon, Upload, ExternalLink } from "lucide-react";
+import { saveMenuItemBebidas } from "@/actions/bebidas";
+import {
+  Image as ImageIcon,
+  Upload,
+  ExternalLink,
+  ChevronLeft,
+  Save,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  Tag,
+  ListChecks,
+  Plus,
+  Eye,
+  EyeOff,
+  Layers,
+  Coffee,
+} from "lucide-react";
 import { formatBs, formatRef } from "@/lib/money";
 
 const formSchema = v.object({
@@ -29,44 +45,14 @@ const formSchema = v.object({
       return !isNaN(num) && num > 0;
     }, "Precio debe ser mayor a 0"),
   ),
-  isAvailable: v.boolean(),
-  sortOrder: v.pipe(v.number(), v.integer()),
+  sortOrder: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
   imageUrl: v.optional(v.string()),
+  isAvailable: v.boolean(),
 });
 
 type FormValues = v.InferOutput<typeof formSchema>;
 
-interface Category {
-  id: string;
-  name: string;
-}
-
-interface MenuItemData {
-  id: string;
-  name: string;
-  description: string | null;
-  priceUsdCents: number;
-  categoryId: string;
-  isAvailable: boolean;
-  imageUrl: string | null;
-  sortOrder: number;
-}
-
-interface AdicionalOption {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-}
-
-interface ContornoOption {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-}
-
-interface SelectedContorno {
+interface ContornoSelection {
   id: string;
   name: string;
   removable: boolean;
@@ -74,45 +60,58 @@ interface SelectedContorno {
 }
 
 interface MenuItemFormProps {
-  categories: Category[];
-  initialData?: MenuItemData;
-  exchangeRate?: number;
-  allAdicionales?: AdicionalOption[];
+  categories: { id: string; name: string; isSimple?: boolean }[];
+  initialData?: {
+    id: string;
+    name: string;
+    description?: string | null;
+    categoryId: string;
+    priceUsdCents: number;
+    sortOrder?: number | null;
+    imageUrl?: string | null;
+    isAvailable: boolean;
+  };
+  exchangeRate: number;
+  allAdicionales: { id: string; name: string; priceUsdCents: number; isAvailable: boolean }[];
   initialSelectedAdicionalIds?: string[];
-  allContornos?: ContornoOption[];
-  initialSelectedContornos?: SelectedContorno[];
+  allContornos: { id: string; name: string; priceUsdCents: number; isAvailable: boolean }[];
+  initialSelectedContornos?: ContornoSelection[];
+  allBebidas?: { id: string; name: string; priceUsdCents: number; isAvailable: boolean }[];
+  initialSelectedBebidaIds?: string[];
+  adicionalesEnabled?: boolean;
+  bebidasEnabled?: boolean;
 }
 
 export function MenuItemForm({
   categories,
   initialData,
-  exchangeRate = 0,
-  allAdicionales = [],
+  exchangeRate,
+  allAdicionales,
   initialSelectedAdicionalIds = [],
-  allContornos = [],
+  allContornos,
   initialSelectedContornos = [],
+  allBebidas = [],
+  initialSelectedBebidaIds = [],
+  adicionalesEnabled = true,
+  bebidasEnabled = true,
 }: MenuItemFormProps) {
-  const isEdit = !!initialData;
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(
-    initialData?.imageUrl ?? null,
-  );
-  const [uploading, setUploading] = useState(false);
+  const isEdit = !!initialData;
+
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAdicionalIds, setSelectedAdicionalIds] = useState<string[]>(
-    initialSelectedAdicionalIds,
-  );
-  const [selectedContornos, setSelectedContornos] = useState<SelectedContorno[]>(
-    initialSelectedContornos,
-  );
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.imageUrl ?? null);
+  const [selectedAdicionalIds, setSelectedAdicionalIds] = useState<string[]>(initialSelectedAdicionalIds);
+  const [selectedContornos, setSelectedContornos] = useState<ContornoSelection[]>(initialSelectedContornos);
+  const [selectedBebidaIds, setSelectedBebidaIds] = useState<string[]>(initialSelectedBebidaIds);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
     handleSubmit,
-    setValue,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: valibotResolver(formSchema),
@@ -120,42 +119,47 @@ export function MenuItemForm({
       name: initialData?.name ?? "",
       description: initialData?.description ?? "",
       categoryId: initialData?.categoryId ?? "",
-      priceUsdDollars: initialData
-        ? (initialData.priceUsdCents / 100).toFixed(2)
-        : "",
-      isAvailable: initialData?.isAvailable ?? true,
+      priceUsdDollars: initialData ? String((initialData.priceUsdCents / 100).toFixed(2)) : "",
       sortOrder: initialData?.sortOrder ?? 0,
       imageUrl: initialData?.imageUrl ?? "",
+      isAvailable: initialData?.isAvailable ?? true,
     },
   });
 
+  const watchedName = watch("name");
+  const watchedDesc = watch("description") ?? "";
+  const currentPriceStr = watch("priceUsdDollars");
+  const currentPriceBs = parseFloat(currentPriceStr) * exchangeRate * 100 || 0;
   const isAvailable = watch("isAvailable");
+  const watchedCategoryId = watch("categoryId");
+  const selectedCategory = categories.find((c) => c.id === watchedCategoryId);
+  const isSimpleCategory = selectedCategory?.isSimple ?? false;
 
-  function toggleContorno(contorno: ContornoOption) {
+  function toggleContorno(contorno: { id: string; name: string }) {
     setSelectedContornos((prev) => {
-      const existing = prev.find((c) => c.id === contorno.id);
-      if (existing) {
-        return prev.filter((c) => c.id !== contorno.id);
-      }
+      const exists = prev.find((c) => c.id === contorno.id);
+      if (exists) return prev.filter((c) => c.id !== contorno.id);
       return [...prev, { id: contorno.id, name: contorno.name, removable: false, substituteContornoIds: [] }];
     });
   }
 
   function toggleContornoRemovable(id: string) {
     setSelectedContornos((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, removable: !c.removable } : c)),
+      prev.map((c) => (c.id === id ? { ...c, removable: !c.removable, substituteContornoIds: [] } : c)),
     );
   }
 
-  function toggleSubstituteContorno(contornoId: string, substituteId: string) {
+  function toggleSubstituteContorno(contornoId: string, subId: string) {
     setSelectedContornos((prev) =>
       prev.map((c) => {
         if (c.id !== contornoId) return c;
-        const current = c.substituteContornoIds;
-        const next = current.includes(substituteId)
-          ? current.filter((id) => id !== substituteId)
-          : [...current, substituteId];
-        return { ...c, substituteContornoIds: next };
+        const already = c.substituteContornoIds.includes(subId);
+        return {
+          ...c,
+          substituteContornoIds: already
+            ? c.substituteContornoIds.filter((id) => id !== subId)
+            : [...c.substituteContornoIds, subId],
+        };
       }),
     );
   }
@@ -163,41 +167,14 @@ export function MenuItemForm({
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      setError("La imagen no puede pesar más de 2MB");
-      return;
-    }
-
-    if (!["image/png", "image/jpeg"].includes(file.type)) {
-      setError("Solo se permiten imágenes PNG o JPG");
-      return;
-    }
-
-    setUploading(true);
-    setError(null);
-
     try {
-      const urlResult = await generateUploadUrl(file.name);
-      if (!urlResult.success) {
-        setError(urlResult.error);
-        return;
-      }
-
-      const uploadRes = await fetch(urlResult.url, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
-      });
-
-      if (!uploadRes.ok) {
-        setError("Error al subir la imagen");
-        return;
-      }
-
-      const publicUrl = await getPublicUrl(urlResult.path);
-      setValue("imageUrl", publicUrl);
+      setUploading(true);
+      const result = await generateUploadUrl(file.name);
+      if (!result.success) throw new Error(result.error);
+      await fetch(result.url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      const publicUrl = await getPublicUrl(result.path);
       setPreviewUrl(publicUrl);
+      setValue("imageUrl", publicUrl);
     } catch {
       setError("Error al subir la imagen");
     } finally {
@@ -208,474 +185,446 @@ export function MenuItemForm({
   async function onSubmit(data: FormValues) {
     setSubmitting(true);
     setError(null);
-
-    const priceUsdCents = Math.round(parseFloat(data.priceUsdDollars) * 100);
-
-    const payload = {
-      name: data.name,
-      description: data.description || undefined,
-      categoryId: data.categoryId,
-      priceUsdCents,
-      isAvailable: data.isAvailable,
-      imageUrl: data.imageUrl || undefined,
-      sortOrder: data.sortOrder,
-    };
-
     try {
-      const result = isEdit
-        ? await updateMenuItem(initialData.id, payload)
-        : await createMenuItem(payload);
-
-      if (result.success) {
-        const itemId = isEdit ? initialData.id : result.item?.id;
-        // Save adicionales assignment
-        if (itemId) {
-          await saveMenuItemAdicionales(itemId, selectedAdicionalIds);
-        }
-        // Save contornos assignment
-        if (itemId) {
-          await saveMenuItemContornos(
-            itemId,
-            selectedContornos.map((c) => ({
-              contornoId: c.id,
-              removable: c.removable,
-              substituteContornoIds: c.substituteContornoIds,
-            })),
-          );
-        }
-        router.push("/admin/menu");
+      const priceUsdCents = Math.round(parseFloat(data.priceUsdDollars) * 100);
+      let itemId: string;
+      if (isEdit) {
+        await updateMenuItem(initialData.id, { ...data, priceUsdCents, imageUrl: data.imageUrl ?? "" });
+        itemId = initialData.id;
       } else {
-        setError(result.error ?? "Error desconocido");
+        const result = await createMenuItem({ ...data, priceUsdCents, imageUrl: data.imageUrl ?? "" });
+        if (!result.success || !result.item) throw new Error(result.error ?? "Error al crear");
+        itemId = result.item.id;
       }
-    } catch {
-      setError("Error inesperado");
+      await saveMenuItemAdicionales(itemId, selectedAdicionalIds);
+      await saveMenuItemBebidas(itemId, selectedBebidaIds);
+      await saveMenuItemContornos(
+        itemId,
+        selectedContornos.map((c) => ({
+          contornoId: c.id,
+          removable: c.removable,
+          substituteContornoIds: c.substituteContornoIds,
+        })),
+      );
+      router.push("/admin/catalogo");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      {error && (
-        <div className="mb-6 rounded-xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
-          {error}
-        </div>
-      )}
-
-      <div className="grid gap-6 lg:grid-cols-5">
-        {/* Left Column - Basic Info (3/5) */}
-        <div className="lg:col-span-3 space-y-6">
-          <Card className="ring-1 ring-border">
-            <CardHeader className="border-b border-border">
-              <CardTitle>Información básica</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5 pt-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-text-main">
-                  Nombre *
-                </label>
-                <Input {...register("name")} placeholder="Ej: Pollo Guisado" />
-                {errors.name && (
-                  <p className="mt-1 text-xs text-error">{errors.name.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-text-main">
-                  Descripción
-                </label>
-                <textarea
-                  {...register("description")}
-                  placeholder="Descripción del plato..."
-                  rows={3}
-                  className="w-full rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-text-main placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
-                  maxLength={300}
-                />
-                {errors.description && (
-                  <p className="mt-1 text-xs text-error">{errors.description.message}</p>
-                )}
-              </div>
-
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-text-main">
-                    Categoría *
-                  </label>
-                  <select
-                    {...register("categoryId")}
-                    className="w-full rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-text-main focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                  >
-                    <option value="">Seleccionar</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.categoryId && (
-                    <p className="mt-1 text-xs text-error">{errors.categoryId.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-text-main">
-                    Precio (USD) *
-                  </label>
-                  <Input
-                    {...register("priceUsdDollars")}
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    placeholder="0.00"
-                    inputMode="decimal"
-                  />
-                  {errors.priceUsdDollars && (
-                    <p className="mt-1 text-xs text-error">{errors.priceUsdDollars.message}</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-text-main">
-                  Orden de aparición
-                </label>
-                <Input
-                  {...register("sortOrder", { valueAsNumber: true })}
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  className="w-32"
-                />
-                {errors.sortOrder && (
-                  <p className="mt-1 text-xs text-error">{errors.sortOrder.message}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Contornos Selection */}
-          {allContornos.length > 0 && (
-            <Card className="ring-1 ring-border">
-              <CardHeader className="border-b border-border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Contornos</CardTitle>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      Selecciona cuáles aplican y si el cliente puede quitarlos
-                    </p>
-                  </div>
-                  <a
-                    href="/admin/contornos"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    Gestionar contornos
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-2">
-                  {allContornos.map((contorno) => {
-                    const selected = selectedContornos.find((c) => c.id === contorno.id);
-                    const isSelected = !!selected;
-                    const priceBs = Math.round(contorno.priceUsdCents * exchangeRate);
-                    return (
-                      <div
-                        key={contorno.id}
-                        className="rounded-xl border border-border bg-bg-app/30 p-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => toggleContorno(contorno)}
-                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${
-                              isSelected
-                                ? "border-primary bg-primary"
-                                : "border-border bg-white"
-                            }`}
-                          >
-                            {isSelected && (
-                              <svg
-                                className="h-3 w-3 text-white"
-                                viewBox="0 0 12 12"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M2 6l3 3 5-5" />
-                              </svg>
-                            )}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium text-text-main">
-                              {contorno.name}
-                            </span>
-                            {!contorno.isAvailable && (
-                              <span className="ml-2 text-xs text-error">
-                                No disponible
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-xs text-text-muted">
-                            {formatRef(contorno.priceUsdCents)}
-                            {contorno.priceUsdCents > 0 && (
-                              <span className="ml-1">≈ {formatBs(priceBs)}</span>
-                            )}
-                          </span>
-                        </div>
-                        {isSelected && (
-                          <div className="mt-2 space-y-2 border-t border-border pt-2">
-                            <div className="flex items-center justify-between">
-                              <label className="text-xs text-text-main">
-                                El cliente puede quitarlo
-                              </label>
-                              <Switch
-                                checked={selected.removable}
-                                onCheckedChange={() => toggleContornoRemovable(contorno.id)}
-                              />
-                            </div>
-                            {selected.removable && (
-                              <div className="space-y-1">
-                                <p className="text-[11px] text-text-muted">
-                                  Sustituir por
-                                </p>
-                                {allContornos
-                                  .filter((c) => c.id !== contorno.id)
-                                  .map((sub) => {
-                                    const isChecked = selected.substituteContornoIds.includes(sub.id);
-                                    return (
-                                      <button
-                                        key={sub.id}
-                                        type="button"
-                                        onClick={() => toggleSubstituteContorno(contorno.id, sub.id)}
-                                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-bg-app/50"
-                                      >
-                                        <div
-                                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border-2 transition-colors ${
-                                            isChecked
-                                              ? "border-primary bg-primary"
-                                              : "border-border bg-white"
-                                          }`}
-                                        >
-                                          {isChecked && (
-                                            <svg
-                                              className="h-2.5 w-2.5 text-white"
-                                              viewBox="0 0 12 12"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              strokeWidth="2"
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                            >
-                                              <path d="M2 6l3 3 5-5" />
-                                            </svg>
-                                          )}
-                                        </div>
-                                        <span className="text-xs text-text-main">
-                                          {sub.name}
-                                        </span>
-                                      </button>
-                                    );
-                                  })}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Adicionales Selection */}
-          {allAdicionales.length > 0 && (
-            <Card className="ring-1 ring-border">
-              <CardHeader className="border-b border-border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Adicionales disponibles</CardTitle>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      Selecciona cuáles aplican a este plato
-                    </p>
-                  </div>
-                  <a
-                    href="/admin/adicionales"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    Gestionar adicionales
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-1">
-                  {allAdicionales.map((adicional) => {
-                    const isChecked = selectedAdicionalIds.includes(adicional.id);
-                    const priceBs = Math.round(adicional.priceUsdCents * exchangeRate);
-                    return (
-                      <button
-                        key={adicional.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedAdicionalIds((prev) =>
-                            prev.includes(adicional.id)
-                              ? prev.filter((id) => id !== adicional.id)
-                              : [...prev, adicional.id],
-                          );
-                        }}
-                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-bg-app/50"
-                      >
-                        <div
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${
-                            isChecked
-                              ? "border-primary bg-primary"
-                              : "border-border bg-white"
-                          }`}
-                        >
-                          {isChecked && (
-                            <svg
-                              className="h-3 w-3 text-white"
-                              viewBox="0 0 12 12"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M2 6l3 3 5-5" />
-                            </svg>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm text-text-main">
-                            {adicional.name}
-                          </span>
-                          {!adicional.isAvailable && (
-                            <span className="ml-2 text-xs text-error">
-                              No disponible
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-xs text-text-muted">
-                          {formatRef(adicional.priceUsdCents)}
-                          {adicional.priceUsdCents > 0 && (
-                            <span className="ml-1">
-                              ≈ {formatBs(priceBs)}
-                            </span>
-                          )}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-        {/* Right Column - Media & Status (2/5) */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Image Card */}
-          <Card className="ring-1 ring-border">
-            <CardHeader className="border-b border-border">
-              <CardTitle>Imagen</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              {previewUrl ? (
-                <div className="relative mb-4 group">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="h-48 w-full rounded-xl object-cover ring-1 ring-border"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPreviewUrl(null);
-                      setValue("imageUrl", "");
-                      if (fileInputRef.current) fileInputRef.current.value = "";
-                    }}
-                    className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mb-4 flex h-48 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-bg-app/50 hover:border-primary/40 hover:bg-primary/5 transition-all"
-                >
-                  <Upload className="mb-2 h-8 w-8 text-text-muted" />
-                  <p className="text-sm font-medium text-text-muted">
-                    Subir imagen
-                  </p>
-                  <p className="text-xs text-text-muted mt-0.5">
-                    PNG o JPG, máx 2MB
-                  </p>
-                </div>
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto py-8 px-4">
+      {/* ── Minimalistic Header ── */}
+      <div className="flex items-center justify-between mb-12">
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => router.push("/admin/catalogo")}
+            className="p-2 hover:bg-gray-50 rounded-full transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5 text-gray-500" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-medium text-gray-900 tracking-tight">
+              {isEdit ? (watchedName || initialData.name) : "Nuevo producto"}
+            </h1>
+            <div className="flex items-center gap-3 mt-1">
+              {selectedCategory && (
+                <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <Tag className="h-3 w-3" />
+                  {selectedCategory.name}
+                </span>
               )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg"
-                onChange={handleImageUpload}
-                disabled={uploading}
-                className="hidden"
-              />
-              {uploading && (
-                <p className="text-xs text-text-muted">Subiendo imagen...</p>
-              )}
-            </CardContent>
-          </Card>
+              <span className={`text-xs font-medium ${isAvailable ? "text-green-600" : "text-gray-500"}`}>
+                {isAvailable ? "● Disponible" : "○ Oculto"}
+              </span>
+            </div>
+          </div>
+        </div>
 
-          {/* Status Card */}
-          <Card className="ring-1 ring-border">
-            <CardHeader className="border-b border-border">
-              <CardTitle>Estado</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-text-main">
-                    Disponible para venta
-                  </p>
-                  <p className="text-xs text-text-muted">
-                    {isAvailable
-                      ? "Visible en el menú público"
-                      : "Oculto del menú público"}
-                  </p>
-                </div>
-                <Switch
-                  checked={isAvailable}
-                  onCheckedChange={(val) => setValue("isAvailable", val)}
-                />
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => router.push("/admin/catalogo")}
+            className="text-gray-500 hover:text-gray-900"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            disabled={submitting || uploading}
+            className="bg-primary text-white hover:bg-primary-hover px-6 font-medium"
+          >
+            {submitting ? "Guardando..." : isEdit ? "Guardar" : "Crear"}
+          </Button>
         </div>
       </div>
 
-      {/* Submit Button */}
-      <div className="mt-6 flex justify-end gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push("/admin/menu")}
-        >
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={submitting || uploading} className="min-w-[140px]">
-          {submitting ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear item"}
-        </Button>
+      {error && (
+        <div className="mb-8 p-4 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 animate-in fade-in duration-300">
+          <p className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            {error}
+          </p>
+        </div>
+      )}
+
+      {/* ── Simplified Sections ── */}
+      <div className="space-y-16">
+        {/* Row 1: Basic Info & Image */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          {/* Identidad */}
+          <section className="space-y-6">
+            <header>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Información básica</h2>
+            </header>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">Nombre</label>
+                <Input
+                  {...register("name")}
+                  placeholder="Ej: Pollo Guisado"
+                  className="border-gray-200 focus:border-primary transition-colors h-10"
+                />
+                {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">Descripción</label>
+                <textarea
+                  {...register("description")}
+                  placeholder="Descripción del plato..."
+                  rows={4}
+                  className="w-full p-3 text-sm border border-gray-200 rounded-md focus:border-primary focus:outline-none transition-colors resize-none"
+                />
+                {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
+              </div>
+            </div>
+          </section>
+
+          {/* Imagen */}
+          <section className="space-y-6">
+            <header>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Imagen</h2>
+            </header>
+
+            <div className="aspect-square relative rounded-lg border border-gray-200 bg-gray-50 overflow-hidden group">
+              {previewUrl ? (
+                <>
+                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50"
+                    >
+                      <Upload className="h-4 w-4 text-gray-700" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewUrl(null);
+                        setValue("imageUrl", "");
+                      }}
+                      className="p-2 bg-white rounded-full shadow-sm hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
+                >
+                  <ImageIcon className="h-8 w-8 text-gray-300" />
+                  <span className="text-xs text-gray-500">Añadir imagen</span>
+                </button>
+              )}
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+            </div>
+            {uploading && <p className="text-xs text-gray-500 text-center animate-pulse">Subiendo...</p>}
+          </section>
+        </div>
+
+        {/* Row 2: Price & Category */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8 border-t border-gray-200">
+          <section className="space-y-6">
+            <header>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Precio y Categoría</h2>
+            </header>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">Categoría</label>
+                <select
+                  {...register("categoryId")}
+                  className="w-full h-10 px-3 text-sm border border-gray-200 rounded-md focus:border-primary focus:outline-none transition-colors"
+                >
+                  <option value="">Seleccionar</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+                {errors.categoryId && <p className="text-xs text-red-500">{errors.categoryId.message}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">Orden</label>
+                <Input
+                  {...register("sortOrder", { valueAsNumber: true })}
+                  type="number"
+                  className="border-gray-200 focus:border-primary transition-colors h-10"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-gray-400">Precio USD</label>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className="text-xl font-light text-gray-400">$</span>
+                  <input
+                    {...register("priceUsdDollars")}
+                    type="number"
+                    step="0.01"
+                    className="bg-transparent text-2xl font-medium w-full focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-gray-400">Referencia Bs.</label>
+                <p className="text-2xl font-light text-gray-500 mt-1">
+                  {currentPriceBs > 0 ? formatBs(currentPriceBs).replace("Bs.", "").trim() : "0.00"}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-6">
+            <header>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Disponibilidad</h2>
+            </header>
+
+            <div className="flex items-center justify-between p-4 border border-gray-300 rounded-lg bg-white">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Activo en menú</p>
+                <p className="text-xs text-gray-500">Muestra u oculta este plato a los clientes.</p>
+              </div>
+              <Switch
+                checked={isAvailable}
+                onCheckedChange={(val) => setValue("isAvailable", val)}
+              />
+            </div>
+          </section>
+        </div>
+
+        {/* Row 3+: Contornos (full width) */}
+        {!isSimpleCategory && allContornos.length > 0 && (
+          <section className="pt-16 border-t border-gray-200 space-y-8">
+            <header className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Contornos</h2>
+                <p className="text-xs text-gray-500 mt-1">Configura los acompañamientos y sus opciones de sustitución.</p>
+              </div>
+              <a
+                href="/admin/contornos"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gray-400 hover:text-gray-900 transition-colors flex items-center gap-1"
+              >
+                Gestionar contornos
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </header>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {allContornos.map((contorno) => {
+                const selected = selectedContornos.find((c) => c.id === contorno.id);
+                const isSelected = !!selected;
+                return (
+                  <div
+                    key={contorno.id}
+                    className={`p-4 rounded-lg border-2 transition-all duration-200 ${isSelected
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-gray-200 hover:border-gray-300 bg-white"
+                      }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleContorno(contorno)}
+                        className="flex-1 text-left flex items-start gap-3"
+                      >
+                        <div className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? "border-primary bg-primary" : "border-gray-300 bg-white"
+                          }`}>
+                          {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className={`text-sm font-semibold ${isSelected ? "text-primary" : "text-gray-700"}`}>
+                            {contorno.name}
+                          </p>
+                          <p className="text-[10px] text-gray-500 mt-0.5">{formatRef(contorno.priceUsdCents)}</p>
+                        </div>
+                      </button>
+                      <div className={`h-1.5 w-1.5 rounded-full mt-1.5 shadow-sm ${contorno.isAvailable ? "bg-green-500" : "bg-red-400"}`} />
+                    </div>
+
+                    {isSelected && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 space-y-4 animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase text-gray-400">Intercambiable</span>
+                          <Switch
+                            checked={selected.removable}
+                            onCheckedChange={() => toggleContornoRemovable(contorno.id)}
+                          />
+                        </div>
+
+                        {selected.removable && (
+                          <div className="space-y-2">
+                            <p className="text-[10px] uppercase text-gray-400 font-bold">Sustitutos</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {allContornos
+                                .filter((c) => c.id !== contorno.id)
+                                .map((sub) => {
+                                  const isSubValue = selected.substituteContornoIds.includes(sub.id);
+                                  return (
+                                    <button
+                                      key={sub.id}
+                                      type="button"
+                                      onClick={() => toggleSubstituteContorno(contorno.id, sub.id)}
+                                      className={`px-2 py-1 text-[10px] rounded border transition-colors ${isSubValue
+                                        ? "bg-primary border-primary text-white"
+                                        : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+                                        }`}
+                                    >
+                                      {sub.name}
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Row 4+: Adicionales (full width) */}
+        {!isSimpleCategory && allAdicionales.length > 0 && (
+          <section className="pt-16 border-t border-gray-200 space-y-8">
+            <header className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Adicionales</h2>
+                {!adicionalesEnabled && (
+                  <span className="text-[10px] text-red-400 font-bold ml-2">(DESHABILITADOS GLOBALMENTE)</span>
+                )}
+              </div>
+              <a
+                href="/admin/adicionales"
+                target="_blank"
+                className="text-xs text-gray-400 hover:text-gray-900 flex items-center gap-1"
+              >
+                Gestionar adicionales
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </header>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {allAdicionales.map((adicional) => {
+                const isChecked = selectedAdicionalIds.includes(adicional.id);
+                return (
+                  <button
+                    key={adicional.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedAdicionalIds((prev) =>
+                        prev.includes(adicional.id)
+                          ? prev.filter((id) => id !== adicional.id)
+                          : [...prev, adicional.id],
+                      );
+                    }}
+                    className={`p-3 text-left rounded-lg border-2 transition-all flex items-center gap-3 ${isChecked
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-gray-200 hover:border-gray-300 bg-white"
+                      }`}
+                  >
+                    <div className={`h-3.5 w-3.5 shrink-0 rounded border-2 flex items-center justify-center transition-colors ${isChecked ? "border-primary bg-primary" : "border-gray-300 bg-white"
+                      }`}>
+                      {isChecked && <CheckCircle2 className="h-2.5 w-2.5 text-white" strokeWidth={4} />}
+                    </div>
+                    <div>
+                      <p className={`text-xs font-bold truncate ${isChecked ? "text-gray-900" : "text-gray-700"}`}>
+                        {adicional.name}
+                      </p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">{formatRef(adicional.priceUsdCents)}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Row 5+: Bebidas (full width) */}
+        {!isSimpleCategory && allBebidas.length > 0 && (
+          <section className="pt-16 border-t border-gray-200 space-y-8">
+            <header className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Bebidas sugeridas</h2>
+                {!bebidasEnabled && (
+                  <span className="text-[10px] text-red-400 font-bold ml-2">(DESHABILITADAS GLOBALMENTE)</span>
+                )}
+              </div>
+            </header>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {allBebidas.map((bebida) => {
+                const isChecked = selectedBebidaIds.includes(bebida.id);
+                return (
+                  <button
+                    key={bebida.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedBebidaIds((prev) =>
+                        prev.includes(bebida.id)
+                          ? prev.filter((id) => id !== bebida.id)
+                          : [...prev, bebida.id],
+                      );
+                    }}
+                    className={`p-3 text-left rounded-lg border-2 transition-all flex items-center gap-3 ${isChecked
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-gray-200 hover:border-gray-300 bg-white"
+                      }`}
+                  >
+                    <div className={`h-3.5 w-3.5 shrink-0 rounded border-2 flex items-center justify-center transition-colors ${isChecked ? "border-gray-900 bg-gray-900" : "border-gray-300 bg-white"
+                      }`}>
+                      {isChecked && <CheckCircle2 className="h-2.5 w-2.5 text-white" strokeWidth={4} />}
+                    </div>
+                    <div>
+                      <p className={`text-xs font-bold truncate ${isChecked ? "text-gray-900" : "text-gray-700"}`}>
+                        {bebida.name}
+                      </p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">{formatRef(bebida.priceUsdCents)}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
     </form>
   );
 }
+

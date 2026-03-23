@@ -112,7 +112,7 @@ export async function saveMenuItemAdicionales(
   try {
     await setMenuItemAdicionalesDb(menuItemId, adicionalIds);
     revalidatePath("/");
-    revalidatePath("/admin/menu");
+    revalidatePath("/admin/catalogo");
     return { success: true };
   } catch {
     return { success: false, error: "Error al guardar adicionales del plato" };

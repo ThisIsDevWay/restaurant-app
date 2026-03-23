@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { getOrderById } from "@/db/queries/orders";
 import { getSettings } from "@/db/queries/settings";
 import { getActiveProvider } from "@/lib/payment-providers";
+import { getCustomerByPhone } from "@/db/queries/customers";
+import { sendOrderMessage } from "@/lib/whatsapp/messages";
+import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 
 export async function POST(
   _req: Request,
@@ -38,6 +41,18 @@ export async function POST(
     });
 
     if (result.success) {
+      const customer = await getCustomerByPhone(order.customerPhone);
+      const snapshotItems = order.itemsSnapshot as SnapshotItem[];
+
+      sendOrderMessage(
+        "paid",
+        order.customerPhone,
+        String(order.orderNumber),
+        customer?.name ?? null,
+        snapshotItems,
+        order.subtotalBsCents,
+      ).catch(() => {});
+
       return NextResponse.json({ success: true });
     }
 

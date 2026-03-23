@@ -19,6 +19,10 @@ interface KitchenOrder {
       substitutesComponentId?: string;
       substitutesComponentName?: string;
     }>;
+    selectedBebidas?: Array<{
+      id: string;
+      name: string;
+    }>;
     removedComponents: Array<{
       isRemoval: true;
       componentId: string;
@@ -184,13 +188,12 @@ export function KitchenQueue() {
                 return (
                   <div
                     key={order.id}
-                    className={`flex flex-col rounded-2xl border-2 bg-white shadow-md transition-all ${
-                      isNew
-                        ? "border-amber shadow-amber/20 animate-pulse-subtle"
-                        : isUrgent
-                          ? "border-error/50 shadow-error/10"
-                          : "border-amber/30"
-                    }`}
+                    className={`flex flex-col rounded-2xl border-2 bg-white shadow-md transition-all ${isNew
+                      ? "border-amber shadow-amber/20 animate-pulse-subtle"
+                      : isUrgent
+                        ? "border-error/50 shadow-error/10"
+                        : "border-amber/30"
+                      }`}
                   >
                     {/* Card Header */}
                     <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -262,6 +265,19 @@ export function KitchenQueue() {
                               ))}
                             </div>
                           )}
+                          {/* Bebidas */}
+                          {item.selectedBebidas && item.selectedBebidas.length > 0 && (
+                            <div className="ml-8 mt-1.5 flex flex-wrap gap-1">
+                              {item.selectedBebidas.map((b, bIdx) => (
+                                <span
+                                  key={`beb-${bIdx}`}
+                                  className="inline-flex items-center rounded-lg bg-info/10 px-2 py-1 text-sm font-bold text-info border border-info/20"
+                                >
+                                  🍹 {b.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -301,11 +317,10 @@ export function KitchenQueue() {
                 return (
                   <div
                     key={order.id}
-                    className={`flex flex-col rounded-2xl border-2 bg-white shadow-md ${
-                      elapsed > 20
-                        ? "border-error/50"
-                        : "border-info/30"
-                    }`}
+                    className={`flex flex-col rounded-2xl border-2 bg-white shadow-md ${elapsed > 20
+                      ? "border-error/50"
+                      : "border-info/30"
+                      }`}
                   >
                     {/* Card Header */}
                     <div className="flex items-center justify-between border-b border-border bg-info/5 px-4 py-3 rounded-t-xl">
@@ -357,6 +372,19 @@ export function KitchenQueue() {
                                   className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-sm font-bold text-primary border border-primary/20"
                                 >
                                   + {ad.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {/* Bebidas */}
+                          {item.selectedBebidas && item.selectedBebidas.length > 0 && (
+                            <div className="ml-8 mt-1.5 flex flex-wrap gap-1">
+                              {item.selectedBebidas.map((b, bIdx) => (
+                                <span
+                                  key={`beb-${bIdx}`}
+                                  className="inline-flex items-center rounded-lg bg-info/10 px-2 py-1 text-sm font-bold text-info border border-info/20"
+                                >
+                                  🍹 {b.name}
                                 </span>
                               ))}
                             </div>

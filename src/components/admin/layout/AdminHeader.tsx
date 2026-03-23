@@ -9,12 +9,15 @@ import { cn } from "@/lib/utils";
 const pathLabels: Record<string, string> = {
   admin: "Dashboard",
   orders: "Órdenes",
-  menu: "Menú",
+  menu: "Catálogo",
+  "menu-del-dia": "Menú del Día",
   categories: "Categorías",
   settings: "Configuración",
   new: "Nuevo",
   edit: "Editar",
   kitchen: "Cocina",
+  contornos: "Contornos",
+  adicionales: "Adicionales",
 };
 
 function useBreadcrumbs() {

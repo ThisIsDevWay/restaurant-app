@@ -209,6 +209,11 @@ export function PaymentDetails({
                 + {item.selectedAdicionales.map((a) => a.name).join(", ")}
               </p>
             )}
+            {(item.selectedBebidas ?? []).length > 0 && (
+              <p className="text-xs text-text-muted">
+                + {(item.selectedBebidas ?? []).map((b) => b.name).join(", ")}
+              </p>
+            )}
             <p className="text-sm font-semibold text-price-green">
               {formatBs(item.itemTotalBsCents)}
             </p>

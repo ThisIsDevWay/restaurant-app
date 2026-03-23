@@ -34,6 +34,11 @@ export const settings = pgTable("settings", {
   mercantilClientSecret: text("mercantil_client_secret"),
   bncApiKey: text("bnc_api_key"),
   whatsappNumber: text("whatsapp_number").notNull().default(""),
+  whatsappMicroserviceUrl: text("whatsapp_microservice_url")
+    .notNull()
+    .default("http://38.171.255.120:3333"),
+  adicionalesEnabled: boolean("adicionales_enabled").notNull().default(true),
+  bebidasEnabled: boolean("bebidas_enabled").notNull().default(true),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

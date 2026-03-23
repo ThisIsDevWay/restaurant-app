@@ -12,6 +12,7 @@ interface MenuItem {
   categoryId: string;
   categoryName: string;
   categoryAllowAlone: boolean;
+  categoryIsSimple: boolean;
   isAvailable: boolean;
   imageUrl: string | null;
   sortOrder: number;
@@ -36,6 +37,13 @@ interface MenuItem {
     isAvailable: boolean;
     sortOrder: number;
   }>;
+  bebidas?: Array<{
+    id: string;
+    name: string;
+    priceUsdCents: number;
+    isAvailable: boolean;
+    sortOrder: number;
+  }>;
   contornos: Array<{
     id: string;
     name: string;
@@ -51,9 +59,18 @@ interface Category {
   id: string;
   name: string;
   allowAlone: boolean;
+  isSimple: boolean;
 }
 
 interface ContornoOption {
+  id: string;
+  name: string;
+  priceUsdCents: number;
+  isAvailable: boolean;
+  sortOrder: number;
+}
+
+interface SimpleItem {
   id: string;
   name: string;
   priceUsdCents: number;
@@ -66,9 +83,22 @@ interface MenuClientProps {
   categories: Category[];
   rate: number | null;
   allContornos: ContornoOption[];
+  adicionalesEnabled?: boolean;
+  bebidasEnabled?: boolean;
+  dailyAdicionales: SimpleItem[];
+  dailyBebidas: SimpleItem[];
 }
 
-export function MenuClient({ items, categories, rate, allContornos }: MenuClientProps) {
+export function MenuClient({
+  items,
+  categories,
+  rate,
+  allContornos,
+  adicionalesEnabled = true,
+  bebidasEnabled = true,
+  dailyAdicionales,
+  dailyBebidas,
+}: MenuClientProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const filteredItems = activeCategory
@@ -84,7 +114,15 @@ export function MenuClient({ items, categories, rate, allContornos }: MenuClient
           onSelect={setActiveCategory}
         />
       </div>
-      <MenuGrid items={filteredItems} rate={rate} allContornos={allContornos} />
+      <MenuGrid
+        items={filteredItems}
+        rate={rate}
+        allContornos={allContornos}
+        adicionalesEnabled={adicionalesEnabled}
+        bebidasEnabled={bebidasEnabled}
+        dailyAdicionales={dailyAdicionales}
+        dailyBebidas={dailyBebidas}
+      />
     </>
   );
 }

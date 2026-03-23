@@ -12,6 +12,7 @@ interface MenuItem {
   categoryId: string;
   categoryName: string;
   categoryAllowAlone: boolean;
+  categoryIsSimple: boolean;
   isAvailable: boolean;
   imageUrl: string | null;
   sortOrder: number;
@@ -30,6 +31,13 @@ interface MenuItem {
     }>;
   }>;
   adicionales: Array<{
+    id: string;
+    name: string;
+    priceUsdCents: number;
+    isAvailable: boolean;
+    sortOrder: number;
+  }>;
+  bebidas?: Array<{
     id: string;
     name: string;
     priceUsdCents: number;
@@ -55,13 +63,33 @@ interface ContornoOption {
   sortOrder: number;
 }
 
+interface SimpleItem {
+  id: string;
+  name: string;
+  priceUsdCents: number;
+  isAvailable: boolean;
+  sortOrder: number;
+}
+
 interface MenuGridProps {
   items: MenuItem[];
   rate: number | null;
   allContornos: ContornoOption[];
+  adicionalesEnabled?: boolean;
+  bebidasEnabled?: boolean;
+  dailyAdicionales: SimpleItem[];
+  dailyBebidas: SimpleItem[];
 }
 
-export function MenuGrid({ items, rate, allContornos }: MenuGridProps) {
+export function MenuGrid({
+  items,
+  rate,
+  allContornos,
+  adicionalesEnabled = true,
+  bebidasEnabled = true,
+  dailyAdicionales,
+  dailyBebidas,
+}: MenuGridProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   const availableItems = items.filter((i) => i.isAvailable);
@@ -77,8 +105,12 @@ export function MenuGrid({ items, rate, allContornos }: MenuGridProps) {
       {sortedItems.map((item) => {
         const hasContornos = item.contornos.some((c) => c.isAvailable);
         const hasRequiredOptions = item.optionGroups.some((g) => g.required);
-        const hasAdicionales = item.adicionales.some((a) => a.isAvailable);
-        const needsDetailModal = hasContornos || hasRequiredOptions || hasAdicionales;
+        const hasDailyAdicionales = adicionalesEnabled && dailyAdicionales.length > 0;
+        const hasDailyBebidas = bebidasEnabled && dailyBebidas.length > 0;
+
+        const needsDetailModal =
+          !item.categoryIsSimple &&
+          (hasContornos || hasRequiredOptions || hasDailyAdicionales || hasDailyBebidas);
         const priceBsCents = rate
           ? Math.round(item.priceUsdCents * rate)
           : 0;
@@ -108,6 +140,10 @@ export function MenuGrid({ items, rate, allContornos }: MenuGridProps) {
           onClose={() => setSelectedItemId(null)}
           currentRateBsPerUsd={rate}
           allContornos={allContornos}
+          adicionalesEnabled={adicionalesEnabled}
+          bebidasEnabled={bebidasEnabled}
+          dailyAdicionales={dailyAdicionales}
+          dailyBebidas={dailyBebidas}
         />
       )}
     </div>

@@ -6,7 +6,11 @@ import { categories, menuItems } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-export async function createCategory(name: string, allowAlone: boolean = true) {
+export async function createCategory(
+  name: string,
+  allowAlone: boolean = true,
+  isSimple: boolean = false,
+) {
   await requireAdmin();
 
   try {
@@ -18,7 +22,7 @@ export async function createCategory(name: string, allowAlone: boolean = true) {
 
     const [cat] = await db
       .insert(categories)
-      .values({ name, sortOrder: nextSort, allowAlone })
+      .values({ name, sortOrder: nextSort, allowAlone, isSimple })
       .returning();
     revalidatePath("/");
     revalidatePath("/admin/categories");
@@ -32,19 +36,36 @@ export async function updateCategory(
   id: string,
   name: string,
   allowAlone: boolean = true,
+  isSimple: boolean = false,
 ) {
   await requireAdmin();
 
   try {
     await db
       .update(categories)
-      .set({ name, allowAlone })
+      .set({ name, allowAlone, isSimple })
       .where(eq(categories.id, id));
     revalidatePath("/");
     revalidatePath("/admin/categories");
     return { success: true };
   } catch {
     return { success: false, error: "Error al actualizar categoría" };
+  }
+}
+
+export async function toggleCategorySimple(id: string, isSimple: boolean) {
+  await requireAdmin();
+
+  try {
+    await db
+      .update(categories)
+      .set({ isSimple })
+      .where(eq(categories.id, id));
+    revalidatePath("/");
+    revalidatePath("/admin/categories");
+    return { success: true };
+  } catch {
+    return { success: false, error: "Error al actualizar tipo de categoría" };
   }
 }
 
@@ -115,5 +136,21 @@ export async function toggleCategoryAvailability(id: string, isAvailable: boolea
     return { success: true };
   } catch {
     return { success: false, error: "Error al actualizar disponibilidad" };
+  }
+}
+
+export async function toggleCategoryAlone(id: string, allowAlone: boolean) {
+  await requireAdmin();
+
+  try {
+    await db
+      .update(categories)
+      .set({ allowAlone })
+      .where(eq(categories.id, id));
+    revalidatePath("/");
+    revalidatePath("/admin/categories");
+    return { success: true };
+  } catch {
+    return { success: false, error: "Error al actualizar restricción" };
   }
 }

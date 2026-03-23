@@ -41,6 +41,9 @@ export function CartItem({
           <h4 className="text-sm font-semibold text-text-main leading-tight">
             {item.quantity > 1 ? `${item.quantity} servicios de ${item.name}` : item.name}
           </h4>
+          <p className="text-[10px] text-text-muted mt-0.5">
+            {formatBs(item.baseBsCents)} / {formatRef(item.baseUsdCents)}
+          </p>
 
           <div className="mt-1.5 space-y-1.5">
             {/* Contornos */}
@@ -84,6 +87,23 @@ export function CartItem({
                     {adicional.priceBsCents > 0 && (
                       <span className="ml-1 text-[10px] font-medium text-price-green">
                         ({formatBs(adicional.priceBsCents)} / {formatRef(adicional.priceUsdCents)})
+                      </span>
+                    )}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {/* Bebidas */}
+            {(item.selectedBebidas ?? []).length > 0 && (
+              <div className="space-y-0.5">
+                <p className="text-[11px] font-semibold text-text-main">Bebidas</p>
+                {(item.selectedBebidas ?? []).map((bebida) => (
+                  <p key={bebida.id} className="text-[11px] text-text-muted">
+                    + {bebida.name}
+                    {bebida.priceBsCents > 0 && (
+                      <span className="ml-1 text-[10px] font-medium text-price-green">
+                        ({formatBs(bebida.priceBsCents)} / {formatRef(bebida.priceUsdCents)})
                       </span>
                     )}
                   </p>

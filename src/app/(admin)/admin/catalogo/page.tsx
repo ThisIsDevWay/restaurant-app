@@ -24,7 +24,7 @@ export default async function MenuAdminPage() {
           <h1 className="text-2xl font-bold text-text-main">Menú</h1>
           <p className="text-sm text-text-muted">{items.length} items en el menú</p>
         </div>
-        <Link href="/admin/menu/new">
+        <Link href="/admin/catalogo/new">
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
             Nuevo item
@@ -43,7 +43,7 @@ export default async function MenuAdminPage() {
               <p className="text-xs text-text-muted mt-1 max-w-[280px]">
                 Agrega tu primer plato para comenzar a recibir pedidos
               </p>
-              <Link href="/admin/menu/new" className="mt-4">
+              <Link href="/admin/catalogo/new" className="mt-4">
                 <Button size="sm" className="gap-2">
                   <Plus className="h-3.5 w-3.5" />
                   Agregar item
@@ -122,7 +122,7 @@ export default async function MenuAdminPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right pr-5">
-                      <Link href={`/admin/menu/${item.id}/edit`}>
+                      <Link href={`/admin/catalogo/${item.id}/edit`}>
                         <Button
                           variant="ghost"
                           size="icon-sm"

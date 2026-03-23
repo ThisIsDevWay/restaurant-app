@@ -9,6 +9,11 @@ import type {
 import { db } from "@/db";
 import { orders, paymentsLog } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import {
+  formatItemsDetailed,
+  type SnapshotItem,
+} from "@/lib/utils/format-items-detailed";
+import { formatBs, formatRef } from "@/lib/money";
 
 export class WhatsAppManualProvider implements PaymentProvider {
   readonly id = "whatsapp_manual" as const;
@@ -20,33 +25,9 @@ export class WhatsAppManualProvider implements PaymentProvider {
     order: OrderRow,
     settings: SettingsRow,
   ): Promise<PaymentInitResult> {
-    const snapshot = order.itemsSnapshot as Array<{
-      name: string;
-      quantity: number;
-      fixedContornos: Array<{ name: string }>;
-      selectedAdicionales: Array<{ name: string }>;
-      itemTotalBsCents: number;
-    }>;
+    const snapshot = order.itemsSnapshot as SnapshotItem[];
 
-    const itemsText = snapshot
-      .map((item) => {
-        let line = `• ${item.quantity}× ${item.name}`;
-
-        const contornoNames = item.fixedContornos.map(c => c.name);
-        if (contornoNames.length > 0) {
-          line += ` (${contornoNames.join(", ")})`;
-        }
-
-        if (item.selectedAdicionales.length > 0) {
-          line += ` + ${item.selectedAdicionales.map((a) => a.name).join(", ")}`;
-        }
-        const totalBs = (item.itemTotalBsCents / 100).toLocaleString("es-VE", {
-          minimumFractionDigits: 2,
-        });
-        line += ` — Bs. ${totalBs}`;
-        return line;
-      })
-      .join("\n");
+    const itemsText = formatItemsDetailed(snapshot, formatBs, formatRef);
 
     const totalBs = (order.subtotalBsCents / 100).toLocaleString("es-VE", {
       minimumFractionDigits: 2,

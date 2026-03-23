@@ -31,6 +31,12 @@ export interface CartItem {
     priceUsdCents: number;
     priceBsCents: number;
   }>;
+  selectedBebidas?: Array<{
+    id: string;
+    name: string;
+    priceUsdCents: number;
+    priceBsCents: number;
+  }>;
   removedComponents: RemovedComponent[];
   quantity: number;
   itemTotalBsCents: number;
@@ -66,11 +72,15 @@ function computeItemTotal(
     (sum, a) => sum + a.priceBsCents,
     0,
   );
+  const bebidasBs = (item.selectedBebidas ?? []).reduce(
+    (sum, b) => sum + b.priceBsCents,
+    0,
+  );
   const removalsBs = (item.removedComponents ?? []).reduce(
     (sum, r) => sum + Math.round(r.priceUsdCents * (item.baseBsCents / Math.max(item.baseUsdCents, 1))),
     0,
   );
-  return (item.baseBsCents + fixedContornosBs + substitutionsBs + adicionalesBs + removalsBs) * quantity;
+  return (item.baseBsCents + fixedContornosBs + substitutionsBs + adicionalesBs + bebidasBs + removalsBs) * quantity;
 }
 
 function computeItemUsdCents(
@@ -82,11 +92,15 @@ function computeItemUsdCents(
     (sum, a) => sum + a.priceUsdCents,
     0,
   );
+  const bebidasUsd = (item.selectedBebidas ?? []).reduce(
+    (sum, b) => sum + b.priceUsdCents,
+    0,
+  );
   const removalsUsd = (item.removedComponents ?? []).reduce(
     (sum, r) => sum + r.priceUsdCents,
     0,
   );
-  return item.baseUsdCents + fixedContornosUsd + substitutionsUsd + adicionalesUsd + removalsUsd;
+  return item.baseUsdCents + fixedContornosUsd + substitutionsUsd + adicionalesUsd + bebidasUsd + removalsUsd;
 }
 
 export const useCartStore = create<CartState>()(
@@ -110,6 +124,8 @@ export const useCartStore = create<CartState>()(
             JSON.stringify(item.contornoSubstitutions) &&
             JSON.stringify(i.selectedAdicionales ?? []) ===
             JSON.stringify(item.selectedAdicionales ?? []) &&
+            JSON.stringify(i.selectedBebidas ?? []) ===
+            JSON.stringify(item.selectedBebidas ?? []) &&
             JSON.stringify(i.removedComponents ?? []) ===
             JSON.stringify(item.removedComponents ?? []),
         );

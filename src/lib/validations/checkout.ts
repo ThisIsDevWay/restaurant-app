@@ -8,6 +8,8 @@ export const checkoutSchema = v.object({
       "Número de teléfono venezolano inválido",
     ),
   ),
+  name: v.optional(v.pipe(v.string(), v.maxLength(50))),
+  cedula: v.optional(v.pipe(v.string(), v.maxLength(20))),
   paymentMethod: v.picklist(["pago_movil", "transfer"]),
   items: v.pipe(
     v.array(

@@ -22,6 +22,12 @@ type ItemsSnapshot = Array<{
     priceUsdCents: number;
     priceBsCents: number;
   }>;
+  selectedBebidas?: Array<{
+    id: string;
+    name: string;
+    priceUsdCents: number;
+    priceBsCents: number;
+  }>;
   quantity: number;
   itemTotalBsCents: number;
 }>;
@@ -39,7 +45,7 @@ export function OrderItemsTable({
 }) {
   const hasModifiers = items.some(
     (item) =>
-      item.fixedContornos.length > 0 || item.selectedAdicionales.length > 0,
+      item.fixedContornos.length > 0 || item.selectedAdicionales.length > 0 || (item.selectedBebidas && item.selectedBebidas.length > 0),
   );
 
   return (
@@ -57,8 +63,12 @@ export function OrderItemsTable({
               (sum, ad) => sum + ad.priceBsCents,
               0,
             );
+            const bebidasTotal = item.selectedBebidas?.reduce(
+              (sum, b) => sum + b.priceBsCents,
+              0,
+            ) || 0;
             const basePriceBs =
-              item.itemTotalBsCents - adicionalesTotal;
+              item.itemTotalBsCents - (adicionalesTotal + bebidasTotal);
 
             return (
               <div key={idx} className="px-5 py-4">
@@ -84,7 +94,7 @@ export function OrderItemsTable({
                         ))}
                         {item.selectedAdicionales.map((ad, adIdx) => (
                           <div
-                            key={adIdx}
+                            key={`ad-${adIdx}`}
                             className="flex items-center gap-1.5"
                           >
                             <span className="text-xs text-text-muted">+</span>
@@ -96,8 +106,23 @@ export function OrderItemsTable({
                             </span>
                           </div>
                         ))}
+                        {item.selectedBebidas?.map((b, bIdx) => (
+                          <div
+                            key={`beb-${bIdx}`}
+                            className="flex items-center gap-1.5"
+                          >
+                            <span className="text-xs text-info">🍹</span>
+                            <span className="text-xs text-info font-medium">
+                              {b.name}
+                            </span>
+                            <span className="text-xs font-medium text-price-green ml-auto">
+                              + {formatBs(b.priceBsCents)}
+                            </span>
+                          </div>
+                        ))}
                         {(item.fixedContornos.length > 0 ||
-                          item.selectedAdicionales.length > 0) && (
+                          item.selectedAdicionales.length > 0 ||
+                          (item.selectedBebidas && item.selectedBebidas.length > 0)) && (
                             <div className="flex items-center gap-1.5 pt-1 border-t border-border/50">
                               <span className="text-xs text-text-muted">
                                 Subtotal ítem

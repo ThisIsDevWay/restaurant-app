@@ -1,5 +1,5 @@
 import { db } from "../index";
-import { menuItems, optionGroups, options, categories, adicionales, menuItemAdicionales, contornos, menuItemContornos } from "../schema";
+import { menuItems, optionGroups, options, categories, adicionales, menuItemAdicionales, contornos, menuItemContornos, menuItemBebidas } from "../schema";
 import { eq } from "drizzle-orm";
 
 export async function getMenuWithOptions() {
@@ -12,6 +12,7 @@ export async function getMenuWithOptions() {
       categoryId: menuItems.categoryId,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
+      categoryIsSimple: categories.isSimple,
       isAvailable: menuItems.isAvailable,
       imageUrl: menuItems.imageUrl,
       sortOrder: menuItems.sortOrder,
@@ -103,6 +104,7 @@ export async function getMenuWithOptionsAndComponents() {
       categoryId: menuItems.categoryId,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
+      categoryIsSimple: categories.isSimple,
       isAvailable: menuItems.isAvailable,
       imageUrl: menuItems.imageUrl,
       sortOrder: menuItems.sortOrder,
@@ -159,6 +161,20 @@ export async function getMenuWithOptionsAndComponents() {
     .from(menuItemContornos)
     .innerJoin(contornos, eq(menuItemContornos.contornoId, contornos.id))
     .orderBy(contornos.sortOrder);
+
+  // Fetch bebidas assignments
+  const bebidaRows = await db
+    .select({
+      menuItemId: menuItemBebidas.menuItemId,
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
+      sortOrder: menuItems.sortOrder,
+    })
+    .from(menuItemBebidas)
+    .innerJoin(menuItems, eq(menuItemBebidas.bebidaItemId, menuItems.id))
+    .orderBy(menuItems.sortOrder);
 
   const optionsByItem = new Map<string, Array<{
     id: string;
@@ -226,11 +242,22 @@ export async function getMenuWithOptionsAndComponents() {
     list.push(row);
   }
 
+  const bebidasByItem = new Map<string, typeof bebidaRows>();
+  for (const row of bebidaRows) {
+    let list = bebidasByItem.get(row.menuItemId);
+    if (!list) {
+      list = [];
+      bebidasByItem.set(row.menuItemId, list);
+    }
+    list.push(row);
+  }
+
   return items.map((item) => ({
     ...item,
     optionGroups: optionsByItem.get(item.id) ?? [],
     adicionales: adicionalesByItem.get(item.id) ?? [],
     contornos: contornosByItem.get(item.id) ?? [],
+    bebidas: bebidasByItem.get(item.id) ?? [],
   }));
 }
 
@@ -351,11 +378,26 @@ export async function getMenuItemWithOptionsAndComponents(id: string) {
     .where(eq(menuItemContornos.menuItemId, id))
     .orderBy(contornos.sortOrder);
 
+  // Fetch bebidas assigned to this menu item
+  const itemBebidas = await db
+    .select({
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
+      sortOrder: menuItems.sortOrder,
+    })
+    .from(menuItemBebidas)
+    .innerJoin(menuItems, eq(menuItemBebidas.bebidaItemId, menuItems.id))
+    .where(eq(menuItemBebidas.menuItemId, id))
+    .orderBy(menuItems.sortOrder);
+
   return {
     ...item,
     optionGroups: groupsWithOptions,
     adicionales: itemAdicionales,
     contornos: itemContornos,
+    bebidas: itemBebidas,
   };
 }
 
@@ -366,6 +408,7 @@ export async function getCategories() {
       name: categories.name,
       sortOrder: categories.sortOrder,
       allowAlone: categories.allowAlone,
+      isSimple: categories.isSimple,
       isAvailable: categories.isAvailable,
     })
     .from(categories)

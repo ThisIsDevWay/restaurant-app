@@ -49,6 +49,22 @@ interface GlobalContorno {
   sortOrder: number;
 }
 
+interface SimpleItem {
+  id: string;
+  name: string;
+  priceUsdCents: number;
+  isAvailable: boolean;
+  sortOrder: number;
+}
+
+interface Bebida {
+  id: string;
+  name: string;
+  priceUsdCents: number;
+  isAvailable: boolean;
+  sortOrder: number;
+}
+
 interface MenuItem {
   id: string;
   name: string;
@@ -61,6 +77,7 @@ interface MenuItem {
   imageUrl: string | null;
   optionGroups: OptionGroup[];
   adicionales: Adicional[];
+  bebidas?: Bebida[];
   contornos: Contorno[];
 }
 
@@ -70,6 +87,10 @@ interface ItemDetailModalProps {
   onClose: () => void;
   currentRateBsPerUsd: number;
   allContornos: GlobalContorno[];
+  adicionalesEnabled?: boolean;
+  bebidasEnabled?: boolean;
+  dailyAdicionales: SimpleItem[];
+  dailyBebidas: SimpleItem[];
 }
 
 export function ItemDetailModal({
@@ -78,6 +99,10 @@ export function ItemDetailModal({
   onClose,
   currentRateBsPerUsd,
   allContornos,
+  adicionalesEnabled = true,
+  bebidasEnabled = true,
+  dailyAdicionales,
+  dailyBebidas,
 }: ItemDetailModalProps) {
   const addItem = useCartStore((s) => s.addItem);
   // Track substitution per removable contorno: null = keep original, string = substitute ID
@@ -86,6 +111,7 @@ export function ItemDetailModal({
   const [expandedContornos, setExpandedContornos] = useState<Set<string>>(new Set());
   const [selectedRadio, setSelectedRadio] = useState<Record<string, string>>({});
   const [selectedAdicionalIds, setSelectedAdicionalIds] = useState<Set<string>>(new Set());
+  const [selectedBebidaIds, setSelectedBebidaIds] = useState<Set<string>>(new Set());
   const [quantity, setQuantity] = useState(1);
   const [closing, setClosing] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -105,6 +131,7 @@ export function ItemDetailModal({
       setExpandedContornos(new Set());
       setSelectedRadio({});
       setSelectedAdicionalIds(new Set());
+      setSelectedBebidaIds(new Set());
       setQuantity(1);
       setClosing(false);
     }
@@ -169,6 +196,18 @@ export function ItemDetailModal({
     });
   }
 
+  function toggleBebida(bebidaId: string) {
+    setSelectedBebidaIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(bebidaId)) {
+        next.delete(bebidaId);
+      } else {
+        next.add(bebidaId);
+      }
+      return next;
+    });
+  }
+
   const optionGroupsToRender = item.optionGroups.filter((g) => g.type === "radio");
   const requiredGroups = optionGroupsToRender.filter((g) => g.required);
   const unsatisfiedGroup = requiredGroups.find((g) => selectedRadio[g.id] === undefined);
@@ -203,21 +242,12 @@ export function ItemDetailModal({
       const substitute = allContornos.find((c) => c.id === substituteId);
       const original = availableContornos.find((c) => c.id === contornoId);
       if (substitute && original) {
-        // Only prefix with "Más " if the substitute is currently present in another slot
-        const isAlreadyOnDish = availableContornos.some((c) => {
-          if (c.id === contornoId) return false;
-          const subValue = substitutionMap[c.id];
-          const currentSlotId = subValue === undefined || subValue === null ? c.id : subValue;
-          return currentSlotId === substitute.id;
-        });
-        const cartSubstituteName = isAlreadyOnDish ? `Más ${substitute.name}` : substitute.name;
-
         substitutionUsdCents += substitute.priceUsdCents;
         cartContornoSubstitutions.push({
           originalId: contornoId,
           originalName: original.name,
           substituteId: substitute.id,
-          substituteName: cartSubstituteName,
+          substituteName: substitute.name,
           priceUsdCents: substitute.priceUsdCents,
           priceBsCents: Math.round(substitute.priceUsdCents * currentRateBsPerUsd),
         });
@@ -235,7 +265,7 @@ export function ItemDetailModal({
 
   let additionalUsdCents = 0;
   for (const adicionalId of selectedAdicionalIds) {
-    const adicional = item.adicionales.find((a) => a.id === adicionalId);
+    const adicional = item.adicionales.find((a) => a.id === adicionalId) || dailyAdicionales.find((a) => a.id === adicionalId);
     if (adicional && adicional.isAvailable) {
       additionalUsdCents += adicional.priceUsdCents;
       cartAdicionales.push({
@@ -247,8 +277,30 @@ export function ItemDetailModal({
     }
   }
 
-  const extrasCount = cartAdicionales.length + cartContornoSubstitutions.length;
-  const totalUsdCents = (item.priceUsdCents + substitutionUsdCents + additionalUsdCents) * quantity;
+  // Build cart bebidas
+  const cartBebidas: Array<{
+    id: string;
+    name: string;
+    priceUsdCents: number;
+    priceBsCents: number;
+  }> = [];
+
+  let bebidasUsdCents = 0;
+  for (const bebidaId of selectedBebidaIds) {
+    const bebida = item.bebidas?.find((b) => b.id === bebidaId) || dailyBebidas.find((b) => b.id === bebidaId);
+    if (bebida && bebida.isAvailable) {
+      bebidasUsdCents += bebida.priceUsdCents;
+      cartBebidas.push({
+        id: bebida.id,
+        name: bebida.name,
+        priceUsdCents: bebida.priceUsdCents,
+        priceBsCents: Math.round(bebida.priceUsdCents * currentRateBsPerUsd),
+      });
+    }
+  }
+
+  const extrasCount = cartAdicionales.length + cartContornoSubstitutions.length + cartBebidas.length;
+  const totalUsdCents = (item.priceUsdCents + substitutionUsdCents + additionalUsdCents + bebidasUsdCents) * quantity;
   const totalBsCents = Math.round(totalUsdCents * currentRateBsPerUsd);
 
   const CATEGORY_EMOJI: Record<string, string> = {
@@ -278,6 +330,7 @@ export function ItemDetailModal({
       fixedContornos: cartFixedContornos,
       contornoSubstitutions: cartContornoSubstitutions,
       selectedAdicionales: cartAdicionales,
+      selectedBebidas: cartBebidas,
       removedComponents: [],
       categoryAllowAlone: item.categoryAllowAlone,
     });
@@ -443,7 +496,7 @@ export function ItemDetailModal({
                             <div
                               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${!substitution
                                 ? "border-primary bg-primary"
-                                : "border-border"
+                                : "border-gray-400"
                                 }`}
                             >
                               {!substitution && (
@@ -474,7 +527,7 @@ export function ItemDetailModal({
                                 <div
                                   className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${substitution === sub.id
                                     ? "border-primary bg-primary"
-                                    : "border-border"
+                                    : "border-gray-400"
                                     }`}
                                 >
                                   {substitution === sub.id && (
@@ -538,7 +591,7 @@ export function ItemDetailModal({
                       <div
                         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${selectedRadio[group.id] === option.id
                           ? "border-primary bg-primary"
-                          : "border-border"
+                          : "border-gray-400"
                           }`}
                       >
                         {selectedRadio[group.id] === option.id && (
@@ -563,66 +616,124 @@ export function ItemDetailModal({
             </div>
           ))}
 
-          {/* Adicionales */}
-          {item.adicionales.filter((a) => a.isAvailable).length > 0 && (
+          {/* Adicionales del día */}
+          {adicionalesEnabled && dailyAdicionales.length > 0 && (
             <div className="border-b border-border px-4 py-3">
               <h3 className="mb-2 text-[14px] font-semibold text-text-main">
-                Adicionales
+                Adicionales del día
               </h3>
+              <p className="mb-2 text-[11px] text-text-muted">
+                Extras disponibles hoy para cualquier plato
+              </p>
               <div className="flex flex-col gap-0.5">
-                {item.adicionales
-                  .filter((a) => a.isAvailable)
-                  .map((adicional) => {
-                    const isChecked = selectedAdicionalIds.has(adicional.id);
-                    const isAlreadySubstitute = activeSubstituteIds.has(adicional.id);
-                    return (
-                      <button
-                        key={adicional.id}
-                        onClick={() => toggleAdicional(adicional.id)}
-                        disabled={isAlreadySubstitute}
-                        className={`flex items-center gap-3 rounded-input px-1 py-2.5 text-left transition-colors ${isAlreadySubstitute ? "opacity-50 cursor-not-allowed" : "active:bg-bg-app"
+                {dailyAdicionales.map((adicional) => {
+                  const isChecked = selectedAdicionalIds.has(adicional.id);
+                  const isAlreadySubstitute = activeSubstituteIds.has(adicional.id);
+                  return (
+                    <button
+                      key={adicional.id}
+                      onClick={() => toggleAdicional(adicional.id)}
+                      disabled={isAlreadySubstitute}
+                      className={`flex items-center gap-3 rounded-input px-1 py-2.5 text-left transition-colors ${isAlreadySubstitute ? "opacity-50 cursor-not-allowed" : "active:bg-bg-app"
+                        }`}
+                    >
+                      <div
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${isChecked
+                          ? "border-primary bg-primary"
+                          : "border-gray-400 bg-white"
                           }`}
                       >
-                        <div
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${isChecked
-                            ? "border-primary bg-primary"
-                            : "border-border bg-white"
-                            }`}
-                        >
-                          {isChecked && (
-                            <Check
-                              className="h-3 w-3 text-white"
-                              strokeWidth={3}
-                            />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <span className="text-[14px] text-text-main">
-                            {adicional.name}
-                          </span>
-                          {isAlreadySubstitute && (
-                            <p className="text-[11px] text-primary/70">
-                              Ya incluido como contorno
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right text-[12px] text-text-muted leading-tight">
-                          {adicional.priceUsdCents === 0 ? (
-                            <span>Incluido</span>
-                          ) : (
-                            <>
-                              <div>
-                                +{formatBs(Math.round(adicional.priceUsdCents * currentRateBsPerUsd))}
-                              </div>
-                              <div className="text-[10px] opacity-80">
-                                / {formatRef(adicional.priceUsdCents)}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
+                        {isChecked && (
+                          <Check
+                            className="h-3 w-3 text-white"
+                            strokeWidth={3}
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-[14px] text-text-main">
+                          {adicional.name}
+                        </span>
+                        {isAlreadySubstitute && (
+                          <p className="text-[11px] text-primary/70">
+                            Ya incluido como contorno
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right text-[12px] text-text-muted leading-tight">
+                        {adicional.priceUsdCents === 0 ? (
+                          <span>Incluido</span>
+                        ) : (
+                          <>
+                            <div>
+                              +{formatBs(Math.round(adicional.priceUsdCents * currentRateBsPerUsd))}
+                            </div>
+                            <div className="text-[10px] opacity-80">
+                              / {formatRef(adicional.priceUsdCents)}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Bebidas del día */}
+          {bebidasEnabled && dailyBebidas.length > 0 && (
+            <div className="border-b border-border px-4 py-3">
+              <h3 className="mb-2 text-[14px] font-semibold text-text-main">
+                Bebidas del día
+              </h3>
+              <p className="mb-2 text-[11px] text-text-muted">
+                Bebidas disponibles hoy
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {dailyBebidas.map((bebida) => {
+                  const isChecked = selectedBebidaIds.has(bebida.id);
+                  return (
+                    <button
+                      key={bebida.id}
+                      onClick={() => toggleBebida(bebida.id)}
+                      className="flex items-center gap-3 rounded-input px-1 py-2.5 text-left transition-colors active:bg-bg-app"
+                    >
+                      <div
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${isChecked
+                          ? "border-primary bg-primary"
+                          : "border-gray-400 bg-white"
+                          }`}
+                      >
+                        {isChecked && (
+                          <Check
+                            className="h-3 w-3 text-white"
+                            strokeWidth={3}
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-[14px] text-text-main">
+                          {bebida.name}
+                        </span>
+                      </div>
+                      <div className="text-right text-[12px] text-text-muted leading-tight">
+                        {bebida.priceUsdCents === 0 ? (
+                          <span>Incluido</span>
+                        ) : (
+                          <>
+                            <div>
+                              +{formatBs(Math.round(bebida.priceUsdCents * currentRateBsPerUsd))}
+                            </div>
+                            <div className="text-[10px] opacity-80">
+                              / {formatRef(bebida.priceUsdCents)}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
-import { getMenuWithOptionsAndComponents, getCategories } from "@/db/queries/menu";
+import { getDailyMenuWithOptionsAndComponents } from "@/db/queries/daily-menu";
+import { getCategories } from "@/db/queries/menu";
 import { getAllContornos } from "@/db/queries/contornos";
 import { getActiveRate, getSettings } from "@/db/queries/settings";
 import { HeaderCartButton } from "./HeaderCartButton";
@@ -12,8 +13,9 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function MenuPage() {
-  const [items, categories, rateData, allContornos, appSettings] = await Promise.all([
-    getMenuWithOptionsAndComponents(),
+  const dailyMenuData = await getDailyMenuWithOptionsAndComponents();
+  const { items, dailyAdicionales, dailyBebidas } = dailyMenuData;
+  const [categories, rateData, allContornos, appSettings] = await Promise.all([
     getCategories(),
     getActiveRate(),
     getAllContornos(),
@@ -23,6 +25,48 @@ export default async function MenuPage() {
   const rate = rateData?.rate ?? null;
   const showRate = rateData && appSettings?.showRateInMenu !== false;
   const availableCategories = categories.filter((c) => c.isAvailable);
+  const adicionalesEnabled = appSettings?.adicionalesEnabled ?? true;
+  const bebidasEnabled = appSettings?.bebidasEnabled ?? true;
+
+  // Filter categories to only those that have items in today's menu
+  const usedCategoryIds = new Set(items.map((i) => i.categoryId));
+  const menuCategories = availableCategories.filter((c) =>
+    usedCategoryIds.has(c.id),
+  );
+
+  // No daily menu configured
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-bg-app">
+        <header className="sticky top-0 z-30 bg-white shadow-elevated">
+          <div className="flex items-center justify-between px-4 py-3">
+            <h1 className="font-display text-2xl font-bold text-primary">G&M</h1>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/mis-pedidos"
+                className="flex items-center gap-1 rounded-full bg-bg-app px-3 py-1 text-xs font-medium text-text-muted"
+              >
+                Pedidos
+              </Link>
+            </div>
+          </div>
+        </header>
+        <div className="flex flex-col items-center justify-center py-32 text-center px-4">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/5">
+            <span className="text-4xl">🍽️</span>
+          </div>
+          <h2 className="text-xl font-bold text-text-main mb-2">
+            Menú no disponible
+          </h2>
+          <p className="text-sm text-text-muted max-w-xs">
+            El menú del día aún no ha sido configurado. Vuelve más tarde para
+            ver las opciones disponibles.
+          </p>
+        </div>
+        <Cart />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg-app">
@@ -35,7 +79,7 @@ export default async function MenuPage() {
               href="/mis-pedidos"
               className="flex items-center gap-1 rounded-full bg-bg-app px-3 py-1 text-xs font-medium text-text-muted"
             >
-              📋 Pedidos
+              Pedidos
             </Link>
             {showRate && (
               <RatePill rate={rateData.rate} fetchedAt={rateData.fetchedAt} />
@@ -50,7 +94,16 @@ export default async function MenuPage() {
 
       {/* Categories + Menu */}
       <Suspense fallback={<MenuGridSkeleton />}>
-        <MenuClient items={items} categories={availableCategories} rate={rate} allContornos={allContornos} />
+        <MenuClient
+          items={items}
+          categories={menuCategories}
+          rate={rate}
+          allContornos={allContornos}
+          adicionalesEnabled={adicionalesEnabled}
+          bebidasEnabled={bebidasEnabled}
+          dailyAdicionales={dailyAdicionales}
+          dailyBebidas={dailyBebidas}
+        />
       </Suspense>
 
       {/* Cart bottom bar + drawer */}

@@ -23,7 +23,7 @@ export async function createMenuItem(data: unknown) {
       .values(parsed.output)
       .returning();
     revalidatePath("/");
-    revalidatePath("/admin/menu");
+    revalidatePath("/admin/catalogo");
     return { success: true, item };
   } catch {
     return { success: false, error: "Error al crear item" };
@@ -45,7 +45,7 @@ export async function updateMenuItem(id: string, data: unknown) {
       .where(eq(menuItems.id, id))
       .returning();
     revalidatePath("/");
-    revalidatePath("/admin/menu");
+    revalidatePath("/admin/catalogo");
     return { success: true, item };
   } catch {
     return { success: false, error: "Error al actualizar item" };
@@ -58,7 +58,7 @@ export async function deleteMenuItem(id: string) {
   try {
     await db.delete(menuItems).where(eq(menuItems.id, id));
     revalidatePath("/");
-    revalidatePath("/admin/menu");
+    revalidatePath("/admin/catalogo");
     return { success: true };
   } catch {
     return { success: false, error: "Error al eliminar item" };

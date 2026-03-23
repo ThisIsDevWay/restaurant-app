@@ -95,7 +95,7 @@ export function Cart() {
           <div className="px-4">
             {items.map((item, index) => (
               <CartItem
-                key={`${item.id}-${(item.fixedContornos ?? []).map((c) => c.id).join(",")}-${(item.contornoSubstitutions ?? []).map((s) => s.substituteId).join(",")}-${(item.selectedAdicionales ?? []).map((a) => a.id).join(",")}-${index}`}
+                key={`${item.id}-${(item.fixedContornos ?? []).map((c) => c.id).join(",")}-${(item.contornoSubstitutions ?? []).map((s) => s.substituteId).join(",")}-${(item.selectedAdicionales ?? []).map((a) => a.id).join(",")}-${(item.selectedBebidas ?? []).map((b) => b.id).join(",")}-${index}`}
                 item={item}
                 index={index}
                 onUpdateQuantity={updateQuantity}

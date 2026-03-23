@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { formatBs, formatRef } from "@/lib/money";
 import { Loader2, ChevronDown } from "lucide-react";
 import type { CartItem } from "@/store/cartStore";
@@ -11,7 +11,7 @@ interface CheckoutFormProps {
   totalUsdCents: number;
   isSubmitting: boolean;
   error: string | null;
-  onSubmit: (phone: string, paymentMethod: "pago_movil" | "transfer") => void;
+  onSubmit: (phone: string, paymentMethod: "pago_movil" | "transfer", name?: string, cedula?: string) => void;
 }
 
 export function CheckoutForm({
@@ -23,11 +23,16 @@ export function CheckoutForm({
   onSubmit,
 }: CheckoutFormProps) {
   const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
+  const [cedula, setCedula] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"pago_movil" | "transfer">(
     "pago_movil",
   );
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const [customerFieldsVisible, setCustomerFieldsVisible] = useState(false);
+  const [isReturning, setIsReturning] = useState(false);
+  const lookupTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const itemCount = items.reduce((acc, i) => acc + i.quantity, 0);
 
@@ -38,6 +43,43 @@ export function CheckoutForm({
     return null;
   };
 
+  const lookupCustomer = useCallback(async (phoneNumber: string) => {
+    try {
+      const res = await fetch(`/api/customers/lookup?phone=${phoneNumber}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.found) {
+        setName(data.name ?? "");
+        setCedula(data.cedula ?? "");
+        setIsReturning(true);
+      } else {
+        setName("");
+        setCedula("");
+        setIsReturning(false);
+      }
+      setCustomerFieldsVisible(true);
+    } catch {
+      setCustomerFieldsVisible(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (lookupTimeout.current) clearTimeout(lookupTimeout.current);
+
+    if (phone.length === 11 && validatePhone(phone) === null) {
+      lookupTimeout.current = setTimeout(() => lookupCustomer(phone), 400);
+    } else {
+      setCustomerFieldsVisible(false);
+      setIsReturning(false);
+      setName("");
+      setCedula("");
+    }
+
+    return () => {
+      if (lookupTimeout.current) clearTimeout(lookupTimeout.current);
+    };
+  }, [phone, lookupCustomer]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const err = validatePhone(phone);
@@ -46,7 +88,12 @@ export function CheckoutForm({
       return;
     }
     setPhoneError(null);
-    onSubmit(phone, paymentMethod);
+    onSubmit(
+      phone,
+      paymentMethod,
+      name.trim() || undefined,
+      cedula.trim() || undefined,
+    );
   };
 
   return (
@@ -81,6 +128,9 @@ export function CheckoutForm({
                 <div className="flex-1 pr-4">
                   <p className="text-sm text-text-main font-medium">
                     {item.quantity > 1 ? `${item.quantity} servicios de ${item.name}` : item.name}
+                  </p>
+                  <p className="text-[10px] text-text-muted mt-0.5">
+                    {formatBs(item.baseBsCents)} / {formatRef(item.baseUsdCents)}
                   </p>
 
                   <div className="mt-1 space-y-1">
@@ -125,6 +175,23 @@ export function CheckoutForm({
                             {adicional.priceBsCents > 0 && (
                               <span className="ml-1 text-[10px] font-medium text-price-green">
                                 ({formatBs(adicional.priceBsCents)} / {formatRef(adicional.priceUsdCents)})
+                              </span>
+                            )}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Bebidas */}
+                    {(item.selectedBebidas ?? []).length > 0 && (
+                      <div className="space-y-0.5">
+                        <p className="text-[11px] font-semibold text-text-main">Bebidas</p>
+                        {(item.selectedBebidas ?? []).map((bebida) => (
+                          <p key={bebida.id} className="text-[11px] text-text-muted">
+                            + {bebida.name}
+                            {bebida.priceBsCents > 0 && (
+                              <span className="ml-1 text-[10px] font-medium text-price-green">
+                                ({formatBs(bebida.priceBsCents)} / {formatRef(bebida.priceUsdCents)})
                               </span>
                             )}
                           </p>
@@ -252,6 +319,47 @@ export function CheckoutForm({
           <p className="mt-1 text-xs text-error">{phoneError}</p>
         )}
       </div>
+
+      {/* Name + Cedula — aparece con animación */}
+      {customerFieldsVisible && (
+        <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          {isReturning && (
+            <p className="text-xs text-success font-medium">
+              ¡Bienvenido de nuevo! 👋
+            </p>
+          )}
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-text-main">
+              ¿Cómo te llamamos? <span className="text-text-muted font-normal">(opcional)</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Carlos"
+              maxLength={50}
+              className={`w-full rounded-input border px-4 py-3 text-sm outline-none transition-colors ${isReturning && name ? "border-success/40 bg-success/5" : "border-border focus:border-primary"
+                }`}
+              disabled={isSubmitting}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-text-main">
+              Cédula <span className="text-text-muted font-normal">(opcional)</span>
+            </label>
+            <input
+              type="text"
+              value={cedula}
+              onChange={(e) => setCedula(e.target.value)}
+              placeholder="V-12.345.678"
+              maxLength={20}
+              className={`w-full rounded-input border px-4 py-3 text-sm outline-none transition-colors ${isReturning && cedula ? "border-success/40 bg-success/5" : "border-border focus:border-primary"
+                }`}
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Error */}
       {error && (
