@@ -140,9 +140,6 @@ export function PaymentDetails({
             Esperando confirmación...
           </span>
         </div>
-        <p className="mt-1 text-[11px] text-text-muted">
-          Los céntimos identifican tu pedido de forma única
-        </p>
       </div>
 
       {/* Bank details */}

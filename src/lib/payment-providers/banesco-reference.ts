@@ -11,6 +11,7 @@ import { db } from "@/db";
 import { orders, paymentsLog } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import * as Sentry from "@sentry/nextjs";
+import { logger } from "@/lib/logger";
 
 export class BanescoReferenceProvider implements PaymentProvider {
   readonly id = "banesco_reference" as const;
@@ -111,6 +112,9 @@ export class BanescoReferenceProvider implements PaymentProvider {
     let apiResponse: unknown;
 
     if (mockMode) {
+      logger.warn("BANESCO EN MODO MOCK — no verificar en producción", {
+        reason: this.settings.banescoApiKey ? "BANESCO_API_MOCK=true" : "banescoApiKey no configurada",
+      });
       // In mock mode, accept any reference with 8+ digits
       apiResponse = {
         status: "approved",

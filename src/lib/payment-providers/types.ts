@@ -27,6 +27,10 @@ export type PaymentInitResult =
       screen: "whatsapp";
       waLink: string;
       prefilledMessage: string;
+    }
+  | {
+      screen: "error";
+      message: string;
     };
 
 export type PaymentConfirmInput =

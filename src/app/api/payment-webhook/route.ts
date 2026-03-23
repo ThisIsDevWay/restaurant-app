@@ -19,7 +19,12 @@ export async function POST(req: Request) {
 
     // 2. Verify HMAC-SHA256
     const signature = req.headers.get("x-webhook-signature") ?? "";
-    const secret = process.env.PAYMENT_WEBHOOK_SECRET ?? "";
+    const secret = process.env.PAYMENT_WEBHOOK_SECRET;
+
+    if (!secret) {
+      logger.error("PAYMENT_WEBHOOK_SECRET no configurado");
+      return NextResponse.json({ error: "Misconfigured" }, { status: 500 });
+    }
 
     const isValid = await verifyWebhookSignature(rawBody, signature, secret);
     if (!isValid) {

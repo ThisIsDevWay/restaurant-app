@@ -17,16 +17,19 @@ export class MercantilC2PProvider implements PaymentProvider {
     _order: OrderRow,
     _settings: SettingsRow,
   ): Promise<PaymentInitResult> {
-    throw new Error(
-      "MercantilC2PProvider: not implemented yet. Configure banesco_reference or whatsapp_manual in settings.",
-    );
+    return {
+      screen: "error",
+      message: "Mercantil C2P no está configurado. Contacta al administrador.",
+    };
   }
 
   async confirmPayment(
     _input: PaymentConfirmInput,
   ): Promise<PaymentConfirmResult> {
-    throw new Error(
-      "MercantilC2PProvider: not implemented yet. Configure banesco_reference or whatsapp_manual in settings.",
-    );
+    return {
+      success: false,
+      reason: "api_error",
+      message: "Proveedor no implementado",
+    };
   }
 }
