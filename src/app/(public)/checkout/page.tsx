@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { processCheckout, type CheckoutResult, type CheckoutItem } from "@/actions/checkout";
+import { fetchActiveRate } from "@/actions/settings";
 import { formatBs } from "@/lib/money";
 import { Loader2, AlertCircle } from "lucide-react";
 import { ReferenceEntry } from "@/components/public/checkout/ReferenceEntry";
@@ -23,13 +24,25 @@ type CheckoutState =
 
 export default function CheckoutPage() {
   const items = useCartStore((s) => s.items);
-  const totalBsCents = useCartStore((s) => s.totalBsCents());
+  const cartTotalBsCents = useCartStore((s) => s.totalBsCents());
+  const totalBsCentsFromRate = useCartStore((s) => s.totalBsCentsFromRate);
   const totalUsdCents = useCartStore((s) => s.totalUsdCents());
   const clearCart = useCartStore((s) => s.clearCart);
   const router = useRouter();
   const [state, setState] = useState<CheckoutState>({ type: "form" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [totalBsCents, setTotalBsCents] = useState(cartTotalBsCents);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchActiveRate().then((rateResult) => {
+      if (!cancelled && rateResult) {
+        setTotalBsCents(totalBsCentsFromRate(rateResult.rate));
+      }
+    });
+    return () => { cancelled = true; };
+  }, [totalBsCentsFromRate]);
 
   if (items.length === 0 && state.type === "form") {
     return (

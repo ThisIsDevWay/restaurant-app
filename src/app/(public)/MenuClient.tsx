@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MenuGrid } from "@/components/public/menu/MenuGrid";
 import { CategoryFilter } from "@/components/public/menu/CategoryFilter";
+import { useCartStore } from "@/store/cartStore";
 
 interface MenuItem {
   id: string;
@@ -100,6 +101,13 @@ export function MenuClient({
   dailyBebidas,
 }: MenuClientProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const recalculateBsPrices = useCartStore((s) => s.recalculateBsPrices);
+
+  useEffect(() => {
+    if (rate) {
+      recalculateBsPrices(rate);
+    }
+  }, [rate, recalculateBsPrices]);
 
   const filteredItems = activeCategory
     ? items.filter((i) => i.categoryId === activeCategory)

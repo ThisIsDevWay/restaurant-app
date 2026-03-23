@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAdmin } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { updateOrderStatus as updateOrderStatusDb } from "@/db/queries/orders";
 import { revalidatePath } from "next/cache";
 
@@ -8,10 +8,9 @@ export async function updateOrderStatus(
   orderId: string,
   status: "kitchen" | "delivered",
 ) {
-  try {
-    await requireAdmin();
-  } catch {
-    // Allow kitchen role too
+  const session = await auth();
+  if (!session?.user?.role || !["admin", "kitchen"].includes(session.user.role)) {
+    return { success: false, error: "No autorizado" };
   }
 
   try {

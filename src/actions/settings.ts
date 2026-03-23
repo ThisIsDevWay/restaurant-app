@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
-import { updateSettings as updateSettingsDb } from "@/db/queries/settings";
+import { updateSettings as updateSettingsDb, getActiveRate } from "@/db/queries/settings";
 import { settingsSchema } from "@/lib/validations/settings";
 import * as v from "valibot";
 import { revalidatePath } from "next/cache";
@@ -57,4 +57,8 @@ export async function toggleGlobalBebidas(enabled: boolean) {
   } catch {
     return { success: false, error: "Error al actualizar la configuración" };
   }
+}
+
+export async function fetchActiveRate() {
+  return getActiveRate();
 }

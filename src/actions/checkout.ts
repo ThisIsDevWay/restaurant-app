@@ -3,6 +3,7 @@
 import { getSettings, getActiveRate } from "@/db/queries/settings";
 import { getMenuItemWithOptionsAndComponents } from "@/db/queries/menu";
 import { createOrder } from "@/db/queries/orders";
+import { getPendingOrdersCount } from "@/db/queries/orders";
 import { upsertCustomer } from "@/db/queries/customers";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
 import { usdCentsToBsCents } from "@/lib/money";
@@ -98,6 +99,12 @@ export async function processCheckout(
       return { success: false, error: "Configuración no encontrada" };
     }
 
+    // 2.1. Check max pending orders
+    const pendingCount = await getPendingOrdersCount();
+    if (pendingCount >= settings.maxPendingOrders) {
+      return { success: false, error: "No podemos recibir más pedidos ahora. Intenta en unos minutos." };
+    }
+
     const rateResult = await getActiveRate();
     if (!rateResult) {
       return {
@@ -108,13 +115,9 @@ export async function processCheckout(
     const rate = rateResult.rate;
 
     // 2.5. Load daily pools for today
-    function formatLocalDate(date: Date): string {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    }
-    const today = formatLocalDate(new Date());
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Caracas",
+    }).format(new Date());
 
     // Daily adicionales pool
     const dailyAdicionalRows = await db

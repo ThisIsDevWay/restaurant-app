@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSettings } from "@/db/queries/settings";
 import { getOrderById } from "@/db/queries/orders";
 import { getActiveProvider } from "@/lib/payment-providers";
+import { rateLimiters, getIP } from "@/lib/rate-limit";
 import * as v from "valibot";
 
 const confirmSchema = v.object({
@@ -11,6 +12,13 @@ const confirmSchema = v.object({
 
 export async function POST(req: Request) {
   try {
+    // Rate limit
+    const ip = getIP(req);
+    const { success: rateOk } = await rateLimiters.checkout.limit(ip);
+    if (!rateOk) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await req.json();
     const parsed = v.safeParse(confirmSchema, body);
 
