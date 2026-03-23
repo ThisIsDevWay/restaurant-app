@@ -1,16 +1,41 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+vi.mock("@/db", () => {
+  function makeThenable() {
+    const result = Promise.resolve([]);
+    const obj: any = result.then.bind(result);
+    obj.then = result.then.bind(result);
+    obj.catch = result.catch.bind(result);
+    obj.finally = result.finally.bind(result);
+    obj.where = () => makeThenable();
+    obj.innerJoin = () => makeThenable();
+    obj.orderBy = () => makeThenable();
+    obj.limit = () => makeThenable();
+    return obj;
+  }
+  return { db: { select: () => ({ from: () => makeThenable() }) } };
+});
+
+vi.mock("@/db/queries/customers", () => ({
+  upsertCustomer: vi.fn(),
+}));
+
+vi.mock("@/lib/whatsapp/messages", () => ({
+  sendOrderMessage: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/db/queries/settings", () => ({
   getSettings: vi.fn(),
   getActiveRate: vi.fn(),
 }));
 
 vi.mock("@/db/queries/menu", () => ({
-  getMenuItemWithOptions: vi.fn(),
+  getMenuItemWithOptionsAndComponents: vi.fn(),
 }));
 
 vi.mock("@/db/queries/orders", () => ({
   createOrder: vi.fn(),
+  getPendingOrdersCount: vi.fn().mockResolvedValue(0),
 }));
 
 vi.mock("@/lib/payment-providers", () => {
@@ -53,7 +78,7 @@ vi.mock("@/lib/payment-providers", () => {
 
 import { processCheckout } from "@/actions/checkout";
 import { getSettings, getActiveRate } from "@/db/queries/settings";
-import { getMenuItemWithOptions } from "@/db/queries/menu";
+import { getMenuItemWithOptionsAndComponents } from "@/db/queries/menu";
 import { createOrder } from "@/db/queries/orders";
 
 const ITEM_UUID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
@@ -127,7 +152,7 @@ describe("processCheckout with payment providers", () => {
   it("returns enter_reference screen for banesco_reference provider", async () => {
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
     vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
+    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
 
     const result = await processCheckout(validInput, validCheckoutItems);
@@ -146,7 +171,7 @@ describe("processCheckout with payment providers", () => {
     };
     vi.mocked(getSettings).mockResolvedValue(whatsappSettings as any);
     vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
+    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue({
       ...mockOrder,
       paymentProvider: "whatsapp_manual",
@@ -169,7 +194,7 @@ describe("processCheckout with payment providers", () => {
     };
     vi.mocked(getSettings).mockResolvedValue(whatsappSettings as any);
     vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
+    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue({
       ...mockOrder,
       paymentProvider: "whatsapp_manual",
@@ -189,7 +214,7 @@ describe("processCheckout with payment providers", () => {
   it("creates order with pending status for banesco provider", async () => {
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
     vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
+    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
 
     await processCheckout(validInput, validCheckoutItems);
@@ -205,7 +230,7 @@ describe("processCheckout with payment providers", () => {
   it("does not include dynamicCentsSurcharge or exactAmountBsCents", async () => {
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
     vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
+    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
 
     await processCheckout(validInput, validCheckoutItems);
@@ -226,7 +251,7 @@ describe("processCheckout with payment providers", () => {
   it("returns error for unavailable item", async () => {
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
     vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptions).mockResolvedValue({
+    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue({
       ...mockMenuItem,
       isAvailable: false,
     } as any);
@@ -242,7 +267,7 @@ describe("processCheckout with payment providers", () => {
   it("returns error for missing item in DB", async () => {
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
     vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptions).mockResolvedValue(null as any);
+    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(null as any);
 
     const result = await processCheckout(validInput, validCheckoutItems);
 
@@ -274,7 +299,7 @@ describe("processCheckout with payment providers", () => {
 
     vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
     vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptions).mockResolvedValue(mockMenuItem as any);
+    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
     vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
 
     const result = await processCheckout(validInput, mixedItems);

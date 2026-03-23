@@ -54,13 +54,12 @@ describe("GET /api/cron/expire-orders", () => {
     expect(body.expired).toBe(0);
   });
 
-  it("does not expire whatsapp orders (only pending)", async () => {
+  it("expires both pending and whatsapp orders", async () => {
     vi.mocked(expirePendingOrders).mockResolvedValue({ rowCount: 1 } as any);
 
     await GET(makeRequest("Bearer test-secret"));
 
-    // expirePendingOrders only targets status='pending' AND expires_at < now()
-    // whatsapp orders are never touched by this query
+    // expirePendingOrders targets status IN ('pending', 'whatsapp') AND expires_at < now()
     expect(expirePendingOrders).toHaveBeenCalledOnce();
   });
 

@@ -59,7 +59,7 @@ export async function expirePendingOrders() {
     .set({ status: "expired", updatedAt: new Date() })
     .where(
       and(
-        eq(orders.status, "pending"),
+        sql`${orders.status} IN ('pending', 'whatsapp')`,
         lt(orders.expiresAt, new Date()),
       ),
     );
