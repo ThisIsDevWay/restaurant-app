@@ -63,11 +63,10 @@ export function WhatsAppStatus() {
           <WifiOff className="h-5 w-5 text-error" />
         )}
         <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-            isConnected
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${isConnected
               ? "bg-success/10 text-success"
               : "bg-error/10 text-error"
-          }`}
+            }`}
         >
           {loading
             ? "Verificando..."
@@ -88,6 +87,7 @@ export function WhatsAppStatus() {
           </button>
           {showQR && (
             <div className="mt-3 flex justify-center rounded-lg border border-border bg-white p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`data:image/png;base64,${data.qr}`}
                 alt="QR Code WhatsApp"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Minus, Plus, Check } from "lucide-react";
 import Image from "next/image";
 import { formatBs, formatRef } from "@/lib/money";
@@ -137,6 +137,11 @@ export function ItemDetailModal({
     }
   }, [isOpen]);
 
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(onClose, 300);
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
     function handleKey(e: KeyboardEvent) {
@@ -144,7 +149,7 @@ export function ItemDetailModal({
     }
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [isOpen]);
+  }, [isOpen, handleClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -154,11 +159,6 @@ export function ItemDetailModal({
       document.body.style.overflow = "";
     };
   }, [isOpen]);
-
-  function handleClose() {
-    setClosing(true);
-    setTimeout(onClose, 300);
-  }
 
   function toggleExpandContorno(contornoId: string) {
     setExpandedContornos((prev) => {

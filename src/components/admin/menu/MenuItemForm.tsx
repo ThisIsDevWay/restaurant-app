@@ -316,6 +316,7 @@ export function MenuItemForm({
             <div className="aspect-square relative rounded-lg border border-gray-200 bg-gray-50 overflow-hidden group">
               {previewUrl ? (
                 <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button
