@@ -1,8 +1,16 @@
-node_modules/
-.next/
+# Local development secrets and config
+opencode.json
 .env
 .env.local
+
+# Temporary scripts and generated outputs
+scrub.ps1
+repomix-output.xml
 *.tsbuildinfo
 next-env.d.ts
+
+# Misc
+node_modules/
+.next/
 nul
 _nul
