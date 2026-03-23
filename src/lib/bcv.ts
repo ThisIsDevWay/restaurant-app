@@ -24,7 +24,6 @@ export async function fetchBCVRates(): Promise<BCVRates> {
     const req = https.get(
       BCV_URL,
       {
-        rejectUnauthorized: false,
         timeout: TIMEOUT_MS,
       },
       (res) => {

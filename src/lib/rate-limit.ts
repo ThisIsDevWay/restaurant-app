@@ -52,6 +52,10 @@ export const rateLimiters = {
     Ratelimit.slidingWindow(10, "1 m"),
     "rl:checkout",
   ),
+  lookup: createLimiter(
+    Ratelimit.slidingWindow(20, "1 m"),
+    "rl:lookup",
+  ),
 };
 
 export function getIP(request: Request): string {

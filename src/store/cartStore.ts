@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { usdCentsToBsCents } from "@/lib/money";
 
 export interface RemovedComponent {
   isRemoval: true;
@@ -57,8 +58,10 @@ interface CartState {
   removeItem: (index: number) => void;
   updateQuantity: (index: number, quantity: number) => void;
   clearCart: () => void;
+  recalculateBsPrices: (rateBsPerUsd: number) => void;
   totalBsCents: () => number;
   totalUsdCents: () => number;
+  totalBsCentsFromRate: (rateBsPerUsd: number) => number;
   itemCount: () => number;
 }
 
@@ -170,6 +173,41 @@ export const useCartStore = create<CartState>()(
 
       clearCart: () => set({ items: [] }),
 
+      recalculateBsPrices: (rateBsPerUsd: number) => {
+        const items = get().items.map((item) => {
+          const newBaseBsCents = usdCentsToBsCents(item.baseUsdCents, rateBsPerUsd);
+          const fixedContornos = item.fixedContornos.map((c) => ({
+            ...c,
+            priceBsCents: usdCentsToBsCents(c.priceUsdCents, rateBsPerUsd),
+          }));
+          const contornoSubstitutions = item.contornoSubstitutions.map((s) => ({
+            ...s,
+            priceBsCents: usdCentsToBsCents(s.priceUsdCents, rateBsPerUsd),
+          }));
+          const selectedAdicionales = item.selectedAdicionales.map((a) => ({
+            ...a,
+            priceBsCents: usdCentsToBsCents(a.priceUsdCents, rateBsPerUsd),
+          }));
+          const selectedBebidas = (item.selectedBebidas ?? []).map((b) => ({
+            ...b,
+            priceBsCents: usdCentsToBsCents(b.priceUsdCents, rateBsPerUsd),
+          }));
+          const updatedItem = {
+            ...item,
+            baseBsCents: newBaseBsCents,
+            fixedContornos,
+            contornoSubstitutions,
+            selectedAdicionales,
+            selectedBebidas,
+          };
+          return {
+            ...updatedItem,
+            itemTotalBsCents: computeItemTotal(updatedItem, item.quantity),
+          };
+        });
+        set({ items });
+      },
+
       totalBsCents: () =>
         get().items.reduce((sum, i) => sum + i.itemTotalBsCents, 0),
 
@@ -177,6 +215,15 @@ export const useCartStore = create<CartState>()(
         get().items.reduce(
           (sum, i) => sum + computeItemUsdCents(i) * i.quantity,
           0,
+        ),
+
+      totalBsCentsFromRate: (rateBsPerUsd: number) =>
+        usdCentsToBsCents(
+          get().items.reduce(
+            (sum, i) => sum + computeItemUsdCents(i) * i.quantity,
+            0,
+          ),
+          rateBsPerUsd,
         ),
 
       itemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
