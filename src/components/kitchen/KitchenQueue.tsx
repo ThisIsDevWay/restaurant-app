@@ -8,6 +8,7 @@ import { updateOrderStatus } from "@/actions/orders";
 
 interface KitchenOrder {
   id: string;
+  orderNumber: number;
   customerPhone: string;
   itemsSnapshot: Array<{
     id: string;
@@ -78,7 +79,7 @@ export function KitchenQueue() {
   const currentTime = useClock();
 
   useEffect(() => {
-    const paidOrders = orders.filter((o) => o.status === "paid" || o.status === "whatsapp");
+    const paidOrders = orders.filter((o) => o.status === "paid");
     const currentIds = new Set(paidOrders.map((o) => o.id));
 
     const newlyAdded = new Set<string>();
@@ -104,7 +105,7 @@ export function KitchenQueue() {
     await updateOrderStatus(orderId, "delivered");
   };
 
-  const pendingOrders = orders.filter((o) => o.status === "paid" || o.status === "whatsapp");
+  const pendingOrders = orders.filter((o) => o.status === "paid");
   const cookingOrders = orders.filter((o) => o.status === "kitchen");
   const readyOrders = orders.filter((o) => o.status === "delivered");
 
@@ -199,7 +200,7 @@ export function KitchenQueue() {
                     <div className="flex items-center justify-between border-b border-border px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-black text-text-main font-mono">
-                          #{order.id.slice(-4).toUpperCase()}
+                          #{order.orderNumber}
                         </span>
                         {isNew && (
                           <span className="rounded-full bg-amber px-2 py-0.5 text-[10px] font-bold text-white animate-bounce">
@@ -325,7 +326,7 @@ export function KitchenQueue() {
                     {/* Card Header */}
                     <div className="flex items-center justify-between border-b border-border bg-info/5 px-4 py-3 rounded-t-xl">
                       <span className="text-lg font-black text-text-main font-mono">
-                        #{order.id.slice(-4).toUpperCase()}
+                        #{order.orderNumber}
                       </span>
                       <div className="flex items-center gap-1.5 text-sm font-semibold text-info">
                         <Timer className="h-4 w-4" />
@@ -431,7 +432,7 @@ export function KitchenQueue() {
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-success" />
                       <span className="text-base font-bold text-text-main font-mono">
-                        #{order.id.slice(-4).toUpperCase()}
+                        #{order.orderNumber}
                       </span>
                     </div>
                     <span className="text-xs text-success font-semibold">
