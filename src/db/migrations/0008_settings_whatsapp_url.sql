@@ -1,0 +1,1 @@
+ALTER TABLE settings ADD COLUMN IF NOT EXISTS whatsapp_microservice_url TEXT NOT NULL DEFAULT 'http://38.171.255.120:3333';
