@@ -518,7 +518,7 @@ export function DailyMenuClient({
 
                                 {availableDailyContornos.length === 0 ? (
                                   <p className="text-[10px] text-error font-medium italic bg-error/5 border border-error/10 p-2 rounded-lg">
-                                    ⚠️ Configura primero los "Contornos del día"
+                                    ⚠️ Configura primero los &quot;Contornos del día&quot;
                                   </p>
                                 ) : (
                                   <div className="flex flex-wrap gap-1.5">
