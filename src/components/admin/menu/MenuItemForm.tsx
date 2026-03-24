@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { createMenuItem, updateMenuItem, generateUploadUrl, getPublicUrl } from "@/actions/menu";
+import { createMenuItem, updateMenuItem, deleteMenuItem, generateUploadUrl, getPublicUrl } from "@/actions/menu";
 import { saveMenuItemAdicionales } from "@/actions/adicionales";
 import { saveMenuItemContornos } from "@/actions/contornos";
 import { saveMenuItemBebidas } from "@/actions/bebidas";
@@ -105,6 +105,7 @@ export function MenuItemForm({
   const [selectedAdicionalIds, setSelectedAdicionalIds] = useState<string[]>(initialSelectedAdicionalIds);
   const [selectedContornos, setSelectedContornos] = useState<ContornoSelection[]>(initialSelectedContornos);
   const [selectedBebidaIds, setSelectedBebidaIds] = useState<string[]>(initialSelectedBebidaIds);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -162,6 +163,21 @@ export function MenuItemForm({
         };
       }),
     );
+  }
+
+  async function onDelete() {
+    if (!initialData) return;
+    setSubmitting(true);
+    try {
+      const result = await deleteMenuItem(initialData.id);
+      if (!result.success) throw new Error(result.error);
+      router.push("/admin/catalogo");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al eliminar");
+      setSubmitting(false);
+      setShowDeleteConfirm(false);
+    }
   }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -246,6 +262,45 @@ export function MenuItemForm({
         </div>
 
         <div className="flex items-center gap-3">
+          {isEdit && (
+            <div className="flex items-center gap-2 mr-2 pr-2 border-r border-gray-200">
+              {showDeleteConfirm ? (
+                <>
+                  <span className="text-xs text-red-600 font-medium">¿Confirmar?</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="text-gray-500 h-8"
+                  >
+                    No
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={onDelete}
+                    disabled={submitting}
+                    className="h-8 bg-red-600 hover:bg-red-700"
+                  >
+                    Sí, borrar
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 gap-1.5"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Borrar
+                </Button>
+              )}
+            </div>
+          )}
           <Button
             type="button"
             variant="ghost"
@@ -434,15 +489,6 @@ export function MenuItemForm({
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Contornos</h2>
                 <p className="text-xs text-gray-500 mt-1">Configura los acompañamientos y sus opciones de sustitución.</p>
               </div>
-              <a
-                href="/admin/contornos"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-gray-400 hover:text-gray-900 transition-colors flex items-center gap-1"
-              >
-                Gestionar contornos
-                <ExternalLink className="h-3 w-3" />
-              </a>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -531,14 +577,6 @@ export function MenuItemForm({
                   <span className="text-[10px] text-red-400 font-bold ml-2">(DESHABILITADOS GLOBALMENTE)</span>
                 )}
               </div>
-              <a
-                href="/admin/adicionales"
-                target="_blank"
-                className="text-xs text-gray-400 hover:text-gray-900 flex items-center gap-1"
-              >
-                Gestionar adicionales
-                <ExternalLink className="h-3 w-3" />
-              </a>
             </header>
 
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">

@@ -12,7 +12,6 @@ import {
   X,
   ShoppingBag,
   PlusCircle,
-  List,
   User,
   Menu,
   BookOpen,
@@ -31,8 +30,7 @@ const navItems = [
   { href: "/admin/orders", label: "Órdenes", icon: ShoppingBag },
   { href: "/admin/menu-del-dia", label: "Menú del Día", icon: CalendarDays },
   { href: "/admin/catalogo", label: "Catálogo", icon: BookOpen },
-  { href: "/admin/contornos", label: "Contornos", icon: List },
-  { href: "/admin/adicionales", label: "Adicionales", icon: PlusCircle },
+
   { href: "/admin/categories", label: "Categorías", icon: Tags },
   { href: "/admin/settings", label: "Configuración", icon: Settings },
   { href: "/kitchen", label: "Cocina", icon: ChefHat },

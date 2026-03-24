@@ -12,7 +12,7 @@ import { getActiveProvider } from "@/lib/payment-providers";
 import type { PaymentInitResult } from "@/lib/payment-providers";
 import { rateLimiters } from "@/lib/rate-limit";
 import { db } from "@/db";
-import { adicionales, dailyAdicionales, dailyBebidas, menuItems, contornos } from "@/db/schema";
+import { dailyAdicionales, dailyBebidas, dailyContornos, menuItems } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import * as v from "valibot";
@@ -122,13 +122,13 @@ export async function processCheckout(
     // Daily adicionales pool
     const dailyAdicionalRows = await db
       .select({
-        id: adicionales.id,
-        name: adicionales.name,
-        priceUsdCents: adicionales.priceUsdCents,
-        isAvailable: adicionales.isAvailable,
+        id: menuItems.id,
+        name: menuItems.name,
+        priceUsdCents: menuItems.priceUsdCents,
+        isAvailable: menuItems.isAvailable,
       })
       .from(dailyAdicionales)
-      .innerJoin(adicionales, eq(dailyAdicionales.adicionalId, adicionales.id))
+      .innerJoin(menuItems, eq(dailyAdicionales.adicionalItemId, menuItems.id))
       .where(eq(dailyAdicionales.date, today));
 
     // Daily bebidas pool
@@ -147,16 +147,18 @@ export async function processCheckout(
     const dailyAdicionalMap = new Map(dailyAdicionalRows.map((a) => [a.id, a]));
     const dailyBebidaMap = new Map(dailyBebidaRows.map((b) => [b.id, b]));
 
-    // Load global contornos (for contorno substitutions that aren't in menuItem.contornos)
-    const globalContornoRows = await db
+    // Load daily contornos pool (for contorno substitutions)
+    const dailyContornoRows = await db
       .select({
-        id: contornos.id,
-        name: contornos.name,
-        priceUsdCents: contornos.priceUsdCents,
-        isAvailable: contornos.isAvailable,
+        id: menuItems.id,
+        name: menuItems.name,
+        priceUsdCents: menuItems.priceUsdCents,
+        isAvailable: menuItems.isAvailable,
       })
-      .from(contornos);
-    const globalContornoMap = new Map(globalContornoRows.map((c) => [c.id, c]));
+      .from(dailyContornos)
+      .innerJoin(menuItems, eq(dailyContornos.contornoItemId, menuItems.id))
+      .where(eq(dailyContornos.date, today));
+    const globalContornoMap = new Map(dailyContornoRows.map((c) => [c.id, c]));
 
     // 3. Recalculate prices from DB — NEVER trust client prices
     let subtotalUsdCents = 0;
