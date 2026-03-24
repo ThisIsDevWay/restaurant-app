@@ -5,9 +5,10 @@ export interface WhatsAppStatus {
   qr?: string;
 }
 
-export async function getStatus(): Promise<WhatsAppStatus> {
+export async function getStatus(baseUrl?: string): Promise<WhatsAppStatus> {
+  const url = baseUrl || BASE_URL;
   try {
-    const res = await fetch(`${BASE_URL}/status`, {
+    const res = await fetch(`${url}/status`, {
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return { status: "disconnected" };
@@ -20,9 +21,11 @@ export async function getStatus(): Promise<WhatsAppStatus> {
 export async function sendMessage(
   number: string,
   message: string,
+  baseUrl?: string,
 ): Promise<{ success: boolean; id?: string; error?: string }> {
+  const url = baseUrl || BASE_URL;
   try {
-    const res = await fetch(`${BASE_URL}/send-message`, {
+    const res = await fetch(`${url}/send-message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ number, message }),
@@ -41,14 +44,15 @@ export async function sendMessage(
   }
 }
 
-export async function getQR(): Promise<string | null> {
-  const status = await getStatus();
+export async function getQR(baseUrl?: string): Promise<string | null> {
+  const status = await getStatus(baseUrl);
   return status.qr ?? null;
 }
 
-export async function forceReconnect(): Promise<boolean> {
+export async function forceReconnect(baseUrl?: string): Promise<boolean> {
+  const url = baseUrl || BASE_URL;
   try {
-    const res = await fetch(`${BASE_URL}/force-reconnect`, {
+    const res = await fetch(`${url}/force-reconnect`, {
       method: "POST",
       signal: AbortSignal.timeout(10000),
     });

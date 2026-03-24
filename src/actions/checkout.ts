@@ -441,6 +441,8 @@ export async function processCheckout(
       name ?? null,
       snapshotItems,
       subtotalBsCents,
+      undefined,
+      settings.whatsappMicroserviceUrl,
     ).catch(() => { });
 
     return {

@@ -37,6 +37,7 @@ export async function sendOrderMessage(
   items: SnapshotItem[],
   totalBsCents: number,
   estimatedMinutes?: number,
+  baseUrl?: string,
 ): Promise<{ success: boolean; error?: string }> {
   const template = await getTemplateByKey(templateKey);
   if (!template || !template.isActive) {
@@ -88,6 +89,6 @@ export async function sendOrderMessage(
     ? cleanPhone
     : `58${cleanPhone}`;
 
-  const result = await sendMessage(formattedPhone, message);
+  const result = await sendMessage(formattedPhone, message, baseUrl);
   return result;
 }

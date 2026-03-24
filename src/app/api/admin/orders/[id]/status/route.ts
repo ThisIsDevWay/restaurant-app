@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getOrderById, updateOrderStatus } from "@/db/queries/orders";
 import { getCustomerByPhone } from "@/db/queries/customers";
+import { getSettings } from "@/db/queries/settings";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 
@@ -65,7 +66,10 @@ export async function POST(
 
     const templateKey = STATUS_TO_TEMPLATE[newStatus];
     if (templateKey) {
-      const customer = await getCustomerByPhone(order.customerPhone);
+      const [customer, settings] = await Promise.all([
+        getCustomerByPhone(order.customerPhone),
+        getSettings(),
+      ]);
       const snapshotItems = order.itemsSnapshot as SnapshotItem[];
 
       sendOrderMessage(
@@ -75,7 +79,9 @@ export async function POST(
         customer?.name ?? null,
         snapshotItems,
         order.subtotalBsCents,
-      ).catch(() => {});
+        undefined,
+        settings?.whatsappMicroserviceUrl,
+      ).catch(() => { });
     }
 
     return NextResponse.json({ success: true, status: newStatus });

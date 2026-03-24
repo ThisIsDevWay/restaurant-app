@@ -4,9 +4,14 @@ import { rateLimiters, getIP } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
   const ip = getIP(req);
-  const { success } = await rateLimiters.lookup.limit(ip);
-  if (!success) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  try {
+    const { success } = await rateLimiters.lookup.limit(ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+  } catch (err) {
+    console.error("Rate limit error (lookup):", err);
+    // Continue if rate limiter fails
   }
 
   const url = new URL(req.url);
