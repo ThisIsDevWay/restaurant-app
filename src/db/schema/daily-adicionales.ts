@@ -6,21 +6,21 @@ import {
   timestamp,
   primaryKey,
 } from "drizzle-orm/pg-core";
-import { adicionales } from "./adicionales";
+import { menuItems } from "./menu";
 
 export const dailyAdicionales = pgTable(
   "daily_adicionales",
   {
     date: date("date").notNull(),
-    adicionalId: uuid("adicional_id")
+    adicionalItemId: uuid("adicional_item_id")
       .notNull()
-      .references(() => adicionales.id, { onDelete: "cascade" }),
+      .references(() => menuItems.id, { onDelete: "cascade" }),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (t) => ({
-    pk: primaryKey({ columns: [t.date, t.adicionalId] }),
+    pk: primaryKey({ columns: [t.date, t.adicionalItemId] }),
   }),
 );
