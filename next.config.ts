@@ -59,6 +59,7 @@ const nextConfig: NextConfig = {
 const withSerwist = withSerwistInit({
   swSrc: "src/app/sw.ts",
   swDest: "public/sw.js",
+  disable: process.env.NODE_ENV !== "production",
 });
 
 export default withSentryConfig(withSerwist(nextConfig), {
@@ -68,5 +69,7 @@ export default withSentryConfig(withSerwist(nextConfig), {
   silent: !process.env.CI,
   widenClientFileUpload: true,
   tunnelRoute: "/monitoring",
-  automaticVercelMonitors: true,
+  webpack: {
+    automaticVercelMonitors: true,
+  },
 });
