@@ -436,7 +436,7 @@ export async function processCheckout(
     }
 
     // 8. Send WhatsApp confirmation (fire-and-forget)
-    sendOrderMessage(
+    await sendOrderMessage(
       "received",
       phone,
       String(order.orderNumber),
@@ -445,7 +445,9 @@ export async function processCheckout(
       subtotalBsCents,
       undefined,
       settings.whatsappMicroserviceUrl,
-    ).catch(() => { });
+    ).catch((err) => {
+      console.error("WhatsApp Error:", err);
+    });
 
     return {
       success: true,

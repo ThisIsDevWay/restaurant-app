@@ -72,7 +72,7 @@ export async function POST(
       ]);
       const snapshotItems = order.itemsSnapshot as SnapshotItem[];
 
-      sendOrderMessage(
+      await sendOrderMessage(
         templateKey,
         order.customerPhone,
         String(order.orderNumber),
@@ -81,7 +81,9 @@ export async function POST(
         order.subtotalBsCents,
         undefined,
         settings?.whatsappMicroserviceUrl,
-      ).catch(() => { });
+      ).catch((err) => {
+        console.error("WhatsApp Error:", err);
+      });
     }
 
     return NextResponse.json({ success: true, status: newStatus });

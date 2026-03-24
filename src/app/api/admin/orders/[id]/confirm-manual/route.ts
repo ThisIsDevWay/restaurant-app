@@ -44,14 +44,18 @@ export async function POST(
       const customer = await getCustomerByPhone(order.customerPhone);
       const snapshotItems = order.itemsSnapshot as SnapshotItem[];
 
-      sendOrderMessage(
+      await sendOrderMessage(
         "paid",
         order.customerPhone,
         String(order.orderNumber),
         customer?.name ?? null,
         snapshotItems,
         order.subtotalBsCents,
-      ).catch(() => {});
+        undefined,
+        settings.whatsappMicroserviceUrl,
+      ).catch((err) => {
+        console.error("WhatsApp Error:", err);
+      });
 
       return NextResponse.json({ success: true });
     }
