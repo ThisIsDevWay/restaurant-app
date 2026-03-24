@@ -7,13 +7,7 @@ import {
 import { getAllAdicionales } from "@/db/queries/adicionales";
 import { getAllBebidas } from "@/db/queries/bebidas";
 import { DailyMenuClient } from "./DailyMenuClient";
-
-function formatLocalDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
+import { todayCaracas } from "@/lib/utils/date";
 
 export default async function DailyMenuPage({
   searchParams,
@@ -21,7 +15,7 @@ export default async function DailyMenuPage({
   searchParams: Promise<{ date?: string }>;
 }) {
   const params = await searchParams;
-  const today = formatLocalDate(new Date());
+  const today = todayCaracas();
   const selectedDate = params.date ?? today;
 
   const [allItems, dailyItemIds, allAdicionales, dailyAdicionalIds, allBebidas, dailyBebidaIds] =

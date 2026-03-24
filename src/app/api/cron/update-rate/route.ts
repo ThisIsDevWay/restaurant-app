@@ -5,6 +5,7 @@ import { invalidateSettingsCache } from "@/db/queries/settings";
 import { logger } from "@/lib/logger";
 import { fetchBCVRates } from "@/lib/bcv";
 import { eq } from "drizzle-orm";
+import { todayCaracas } from "@/lib/utils/date";
 
 export async function GET(req: Request) {
   // Verify cron secret
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
   try {
     // Fetch both USD and EUR rates from BCV official website
     const bcvRates = await fetchBCVRates();
-    const validDate = new Date().toISOString().split("T")[0];
+    const validDate = todayCaracas();
     const results: { currency: string; rate: number | null; success: boolean }[] = [];
 
     // Insert USD rate

@@ -21,8 +21,14 @@ import { Badge } from "@/components/ui/badge";
 import { formatBs } from "@/lib/money";
 import { OrdersChart } from "@/components/admin/dashboard/OrdersChart";
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
+import { todayCaracas } from "@/lib/utils/date";
+import { and, gte, lte } from "drizzle-orm";
 
 export default async function AdminDashboard() {
+  const today = todayCaracas();
+  const startOfDayVET = new Date(`${today}T00:00:00-04:00`);
+  const endOfDayVET = new Date(`${today}T23:59:59-04:00`);
+
   const [todayStats] = await db
     .select({
       totalSales: sql<number>`COALESCE(SUM(${orders.subtotalBsCents}), 0)::int`,
@@ -30,7 +36,12 @@ export default async function AdminDashboard() {
       pendingOrders: sql<number>`COUNT(*) FILTER (WHERE ${orders.status} = 'pending')::int`,
     })
     .from(orders)
-    .where(sql`${orders.createdAt} >= CURRENT_DATE`);
+    .where(
+      and(
+        gte(orders.createdAt, startOfDayVET),
+        lte(orders.createdAt, endOfDayVET),
+      ),
+    );
 
   const avgTicket =
     todayStats.completedOrders > 0
@@ -127,9 +138,8 @@ export default async function AdminDashboard() {
                   <ArrowDownRight className="h-3.5 w-3.5 text-error" />
                 )}
                 <span
-                  className={`text-xs font-medium ${
-                    stat.positive ? "text-success" : "text-error"
-                  }`}
+                  className={`text-xs font-medium ${stat.positive ? "text-success" : "text-error"
+                    }`}
                 >
                   {stat.change}
                 </span>
