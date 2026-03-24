@@ -1,8 +1,29 @@
 import { db } from "../index";
-import { menuItems, optionGroups, options, categories, adicionales, menuItemAdicionales, contornos, menuItemContornos, menuItemBebidas } from "../schema";
+import { menuItems, optionGroups, options, categories, menuItemAdicionales, menuItemContornos, menuItemBebidas } from "../schema";
 import { eq } from "drizzle-orm";
 
-export async function getMenuWithOptions() {
+export interface MenuWithGroups {
+  id: string;
+  name: string;
+  description: string | null;
+  priceUsdCents: number;
+  categoryId: string;
+  categoryName: string;
+  categoryAllowAlone: boolean;
+  categoryIsSimple: boolean;
+  isAvailable: boolean;
+  imageUrl: string | null;
+  sortOrder: number;
+  optionGroups: any[];
+}
+
+export interface MenuWithComponents extends MenuWithGroups {
+  adicionales: any[];
+  contornos: any[];
+  bebidas: any[];
+}
+
+export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
   const items = await db
     .select({
       id: menuItems.id,
@@ -94,7 +115,7 @@ export async function getMenuWithOptions() {
   }));
 }
 
-export async function getMenuWithOptionsAndComponents() {
+export async function getMenuWithOptionsAndComponents(): Promise<MenuWithComponents[]> {
   const items = await db
     .select({
       id: menuItems.id,
@@ -136,31 +157,31 @@ export async function getMenuWithOptionsAndComponents() {
   const adicionalRows = await db
     .select({
       menuItemId: menuItemAdicionales.menuItemId,
-      id: adicionales.id,
-      name: adicionales.name,
-      priceUsdCents: adicionales.priceUsdCents,
-      isAvailable: adicionales.isAvailable,
-      sortOrder: adicionales.sortOrder,
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
+      sortOrder: menuItems.sortOrder,
     })
     .from(menuItemAdicionales)
-    .innerJoin(adicionales, eq(menuItemAdicionales.adicionalId, adicionales.id))
-    .orderBy(adicionales.sortOrder);
+    .innerJoin(menuItems, eq(menuItemAdicionales.adicionalItemId, menuItems.id))
+    .orderBy(menuItems.sortOrder);
 
   // Fetch contornos assignments
   const contornoRows = await db
     .select({
       menuItemId: menuItemContornos.menuItemId,
-      id: contornos.id,
-      name: contornos.name,
-      priceUsdCents: contornos.priceUsdCents,
-      isAvailable: contornos.isAvailable,
-      sortOrder: contornos.sortOrder,
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
+      sortOrder: menuItems.sortOrder,
       removable: menuItemContornos.removable,
       substituteContornoIds: menuItemContornos.substituteContornoIds,
     })
     .from(menuItemContornos)
-    .innerJoin(contornos, eq(menuItemContornos.contornoId, contornos.id))
-    .orderBy(contornos.sortOrder);
+    .innerJoin(menuItems, eq(menuItemContornos.contornoItemId, menuItems.id))
+    .orderBy(menuItems.sortOrder);
 
   // Fetch bebidas assignments
   const bebidaRows = await db
@@ -307,17 +328,17 @@ export async function getMenuItemWithOptions(id: string) {
   // Fetch contornos assigned to this menu item
   const itemContornos = await db
     .select({
-      id: contornos.id,
-      name: contornos.name,
-      priceUsdCents: contornos.priceUsdCents,
-      isAvailable: contornos.isAvailable,
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
       removable: menuItemContornos.removable,
       substituteContornoIds: menuItemContornos.substituteContornoIds,
     })
     .from(menuItemContornos)
-    .innerJoin(contornos, eq(menuItemContornos.contornoId, contornos.id))
+    .innerJoin(menuItems, eq(menuItemContornos.contornoItemId, menuItems.id))
     .where(eq(menuItemContornos.menuItemId, id))
-    .orderBy(contornos.sortOrder);
+    .orderBy(menuItems.sortOrder);
 
   return { ...item, optionGroups: groupsWithOptions, contornos: itemContornos };
 }
@@ -351,32 +372,32 @@ export async function getMenuItemWithOptionsAndComponents(id: string) {
   // Fetch adicionales assigned to this menu item
   const itemAdicionales = await db
     .select({
-      id: adicionales.id,
-      name: adicionales.name,
-      priceUsdCents: adicionales.priceUsdCents,
-      isAvailable: adicionales.isAvailable,
-      sortOrder: adicionales.sortOrder,
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
+      sortOrder: menuItems.sortOrder,
     })
     .from(menuItemAdicionales)
-    .innerJoin(adicionales, eq(menuItemAdicionales.adicionalId, adicionales.id))
+    .innerJoin(menuItems, eq(menuItemAdicionales.adicionalItemId, menuItems.id))
     .where(eq(menuItemAdicionales.menuItemId, id))
-    .orderBy(adicionales.sortOrder);
+    .orderBy(menuItems.sortOrder);
 
   // Fetch contornos assigned to this menu item
   const itemContornos = await db
     .select({
-      id: contornos.id,
-      name: contornos.name,
-      priceUsdCents: contornos.priceUsdCents,
-      isAvailable: contornos.isAvailable,
-      sortOrder: contornos.sortOrder,
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
+      sortOrder: menuItems.sortOrder,
       removable: menuItemContornos.removable,
       substituteContornoIds: menuItemContornos.substituteContornoIds,
     })
     .from(menuItemContornos)
-    .innerJoin(contornos, eq(menuItemContornos.contornoId, contornos.id))
+    .innerJoin(menuItems, eq(menuItemContornos.contornoItemId, menuItems.id))
     .where(eq(menuItemContornos.menuItemId, id))
-    .orderBy(contornos.sortOrder);
+    .orderBy(menuItems.sortOrder);
 
   // Fetch bebidas assigned to this menu item
   const itemBebidas = await db

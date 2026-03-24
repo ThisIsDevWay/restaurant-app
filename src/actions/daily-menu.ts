@@ -2,7 +2,7 @@
 
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db";
-import { dailyMenuItems, dailyAdicionales, dailyBebidas } from "@/db/schema";
+import { dailyMenuItems, dailyAdicionales, dailyBebidas, dailyContornos } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -48,7 +48,7 @@ export async function syncDailyAdicionales(
       await db.insert(dailyAdicionales).values(
         adicionalIds.map((id, index) => ({
           date,
-          adicionalId: id,
+          adicionalItemId: id,
           sortOrder: index,
         })),
       );
@@ -94,6 +94,34 @@ export async function syncDailyBebidas(date: string, bebidaIds: string[]) {
   }
 }
 
+export async function syncDailyContornos(date: string, contornoIds: string[]) {
+  await requireAdmin();
+
+  try {
+    await db.delete(dailyContornos).where(eq(dailyContornos.date, date));
+
+    if (contornoIds.length > 0) {
+      await db.insert(dailyContornos).values(
+        contornoIds.map((id, index) => ({
+          date,
+          contornoItemId: id,
+          sortOrder: index,
+        })),
+      );
+    }
+
+    revalidatePath("/");
+    revalidatePath("/admin/menu-del-dia");
+    return { success: true };
+  } catch (error) {
+    console.error("[syncDailyContornos] Error:", error);
+    return {
+      success: false,
+      error: "Error al guardar los contornos del día.",
+    };
+  }
+}
+
 export async function copyDailyMenuFrom(fromDate: string, toDate: string) {
   await requireAdmin();
 
@@ -108,7 +136,7 @@ export async function copyDailyMenuFrom(fromDate: string, toDate: string) {
 
     const sourceAdicionales = await db
       .select({
-        adicionalId: dailyAdicionales.adicionalId,
+        adicionalItemId: dailyAdicionales.adicionalItemId,
         sortOrder: dailyAdicionales.sortOrder,
       })
       .from(dailyAdicionales)
@@ -122,12 +150,21 @@ export async function copyDailyMenuFrom(fromDate: string, toDate: string) {
       .from(dailyBebidas)
       .where(eq(dailyBebidas.date, fromDate));
 
+    const sourceContornos = await db
+      .select({
+        contornoItemId: dailyContornos.contornoItemId,
+        sortOrder: dailyContornos.sortOrder,
+      })
+      .from(dailyContornos)
+      .where(eq(dailyContornos.date, fromDate));
+
     // Clear destination
     await db.delete(dailyMenuItems).where(eq(dailyMenuItems.date, toDate));
     await db
       .delete(dailyAdicionales)
       .where(eq(dailyAdicionales.date, toDate));
     await db.delete(dailyBebidas).where(eq(dailyBebidas.date, toDate));
+    await db.delete(dailyContornos).where(eq(dailyContornos.date, toDate));
 
     // Copy items
     if (sourceItems.length > 0) {
@@ -144,7 +181,7 @@ export async function copyDailyMenuFrom(fromDate: string, toDate: string) {
       await db.insert(dailyAdicionales).values(
         sourceAdicionales.map((item) => ({
           date: toDate,
-          adicionalId: item.adicionalId,
+          adicionalItemId: item.adicionalItemId,
           sortOrder: item.sortOrder,
         })),
       );
@@ -155,6 +192,16 @@ export async function copyDailyMenuFrom(fromDate: string, toDate: string) {
         sourceBebidas.map((item) => ({
           date: toDate,
           bebidaItemId: item.bebidaItemId,
+          sortOrder: item.sortOrder,
+        })),
+      );
+    }
+
+    if (sourceContornos.length > 0) {
+      await db.insert(dailyContornos).values(
+        sourceContornos.map((item) => ({
+          date: toDate,
+          contornoItemId: item.contornoItemId,
           sortOrder: item.sortOrder,
         })),
       );

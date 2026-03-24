@@ -31,7 +31,7 @@ export const menuItems = pgTable(
       .defaultNow(),
   },
   (table) => [
-    check("menu_items_price_usd_cents_check", sql`${table.priceUsdCents} > 0`),
+    check("menu_items_price_usd_cents_check", sql`${table.priceUsdCents} >= 0`),
   ],
 );
 

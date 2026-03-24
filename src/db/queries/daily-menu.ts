@@ -5,13 +5,12 @@ import {
   categories,
   optionGroups,
   options,
-  adicionales,
   menuItemAdicionales,
-  contornos,
   menuItemContornos,
   menuItemBebidas,
   dailyAdicionales,
   dailyBebidas,
+  dailyContornos,
 } from "../schema";
 import { eq, and, desc, inArray } from "drizzle-orm";
 
@@ -41,28 +40,101 @@ export async function getDailyMenuItemsForDate(dateStr: string) {
     .from(dailyMenuItems)
     .innerJoin(menuItems, eq(dailyMenuItems.menuItemId, menuItems.id))
     .innerJoin(categories, eq(menuItems.categoryId, categories.id))
-    .where(eq(dailyMenuItems.date, dateStr))
+    .where(
+      and(
+        eq(dailyMenuItems.date, dateStr),
+        eq(categories.isAvailable, true),
+        eq(menuItems.isAvailable, true)
+      )
+    )
     .orderBy(categories.sortOrder, dailyMenuItems.sortOrder);
 }
 
-export async function getDailyMenuWithOptionsAndComponents(
-  dateStr?: string,
-) {
+export async function getDailyBebidasAsMenuItemsForDate(dateStr: string) {
+  return db
+    .select({
+      id: dailyBebidas.bebidaItemId,
+      menuItemId: dailyBebidas.bebidaItemId,
+      date: dailyBebidas.date,
+      sortOrder: dailyBebidas.sortOrder,
+      itemName: menuItems.name,
+      itemDescription: menuItems.description,
+      itemPriceUsdCents: menuItems.priceUsdCents,
+      itemCategoryId: menuItems.categoryId,
+      itemIsAvailable: menuItems.isAvailable,
+      itemImageUrl: menuItems.imageUrl,
+      categoryName: categories.name,
+      categoryAllowAlone: categories.allowAlone,
+      categoryIsSimple: categories.isSimple,
+    })
+    .from(dailyBebidas)
+    .innerJoin(menuItems, eq(dailyBebidas.bebidaItemId, menuItems.id))
+    .innerJoin(categories, eq(menuItems.categoryId, categories.id))
+    .where(
+      and(
+        eq(dailyBebidas.date, dateStr),
+        eq(categories.isAvailable, true),
+        eq(menuItems.isAvailable, true)
+      )
+    )
+    .orderBy(categories.sortOrder, dailyBebidas.sortOrder);
+}
+
+export async function getDailyContornosAsMenuItemsForDate(dateStr: string) {
+  return db
+    .select({
+      id: dailyContornos.contornoItemId,
+      menuItemId: dailyContornos.contornoItemId,
+      date: dailyContornos.date,
+      sortOrder: dailyContornos.sortOrder,
+      itemName: menuItems.name,
+      itemDescription: menuItems.description,
+      itemPriceUsdCents: menuItems.priceUsdCents,
+      itemCategoryId: menuItems.categoryId,
+      itemIsAvailable: menuItems.isAvailable,
+      itemImageUrl: menuItems.imageUrl,
+      categoryName: categories.name,
+      categoryAllowAlone: categories.allowAlone,
+      categoryIsSimple: categories.isSimple,
+    })
+    .from(dailyContornos)
+    .innerJoin(menuItems, eq(dailyContornos.contornoItemId, menuItems.id))
+    .innerJoin(categories, eq(menuItems.categoryId, categories.id))
+    .where(
+      and(
+        eq(dailyContornos.date, dateStr),
+        eq(categories.isAvailable, true),
+        eq(menuItems.isAvailable, true)
+      )
+    )
+    .orderBy(categories.sortOrder, dailyContornos.sortOrder);
+}
+
+export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
   const today = dateStr ?? formatLocalDate(new Date());
 
-  const dailyItems = await getDailyMenuItemsForDate(today);
+  const dailyItemsData = await getDailyMenuItemsForDate(today);
+  const dailyBebidasData = await getDailyBebidasAsMenuItemsForDate(today);
+  const dailyContornosData = await getDailyContornosAsMenuItemsForDate(today);
+
+  const uniqueItemsMap = new Map();
+  for (const item of dailyItemsData) uniqueItemsMap.set(item.menuItemId, item);
+  for (const item of dailyBebidasData) uniqueItemsMap.set(item.menuItemId, item);
+  for (const item of dailyContornosData) uniqueItemsMap.set(item.menuItemId, item);
+
+  const dailyItems = Array.from(uniqueItemsMap.values());
 
   if (dailyItems.length === 0) {
     return {
       items: [],
       dailyAdicionales: [],
       dailyBebidas: [],
+      dailyContornos: [],
     };
   }
 
   const menuItemIds = dailyItems.map((d) => d.menuItemId);
 
-  // Fetch option groups for these items
   const groupRows = await db
     .select({
       groupId: optionGroups.id,
@@ -82,39 +154,36 @@ export async function getDailyMenuWithOptionsAndComponents(
     .where(inArray(optionGroups.menuItemId, menuItemIds))
     .orderBy(optionGroups.sortOrder, options.sortOrder);
 
-  // Fetch adicionales for these items
   const adicionalRows = await db
     .select({
       menuItemId: menuItemAdicionales.menuItemId,
-      id: adicionales.id,
-      name: adicionales.name,
-      priceUsdCents: adicionales.priceUsdCents,
-      isAvailable: adicionales.isAvailable,
-      sortOrder: adicionales.sortOrder,
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
+      sortOrder: menuItems.sortOrder,
     })
     .from(menuItemAdicionales)
-    .innerJoin(adicionales, eq(menuItemAdicionales.adicionalId, adicionales.id))
+    .innerJoin(menuItems, eq(menuItemAdicionales.adicionalItemId, menuItems.id))
     .where(inArray(menuItemAdicionales.menuItemId, menuItemIds))
-    .orderBy(adicionales.sortOrder);
+    .orderBy(menuItems.sortOrder);
 
-  // Fetch contornos for these items
   const contornoRows = await db
     .select({
       menuItemId: menuItemContornos.menuItemId,
-      id: contornos.id,
-      name: contornos.name,
-      priceUsdCents: contornos.priceUsdCents,
-      isAvailable: contornos.isAvailable,
-      sortOrder: contornos.sortOrder,
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
+      sortOrder: menuItems.sortOrder,
       removable: menuItemContornos.removable,
       substituteContornoIds: menuItemContornos.substituteContornoIds,
     })
     .from(menuItemContornos)
-    .innerJoin(contornos, eq(menuItemContornos.contornoId, contornos.id))
+    .innerJoin(menuItems, eq(menuItemContornos.contornoItemId, menuItems.id))
     .where(inArray(menuItemContornos.menuItemId, menuItemIds))
-    .orderBy(contornos.sortOrder);
+    .orderBy(menuItems.sortOrder);
 
-  // Fetch bebidas for these items
   const bebidaRows = await db
     .select({
       menuItemId: menuItemBebidas.menuItemId,
@@ -129,24 +198,19 @@ export async function getDailyMenuWithOptionsAndComponents(
     .where(inArray(menuItemBebidas.menuItemId, menuItemIds))
     .orderBy(menuItems.sortOrder);
 
-  // Fetch daily adicionales pool
   const dailyAdicionalRows = await db
     .select({
-      id: adicionales.id,
-      name: adicionales.name,
-      priceUsdCents: adicionales.priceUsdCents,
-      isAvailable: adicionales.isAvailable,
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
       sortOrder: dailyAdicionales.sortOrder,
     })
     .from(dailyAdicionales)
-    .innerJoin(
-      adicionales,
-      eq(dailyAdicionales.adicionalId, adicionales.id),
-    )
+    .innerJoin(menuItems, eq(dailyAdicionales.adicionalItemId, menuItems.id))
     .where(eq(dailyAdicionales.date, today))
     .orderBy(dailyAdicionales.sortOrder);
 
-  // Fetch daily bebidas pool
   const dailyBebidaRows = await db
     .select({
       id: menuItems.id,
@@ -160,33 +224,27 @@ export async function getDailyMenuWithOptionsAndComponents(
     .where(eq(dailyBebidas.date, today))
     .orderBy(dailyBebidas.sortOrder);
 
-  // Group by item
-  const optionsByItem = new Map<
-    string,
-    Array<{
-      id: string;
-      menuItemId: string;
-      name: string;
-      type: "radio" | "checkbox";
-      required: boolean;
-      sortOrder: number;
-      options: Array<{
-        id: string;
-        name: string;
-        priceUsdCents: number;
-        isAvailable: boolean;
-        sortOrder: number;
-      }>;
-    }>
-  >();
+  const dailyContornoRows = await db
+    .select({
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
+      sortOrder: dailyContornos.sortOrder,
+    })
+    .from(dailyContornos)
+    .innerJoin(menuItems, eq(dailyContornos.contornoItemId, menuItems.id))
+    .where(eq(dailyContornos.date, today))
+    .orderBy(dailyContornos.sortOrder);
 
+  const optionsByItem = new Map();
   for (const row of groupRows) {
     let groups = optionsByItem.get(row.menuItemId);
     if (!groups) {
       groups = [];
       optionsByItem.set(row.menuItemId, groups);
     }
-    let group = groups.find((g) => g.id === row.groupId);
+    let group = groups.find((g: any) => g.id === row.groupId);
     if (!group) {
       group = {
         id: row.groupId,
@@ -208,7 +266,7 @@ export async function getDailyMenuWithOptionsAndComponents(
     });
   }
 
-  const adicionalesByItem = new Map<string, typeof adicionalRows>();
+  const adicionalesByItem = new Map();
   for (const row of adicionalRows) {
     let list = adicionalesByItem.get(row.menuItemId);
     if (!list) {
@@ -218,7 +276,7 @@ export async function getDailyMenuWithOptionsAndComponents(
     list.push(row);
   }
 
-  const contornosByItem = new Map<string, typeof contornoRows>();
+  const contornosByItem = new Map();
   for (const row of contornoRows) {
     let list = contornosByItem.get(row.menuItemId);
     if (!list) {
@@ -228,7 +286,7 @@ export async function getDailyMenuWithOptionsAndComponents(
     list.push(row);
   }
 
-  const bebidasByItem = new Map<string, typeof bebidaRows>();
+  const bebidasByItem = new Map();
   for (const row of bebidaRows) {
     let list = bebidasByItem.get(row.menuItemId);
     if (!list) {
@@ -260,6 +318,7 @@ export async function getDailyMenuWithOptionsAndComponents(
     items,
     dailyAdicionales: dailyAdicionalRows,
     dailyBebidas: dailyBebidaRows,
+    dailyContornos: dailyContornoRows,
   };
 }
 
@@ -273,10 +332,10 @@ export async function getDailyMenuItemIds(dateStr: string) {
 
 export async function getDailyAdicionalIds(dateStr: string) {
   const rows = await db
-    .select({ adicionalId: dailyAdicionales.adicionalId })
+    .select({ adicionalItemId: dailyAdicionales.adicionalItemId })
     .from(dailyAdicionales)
     .where(eq(dailyAdicionales.date, dateStr));
-  return rows.map((r) => r.adicionalId);
+  return rows.map((r) => r.adicionalItemId);
 }
 
 export async function getDailyBebidaIds(dateStr: string) {
@@ -285,4 +344,12 @@ export async function getDailyBebidaIds(dateStr: string) {
     .from(dailyBebidas)
     .where(eq(dailyBebidas.date, dateStr));
   return rows.map((r) => r.bebidaItemId);
+}
+
+export async function getDailyContornoIds(dateStr: string) {
+  const rows = await db
+    .select({ contornoItemId: dailyContornos.contornoItemId })
+    .from(dailyContornos)
+    .where(eq(dailyContornos.date, dateStr));
+  return rows.map((r) => r.contornoItemId);
 }

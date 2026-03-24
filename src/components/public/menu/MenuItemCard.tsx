@@ -26,6 +26,7 @@ interface MenuItemCardProps {
   imageUrl: string | null;
   hasRequiredOptions: boolean;
   onOpenDetail: () => void;
+  onAddSimpleItem?: (payload: any, categoryName: string) => void;
 }
 
 export function MenuItemCard({
@@ -40,6 +41,7 @@ export function MenuItemCard({
   imageUrl,
   hasRequiredOptions,
   onOpenDetail,
+  onAddSimpleItem,
 }: MenuItemCardProps) {
   const addItem = useCartStore((s) => s.addItem);
   const categoryKey = categoryName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -53,7 +55,7 @@ export function MenuItemCard({
       return;
     }
 
-    addItem({
+    const payload = {
       id,
       name,
       baseUsdCents: priceUsdCents,
@@ -64,10 +66,15 @@ export function MenuItemCard({
       selectedAdicionales: [],
       removedComponents: [],
       categoryAllowAlone,
-    });
+    };
 
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(30);
+    if (onAddSimpleItem) {
+      onAddSimpleItem(payload, categoryName);
+    } else {
+      addItem(payload);
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(30);
+      }
     }
   };
 

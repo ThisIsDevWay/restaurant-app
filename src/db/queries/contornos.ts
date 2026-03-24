@@ -1,36 +1,44 @@
 import { db } from "../index";
-import { contornos, menuItemContornos, menuItems } from "../schema";
+import { categories, menuItemContornos, menuItems } from "../schema";
 import { eq } from "drizzle-orm";
 
 export async function getAllContornos() {
   return db
-    .select()
-    .from(contornos)
-    .orderBy(contornos.sortOrder);
+    .select({
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
+      sortOrder: menuItems.sortOrder,
+    })
+    .from(menuItems)
+    .innerJoin(categories, eq(menuItems.categoryId, categories.id))
+    .where(eq(categories.name, "Contornos"))
+    .orderBy(menuItems.sortOrder);
 }
 
 export async function getContornosByMenuItemId(menuItemId: string) {
   const rows = await db
     .select({
-      id: contornos.id,
-      name: contornos.name,
-      priceUsdCents: contornos.priceUsdCents,
-      isAvailable: contornos.isAvailable,
-      sortOrder: contornos.sortOrder,
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      isAvailable: menuItems.isAvailable,
+      sortOrder: menuItems.sortOrder,
       removable: menuItemContornos.removable,
       substituteContornoIds: menuItemContornos.substituteContornoIds,
     })
     .from(menuItemContornos)
-    .innerJoin(contornos, eq(menuItemContornos.contornoId, contornos.id))
+    .innerJoin(menuItems, eq(menuItemContornos.contornoItemId, menuItems.id))
     .where(eq(menuItemContornos.menuItemId, menuItemId))
-    .orderBy(contornos.sortOrder);
+    .orderBy(menuItems.sortOrder);
 
   return rows;
 }
 
 export async function setMenuItemContornos(
   menuItemId: string,
-  items: Array<{ contornoId: string; removable: boolean; substituteContornoIds: string[] }>,
+  items: Array<{ contornoItemId: string; removable: boolean; substituteContornoIds: string[] }>,
 ) {
   await db
     .delete(menuItemContornos)
@@ -40,7 +48,7 @@ export async function setMenuItemContornos(
     await db.insert(menuItemContornos).values(
       items.map((item) => ({
         menuItemId,
-        contornoId: item.contornoId,
+        contornoItemId: item.contornoItemId,
         removable: item.removable,
         substituteContornoIds: item.substituteContornoIds,
       })),
@@ -48,52 +56,11 @@ export async function setMenuItemContornos(
   }
 }
 
-export async function createContorno(data: {
-  name: string;
-  priceUsdCents: number;
-  isAvailable?: boolean;
-  sortOrder?: number;
-}) {
-  const [row] = await db
-    .insert(contornos)
-    .values({
-      name: data.name,
-      priceUsdCents: data.priceUsdCents,
-      isAvailable: data.isAvailable ?? true,
-      sortOrder: data.sortOrder ?? 0,
-    })
-    .returning();
-
-  return row;
-}
-
-export async function updateContorno(
-  id: string,
-  data: {
-    name?: string;
-    priceUsdCents?: number;
-    isAvailable?: boolean;
-    sortOrder?: number;
-  },
-) {
-  const [row] = await db
-    .update(contornos)
-    .set(data)
-    .where(eq(contornos.id, id))
-    .returning();
-
-  return row;
-}
-
-export async function deleteContorno(id: string) {
-  await db.delete(contornos).where(eq(contornos.id, id));
-}
-
 export async function getContornoUsageCount(id: string): Promise<number> {
   const rows = await db
     .select({ menuItemId: menuItemContornos.menuItemId })
     .from(menuItemContornos)
-    .where(eq(menuItemContornos.contornoId, id));
+    .where(eq(menuItemContornos.contornoItemId, id));
 
   return rows.length;
 }

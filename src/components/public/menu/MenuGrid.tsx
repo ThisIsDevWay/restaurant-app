@@ -3,6 +3,14 @@
 import { useState } from "react";
 import { MenuItemCard } from "./MenuItemCard";
 import { ItemDetailModal } from "@/components/client/ItemDetailModal";
+import { useCartStore } from "@/store/cartStore";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface MenuItem {
   id: string;
@@ -91,6 +99,10 @@ export function MenuGrid({
   dailyBebidas,
 }: MenuGridProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [drinkWarningItem, setDrinkWarningItem] = useState<{ payload: any; categoryName: string } | null>(null);
+
+  const cartItems = useCartStore((s) => s.items);
+  const addItem = useCartStore((s) => s.addItem);
 
   const availableItems = items.filter((i) => i.isAvailable);
   const unavailableItems = items.filter((i) => !i.isAvailable);
@@ -99,6 +111,31 @@ export function MenuGrid({
   const selectedItem = selectedItemId
     ? items.find((i) => i.id === selectedItemId) ?? null
     : null;
+
+  const handleAddSimpleItem = (payload: any, categoryName: string) => {
+    const isDrink = categoryName.toLowerCase().includes("bebida");
+    // Check if the cart already has a dish with a drink
+    const hasDrinkInCart = cartItems.some(
+      (i) =>
+        (i.selectedBebidas && i.selectedBebidas.length > 0) ||
+        i.emoji === "🥤"
+    );
+
+    if (isDrink && hasDrinkInCart) {
+      setDrinkWarningItem({ payload, categoryName });
+    } else {
+      addItem(payload);
+      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
+    }
+  };
+
+  const confirmAddDrink = () => {
+    if (drinkWarningItem) {
+      addItem(drinkWarningItem.payload);
+      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
+      setDrinkWarningItem(null);
+    }
+  };
 
   return (
     <div className="grid grid-cols-2 gap-3 px-4 pb-4">
@@ -129,6 +166,7 @@ export function MenuGrid({
             imageUrl={item.imageUrl}
             hasRequiredOptions={needsDetailModal}
             onOpenDetail={() => setSelectedItemId(item.id)}
+            onAddSimpleItem={handleAddSimpleItem}
           />
         );
       })}
@@ -146,6 +184,36 @@ export function MenuGrid({
           dailyBebidas={dailyBebidas}
         />
       )}
+
+      <Dialog
+        open={!!drinkWarningItem}
+        onOpenChange={(open) => {
+          if (!open) setDrinkWarningItem(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>¿Agregar bebida adicional?</DialogTitle>
+            <DialogDescription>
+              Ya tienes una bebida incluida en tu carrito. ¿Deseas añadir esta bebida extra por separado?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <button
+              onClick={() => setDrinkWarningItem(null)}
+              className="w-full rounded-input border border-border bg-white py-2.5 text-[15px] font-medium text-text-main transition-colors active:bg-bg-app sm:w-auto sm:px-4"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmAddDrink}
+              className="w-full rounded-input bg-primary py-2.5 text-[15px] font-semibold text-white transition-colors active:bg-primary-hover sm:w-auto sm:px-4"
+            >
+              Agregar bebida
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
