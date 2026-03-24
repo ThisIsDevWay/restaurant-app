@@ -1,4 +1,4 @@
-// @ts-nocheck — Service Worker runs in different context
+// @ts-nocheck
 import { defaultCache } from "@serwist/next/worker";
 import { Serwist, NetworkOnly } from "serwist";
 
@@ -9,12 +9,8 @@ const serwist = new Serwist({
   navigationPreload: false,
   runtimeCaching: [
     {
-      matcher: ({ url }) => url.pathname.startsWith("/api/auth/"),
-      handler: ({ request }) => fetch(request),
-    },
-    {
-      matcher: ({ url }) => url.pathname.startsWith("/api/"),
-      handler: ({ request }) => fetch(request),
+      matcher: ({ url }: { url: URL }) => url.pathname.startsWith("/api/"),
+      handler: new NetworkOnly(),
     },
     ...defaultCache,
   ],

@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   title: "G&M — Restaurante",
   description: "Haz tu pedido desde tu teléfono",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
