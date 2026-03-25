@@ -13,20 +13,21 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function MenuPage() {
-  const dailyMenuData = await getDailyMenuWithOptionsAndComponents();
-  const { items, dailyAdicionales, dailyBebidas } = dailyMenuData;
-  const [categories, rateData, allContornos, appSettings] = await Promise.all([
+  const [dailyMenuData, categories, rateData, allContornos, appSettings] = await Promise.all([
+    getDailyMenuWithOptionsAndComponents(),
     getCategories(),
     getActiveRate(),
     getAllContornos(),
     getSettings(),
   ]);
+  const { items, dailyAdicionales, dailyBebidas } = dailyMenuData;
 
   const rate = rateData?.rate ?? null;
   const showRate = rateData && appSettings?.showRateInMenu !== false;
   const availableCategories = categories.filter((c) => c.isAvailable);
   const adicionalesEnabled = appSettings?.adicionalesEnabled ?? true;
   const bebidasEnabled = appSettings?.bebidasEnabled ?? true;
+  const maxQuantityPerItem = appSettings?.maxQuantityPerItem ?? 10;
 
   // Filter categories to only those that have items in today's menu
   const usedCategoryIds = new Set(items.map((i) => i.categoryId));
@@ -103,6 +104,7 @@ export default async function MenuPage() {
           bebidasEnabled={bebidasEnabled}
           dailyAdicionales={dailyAdicionales}
           dailyBebidas={dailyBebidas}
+          maxQuantityPerItem={maxQuantityPerItem}
         />
       </Suspense>
 

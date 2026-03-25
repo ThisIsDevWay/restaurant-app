@@ -7,6 +7,7 @@ export const settingsSchema = v.object({
   accountRif: v.pipe(v.string(), v.minLength(1)),
   orderExpirationMinutes: v.pipe(v.number(), v.integer(), v.minValue(5)),
   maxPendingOrders: v.pipe(v.number(), v.integer(), v.minValue(1)),
+  maxQuantityPerItem: v.pipe(v.number(), v.integer(), v.minValue(1)),
   rateCurrency: v.picklist(["usd", "eur"]),
   showRateInMenu: v.boolean(),
   rateOverrideBsPerUsd: v.optional(v.string()),

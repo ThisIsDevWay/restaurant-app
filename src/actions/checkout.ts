@@ -1,5 +1,7 @@
 "use server";
 
+import { after } from "next/server";
+
 import { getSettings, getActiveRate } from "@/db/queries/settings";
 import { getMenuItemWithOptionsAndComponents } from "@/db/queries/menu";
 import { createOrder } from "@/db/queries/orders";
@@ -232,7 +234,7 @@ export async function processCheckout(
       // Process removed components (discounts)
       let removalAdjustmentUsdCents = 0;
       for (const removal of clientItem.removedComponents) {
-        removalAdjustmentUsdCents += removal.priceUsdCents; // negative = discount
+        removalAdjustmentUsdCents -= removal.priceUsdCents; // subtract = discount
       }
 
       // Validate and add fixed contornos prices
@@ -435,19 +437,21 @@ export async function processCheckout(
       await upsertCustomer(phone, name ?? null, cedula ?? null);
     }
 
-    // 8. Send WhatsApp confirmation (fire-and-forget)
-    await sendOrderMessage(
-      "received",
-      phone,
-      String(order.orderNumber),
-      name ?? null,
-      snapshotItems,
-      subtotalBsCents,
-      undefined,
-      settings.whatsappMicroserviceUrl,
-    ).catch((err) => {
-      console.error("WhatsApp Error:", err);
-    });
+    // 8. Send WhatsApp confirmation (Vercel-safe fire-and-forget via after())
+    after(
+      sendOrderMessage(
+        "received",
+        phone,
+        String(order.orderNumber),
+        name ?? null,
+        snapshotItems,
+        subtotalBsCents,
+        undefined,
+        settings.whatsappMicroserviceUrl,
+      ).catch((err) => {
+        console.error("WhatsApp Error:", err);
+      })
+    );
 
     return {
       success: true,
@@ -455,7 +459,8 @@ export async function processCheckout(
       expiresAt: expiresAt.toISOString(),
       initResult,
     };
-  } catch {
+  } catch (error) {
+    console.error("[processCheckout] Unhandled error:", error);
     return {
       success: false,
       error: "Error inesperado. Por favor intenta de nuevo.",

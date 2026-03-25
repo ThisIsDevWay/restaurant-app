@@ -12,6 +12,7 @@ interface SettingsFormData {
   accountRif: string;
   orderExpirationMinutes: number;
   maxPendingOrders: number;
+  maxQuantityPerItem: number;
   rateCurrency: "usd" | "eur";
   showRateInMenu: boolean;
   rateOverrideBsPerUsd: string;
@@ -36,6 +37,7 @@ export function SettingsForm({
       accountRif: "",
       orderExpirationMinutes: 30,
       maxPendingOrders: 99,
+      maxQuantityPerItem: 10,
       rateCurrency: "usd",
       showRateInMenu: true,
       rateOverrideBsPerUsd: "",
@@ -65,6 +67,7 @@ export function SettingsForm({
     if (!form.accountRif.trim()) e.accountRif = "RIF requerido";
     if (form.orderExpirationMinutes < 1) e.orderExpirationMinutes = "Mínimo 1 minuto";
     if (form.maxPendingOrders < 1) e.maxPendingOrders = "Mínimo 1";
+    if (form.maxQuantityPerItem < 1) e.maxQuantityPerItem = "Mínimo 1";
     if (form.rateOverrideBsPerUsd && (isNaN(parseFloat(form.rateOverrideBsPerUsd)) || parseFloat(form.rateOverrideBsPerUsd) <= 0)) {
       e.rateOverrideBsPerUsd = "Tasa inválida";
     }
@@ -134,9 +137,8 @@ export function SettingsForm({
               value={form.rateOverrideBsPerUsd}
               onChange={(e) => updateField("rateOverrideBsPerUsd", e.target.value)}
               placeholder="Vacío = usar tasa BCV automática"
-              className={`flex-1 rounded-input border px-4 py-2.5 text-sm font-mono outline-none transition-all ${
-                errors.rateOverrideBsPerUsd ? "border-error focus:border-error" : "border-border focus:border-primary"
-              }`}
+              className={`flex-1 rounded-input border px-4 py-2.5 text-sm font-mono outline-none transition-all ${errors.rateOverrideBsPerUsd ? "border-error focus:border-error" : "border-border focus:border-primary"
+                }`}
             />
             <button
               type="button"
@@ -244,9 +246,8 @@ export function SettingsForm({
               value={form.banescoApiKey}
               onChange={(e) => updateField("banescoApiKey", e.target.value)}
               placeholder="sk-..."
-              className={`w-full rounded-input border px-4 py-2.5 text-sm outline-none transition-all ${
-                errors.banescoApiKey ? "border-error focus:border-error" : "border-border focus:border-primary"
-              }`}
+              className={`w-full rounded-input border px-4 py-2.5 text-sm outline-none transition-all ${errors.banescoApiKey ? "border-error focus:border-error" : "border-border focus:border-primary"
+                }`}
             />
             <p className="mt-1 text-xs text-text-muted">
               Dejar vacío para usar modo mock (desarrollo)
@@ -266,9 +267,8 @@ export function SettingsForm({
             value={form.whatsappNumber}
             onChange={(e) => updateField("whatsappNumber", e.target.value)}
             placeholder="584141234567"
-            className={`w-full rounded-input border px-4 py-2.5 text-sm outline-none transition-all ${
-              errors.whatsappNumber ? "border-error focus:border-error" : "border-border focus:border-primary"
-            }`}
+            className={`w-full rounded-input border px-4 py-2.5 text-sm outline-none transition-all ${errors.whatsappNumber ? "border-error focus:border-error" : "border-border focus:border-primary"
+              }`}
           />
           <p className="mt-1 text-xs text-text-muted">
             Requerido para el modo WhatsApp
@@ -317,9 +317,8 @@ export function SettingsForm({
               type="text"
               value={form[key]}
               onChange={(e) => updateField(key, e.target.value)}
-              className={`w-full rounded-input border px-4 py-2.5 text-sm outline-none transition-all ${
-                errors[key] ? "border-error focus:border-error" : "border-border focus:border-primary"
-              }`}
+              className={`w-full rounded-input border px-4 py-2.5 text-sm outline-none transition-all ${errors[key] ? "border-error focus:border-error" : "border-border focus:border-primary"
+                }`}
             />
             {errors[key] && (
               <p className="mt-1 text-xs text-error">{errors[key]}</p>
@@ -338,6 +337,7 @@ export function SettingsForm({
           [
             ["orderExpirationMinutes", "Minutos de expiración *", "number"],
             ["maxPendingOrders", "Máx. órdenes pendientes *", "number"],
+            ["maxQuantityPerItem", "Máx. cantidad por ítem *", "number"],
           ] as const
         ).map(([key, label, type]) => (
           <div key={key} className="mb-3 last:mb-0">
@@ -351,9 +351,8 @@ export function SettingsForm({
                 updateField(key, parseInt(e.target.value) || 0)
               }
               min={1}
-              className={`w-full rounded-input border px-4 py-2.5 text-sm outline-none transition-all ${
-                errors[key] ? "border-error focus:border-error" : "border-border focus:border-primary"
-              }`}
+              className={`w-full rounded-input border px-4 py-2.5 text-sm outline-none transition-all ${errors[key] ? "border-error focus:border-error" : "border-border focus:border-primary"
+                }`}
             />
             {errors[key] && (
               <p className="mt-1 text-xs text-error">{errors[key]}</p>
@@ -364,11 +363,10 @@ export function SettingsForm({
 
       {message && (
         <div
-          className={`rounded-input p-3 text-sm ${
-            message.type === "success"
-              ? "bg-success/10 text-success"
-              : "bg-error/10 text-error"
-          }`}
+          className={`rounded-input p-3 text-sm ${message.type === "success"
+            ? "bg-success/10 text-success"
+            : "bg-error/10 text-error"
+            }`}
         >
           {message.text}
         </div>

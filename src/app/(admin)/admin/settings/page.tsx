@@ -29,20 +29,21 @@ export default async function SettingsPage() {
           initialData={
             settings
               ? {
-                  bankName: settings.bankName,
-                  bankCode: settings.bankCode,
-                  accountPhone: settings.accountPhone,
-                  accountRif: settings.accountRif,
-                  orderExpirationMinutes: settings.orderExpirationMinutes,
-                  maxPendingOrders: settings.maxPendingOrders,
-                  rateCurrency: (settings.rateCurrency ?? "usd") as "usd" | "eur",
-                  showRateInMenu: settings.showRateInMenu ?? true,
-                  rateOverrideBsPerUsd: settings.rateOverrideBsPerUsd ?? "",
-                  activePaymentProvider: settings.activePaymentProvider,
-                  banescoApiKey: settings.banescoApiKey ?? "",
-                  whatsappNumber: settings.whatsappNumber,
-                  whatsappMicroserviceUrl: settings.whatsappMicroserviceUrl ?? "http://38.171.255.120:3333",
-                }
+                bankName: settings.bankName,
+                bankCode: settings.bankCode,
+                accountPhone: settings.accountPhone,
+                accountRif: settings.accountRif,
+                orderExpirationMinutes: settings.orderExpirationMinutes,
+                maxPendingOrders: settings.maxPendingOrders,
+                maxQuantityPerItem: settings.maxQuantityPerItem,
+                rateCurrency: (settings.rateCurrency ?? "usd") as "usd" | "eur",
+                showRateInMenu: settings.showRateInMenu ?? true,
+                rateOverrideBsPerUsd: settings.rateOverrideBsPerUsd ?? "",
+                activePaymentProvider: settings.activePaymentProvider,
+                banescoApiKey: settings.banescoApiKey ?? "",
+                whatsappNumber: settings.whatsappNumber,
+                whatsappMicroserviceUrl: settings.whatsappMicroserviceUrl ?? "http://38.171.255.120:3333",
+              }
               : null
           }
         />

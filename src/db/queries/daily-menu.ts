@@ -113,9 +113,11 @@ export async function getDailyContornosAsMenuItemsForDate(dateStr: string) {
 export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
   const today = dateStr ?? formatLocalDate(new Date());
 
-  const dailyItemsData = await getDailyMenuItemsForDate(today);
-  const dailyBebidasData = await getDailyBebidasAsMenuItemsForDate(today);
-  const dailyContornosData = await getDailyContornosAsMenuItemsForDate(today);
+  const [dailyItemsData, dailyBebidasData, dailyContornosData] = await Promise.all([
+    getDailyMenuItemsForDate(today),
+    getDailyBebidasAsMenuItemsForDate(today),
+    getDailyContornosAsMenuItemsForDate(today),
+  ]);
 
   const uniqueItemsMap = new Map();
   for (const item of dailyItemsData) uniqueItemsMap.set(item.menuItemId, item);
@@ -168,7 +170,16 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
     .where(inArray(menuItemAdicionales.menuItemId, menuItemIds))
     .orderBy(menuItems.sortOrder);
 
-  const contornoRows = await db
+  const dailyContornoIds = await db
+    .select({ id: dailyContornos.contornoItemId })
+    .from(dailyContornos)
+    .where(eq(dailyContornos.date, today));
+  const dailyContornoIdsSet = new Set(dailyContornoIds.map((c) => c.id));
+
+  const dailyContornoIdArray = Array.from(dailyContornoIdsSet);
+
+  // Only query contornos if there are daily contornos selected
+  const contornoRows = dailyContornoIdArray.length === 0 ? [] : await db
     .select({
       menuItemId: menuItemContornos.menuItemId,
       id: menuItems.id,
@@ -181,7 +192,12 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
     })
     .from(menuItemContornos)
     .innerJoin(menuItems, eq(menuItemContornos.contornoItemId, menuItems.id))
-    .where(inArray(menuItemContornos.menuItemId, menuItemIds))
+    .where(
+      and(
+        inArray(menuItemContornos.menuItemId, menuItemIds),
+        inArray(menuItemContornos.contornoItemId, dailyContornoIdArray)
+      )
+    )
     .orderBy(menuItems.sortOrder);
 
   const bebidaRows = await db
@@ -278,12 +294,19 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
 
   const contornosByItem = new Map();
   for (const row of contornoRows) {
-    let list = contornosByItem.get(row.menuItemId);
-    if (!list) {
-      list = [];
-      contornosByItem.set(row.menuItemId, list);
+    let listCont = contornosByItem.get(row.menuItemId);
+    if (!listCont) {
+      listCont = [];
+      contornosByItem.set(row.menuItemId, listCont);
     }
-    list.push(row);
+
+    // Filter substitutes to only those available today
+    const activeSubstitutes = (row.substituteContornoIds || []).filter(id => dailyContornoIdsSet.has(id));
+
+    listCont.push({
+      ...row,
+      substituteContornoIds: activeSubstitutes
+    });
   }
 
   const bebidasByItem = new Map();

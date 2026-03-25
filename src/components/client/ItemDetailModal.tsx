@@ -91,6 +91,7 @@ interface ItemDetailModalProps {
   bebidasEnabled?: boolean;
   dailyAdicionales: SimpleItem[];
   dailyBebidas: SimpleItem[];
+  maxQuantityPerItem?: number;
 }
 
 export function ItemDetailModal({
@@ -103,6 +104,7 @@ export function ItemDetailModal({
   bebidasEnabled = true,
   dailyAdicionales,
   dailyBebidas,
+  maxQuantityPerItem = 10,
 }: ItemDetailModalProps) {
   const addItem = useCartStore((s) => s.addItem);
   // Track substitution per removable contorno: null = keep original, string = substitute ID
@@ -265,7 +267,9 @@ export function ItemDetailModal({
 
   let additionalUsdCents = 0;
   for (const adicionalId of selectedAdicionalIds) {
-    const adicional = item.adicionales.find((a) => a.id === adicionalId) || dailyAdicionales.find((a) => a.id === adicionalId);
+    // Look in dailyAdicionales first (matches checkout.ts order), then item-level
+    const adicional = dailyAdicionales.find((a) => a.id === adicionalId)
+      || item.adicionales.find((a) => a.id === adicionalId);
     if (adicional && adicional.isAvailable) {
       additionalUsdCents += adicional.priceUsdCents;
       cartAdicionales.push({
@@ -287,7 +291,9 @@ export function ItemDetailModal({
 
   let bebidasUsdCents = 0;
   for (const bebidaId of selectedBebidaIds) {
-    const bebida = item.bebidas?.find((b) => b.id === bebidaId) || dailyBebidas.find((b) => b.id === bebidaId);
+    // Look in dailyBebidas first (matches checkout.ts order), then item-level
+    const bebida = dailyBebidas.find((b) => b.id === bebidaId)
+      || item.bebidas?.find((b) => b.id === bebidaId);
     if (bebida && bebida.isAvailable) {
       bebidasUsdCents += bebida.priceUsdCents;
       cartBebidas.push({
@@ -349,8 +355,8 @@ export function ItemDetailModal({
   function getSubstituteOptions(contornoId: string) {
     const contorno = availableContornos.find((c) => c.id === contornoId);
     if (!contorno || contorno.substituteContornoIds.length === 0) {
-      // Fallback: show all other contornos from the dish if no substitutes configured
-      return availableContornos.filter((c) => c.id !== contornoId);
+      // No substitutes configured — return empty to prevent exposing unconfigured contornos
+      return [];
     }
     // Show configured substitution options from global contornos pool
     return allContornos.filter(
@@ -755,8 +761,9 @@ export function ItemDetailModal({
                 {quantity}
               </span>
               <button
-                onClick={() => setQuantity((q) => q + 1)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white transition-colors active:bg-primary-hover"
+                onClick={() => setQuantity((q) => Math.min(maxQuantityPerItem, q + 1))}
+                disabled={quantity >= maxQuantityPerItem}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white transition-colors active:bg-primary-hover disabled:opacity-40"
                 aria-label="Aumentar cantidad"
               >
                 <Plus className="h-4 w-4" />

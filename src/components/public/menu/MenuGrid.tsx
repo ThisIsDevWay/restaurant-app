@@ -87,6 +87,7 @@ interface MenuGridProps {
   bebidasEnabled?: boolean;
   dailyAdicionales: SimpleItem[];
   dailyBebidas: SimpleItem[];
+  maxQuantityPerItem?: number;
 }
 
 export function MenuGrid({
@@ -97,6 +98,7 @@ export function MenuGrid({
   bebidasEnabled = true,
   dailyAdicionales,
   dailyBebidas,
+  maxQuantityPerItem = 10,
 }: MenuGridProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [drinkWarningItem, setDrinkWarningItem] = useState<{ payload: any; categoryName: string } | null>(null);
@@ -182,6 +184,7 @@ export function MenuGrid({
           bebidasEnabled={bebidasEnabled}
           dailyAdicionales={dailyAdicionales}
           dailyBebidas={dailyBebidas}
+          maxQuantityPerItem={maxQuantityPerItem}
         />
       )}
 

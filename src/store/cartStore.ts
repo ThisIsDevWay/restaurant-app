@@ -86,6 +86,16 @@ function computeItemTotal(
   return (item.baseBsCents + fixedContornosBs + substitutionsBs + adicionalesBs + bebidasBs + removalsBs) * quantity;
 }
 
+/** Deterministic key for cart deduplication — order-insensitive */
+function cartItemKey(item: Omit<CartItem, "quantity" | "itemTotalBsCents">): string {
+  const contornoIds = (item.fixedContornos ?? []).map(c => c.id).sort().join(",");
+  const subIds = (item.contornoSubstitutions ?? []).map(s => `${s.originalId}>${s.substituteId}`).sort().join(",");
+  const adIds = (item.selectedAdicionales ?? []).map(a => a.id).sort().join(",");
+  const bebIds = (item.selectedBebidas ?? []).map(b => b.id).sort().join(",");
+  const remIds = (item.removedComponents ?? []).map(r => r.componentId).sort().join(",");
+  return `${item.id}|${contornoIds}|${subIds}|${adIds}|${bebIds}|${remIds}`;
+}
+
 function computeItemUsdCents(
   item: Omit<CartItem, "quantity" | "itemTotalBsCents">,
 ): number {
@@ -119,18 +129,7 @@ export const useCartStore = create<CartState>()(
 
       addItem: (item) => {
         const existingIndex = get().items.findIndex(
-          (i) =>
-            i.id === item.id &&
-            JSON.stringify(i.fixedContornos) ===
-            JSON.stringify(item.fixedContornos) &&
-            JSON.stringify(i.contornoSubstitutions) ===
-            JSON.stringify(item.contornoSubstitutions) &&
-            JSON.stringify(i.selectedAdicionales ?? []) ===
-            JSON.stringify(item.selectedAdicionales ?? []) &&
-            JSON.stringify(i.selectedBebidas ?? []) ===
-            JSON.stringify(item.selectedBebidas ?? []) &&
-            JSON.stringify(i.removedComponents ?? []) ===
-            JSON.stringify(item.removedComponents ?? []),
+          (i) => cartItemKey(i) === cartItemKey(item)
         );
 
         if (existingIndex !== -1) {
