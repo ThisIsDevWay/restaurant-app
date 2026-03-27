@@ -438,20 +438,22 @@ export async function processCheckout(
     }
 
     // 8. Send WhatsApp confirmation (Vercel-safe fire-and-forget via after())
-    after(
-      sendOrderMessage(
-        "received",
-        phone,
-        String(order.orderNumber),
-        name ?? null,
-        snapshotItems,
-        subtotalBsCents,
-        undefined,
-        settings.whatsappMicroserviceUrl,
-      ).catch((err) => {
+    after(async () => {
+      try {
+        await sendOrderMessage(
+          "received",
+          phone,
+          String(order.orderNumber),
+          name ?? null,
+          snapshotItems,
+          subtotalBsCents,
+          undefined,
+          settings.whatsappMicroserviceUrl,
+        );
+      } catch (err) {
         console.error("WhatsApp Error:", err);
-      })
-    );
+      }
+    });
 
     return {
       success: true,

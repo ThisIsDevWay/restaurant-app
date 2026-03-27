@@ -113,39 +113,48 @@ export default function CheckoutPage() {
       };
     });
 
-    const result: CheckoutResult = await processCheckout(
-      { phone, paymentMethod, name, cedula, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })) },
-      checkoutItems,
-    );
+    try {
+      const result: CheckoutResult = await processCheckout(
+        { phone, paymentMethod, name, cedula, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })) },
+        checkoutItems,
+      );
 
-    if (result.success) {
-      const init = result.initResult;
-      if (init.screen === "enter_reference") {
-        setState({
-          type: "enter_reference",
-          orderId: result.orderId,
-          expiresAt: result.expiresAt,
-          totalBsCents: init.totalBsCents,
-          bankDetails: init.bankDetails,
-        });
-      } else if (init.screen === "whatsapp") {
-        setState({
-          type: "whatsapp",
-          orderId: result.orderId,
-          waLink: init.waLink,
-          prefilledMessage: init.prefilledMessage,
-        });
-      } else if (init.screen === "waiting_auto" || init.screen === "c2p_pending") {
-        setState({
-          type: "waiting_auto",
-          orderId: result.orderId,
-          expiresAt: result.expiresAt,
-          totalBsCents: "totalBsCents" in init ? init.totalBsCents : 0,
-          bankDetails: "bankDetails" in init ? init.bankDetails : { bankName: "", bankCode: "", accountPhone: "", accountRif: "" },
-        });
+      if (result.success) {
+        const init = result.initResult;
+        if (init.screen === "enter_reference") {
+          setState({
+            type: "enter_reference",
+            orderId: result.orderId,
+            expiresAt: result.expiresAt,
+            totalBsCents: init.totalBsCents,
+            bankDetails: init.bankDetails,
+          });
+        } else if (init.screen === "whatsapp") {
+          setState({
+            type: "whatsapp",
+            orderId: result.orderId,
+            waLink: init.waLink,
+            prefilledMessage: init.prefilledMessage,
+          });
+        } else if (init.screen === "waiting_auto" || init.screen === "c2p_pending") {
+          setState({
+            type: "waiting_auto",
+            orderId: result.orderId,
+            expiresAt: result.expiresAt,
+            totalBsCents: "totalBsCents" in init ? init.totalBsCents : 0,
+            bankDetails: "bankDetails" in init ? init.bankDetails : { bankName: "", bankCode: "", accountPhone: "", accountRif: "" },
+          });
+        } else {
+          setError("Método de pago no soportado por el momento.");
+          setIsSubmitting(false);
+        }
+      } else {
+        setError(result.error);
+        setIsSubmitting(false);
       }
-    } else {
-      setError(result.error);
+    } catch (err) {
+      console.error("Checkout submit error:", err);
+      setError("Ocurrió un error inesperado al procesar tu pedido. Intenta nuevamente.");
       setIsSubmitting(false);
     }
   };
