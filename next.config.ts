@@ -28,8 +28,8 @@ const nextConfig: NextConfig = {
       ? `'self' data: blob: ${supabaseDomain}`
       : "'self' data: blob:";
     const cspConnectSrc = supabaseDomain
-      ? `'self' ${supabaseDomain} https://*.sentry.io`
-      : "'self' https://*.sentry.io";
+      ? `'self' ${supabaseDomain} https://*.sentry.io wss://38.171.255.120`
+      : "'self' https://*.sentry.io wss://38.171.255.120";
 
     return [
       {
@@ -39,6 +39,8 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
+              // 'unsafe-inline' y 'unsafe-eval' son necesarios para Next.js
+              // Monitorear si se puede eliminar en futuras versiones
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
               `img-src ${cspImgSrc}`,
