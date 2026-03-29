@@ -48,7 +48,11 @@ const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id as string;
-        token.role = user.role as string;
+        // Validar que el role sea uno de los permitidos
+        const allowedRoles = ["admin", "kitchen", "user"];
+        token.role = allowedRoles.includes(user.role as string)
+          ? (user.role as string)
+          : "user";
       }
       return token;
     },
