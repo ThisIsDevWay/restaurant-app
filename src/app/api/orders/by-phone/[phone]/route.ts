@@ -3,10 +3,18 @@ import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
+import { rateLimiters, getIP } from "@/lib/rate-limit";
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ phone: string }> },
 ) {
+  const ip = getIP(req);
+  const { success } = await rateLimiters.lookup.limit(ip);
+  if (!success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const { phone } = await params;
   const sanitized = phone.replace(/\D/g, "");
 

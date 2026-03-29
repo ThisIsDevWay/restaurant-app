@@ -72,7 +72,8 @@ export async function POST(req: Request) {
       error: err instanceof Error ? err.message : String(err),
     });
     Sentry.captureException(err, { extra: { context: "payment-webhook" } });
-    // Always respond 200 for business errors — bank should not retry
+    // Responder 200 siempre para errores de negocio (idempotencia, monto incorrecto)
+    // para que el banco no reintente. Solo responder 4xx/5xx para errores de infraestructura.
     return NextResponse.json({ outcome: "error" });
   }
 }

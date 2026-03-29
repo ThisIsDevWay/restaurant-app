@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCustomerByPhone } from "@/db/queries/customers";
 import { rateLimiters, getIP } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: Request) {
   const ip = getIP(req);
@@ -10,8 +11,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
   } catch (err) {
-    console.error("Rate limit error (lookup):", err);
-    // Continue if rate limiter fails
+    logger.error("Rate limit error (lookup):", { error: String(err) });
+    // En producción, fallar cerrado
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+    }
   }
 
   const url = new URL(req.url);

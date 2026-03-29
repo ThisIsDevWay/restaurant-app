@@ -13,6 +13,7 @@ import { checkoutSchema } from "@/lib/validations/checkout";
 import { getActiveProvider } from "@/lib/payment-providers";
 import type { PaymentInitResult } from "@/lib/payment-providers";
 import { rateLimiters } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 import { db } from "@/db";
 import { dailyAdicionales, dailyBebidas, dailyContornos, menuItems } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
@@ -434,7 +435,25 @@ export async function processCheckout(
     });
 
     // 6. Provider-specific init
-    const initResult = await provider.initiatePayment(order, settings);
+    let initResult = await provider.initiatePayment(order, settings);
+
+    // If transfer, we override the bank details to show transfer info instead of P2P (Pago Móvil)
+    if (paymentMethod === "transfer") {
+      initResult = {
+        screen: "enter_reference",
+        totalBsCents: subtotalBsCents,
+        bankDetails: {
+          bankName: settings.bankName,
+          bankCode: settings.bankCode,
+          accountPhone: settings.accountPhone,
+          accountRif: settings.accountRif,
+          transferBankName: settings.transferBankName,
+          transferAccountName: settings.transferAccountName,
+          transferAccountNumber: settings.transferAccountNumber,
+          transferAccountRif: settings.transferAccountRif,
+        },
+      };
+    }
 
     // 7. Save/upsert customer data
     if (name || cedula) {
@@ -455,7 +474,7 @@ export async function processCheckout(
           settings.whatsappMicroserviceUrl,
         );
       } catch (err) {
-        console.error("WhatsApp Error:", err);
+        logger.error("WhatsApp Error", { error: String(err) });
       }
     });
 
@@ -466,7 +485,7 @@ export async function processCheckout(
       initResult,
     };
   } catch (error) {
-    console.error("[processCheckout] Unhandled error:", error);
+    logger.error("[processCheckout] Unhandled error", { error: String(error) });
     return {
       success: false,
       error: "Error inesperado. Por favor intenta de nuevo.",

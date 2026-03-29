@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { dailyMenuItems, dailyAdicionales, dailyBebidas, dailyContornos } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { logger } from "@/lib/logger";
 
 export async function syncDailyMenu(date: string, menuItemIds: string[]) {
   await requireAdmin();
@@ -28,7 +29,7 @@ export async function syncDailyMenu(date: string, menuItemIds: string[]) {
     revalidatePath("/admin/menu-del-dia");
     return { success: true };
   } catch (error) {
-    console.error("[syncDailyMenu] Error:", error);
+    logger.error("[syncDailyMenu] Error", { error: String(error) });
     return { success: false, error: "Error al guardar el menú del día." };
   }
 }
@@ -58,7 +59,7 @@ export async function syncDailyAdicionales(
     revalidatePath("/admin/menu-del-dia");
     return { success: true };
   } catch (error) {
-    console.error("[syncDailyAdicionales] Error:", error);
+    logger.error("[syncDailyAdicionales] Error", { error: String(error) });
     return {
       success: false,
       error: "Error al guardar los adicionales del día.",
@@ -86,7 +87,7 @@ export async function syncDailyBebidas(date: string, bebidaIds: string[]) {
     revalidatePath("/admin/menu-del-dia");
     return { success: true };
   } catch (error) {
-    console.error("[syncDailyBebidas] Error:", error);
+    logger.error("[syncDailyBebidas] Error", { error: String(error) });
     return {
       success: false,
       error: "Error al guardar las bebidas del día.",
@@ -114,7 +115,7 @@ export async function syncDailyContornos(date: string, contornoIds: string[]) {
     revalidatePath("/admin/menu-del-dia");
     return { success: true };
   } catch (error) {
-    console.error("[syncDailyContornos] Error:", error);
+    logger.error("[syncDailyContornos] Error", { error: String(error) });
     return {
       success: false,
       error: "Error al guardar los contornos del día.",
@@ -211,7 +212,7 @@ export async function copyDailyMenuFrom(fromDate: string, toDate: string) {
     revalidatePath("/admin/menu-del-dia");
     return { success: true, count: sourceItems.length };
   } catch (error) {
-    console.error("[copyDailyMenuFrom] Error:", error);
+    logger.error("[copyDailyMenuFrom] Error", { error: String(error) });
     return { success: false, error: "Error al copiar el menú." };
   }
 }

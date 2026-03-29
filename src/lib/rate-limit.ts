@@ -26,6 +26,9 @@ function createLimiter(
   prefix: string,
 ) {
   if (!isConfigured()) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Upstash Redis must be configured in production");
+    }
     return { limit: () => Promise.resolve(passthrough) };
   }
 

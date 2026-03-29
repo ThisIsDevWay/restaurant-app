@@ -5,6 +5,7 @@ import { getCustomerByPhone } from "@/db/queries/customers";
 import { getSettings } from "@/db/queries/settings";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
+import { logger } from "@/lib/logger";
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   pending: ["paid", "cancelled"],
@@ -82,7 +83,7 @@ export async function POST(
         undefined,
         settings?.whatsappMicroserviceUrl,
       ).catch((err) => {
-        console.error("WhatsApp Error:", err);
+        logger.error("WhatsApp Error", { error: String(err) });
       });
     }
 
