@@ -1,0 +1,90 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // ─── Modelo del proyecto ──────────────────────────────────────────────────
+  // Pro para desarrollo real. Flash para generación de tests y formateo.
+  "model": "xiaomi/mimo-v2-pro",
+
+  // ─── Agentes del proyecto GM App ──────────────────────────────────────────
+  "agent": {
+    "build": {
+      "model": "xiaomi/mimo-v2-pro",
+      "steps": 100,
+      "instructions": ".opencode/agents/build.md"
+    },
+    "plan": {
+      "model": "xiaomi/mimo-v2-pro",
+      "steps": 40,
+      "instructions": ".opencode/agents/plan.md"
+    },
+    "security": {
+      "model": "xiaomi/mimo-v2-pro",
+      "steps": 50,
+      "instructions": ".opencode/agents/security.md"
+    },
+    "review": {
+      "model": "xiaomi/mimo-v2-pro",
+      "steps": 40,
+      "instructions": ".opencode/agents/review.md"
+    },
+    "flash": {
+      "model": "xiaomi/mimo-v2-flash",
+      "steps": 30,
+      "instructions": ".opencode/agents/flash.md"
+    }
+  },
+
+  // ─── Permisos del proyecto ────────────────────────────────────────────────
+  // Más permisivo que el global para desarrollo activo.
+  "permission": {
+    "edit":     "allow",
+    "write":    "allow",
+    "read":     "allow",
+    "webfetch": "allow",
+    "bash": {
+      // Desarrollo cotidiano — sin confirmación
+      "pnpm dev":                   "allow",
+      "pnpm build":                 "allow",
+      "pnpm lint":                  "allow",
+      "pnpm typecheck":             "allow",
+      "pnpm test":                  "allow",
+      "pnpm test:unit":             "allow",
+      "pnpm test:integration":      "allow",
+      "pnpm test:watch":            "allow",
+
+      // DB — solo generación local, nunca push/migrate sin confirmación
+      "pnpm db:generate":           "allow",
+      "pnpm db:studio":             "allow",
+      "pnpm db:migrate":            "ask",
+      "pnpm db:seed":               "ask",
+      "drizzle-kit generate":       "allow",
+      "drizzle-kit push *":         "ask",
+
+      // Git
+      "git status":                 "allow",
+      "git diff *":                 "allow",
+      "git log *":                  "allow",
+      "git add *":                  "allow",
+      "git commit *":               "allow",
+      "git branch *":               "allow",
+      "git stash *":                "allow",
+      "git push *":                 "ask",
+      "git reset *":                "ask",
+
+      // Filesystem
+      "cat *":                      "allow",
+      "ls *":                       "allow",
+      "find *":                     "allow",
+      "grep *":                     "allow",
+      "head *":                     "allow",
+      "tail *":                     "allow",
+
+      // Destructivos: pedir siempre
+      "rm *":                       "ask",
+      "rm -rf *":                   "ask",
+
+      // Default
+      "*":                          "ask"
+    }
+  }
+}
