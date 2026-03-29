@@ -108,7 +108,8 @@ export class BanescoReferenceProvider implements PaymentProvider {
     }
 
     // Verify amount with Banesco API (or mock)
-    const mockMode = process.env.BANESCO_API_MOCK === "true" || !this.settings.banescoApiKey;
+    const mockMode = process.env.NODE_ENV !== "production" &&
+      (process.env.BANESCO_API_MOCK === "true" || !this.settings.banescoApiKey);
     let apiResponse: unknown;
 
     if (mockMode) {
@@ -173,7 +174,21 @@ export class BanescoReferenceProvider implements PaymentProvider {
     }
 
     // Transaction: update order + insert payment log
-    await db.transaction(async (tx) => {
+    const txResult = await db.transaction(async (tx) => {
+      const [existingLog] = await tx
+        .select()
+        .from(paymentsLog)
+        .where(eq(paymentsLog.reference, reference.trim()))
+        .limit(1);
+
+      if (existingLog) {
+        return {
+          success: false as const,
+          reason: "already_used" as const,
+          message: "Esta referencia ya fue utilizada",
+        };
+      }
+
       await tx
         .update(orders)
         .set({
@@ -192,7 +207,13 @@ export class BanescoReferenceProvider implements PaymentProvider {
         providerRaw: apiResponse,
         outcome: "confirmed",
       });
+
+      return null;
     });
+
+    if (txResult) {
+      return txResult;
+    }
 
     return {
       success: true,

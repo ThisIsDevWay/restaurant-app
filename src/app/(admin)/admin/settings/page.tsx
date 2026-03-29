@@ -2,7 +2,6 @@ import { getSettings } from "@/db/queries/settings";
 import { getAllTemplates } from "@/db/queries/whatsapp-templates";
 import { SettingsForm } from "./SettingsForm";
 import { WhatsAppStatus } from "@/components/admin/whatsapp/WhatsAppStatus";
-import { TemplateEditor } from "@/components/admin/whatsapp/TemplateEditor";
 
 export default async function SettingsPage() {
   const [settings, templates] = await Promise.all([
@@ -11,63 +10,63 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <div>
-      <h1 className="mb-2 text-2xl font-bold text-text-main">Configuración</h1>
-      <p className="mb-6 text-sm text-text-muted">
-        Datos bancarios y parámetros del sistema
-      </p>
-
-      <div className="max-w-lg space-y-6">
-        {/* WhatsApp Status */}
+    <div className="max-w-4xl mx-auto pb-32">
+      <div className="mb-0 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-black text-text-main mb- tracking-tight">Configuración</h1>
+          <p className="text-sm text-text-muted font-medium">Gestiona la identidad, operaciones y pagos de tu restaurante.</p>
+        </div>
         <WhatsAppStatus />
-
-        {/* Template Editor */}
-        <TemplateEditor templates={templates} />
-
-        {/* Settings Form */}
-        <SettingsForm
-          initialData={
-            settings
-              ? {
-                bankName: settings.bankName,
-                bankCode: settings.bankCode,
-                accountPhone: settings.accountPhone,
-                accountRif: settings.accountRif,
-                transferBankName: settings.transferBankName ?? "",
-                transferAccountName: settings.transferAccountName ?? "",
-                transferAccountNumber: settings.transferAccountNumber ?? "",
-                transferAccountRif: settings.transferAccountRif ?? "",
-                orderExpirationMinutes: settings.orderExpirationMinutes,
-                maxPendingOrders: settings.maxPendingOrders,
-                maxQuantityPerItem: settings.maxQuantityPerItem,
-                rateCurrency: (settings.rateCurrency ?? "usd") as "usd" | "eur",
-                showRateInMenu: settings.showRateInMenu ?? true,
-                rateOverrideBsPerUsd: settings.rateOverrideBsPerUsd ?? "",
-                activePaymentProvider: settings.activePaymentProvider,
-                banescoApiKey: settings.banescoApiKey ?? "",
-                mercantilClientId: settings.mercantilClientId ?? "",
-                mercantilSecretKey: settings.mercantilSecretKey ?? "",
-                mercantilMerchantId: settings.mercantilMerchantId ?? "",
-                mercantilIntegratorId: settings.mercantilIntegratorId ?? "",
-                mercantilTerminalId: settings.mercantilTerminalId ?? "",
-                whatsappNumber: settings.whatsappNumber,
-                whatsappMicroserviceUrl: settings.whatsappMicroserviceUrl ?? "http://38.171.255.120:3333",
-                instagramUrl: settings.instagramUrl ?? "",
-                orderModeOnSiteEnabled: settings.orderModeOnSiteEnabled ?? true,
-                orderModeTakeAwayEnabled: settings.orderModeTakeAwayEnabled ?? true,
-                orderModeDeliveryEnabled: settings.orderModeDeliveryEnabled ?? true,
-                packagingFeePerPlateUsdCents: settings.packagingFeePerPlateUsdCents ?? 0,
-                packagingFeePerAdicionalUsdCents: settings.packagingFeePerAdicionalUsdCents ?? 0,
-                packagingFeePerBebidaUsdCents: settings.packagingFeePerBebidaUsdCents ?? 0,
-                deliveryFeeUsdCents: settings.deliveryFeeUsdCents ?? 0,
-                deliveryCoverage: settings.deliveryCoverage ?? "",
-                paymentPagoMovilEnabled: settings.paymentPagoMovilEnabled ?? true,
-                paymentTransferEnabled: settings.paymentTransferEnabled ?? true,
-              }
-              : null
-          }
-        />
       </div>
+
+      <SettingsForm
+        templates={templates}
+        initialData={
+          settings
+            ? {
+              bankName: settings.bankName,
+              bankCode: settings.bankCode,
+              restaurantName: settings.restaurantName ?? "G&M",
+              accountPhone: settings.accountPhone,
+              accountRif: settings.accountRif,
+              transferBankName: settings.transferBankName ?? "",
+              transferAccountName: settings.transferAccountName ?? "",
+              transferAccountNumber: settings.transferAccountNumber ?? "",
+              transferAccountRif: settings.transferAccountRif ?? "",
+              orderExpirationMinutes: settings.orderExpirationMinutes,
+              maxPendingOrders: settings.maxPendingOrders,
+              maxQuantityPerItem: settings.maxQuantityPerItem,
+              rateCurrency: (settings.rateCurrency ?? "usd") as "usd" | "eur",
+              showRateInMenu: settings.showRateInMenu ?? true,
+              rateOverrideBsPerUsd: settings.rateOverrideBsPerUsd ?? "",
+              activePaymentProvider: settings.activePaymentProvider,
+              banescoApiKey: settings.banescoApiKey ?? "",
+              mercantilClientId: settings.mercantilClientId ?? "",
+              mercantilClientSecret: settings.mercantilClientSecret ?? "",
+              mercantilSecretKey: settings.mercantilSecretKey ?? "",
+              mercantilMerchantId: settings.mercantilMerchantId ?? "",
+              mercantilIntegratorId: settings.mercantilIntegratorId ?? "",
+              mercantilTerminalId: settings.mercantilTerminalId ?? "",
+              bncApiKey: settings.bncApiKey ?? "",
+              whatsappNumber: settings.whatsappNumber,
+              whatsappMicroserviceUrl: settings.whatsappMicroserviceUrl ?? "",
+              instagramUrl: settings.instagramUrl ?? "",
+              adicionalesEnabled: settings.adicionalesEnabled ?? true,
+              bebidasEnabled: settings.bebidasEnabled ?? true,
+              orderModeOnSiteEnabled: settings.orderModeOnSiteEnabled ?? true,
+              orderModeTakeAwayEnabled: settings.orderModeTakeAwayEnabled ?? true,
+              orderModeDeliveryEnabled: settings.orderModeDeliveryEnabled ?? true,
+              packagingFeePerPlateUsdCents: settings.packagingFeePerPlateUsdCents ?? 0,
+              packagingFeePerAdicionalUsdCents: settings.packagingFeePerAdicionalUsdCents ?? 0,
+              packagingFeePerBebidaUsdCents: settings.packagingFeePerBebidaUsdCents ?? 0,
+              deliveryFeeUsdCents: settings.deliveryFeeUsdCents ?? 0,
+              deliveryCoverage: settings.deliveryCoverage ?? "",
+              paymentPagoMovilEnabled: settings.paymentPagoMovilEnabled ?? true,
+              paymentTransferEnabled: settings.paymentTransferEnabled ?? true,
+            }
+            : null
+        }
+      />
     </div>
   );
 }

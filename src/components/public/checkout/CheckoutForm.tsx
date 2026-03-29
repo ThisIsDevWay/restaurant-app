@@ -115,7 +115,7 @@ export function CheckoutForm({
     if (!orderMode && availableModes.length > 0) {
       setOrderMode(availableModes[availableModes.length - 1].value); // Default to take_away or delivery usually
     }
-  }, []);
+  }, [orderMode, availableModes]);
 
   const validatePhone = (value: string) => {
     if (!/^(0414|0424|0412|0416|0426)\d{7}$/.test(value)) {
@@ -271,16 +271,16 @@ export function CheckoutForm({
             onClick={() => setSummaryExpanded((prev) => !prev)}
             className="flex items-center justify-between cursor-pointer"
           >
-            <div className="flex items-center gap-2">
-              <span className="bg-[#7B2D2D] text-white text-[11px] font-medium rounded-full px-2 py-[2px]">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="bg-[#7B2D2D] text-white text-[11px] font-medium rounded-full px-2 py-[2.5px] whitespace-nowrap shrink-0">
                 {itemCount} {itemCount === 1 ? "plato" : "platos"}
               </span>
-              <span className="text-[11px] font-medium tracking-[0.06em] text-[#9A6A5A] uppercase m-0">
+              <span className="text-[11px] font-medium tracking-[0.06em] text-[#9A6A5A] uppercase m-0 truncate">
                 Resumen del pedido
               </span>
             </div>
-            <div className="flex items-center gap-2.5">
-              <span className="text-[13px] text-[#3C1A1A] font-medium">
+            <div className="flex items-center gap-2.5 shrink-0 ml-2">
+              <span className="text-[13px] text-[#3C1A1A] font-medium whitespace-nowrap">
                 {formatBs(grandTotalBsCents)}
               </span>
               <div className={`transition-transform duration-200 flex ${summaryExpanded ? "rotate-180" : ""}`}>
@@ -504,48 +504,37 @@ export function CheckoutForm({
             </div>
           )}
 
-          {/* ─── CONDITIONAL INFO (Phone or Bank) ─── */}
           <div className="mt-4 animate-in fade-in slide-in-from-top-1 duration-200">
-            {paymentMethod === "pago_movil" ? (
-              <div>
-                <div className="text-[12px] font-medium text-[#3C1A1A] mb-2">Tu número para Pago Móvil</div>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[15px]">
-                    <span>🇻🇪</span>
-                    <span className="text-[13px] text-[#5A3A3A] font-medium">+58</span>
-                    <div className="w-[0.5px] h-4 bg-black/15 mx-[2px]"></div>
-                  </div>
-                  <input
-                    id="phone-input"
-                    type="tel"
-                    inputMode="numeric"
-                    value={getFormattedPhone()}
-                    onChange={handlePhoneChange}
-                    placeholder="0414 123 4567"
-                    maxLength={14} // formatted length
-                    disabled={isSubmitting}
-                    className={`w-full h-11 rounded-[10px] border-[1.5px] bg-[#FAF5F2] text-[14px] text-[#1A0A0A] pl-[90px] pr-3 outline-none transition-colors focus:bg-[#FBF0EC] 
-                      ${phone.length > 0 && !phoneValid ? "border-[#A03030]/50 focus:border-[#A03030]" : "border-[#E8DED8] focus:border-[#7B2D2D]"}`}
-                  />
-                </div>
-                <div className={`text-[11px] mt-1.5 transition-colors ${phone.length === 0 ? "text-[#9A6A5A]" : phoneValid ? "text-[#2A7A4A] font-medium" : "text-[#A03030]"}`}>
-                  {phone.length === 0 ? "11 dígitos · ej: 0414 123 4567" : phoneValid ? "Número válido ✓" : `${phone.length}/11 dígitos`}
-                </div>
+            <div>
+              <div className="text-[12px] font-medium text-[#3C1A1A] mb-2">
+                Tu número para Pago Móvil / Contacto
               </div>
-            ) : (
-              <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                <div className="bg-[#FAF5F2] rounded-[10px] p-3 border-[1.5px] border-[#E8DED8] flex items-start gap-2.5">
-                  <Landmark className="w-4 h-4 text-[#9A6A5A] mt-[1px] flex-shrink-0" strokeWidth={1.8} />
-                  <div>
-                    <div className="text-[13px] text-[#3C1A1A] font-medium">Transferencia bancaria</div>
-                    <div className="text-[11px] text-[#9A6A5A] mt-[2px]">Al confirmar tu pedido recibirás los datos de la cuenta.</div>
-                  </div>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[15px]">
+                  <span>🇻🇪</span>
+                  <span className="text-[13px] text-[#5A3A3A] font-medium">+58</span>
+                  <div className="w-[0.5px] h-4 bg-black/15 mx-[2px]"></div>
                 </div>
+                <input
+                  id="phone-input"
+                  type="tel"
+                  inputMode="numeric"
+                  value={getFormattedPhone()}
+                  onChange={handlePhoneChange}
+                  placeholder="0414 123 4567"
+                  maxLength={14} // formatted length
+                  disabled={isSubmitting}
+                  className={`w-full h-11 rounded-[10px] border-[1.5px] bg-[#FAF5F2] text-[14px] text-[#1A0A0A] pl-[90px] pr-3 outline-none transition-colors focus:bg-[#FBF0EC] 
+                    ${phone.length > 0 && !phoneValid ? "border-[#A03030]/50 focus:border-[#A03030]" : "border-[#E8DED8] focus:border-[#7B2D2D]"}`}
+                />
               </div>
-            )}
+              <div className={`text-[11px] mt-1.5 transition-colors ${phone.length === 0 ? "text-[#9A6A5A]" : phoneValid ? "text-[#2A7A4A] font-medium" : "text-[#A03030]"}`}>
+                {phone.length === 0 ? "11 dígitos · ej: 0414 123 4567" : phoneValid ? "Número válido ✓" : `${phone.length}/11 dígitos`}
+              </div>
+            </div>
 
-            {/* Customer returning info (visible when phone fits or transfer is selected) */}
-            {(customerFieldsVisible || paymentMethod === "transfer") && (
+            {/* Customer returning info (visible when phone fits or lookup is done) */}
+            {customerFieldsVisible && (
               <div className="mt-4 space-y-3 animate-in fade-in zoom-in-95 duration-300">
                 {isReturning && (
                   <div className="text-[11px] text-[#2A7A4A] font-medium bg-[#2A7A4A]/5 px-2.5 py-1.5 rounded-md inline-block">
@@ -597,7 +586,7 @@ export function CheckoutForm({
       <div className="sticky bottom-0 bg-[#F8EFE6] border-t-[0.5px] border-black/10 px-4 pt-3 pb-6 mt-auto">
         <button
           onClick={handleSubmit}
-          disabled={isSubmitting || (paymentMethod === "pago_movil" && !phoneValid)}
+          disabled={isSubmitting || !phoneValid}
           className="w-full h-[52px] bg-[#7B2D2D] hover:bg-[#6A2323] text-white rounded-[14px] font-medium flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
         >
           {isSubmitting ? (

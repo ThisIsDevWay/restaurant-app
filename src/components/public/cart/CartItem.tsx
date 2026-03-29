@@ -58,8 +58,15 @@ export function CartItem({
             {item.emoji}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-text-main leading-tight truncate">
-              {item.name}
+            <p className="text-[13px] font-semibold text-text-main leading-tight line-clamp-2">
+              {item.quantity > 1 ? (
+                <>
+                  <span className="text-primary font-bold">{item.quantity}</span>{" "}
+                  servicios de {item.name}
+                </>
+              ) : (
+                item.name
+              )}
             </p>
             <p className="text-[11px] text-text-muted mt-0.5">
               {formatBs(item.baseBsCents)} / unidad

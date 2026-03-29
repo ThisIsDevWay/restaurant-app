@@ -389,7 +389,8 @@ export function ItemDetailModal({
                 alt={item.name}
                 fill
                 className="object-cover"
-                sizes="100vw"
+                sizes="(max-width: 500px) 100vw, 500px"
+                quality={75}
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-6xl">

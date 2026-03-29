@@ -5,6 +5,9 @@ import { updateSettings as updateSettingsDb, getActiveRate, getSettings } from "
 import { settingsSchema } from "@/lib/validations/settings";
 import * as v from "valibot";
 import { revalidatePath } from "next/cache";
+import { exchangeRates, settings } from "@/db/schema";
+import { eq, desc, and } from "drizzle-orm";
+import { db } from "@/db";
 
 type ActionResult =
   | { success: true; error?: never }
@@ -27,10 +30,26 @@ export async function saveSettings(data: unknown): Promise<ActionResult> {
       updatePayload.rateOverrideBsPerUsd = null;
     }
 
+    // Sync currentRateId with the selected currency's latest rate
+    if (updatePayload.rateCurrency) {
+      const [latestRate] = await db
+        .select()
+        .from(exchangeRates)
+        .where(eq(exchangeRates.currency, updatePayload.rateCurrency))
+        .orderBy(desc(exchangeRates.fetchedAt))
+        .limit(1);
+
+      if (latestRate) {
+        updatePayload.currentRateId = latestRate.id;
+      }
+    }
+
     await updateSettingsDb(updatePayload);
     revalidatePath("/");
+    revalidatePath("/admin/settings");
     return { success: true };
-  } catch {
+  } catch (error) {
+    console.error("Save settings error:", error);
     return { success: false, error: "Error al guardar configuración" };
   }
 }
@@ -85,5 +104,6 @@ export async function fetchCheckoutSettings() {
     transferAccountRif: s?.transferAccountRif ?? "",
     paymentPagoMovilEnabled: s?.paymentPagoMovilEnabled ?? true,
     paymentTransferEnabled: s?.paymentTransferEnabled ?? true,
+    restaurantName: s?.restaurantName ?? "G&M",
   };
 }

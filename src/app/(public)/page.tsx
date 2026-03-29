@@ -24,7 +24,7 @@ export default async function MenuPage() {
   const { items, dailyAdicionales, dailyBebidas } = dailyMenuData;
 
   const rate = rateData?.rate ?? null;
-  const showRate = rateData && appSettings?.showRateInMenu !== false;
+  const showRate = rateData && appSettings?.showRateInMenu !== false && rateData.currency !== "eur";
   const availableCategories = categories.filter((c) => c.isAvailable);
   const adicionalesEnabled = appSettings?.adicionalesEnabled ?? true;
   const bebidasEnabled = appSettings?.bebidasEnabled ?? true;
@@ -43,7 +43,9 @@ export default async function MenuPage() {
         <header className="sticky top-0 z-30 bg-white shadow-elevated">
           <div className="flex items-center justify-between px-3 py-3 sm:px-4 gap-2 overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-2 shrink-0">
-              <h1 className="font-display text-2xl font-bold text-primary">G&M</h1>
+              <h1 className="font-display text-2xl font-bold text-primary">
+                {appSettings?.restaurantName ?? "G&M"}
+              </h1>
               {appSettings?.instagramUrl && (() => {
                 const url = appSettings.instagramUrl;
                 const formattedUrl = url.startsWith("http")
@@ -96,7 +98,9 @@ export default async function MenuPage() {
       <header className="sticky top-0 z-30 bg-white shadow-elevated">
         <div className="flex items-center justify-between px-3 py-3 sm:px-4 gap-2 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-2 shrink-0">
-            <h1 className="font-display text-xl sm:text-2xl font-bold text-primary">G&M</h1>
+            <h1 className="font-display text-xl sm:text-2xl font-bold text-primary">
+              {appSettings?.restaurantName ?? "G&M"}
+            </h1>
             {appSettings?.instagramUrl && (() => {
               const url = appSettings.instagramUrl;
               const formattedUrl = url.startsWith("http")
@@ -124,7 +128,7 @@ export default async function MenuPage() {
               Pedidos
             </Link>
             {showRate && (
-              <RatePill rate={rateData.rate} fetchedAt={rateData.fetchedAt} />
+              <RatePill rate={rateData.rate} fetchedAt={rateData.fetchedAt} currency={rateData.currency} />
             )}
             <HeaderCartButton />
           </div>
@@ -155,7 +159,7 @@ export default async function MenuPage() {
   );
 }
 
-function RatePill({ rate, fetchedAt }: { rate: number; fetchedAt: string }) {
+function RatePill({ rate, fetchedAt, currency }: { rate: number; fetchedAt: string; currency?: string }) {
   const formattedRate = rate.toLocaleString("es-VE", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -170,7 +174,7 @@ function RatePill({ rate, fetchedAt }: { rate: number; fetchedAt: string }) {
         title={isStale ? "Tasa del día anterior" : undefined}
         className={`h-2 w-2 animate-pulse-dot rounded-full shrink-0 ${isStale ? "bg-amber" : "bg-success"}`}
       />
-      <span className="hidden sm:inline text-text-muted">BCV</span>
+      <span className="hidden sm:inline text-text-muted">BCV {currency?.toUpperCase() ?? "USD"}</span>
       <span className="font-semibold text-text-main">Bs. {formattedRate}</span>
     </div>
   );

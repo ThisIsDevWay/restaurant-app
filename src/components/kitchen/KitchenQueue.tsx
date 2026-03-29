@@ -74,7 +74,7 @@ function useClock() {
   return time;
 }
 
-export function KitchenQueue() {
+export function KitchenQueue({ restaurantName }: { restaurantName: string }) {
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["kitchen-orders"],
     queryFn: fetchKitchenOrders,
@@ -144,7 +144,7 @@ export function KitchenQueue() {
             </div>
             <div>
               <h1 className="font-display text-xl font-bold text-primary leading-tight">
-                G&M Cocina
+                {restaurantName} Cocina
               </h1>
               <p className="text-xs text-text-muted">Sistema KDS</p>
             </div>

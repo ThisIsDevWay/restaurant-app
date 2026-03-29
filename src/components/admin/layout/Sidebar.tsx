@@ -37,7 +37,7 @@ const navItems = [
 ];
 
 /* ── Desktop: icon-only 64px sidebar ────────────────────────── */
-function DesktopSidebar() {
+function DesktopSidebar({ restaurantName }: { restaurantName: string }) {
   const pathname = usePathname();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -54,7 +54,7 @@ function DesktopSidebar() {
               <ChefHat className="h-5 w-5" />
             </Link>
           </TooltipTrigger>
-          <TooltipContent side="right">G&M Restaurante</TooltipContent>
+          <TooltipContent side="right">{restaurantName} Restaurante</TooltipContent>
         </Tooltip>
 
         {/* Main Nav */}
@@ -155,7 +155,7 @@ function DesktopSidebar() {
 }
 
 /* ── Mobile: slide-in drawer ─────────────────────────────────── */
-function MobileSidebar() {
+function MobileSidebar({ restaurantName }: { restaurantName: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -201,7 +201,7 @@ function MobileSidebar() {
               <ChefHat className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="font-bold text-base text-text-main leading-tight">G&M</h1>
+              <h1 className="font-bold text-base text-text-main leading-tight">{restaurantName}</h1>
               <p className="text-[11px] text-text-muted leading-tight">Panel de administración</p>
             </div>
           </div>
@@ -265,13 +265,13 @@ function MobileSidebar() {
 }
 
 /* ── Combined export ─────────────────────────────────────────── */
-export function Sidebar() {
+export function Sidebar({ restaurantName }: { restaurantName: string }) {
   return (
     <>
       <div className="hidden lg:block">
-        <DesktopSidebar />
+        <DesktopSidebar restaurantName={restaurantName} />
       </div>
-      <MobileSidebar />
+      <MobileSidebar restaurantName={restaurantName} />
     </>
   );
 }

@@ -96,7 +96,8 @@ export function MenuItemCard({
             alt={name}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 50vw, 33vw"
+            sizes="(max-width: 640px) 50vw, 250px"
+            quality={75}
             priority={priority}
           />
         ) : (

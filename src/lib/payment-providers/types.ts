@@ -9,29 +9,29 @@ export type ProviderId =
 
 export type PaymentInitResult =
   | {
-      screen: "enter_reference";
-      totalBsCents: number;
-      bankDetails: BankDetails;
-    }
+    screen: "enter_reference";
+    totalBsCents: number;
+    bankDetails: BankDetails;
+  }
   | {
-      screen: "c2p_pending";
-      instructions: string;
-      expiresAt: string;
-    }
+    screen: "c2p_pending";
+    instructions: string;
+    expiresAt: string;
+  }
   | {
-      screen: "waiting_auto";
-      totalBsCents: number;
-      bankDetails: BankDetails;
-    }
+    screen: "waiting_auto";
+    totalBsCents: number;
+    bankDetails: BankDetails;
+  }
   | {
-      screen: "whatsapp";
-      waLink: string;
-      prefilledMessage: string;
-    }
+    screen: "whatsapp";
+    waLink: string;
+    prefilledMessage: string;
+  }
   | {
-      screen: "error";
-      message: string;
-    };
+    screen: "error";
+    message: string;
+  };
 
 export type PaymentConfirmInput =
   | { type: "reference"; reference: string; orderId: string }
@@ -42,21 +42,27 @@ export type PaymentConfirmInput =
 export type PaymentConfirmResult =
   | { success: true; providerRaw: unknown; reference?: string }
   | {
-      success: false;
-      reason:
-        | "invalid_reference"
-        | "amount_mismatch"
-        | "already_used"
-        | "expired"
-        | "api_error";
-      message: string;
-    };
+    success: false;
+    reason:
+    | "invalid_reference"
+    | "amount_mismatch"
+    | "already_used"
+    | "expired"
+    | "api_error";
+    message: string;
+  };
 
 export interface BankDetails {
   bankName: string;
   bankCode: string;
   accountPhone: string;
   accountRif: string;
+
+  // Optional transfer details
+  transferBankName?: string;
+  transferAccountName?: string;
+  transferAccountNumber?: string;
+  transferAccountRif?: string;
 }
 
 export type SettingsRow = typeof settings.$inferSelect;

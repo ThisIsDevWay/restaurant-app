@@ -53,7 +53,7 @@ export async function seedDefaultTemplates() {
         "💰 *Total: {total}*",
         "💵 Equiv. REF: {ref}",
         "",
-        "Estamos preparando tu pedido. 🍽️",
+        "Una vez que confirmemos tu pago, empezaremos con la preparación. 🍽️",
       ].join("\n"),
     },
     {
@@ -69,7 +69,7 @@ export async function seedDefaultTemplates() {
         "💰 *Total: {total}*",
         "💵 REF: {ref}",
         "",
-        "Tu pedido pasa a cocina. 👨‍🍳",
+        "Tu pedido ha sido enviado a cocina para su preparación. 👨‍🍳",
       ].join("\n"),
     },
     {

@@ -1,4 +1,4 @@
-const BASE_URL = process.env.WHATSAPP_MICROSERVICE_URL ?? "http://38.171.255.120:3333";
+const BASE_URL = process.env.WHATSAPP_MICROSERVICE_URL ?? "";
 
 export interface WhatsAppStatus {
   status: "connected" | "disconnected" | "connecting";

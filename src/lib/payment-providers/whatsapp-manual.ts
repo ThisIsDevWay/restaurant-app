@@ -37,7 +37,7 @@ export class WhatsAppManualProvider implements PaymentProvider {
     const ref = (order.subtotalBsCents / 100).toFixed(2).replace(".", ",");
 
     let message = [
-      `🍔 *Nuevo pedido G&M*`,
+      `🍔 *Nuevo pedido ${settings.restaurantName ?? "G&M"}*`,
       ``,
       `📋 Detalle:`,
       itemsText,

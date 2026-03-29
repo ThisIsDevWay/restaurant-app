@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatBs } from "@/lib/money";
 import { Copy, Check, Loader2, Clock, ArrowLeft, ClipboardCopy } from "lucide-react";
 import type { CartItem } from "@/store/cartStore";
+import type { BankDetails } from "@/lib/payment-providers/types";
 import { buildPagoMovilClipboard } from "@/lib/clipboard-pago-movil";
 import { CopyAllButton } from "./CopyAllButton";
 
@@ -12,12 +13,7 @@ interface ReferenceEntryProps {
   orderId: string;
   expiresAt: string;
   totalBsCents: number;
-  bankDetails: {
-    bankName: string;
-    bankCode: string;
-    accountPhone: string;
-    accountRif: string;
-  };
+  bankDetails: BankDetails;
   items: CartItem[];
   onPaid: () => void;
   onError: (message: string) => void;
@@ -129,51 +125,105 @@ export function ReferenceEntry({
 
       {/* Bank details */}
       <div className="mt-6 rounded-card border border-border bg-white p-4 shadow-card">
-        <p className="mb-3 text-sm font-semibold text-text-main">
-          Datos para Pago Móvil
-        </p>
+        {bankDetails.transferAccountNumber ? (
+          <>
+            <p className="mb-3 text-sm font-semibold text-text-main">
+              Datos para Transferencia
+            </p>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-text-muted">Banco</p>
-              <p className="text-sm font-semibold text-text-main">
-                {bankDetails.bankName} ({bankDetails.bankCode})
-              </p>
-            </div>
-            <CopyButton value={`${bankDetails.bankName} (${bankDetails.bankCode})`} />
-          </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-text-muted">Banco</p>
+                  <p className="text-sm font-semibold text-text-main">
+                    {bankDetails.transferBankName || bankDetails.bankName}
+                  </p>
+                </div>
+                <CopyButton value={bankDetails.transferBankName || bankDetails.bankName} />
+              </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-text-muted">Teléfono</p>
-              <p className="text-sm font-semibold text-text-main">
-                {bankDetails.accountPhone}
-              </p>
-            </div>
-            <CopyButton value={bankDetails.accountPhone} />
-          </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-text-muted">Número de Cuenta</p>
+                  <p className="text-sm font-semibold text-text-main">
+                    {bankDetails.transferAccountNumber}
+                  </p>
+                </div>
+                <CopyButton value={bankDetails.transferAccountNumber!} />
+              </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-text-muted">RIF / Cédula</p>
-              <p className="text-sm font-semibold text-text-main">
-                {bankDetails.accountRif}
-              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-text-muted">Titular de la cuenta</p>
+                  <p className="text-sm font-semibold text-text-main">
+                    {bankDetails.transferAccountName}
+                  </p>
+                </div>
+                <CopyButton value={bankDetails.transferAccountName!} />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-text-muted">RIF / Cédula</p>
+                  <p className="text-sm font-semibold text-text-main">
+                    {bankDetails.transferAccountRif}
+                  </p>
+                </div>
+                <CopyButton value={bankDetails.transferAccountRif!} />
+              </div>
             </div>
-            <CopyButton value={bankDetails.accountRif} />
-          </div>
-        </div>
+          </>
+        ) : (
+          <>
+            <p className="mb-3 text-sm font-semibold text-text-main">
+              Datos para Pago Móvil
+            </p>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-text-muted">Banco</p>
+                  <p className="text-sm font-semibold text-text-main">
+                    {bankDetails.bankName} ({bankDetails.bankCode})
+                  </p>
+                </div>
+                <CopyButton value={`${bankDetails.bankName} (${bankDetails.bankCode})`} />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-text-muted">Teléfono</p>
+                  <p className="text-sm font-semibold text-text-main">
+                    {bankDetails.accountPhone}
+                  </p>
+                </div>
+                <CopyButton value={bankDetails.accountPhone} />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-text-muted">RIF / Cédula</p>
+                  <p className="text-sm font-semibold text-text-main">
+                    {bankDetails.accountRif}
+                  </p>
+                </div>
+                <CopyButton value={bankDetails.accountRif} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Copy all for Pago Móvil */}
-      <CopyAllButton
-        bankName={bankDetails.bankName}
-        bankCode={bankDetails.bankCode}
-        phone={bankDetails.accountPhone}
-        rifOrCedula={bankDetails.accountRif}
-        amountBsCents={totalBsCents}
-      />
+      {/* Copy all for Pago Móvil (only show if not transfer) */}
+      {!bankDetails.transferAccountNumber && (
+        <CopyAllButton
+          bankName={bankDetails.bankName!}
+          bankCode={bankDetails.bankCode!}
+          phone={bankDetails.accountPhone!}
+          rifOrCedula={bankDetails.accountRif!}
+          amountBsCents={totalBsCents}
+        />
+      )}
       <div className="mt-6 rounded-card border border-border bg-white p-4 shadow-card">
         <p className="mb-3 text-sm font-semibold text-text-main">
           Ingresa la referencia del pago

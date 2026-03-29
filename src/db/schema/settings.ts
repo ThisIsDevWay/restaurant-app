@@ -13,6 +13,7 @@ export const settings = pgTable("settings", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   bankName: text("bank_name").notNull(),
   bankCode: text("bank_code").notNull(),
+  restaurantName: text("restaurant_name").notNull().default("G&M"),
   accountPhone: text("account_phone").notNull(),
   accountRif: text("account_rif").notNull(),
   transferBankName: text("transfer_bank_name").notNull().default(""),
@@ -44,7 +45,7 @@ export const settings = pgTable("settings", {
   whatsappNumber: text("whatsapp_number").notNull().default(""),
   whatsappMicroserviceUrl: text("whatsapp_microservice_url")
     .notNull()
-    .default("http://38.171.255.120:3333"),
+    .default(""),
   adicionalesEnabled: boolean("adicionales_enabled").notNull().default(true),
   bebidasEnabled: boolean("bebidas_enabled").notNull().default(true),
   maxQuantityPerItem: integer("max_quantity_per_item").notNull().default(10),

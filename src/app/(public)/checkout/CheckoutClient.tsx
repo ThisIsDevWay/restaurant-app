@@ -11,13 +11,13 @@ import { WhatsAppPayment } from "@/components/public/checkout/WhatsAppPayment";
 import { WaitingPayment } from "@/components/public/checkout/WaitingPayment";
 import { PaymentSuccess } from "@/components/public/checkout/PaymentSuccess";
 import { CheckoutForm } from "@/components/public/checkout/CheckoutForm";
-import type { PaymentInitResult } from "@/lib/payment-providers";
+import type { PaymentInitResult, BankDetails } from "@/lib/payment-providers";
 
 type CheckoutState =
   | { type: "form" }
-  | { type: "enter_reference"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: { bankName: string; bankCode: string; accountPhone: string; accountRif: string } }
+  | { type: "enter_reference"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: BankDetails }
   | { type: "whatsapp"; orderId: string; waLink: string; prefilledMessage: string }
-  | { type: "waiting_auto"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: { bankName: string; bankCode: string; accountPhone: string; accountRif: string } }
+  | { type: "waiting_auto"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: BankDetails }
   | { type: "success"; orderId: string; totalBsCents: number }
   | { type: "error"; message: string };
 
@@ -155,7 +155,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
             orderId: result.orderId,
             expiresAt: result.expiresAt,
             totalBsCents: "totalBsCents" in init ? init.totalBsCents : 0,
-            bankDetails: "bankDetails" in init ? init.bankDetails : { bankName: "", bankCode: "", accountPhone: "", accountRif: "" },
+            bankDetails: "bankDetails" in init ? init.bankDetails : { bankName: "", bankCode: "", accountPhone: "", accountRif: "" } as BankDetails,
           });
         } else {
           setError("Método de pago no soportado por el momento.");

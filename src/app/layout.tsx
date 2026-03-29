@@ -12,15 +12,22 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 });
 
-export const metadata: Metadata = {
-  title: "G&M — Restaurante",
-  description: "Haz tu pedido desde tu teléfono",
-  manifest: "/manifest.json",
-  icons: {
-    icon: "/favicon.png",
-    apple: "/apple-touch-icon.png",
-  },
-};
+import { getSettings } from "@/db/queries/settings";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings();
+  const name = settings?.restaurantName ?? "G&M";
+
+  return {
+    title: `${name} — Restaurante`,
+    description: "Haz tu pedido desde tu teléfono",
+    manifest: "/manifest.json",
+    icons: {
+      icon: "/favicon.png",
+      apple: "/apple-touch-icon.png",
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#8B2500",

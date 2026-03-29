@@ -9,6 +9,7 @@ interface SwitchProps {
   disabled?: boolean
   className?: string
   size?: "sm" | "default"
+  onClick?: (e: React.MouseEvent) => void
 }
 
 function Switch({
@@ -17,6 +18,7 @@ function Switch({
   disabled,
   className,
   size = "default",
+  onClick,
 }: SwitchProps) {
   return (
     <button
@@ -24,7 +26,10 @@ function Switch({
       role="switch"
       aria-checked={checked}
       disabled={disabled}
-      onClick={() => !disabled && onCheckedChange?.(!checked)}
+      onClick={(e) => {
+        onClick?.(e);
+        if (!disabled && !e.defaultPrevented) onCheckedChange?.(!checked);
+      }}
       className={cn(
         "relative inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
         size === "default" ? "h-6 w-11" : "h-5 w-9",

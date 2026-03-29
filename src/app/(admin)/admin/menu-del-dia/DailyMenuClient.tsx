@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   ChevronLeft,
   ChevronRight,
@@ -489,9 +490,11 @@ export function DailyMenuClient({
                             >
                               <div className="flex items-center gap-3">
                                 {item.imageUrl ? (
-                                  <img
+                                  <Image
                                     src={item.imageUrl}
                                     alt={item.name}
+                                    width={36}
+                                    height={36}
                                     className="h-9 w-9 rounded-xl object-cover flex-shrink-0 ring-1 ring-border/50 shadow-sm"
                                   />
                                 ) : (
@@ -760,9 +763,11 @@ export function DailyMenuClient({
 
                               {/* Item Img */}
                               {item.imageUrl ? (
-                                <img
+                                <Image
                                   src={item.imageUrl}
                                   alt={item.name}
+                                  width={40}
+                                  height={40}
                                   className="h-10 w-10 rounded-lg object-cover flex-shrink-0 ring-1 ring-border/50"
                                 />
                               ) : (
