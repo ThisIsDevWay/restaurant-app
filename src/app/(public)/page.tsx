@@ -11,7 +11,7 @@ import { ActiveOrdersBanner } from "@/components/public/ActiveOrdersBanner";
 import Link from "next/link";
 import { Instagram } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function MenuPage() {
   const [dailyMenuData, categories, rateData, allContornos, appSettings] = await Promise.all([

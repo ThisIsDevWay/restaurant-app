@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { exchangeRates, settings } from "@/db/schema";
 import { invalidateSettingsCache } from "@/db/queries/settings";
+import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { fetchBCVRates } from "@/lib/bcv";
 import { eq } from "drizzle-orm";
@@ -74,6 +75,7 @@ export async function GET(req: Request) {
 
     // Invalidate cache
     invalidateSettingsCache();
+    revalidatePath("/");
 
     if (results.length === 0) {
       return NextResponse.json(

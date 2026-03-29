@@ -6,7 +6,7 @@ const serwist = new Serwist({
   precacheEntries: (self as any).__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
-  navigationPreload: false,
+  navigationPreload: true,
   runtimeCaching: [
     {
       matcher: ({ url }: { url: URL }) => url.pathname.startsWith("/api/"),
