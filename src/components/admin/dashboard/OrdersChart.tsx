@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   AreaChart,
   Area,
@@ -40,6 +41,16 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export function OrdersChart() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return <div className="h-[280px] w-full bg-slate-50/50 animate-pulse rounded-lg" />;
+  }
+
   return (
     <div className="h-[280px] w-full">
       <ResponsiveContainer width="100%" height="100%">

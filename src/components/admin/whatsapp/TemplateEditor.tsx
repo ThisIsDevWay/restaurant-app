@@ -52,7 +52,7 @@ const SAMPLE_ITEMS = [
   "• Pollo Asado",
   "   └ Arroz",
   "   └ Ensalada",
-  "   └ Papas fritas (en vez de Tajadas)",
+  "   └ Papas fritas (en lugar de Tajadas)",
   "   └ + Queso extra",
   "   💰 Bs. 200,00",
   "",
@@ -223,11 +223,10 @@ export function TemplateEditor({ templates }: { templates: Template[] }) {
                         }
                       />
                       <span
-                        className={`text-[10px] font-medium ${
-                          template.isActive
+                        className={`text-[10px] font-medium ${template.isActive
                             ? "text-success"
                             : "text-text-muted"
-                        }`}
+                          }`}
                       >
                         {template.isActive ? "Activo" : "Inactivo"}
                       </span>
@@ -241,11 +240,10 @@ export function TemplateEditor({ templates }: { templates: Template[] }) {
                           [template.key]: !isPreview,
                         }))
                       }
-                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                        isPreview
+                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${isPreview
                           ? "bg-primary/10 text-primary"
                           : "bg-bg-app text-text-muted hover:text-text-main"
-                      }`}
+                        }`}
                     >
                       {isPreview ? (
                         <Pencil className="h-3 w-3" />
@@ -368,11 +366,10 @@ export function TemplateEditor({ templates }: { templates: Template[] }) {
                     )}
                     {msg && (
                       <span
-                        className={`text-xs font-medium ${
-                          msg.type === "success"
+                        className={`text-xs font-medium ${msg.type === "success"
                             ? "text-success"
                             : "text-error"
-                        }`}
+                          }`}
                       >
                         {msg.text}
                       </span>

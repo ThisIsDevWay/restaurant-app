@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
-import { updateSettings as updateSettingsDb, getActiveRate } from "@/db/queries/settings";
+import { updateSettings as updateSettingsDb, getActiveRate, getSettings } from "@/db/queries/settings";
 import { settingsSchema } from "@/lib/validations/settings";
 import * as v from "valibot";
 import { revalidatePath } from "next/cache";
@@ -61,4 +61,29 @@ export async function toggleGlobalBebidas(enabled: boolean) {
 
 export async function fetchActiveRate() {
   return getActiveRate();
+}
+
+export async function fetchCheckoutSettings() {
+  const [rateResult, s] = await Promise.all([
+    getActiveRate(),
+    getSettings()
+  ]);
+
+  return {
+    rate: rateResult?.rate ?? null,
+    orderModeOnSiteEnabled: s?.orderModeOnSiteEnabled ?? true,
+    orderModeTakeAwayEnabled: s?.orderModeTakeAwayEnabled ?? true,
+    orderModeDeliveryEnabled: s?.orderModeDeliveryEnabled ?? true,
+    packagingFeePerPlateUsdCents: s?.packagingFeePerPlateUsdCents ?? 0,
+    packagingFeePerAdicionalUsdCents: s?.packagingFeePerAdicionalUsdCents ?? 0,
+    packagingFeePerBebidaUsdCents: s?.packagingFeePerBebidaUsdCents ?? 0,
+    deliveryFeeUsdCents: s?.deliveryFeeUsdCents ?? 0,
+    deliveryCoverage: s?.deliveryCoverage ?? null,
+    transferBankName: s?.transferBankName ?? "",
+    transferAccountName: s?.transferAccountName ?? "",
+    transferAccountNumber: s?.transferAccountNumber ?? "",
+    transferAccountRif: s?.transferAccountRif ?? "",
+    paymentPagoMovilEnabled: s?.paymentPagoMovilEnabled ?? true,
+    paymentTransferEnabled: s?.paymentTransferEnabled ?? true,
+  };
 }
