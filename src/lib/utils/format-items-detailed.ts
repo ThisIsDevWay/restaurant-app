@@ -44,13 +44,14 @@ export function formatItemsDetailed(
       // Item header with base price
       const basePrice =
         item.priceUsdCents === 0
-          ? "Incluido"
+          ? "incluido"
           : `${formatPrice(item.priceBsCents)} / ${formatRef(item.priceUsdCents)}`;
       const header =
         item.quantity > 1
-          ? `*${item.quantity}× ${item.name}* (${basePrice} c/u)`
-          : `*${item.name}* (${basePrice})`;
+          ? `*${item.quantity}× ${item.name}*`
+          : `*${item.name}*`;
       lines.push(header);
+      lines.push(`Base · ${basePrice}`);
 
       // --- Contornos ---
       const hasFixedContornos = item.fixedContornos.length > 0;
@@ -62,17 +63,17 @@ export function formatItemsDetailed(
       if (hasContornos) {
         lines.push(`Contornos`);
         for (const c of item.fixedContornos) {
-          lines.push(`  ${c.name}`);
+          lines.push(`  ${c.name} · incluido`);
         }
         for (const s of substitutions) {
-          lines.push(
-            `  ${s.name} (en vez de ${s.substitutesComponentName})`,
-          );
+          const priceStr = s.priceBsCents > 0 ? `+ ${formatPrice(s.priceBsCents)}` : "incluido";
+          lines.push(`  ${s.name} (en lugar de ${s.substitutesComponentName}) · ${priceStr}`);
         }
       }
 
       // --- Removidos ---
       if (item.removedComponents && item.removedComponents.length > 0) {
+        lines.push(`Removido`);
         for (const r of item.removedComponents) {
           lines.push(`  Sin ${r.name}`);
         }
@@ -85,11 +86,8 @@ export function formatItemsDetailed(
       if (pureAdicionales.length > 0) {
         lines.push(`Adicionales`);
         for (const a of pureAdicionales) {
-          const price =
-            a.priceUsdCents === 0
-              ? "Incluido"
-              : `${formatPrice(a.priceBsCents)} / ${formatRef(a.priceUsdCents)}`;
-          lines.push(`  + ${a.name}(${price})`);
+          const priceStr = a.priceBsCents > 0 ? `+ ${formatPrice(a.priceBsCents)}` : "incluido";
+          lines.push(`  ${a.name} · ${priceStr}`);
         }
       }
 
@@ -97,16 +95,13 @@ export function formatItemsDetailed(
       if (item.selectedBebidas && item.selectedBebidas.length > 0) {
         lines.push(`Bebidas`);
         for (const b of item.selectedBebidas) {
-          const price =
-            b.priceUsdCents === 0
-              ? "Incluido"
-              : `${formatPrice(b.priceBsCents)} / ${formatRef(b.priceUsdCents)}`;
-          lines.push(`  + ${b.name}(${price})`);
+          const priceStr = b.priceBsCents > 0 ? `+ ${formatPrice(b.priceBsCents)}` : "incluido";
+          lines.push(`  ${b.name} · ${priceStr}`);
         }
       }
 
       // Item total
-      lines.push(`💰 ${formatPrice(item.itemTotalBsCents * item.quantity)}`);
+      lines.push(`💰 Total ítem: ${formatPrice(item.itemTotalBsCents * item.quantity)}`);
 
       return lines.join("\n");
     })

@@ -1,4 +1,4 @@
-import { formatBs } from "@/lib/money";
+import { formatBs, formatRef } from "@/lib/money";
 import { Badge } from "@/components/ui/badge";
 import { Receipt } from "lucide-react";
 import {
@@ -10,27 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-type ItemsSnapshot = Array<{
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  priceBsCents: number;
-  fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
-  selectedAdicionales: Array<{
-    id: string;
-    name: string;
-    priceUsdCents: number;
-    priceBsCents: number;
-  }>;
-  selectedBebidas?: Array<{
-    id: string;
-    name: string;
-    priceUsdCents: number;
-    priceBsCents: number;
-  }>;
-  quantity: number;
-  itemTotalBsCents: number;
-}>;
+import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 
 export function OrderItemsTable({
   items,
@@ -38,16 +18,11 @@ export function OrderItemsTable({
   subtotalUsdCents,
   exchangeRate,
 }: {
-  items: ItemsSnapshot;
+  items: SnapshotItem[];
   subtotalBsCents: number;
   subtotalUsdCents: number;
   exchangeRate?: string | null;
 }) {
-  const hasModifiers = items.some(
-    (item) =>
-      item.fixedContornos.length > 0 || item.selectedAdicionales.length > 0 || (item.selectedBebidas && item.selectedBebidas.length > 0),
-  );
-
   return (
     <Card className="ring-1 ring-border">
       <CardHeader className="border-b border-border">
@@ -59,88 +34,108 @@ export function OrderItemsTable({
       <CardContent className="p-0">
         <div className="divide-y divide-border">
           {items.map((item, idx) => {
-            const adicionalesTotal = item.selectedAdicionales.reduce(
-              (sum, ad) => sum + ad.priceBsCents,
-              0,
+            const hasContornos =
+              item.fixedContornos.length > 0 ||
+              item.selectedAdicionales.some((a) => a.substitutesComponentId);
+            const pureAdicionales = item.selectedAdicionales.filter(
+              (a) => !a.substitutesComponentId,
             );
-            const bebidasTotal = item.selectedBebidas?.reduce(
-              (sum, b) => sum + b.priceBsCents,
-              0,
-            ) || 0;
-            const basePriceBs =
-              item.itemTotalBsCents - (adicionalesTotal + bebidasTotal);
+            const hasModifiers =
+              hasContornos ||
+              (item.removedComponents && item.removedComponents.length > 0) ||
+              pureAdicionales.length > 0 ||
+              (item.selectedBebidas && item.selectedBebidas.length > 0);
 
             return (
               <div key={idx} className="px-5 py-4">
-                <div className="flex items-baseline justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-text-main">
-                      {item.quantity > 1 && (
-                        <span className="inline-flex items-center justify-center h-5 w-5 rounded-md bg-primary/10 text-primary text-xs font-bold mr-2">
-                          {item.quantity}
-                        </span>
-                      )}
-                      {item.name}
-                    </p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="text-sm font-semibold text-text-main">
+                      {item.quantity > 1 ? `${item.quantity}× ` : ""}{item.name}
+                    </div>
+                    <div className="text-xs text-text-muted mt-0.5">
+                      Base · {formatBs(item.priceBsCents)} / {formatRef(item.priceUsdCents)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-text-main">
+                      {formatBs(item.itemTotalBsCents * item.quantity)}
+                    </div>
+                  </div>
+                </div>
 
-                    {hasModifiers && (
-                      <div className="mt-2 space-y-1">
+                {hasModifiers && (
+                  <div className="mt-2.5 flex flex-col gap-1">
+                    {/* Contornos */}
+                    {hasContornos && (
+                      <>
+                        <div className="text-[10px] font-semibold uppercase text-text-muted mt-1 mb-0.5">Contornos</div>
                         {item.fixedContornos.map((c, cIdx) => (
-                          <div key={cIdx} className="flex items-center gap-1.5 text-xs text-text-muted">
-                            <span className="inline-block h-1 w-1 rounded-full bg-text-muted" />
-                            <span>{c.name}</span>
-                            <span className="text-text-muted ml-auto">—</span>
+                          <div key={cIdx} className="flex justify-between items-center pl-2 border-l-2 border-border/50">
+                            <span className="text-xs text-text-main">{c.name}</span>
+                            <span className="text-[11px] italic text-text-muted">incluido</span>
                           </div>
                         ))}
-                        {item.selectedAdicionales.map((ad, adIdx) => (
-                          <div
-                            key={`ad-${adIdx}`}
-                            className="flex items-center gap-1.5"
-                          >
-                            <span className="text-xs text-text-muted">+</span>
-                            <span className="text-xs text-text-main">
-                              {ad.name}
-                            </span>
-                            <span className="text-xs font-medium text-price-green ml-auto">
-                              + {formatBs(ad.priceBsCents)}
-                            </span>
-                          </div>
-                        ))}
-                        {item.selectedBebidas?.map((b, bIdx) => (
-                          <div
-                            key={`beb-${bIdx}`}
-                            className="flex items-center gap-1.5"
-                          >
-                            <span className="text-xs text-info">🍹</span>
-                            <span className="text-xs text-info font-medium">
-                              {b.name}
-                            </span>
-                            <span className="text-xs font-medium text-price-green ml-auto">
-                              + {formatBs(b.priceBsCents)}
-                            </span>
-                          </div>
-                        ))}
-                        {(item.fixedContornos.length > 0 ||
-                          item.selectedAdicionales.length > 0 ||
-                          (item.selectedBebidas && item.selectedBebidas.length > 0)) && (
-                            <div className="flex items-center gap-1.5 pt-1 border-t border-border/50">
-                              <span className="text-xs text-text-muted">
-                                Subtotal ítem
+                        {item.selectedAdicionales
+                          .filter((a) => a.substitutesComponentId)
+                          .map((s, sIdx) => (
+                            <div key={`sub-${sIdx}`} className="flex justify-between items-center pl-2 border-l-2 border-border/50">
+                              <span className="text-xs text-text-main">
+                                {s.name} <span className="opacity-70 text-[10px] ml-1">(en lugar de {s.substitutesComponentName})</span>
                               </span>
-                              <span className="text-xs font-semibold text-price-green ml-auto">
-                                = {formatBs(item.itemTotalBsCents)}
-                              </span>
+                              {s.priceBsCents > 0 ? (
+                                <span className="text-xs font-semibold text-price-green">+ {formatBs(s.priceBsCents)}</span>
+                              ) : (
+                                <span className="text-[11px] italic text-text-muted">incluido</span>
+                              )}
                             </div>
-                          )}
-                      </div>
+                          ))}
+                      </>
+                    )}
+
+                    {/* Removidos */}
+                    {item.removedComponents && item.removedComponents.length > 0 && (
+                      <>
+                        <div className="text-[10px] font-semibold uppercase text-text-muted mt-1 mb-0.5">Removido</div>
+                        {item.removedComponents.map((r, rIdx) => (
+                          <div key={rIdx} className="flex justify-between items-center pl-2 border-l-2 border-error/20">
+                            <span className="text-xs italic text-error/80">Sin {r.name}</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Adicionales */}
+                    {pureAdicionales.length > 0 && (
+                      <>
+                        <div className="text-[10px] font-semibold uppercase text-text-muted mt-1 mb-0.5">Adicionales</div>
+                        {pureAdicionales.map((ad, adIdx) => (
+                          <div key={`ad-${adIdx}`} className="flex justify-between items-center pl-2 border-l-2 border-border/50">
+                            <span className="text-xs text-text-main">{ad.name}</span>
+                            <span className="text-xs font-semibold text-price-green">
+                              {ad.priceBsCents > 0 ? `+ ${formatBs(ad.priceBsCents)}` : "incluido"}
+                            </span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Bebidas */}
+                    {item.selectedBebidas && item.selectedBebidas.length > 0 && (
+                      <>
+                        <div className="text-[10px] font-semibold uppercase text-text-muted mt-1 mb-0.5">Bebidas</div>
+                        {item.selectedBebidas.map((b, bIdx) => (
+                          <div key={`beb-${bIdx}`} className="flex justify-between items-center pl-2 border-l-2 border-border/50">
+                            <span className="text-xs text-text-main">{b.name}</span>
+                            <span className="text-xs font-semibold text-price-green">
+                              {b.priceBsCents > 0 ? `+ ${formatBs(b.priceBsCents)}` : "incluido"}
+                            </span>
+                          </div>
+                        ))}
+                      </>
                     )}
                   </div>
-                  {!hasModifiers && (
-                    <span className="text-sm font-semibold text-price-green whitespace-nowrap">
-                      {formatBs(item.itemTotalBsCents)}
-                    </span>
-                  )}
-                </div>
+                )}
               </div>
             );
           })}

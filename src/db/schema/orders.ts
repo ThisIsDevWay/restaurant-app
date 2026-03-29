@@ -74,6 +74,9 @@ export const orders = pgTable("orders", {
     >(),
   paymentReference: text("payment_reference"),
   paymentLogId: uuid("payment_log_id").references(() => paymentsLog.id),
+  orderMode: text("order_mode")
+    .$type<"on_site" | "take_away" | "delivery">(),
+  deliveryAddress: text("delivery_address"),
   exchangeRateId: uuid("exchange_rate_id")
     .notNull()
     .references(() => exchangeRates.id),

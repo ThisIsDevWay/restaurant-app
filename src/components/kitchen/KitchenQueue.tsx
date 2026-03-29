@@ -2,9 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, ChefHat, Timer, Flame, CheckCircle2, AlertCircle } from "lucide-react";
+import { Clock, ChefHat, Timer, Flame, CheckCircle2, AlertCircle, MapPin, Store, Package } from "lucide-react";
 import { obfuscatePhone } from "@/lib/utils";
 import { updateOrderStatus } from "@/actions/orders";
+
+const ORDER_MODE_LABELS: Record<string, { label: string; icon: typeof Store; color: string }> = {
+  on_site: { label: "En sitio", icon: Store, color: "bg-info/10 text-info border-info/20" },
+  take_away: { label: "Para llevar", icon: Package, color: "bg-amber/10 text-amber border-amber/20" },
+  delivery: { label: "Delivery", icon: MapPin, color: "bg-success/10 text-success border-success/20" },
+};
 
 interface KitchenOrder {
   id: string;
@@ -33,6 +39,8 @@ interface KitchenOrder {
   }>;
   status: "paid" | "kitchen" | "delivered" | "whatsapp";
   paymentMethod: string;
+  orderMode?: "on_site" | "take_away" | "delivery" | null;
+  deliveryAddress?: string | null;
   subtotalBsCents: number;
   createdAt: string;
 }
@@ -185,6 +193,8 @@ export function KitchenQueue() {
                 const isNew = newOrderIds.has(order.id);
                 const elapsed = getElapsedMinutes(order.createdAt);
                 const isUrgent = elapsed > 15;
+                const modeLabel = order.orderMode ? ORDER_MODE_LABELS[order.orderMode] : null;
+                const ModeIcon = modeLabel?.icon;
 
                 return (
                   <div
@@ -202,6 +212,12 @@ export function KitchenQueue() {
                         <span className="text-lg font-black text-text-main font-mono">
                           #{order.orderNumber}
                         </span>
+                        {modeLabel && ModeIcon && (
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${modeLabel.color}`}>
+                            <ModeIcon className="h-3 w-3" />
+                            {modeLabel.label}
+                          </span>
+                        )}
                         {isNew && (
                           <span className="rounded-full bg-amber px-2 py-0.5 text-[10px] font-bold text-white animate-bounce">
                             ¡NUEVO!
@@ -288,6 +304,12 @@ export function KitchenQueue() {
                       <p className="mb-2 text-xs text-text-muted">
                         {order.customerPhone}
                       </p>
+                      {order.orderMode === "delivery" && order.deliveryAddress && (
+                        <p className="mb-2 flex items-start gap-1 text-xs text-text-main">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-success" />
+                          {order.deliveryAddress}
+                        </p>
+                      )}
                       <button
                         onClick={() => handleTakeOrder(order.id)}
                         className="w-full rounded-xl bg-amber py-4 text-base font-bold text-white shadow-sm active:scale-[0.98] transition-transform hover:bg-amber/90"
@@ -314,6 +336,8 @@ export function KitchenQueue() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {cookingOrders.map((order) => {
                 const elapsed = getElapsedMinutes(order.createdAt);
+                const modeLabel = order.orderMode ? ORDER_MODE_LABELS[order.orderMode] : null;
+                const ModeIcon = modeLabel?.icon;
 
                 return (
                   <div
@@ -325,9 +349,17 @@ export function KitchenQueue() {
                   >
                     {/* Card Header */}
                     <div className="flex items-center justify-between border-b border-border bg-info/5 px-4 py-3 rounded-t-xl">
-                      <span className="text-lg font-black text-text-main font-mono">
-                        #{order.orderNumber}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-black text-text-main font-mono">
+                          #{order.orderNumber}
+                        </span>
+                        {modeLabel && ModeIcon && (
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${modeLabel.color}`}>
+                            <ModeIcon className="h-3 w-3" />
+                            {modeLabel.label}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-1.5 text-sm font-semibold text-info">
                         <Timer className="h-4 w-4" />
                         {timeSince(order.createdAt)}
@@ -399,6 +431,12 @@ export function KitchenQueue() {
                       <p className="mb-2 text-xs text-text-muted">
                         {order.customerPhone}
                       </p>
+                      {order.orderMode === "delivery" && order.deliveryAddress && (
+                        <p className="mb-2 flex items-start gap-1 text-xs text-text-main">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-success" />
+                          {order.deliveryAddress}
+                        </p>
+                      )}
                       <button
                         onClick={() => handleDeliver(order.id)}
                         className="w-full rounded-xl bg-info py-4 text-base font-bold text-white shadow-sm active:scale-[0.98] transition-transform hover:bg-info/90"
