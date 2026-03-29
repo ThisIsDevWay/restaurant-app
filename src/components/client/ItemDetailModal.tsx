@@ -479,7 +479,7 @@ export function ItemDetailModal({
                           </span>
                           {isSubstituted && (
                             <p className="text-[11px] text-text-muted/70">
-                              en vez de {contorno.name}
+                              en lugar de {contorno.name}
                             </p>
                           )}
                         </div>

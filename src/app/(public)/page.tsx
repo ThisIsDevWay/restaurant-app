@@ -9,6 +9,7 @@ import { MenuClient } from "./MenuClient";
 import { Cart } from "@/components/public/cart/Cart";
 import { ActiveOrdersBanner } from "@/components/public/ActiveOrdersBanner";
 import Link from "next/link";
+import { Instagram } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -40,12 +41,32 @@ export default async function MenuPage() {
     return (
       <div className="min-h-screen bg-bg-app">
         <header className="sticky top-0 z-30 bg-white shadow-elevated">
-          <div className="flex items-center justify-between px-4 py-3">
-            <h1 className="font-display text-2xl font-bold text-primary">G&M</h1>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between px-3 py-3 sm:px-4 gap-2 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-2 shrink-0">
+              <h1 className="font-display text-2xl font-bold text-primary">G&M</h1>
+              {appSettings?.instagramUrl && (() => {
+                const url = appSettings.instagramUrl;
+                const formattedUrl = url.startsWith("http")
+                  ? url
+                  : `https://instagram.com/${url.replace(/^@/, "")}`;
+
+                return (
+                  <a
+                    href={formattedUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg-app text-text-muted transition-colors hover:text-primary"
+                    aria-label="Instagram"
+                  >
+                    <Instagram className="h-4 w-4" />
+                  </a>
+                );
+              })()}
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <Link
                 href="/mis-pedidos"
-                className="flex items-center gap-1 rounded-full bg-bg-app px-3 py-1 text-xs font-medium text-text-muted"
+                className="flex items-center gap-1 rounded-full bg-bg-app px-2.5 py-1 sm:px-3 text-xs font-medium text-text-muted whitespace-nowrap"
               >
                 Pedidos
               </Link>
@@ -73,12 +94,32 @@ export default async function MenuPage() {
     <div className="min-h-screen bg-bg-app">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white shadow-elevated">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="font-display text-2xl font-bold text-primary">G&M</h1>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-3 py-3 sm:px-4 gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-2 shrink-0">
+            <h1 className="font-display text-xl sm:text-2xl font-bold text-primary">G&M</h1>
+            {appSettings?.instagramUrl && (() => {
+              const url = appSettings.instagramUrl;
+              const formattedUrl = url.startsWith("http")
+                ? url
+                : `https://instagram.com/${url.replace(/^@/, "")}`;
+
+              return (
+                <a
+                  href={formattedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg-app text-text-muted transition-colors hover:text-primary"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
+              );
+            })()}
+          </div>
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Link
               href="/mis-pedidos"
-              className="flex items-center gap-1 rounded-full bg-bg-app px-3 py-1 text-xs font-medium text-text-muted"
+              className="flex items-center gap-1 rounded-full bg-bg-app px-2.5 py-1 sm:px-3 text-xs font-medium text-text-muted whitespace-nowrap"
             >
               Pedidos
             </Link>
@@ -124,12 +165,12 @@ function RatePill({ rate, fetchedAt }: { rate: number; fetchedAt: string }) {
     Date.now() - new Date(fetchedAt).getTime() > 24 * 60 * 60 * 1000;
 
   return (
-    <div className="flex items-center gap-1.5 rounded-full bg-bg-app px-3 py-1 text-xs font-medium">
+    <div className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-bg-app px-2 sm:px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0">
       <span
         title={isStale ? "Tasa del día anterior" : undefined}
-        className={`h-2 w-2 animate-pulse-dot rounded-full ${isStale ? "bg-amber" : "bg-success"}`}
+        className={`h-2 w-2 animate-pulse-dot rounded-full shrink-0 ${isStale ? "bg-amber" : "bg-success"}`}
       />
-      <span className="text-text-muted">BCV</span>
+      <span className="hidden sm:inline text-text-muted">BCV</span>
       <span className="font-semibold text-text-main">Bs. {formattedRate}</span>
     </div>
   );

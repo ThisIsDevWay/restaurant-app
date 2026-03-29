@@ -45,6 +45,14 @@ const formSchema = v.object({
       return !isNaN(num) && num > 0;
     }, "Precio debe ser mayor a 0"),
   ),
+  costUsdDollars: v.optional(v.pipe(
+    v.string(),
+    v.check((val) => {
+      if (!val || val === "") return true;
+      const num = parseFloat(val);
+      return !isNaN(num) && num >= 0;
+    }, "Costo inválido"),
+  )),
   sortOrder: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
   imageUrl: v.optional(v.string()),
   isAvailable: v.boolean(),
@@ -67,6 +75,8 @@ interface MenuItemFormProps {
     description?: string | null;
     categoryId: string;
     priceUsdCents: number;
+    costUsdCents?: number | null;
+    costUpdatedAt?: string | Date | null;
     sortOrder?: number | null;
     imageUrl?: string | null;
     isAvailable: boolean;
@@ -121,6 +131,7 @@ export function MenuItemForm({
       description: initialData?.description ?? "",
       categoryId: initialData?.categoryId ?? "",
       priceUsdDollars: initialData ? String((initialData.priceUsdCents / 100).toFixed(2)) : "",
+      costUsdDollars: initialData?.costUsdCents ? String((initialData.costUsdCents / 100).toFixed(2)) : "",
       sortOrder: initialData?.sortOrder ?? 0,
       imageUrl: initialData?.imageUrl ?? "",
       isAvailable: initialData?.isAvailable ?? true,
@@ -131,6 +142,12 @@ export function MenuItemForm({
   const watchedDesc = watch("description") ?? "";
   const currentPriceStr = watch("priceUsdDollars");
   const currentPriceBs = parseFloat(currentPriceStr) * exchangeRate * 100 || 0;
+  const currentCostStr = watch("costUsdDollars") ?? "";
+  const currentCostCents = currentCostStr ? Math.round(parseFloat(currentCostStr) * 100) : 0;
+  const currentPriceCents = Math.round(parseFloat(currentPriceStr || "0") * 100);
+  const marginPct = currentCostCents > 0 && currentPriceCents > 0
+    ? Math.round(((currentPriceCents - currentCostCents) / currentPriceCents) * 100)
+    : null;
   const isAvailable = watch("isAvailable");
   const watchedCategoryId = watch("categoryId");
   const selectedCategory = categories.find((c) => c.id === watchedCategoryId);
@@ -203,12 +220,15 @@ export function MenuItemForm({
     setError(null);
     try {
       const priceUsdCents = Math.round(parseFloat(data.priceUsdDollars) * 100);
+      const costUsdCents = data.costUsdDollars && data.costUsdDollars !== ""
+        ? Math.round(parseFloat(data.costUsdDollars) * 100)
+        : undefined;
       let itemId: string;
       if (isEdit) {
-        await updateMenuItem(initialData.id, { ...data, priceUsdCents, imageUrl: data.imageUrl ?? "" });
+        await updateMenuItem(initialData.id, { ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "" });
         itemId = initialData.id;
       } else {
-        const result = await createMenuItem({ ...data, priceUsdCents, imageUrl: data.imageUrl ?? "" });
+        const result = await createMenuItem({ ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "" });
         if (!result.success || !result.item) throw new Error(result.error ?? "Error al crear");
         itemId = result.item.id;
       }
@@ -460,6 +480,63 @@ export function MenuItemForm({
                   {currentPriceBs > 0 ? formatBs(currentPriceBs).replace("Bs.", "").trim() : "0.00"}
                 </p>
               </div>
+            </div>
+
+            {/* Cost + Margin */}
+            <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-gray-400">Costo estimado (USD)</label>
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-xl font-light text-gray-400">$</span>
+                    <input
+                      {...register("costUsdDollars")}
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      className="bg-transparent text-2xl font-medium w-full focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-gray-400">Costo Bs.</label>
+                  <p className="text-2xl font-light text-gray-500 mt-1">
+                    {currentCostCents > 0 ? formatBs(Math.round(currentCostCents * exchangeRate)).replace("Bs.", "").trim() : "—"}
+                  </p>
+                </div>
+              </div>
+
+              {marginPct !== null && (
+                <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                  marginPct >= 40 ? "bg-green-50 border border-green-200" :
+                  marginPct >= 20 ? "bg-yellow-50 border border-yellow-200" :
+                  "bg-red-50 border border-red-200"
+                }`}>
+                  <div className={`h-3 w-3 rounded-full ${
+                    marginPct >= 40 ? "bg-green-500" :
+                    marginPct >= 20 ? "bg-yellow-500" :
+                    "bg-red-500"
+                  }`} />
+                  <div>
+                    <span className={`text-sm font-bold ${
+                      marginPct >= 40 ? "text-green-700" :
+                      marginPct >= 20 ? "text-yellow-700" :
+                      "text-red-700"
+                    }`}>
+                      Margen: {marginPct}%
+                    </span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      ({formatRef(currentPriceCents - currentCostCents)} ganancia)
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {isEdit && initialData?.costUpdatedAt && (
+                <p className="text-[10px] text-gray-400">
+                  Última actualización: {new Date(initialData.costUpdatedAt).toLocaleDateString("es-VE", { day: "numeric", month: "short", year: "numeric" })}
+                </p>
+              )}
             </div>
           </section>
 

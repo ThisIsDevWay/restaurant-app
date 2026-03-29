@@ -8,6 +8,7 @@ export const menuItemSchema = v.object({
     v.integer(),
     v.minValue(1, "Precio debe ser mayor a 0"),
   ),
+  costUsdCents: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
   categoryId: v.pipe(v.string(), v.uuid()),
   isAvailable: v.boolean(),
   imageUrl: v.optional(v.string()),

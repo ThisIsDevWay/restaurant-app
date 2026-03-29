@@ -24,6 +24,7 @@ interface MenuItemCardProps {
   categoryAllowAlone: boolean;
   isAvailable: boolean;
   imageUrl: string | null;
+  priority?: boolean;
   hasRequiredOptions: boolean;
   onOpenDetail: () => void;
   onAddSimpleItem?: (payload: any, categoryName: string) => void;
@@ -39,6 +40,7 @@ export function MenuItemCard({
   categoryAllowAlone,
   isAvailable,
   imageUrl,
+  priority = false,
   hasRequiredOptions,
   onOpenDetail,
   onAddSimpleItem,
@@ -95,6 +97,7 @@ export function MenuItemCard({
             fill
             className="object-cover"
             sizes="(max-width: 768px) 50vw, 33vw"
+            priority={priority}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-5xl">

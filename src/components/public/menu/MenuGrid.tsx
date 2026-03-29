@@ -141,7 +141,7 @@ export function MenuGrid({
 
   return (
     <div className="grid grid-cols-2 gap-3 px-4 pb-4">
-      {sortedItems.map((item) => {
+      {sortedItems.map((item, index) => {
         const hasContornos = item.contornos.some((c) => c.isAvailable);
         const hasRequiredOptions = item.optionGroups.some((g) => g.required);
         const hasDailyAdicionales = adicionalesEnabled && dailyAdicionales.length > 0;
@@ -166,6 +166,7 @@ export function MenuGrid({
             categoryAllowAlone={item.categoryAllowAlone}
             isAvailable={item.isAvailable}
             imageUrl={item.imageUrl}
+            priority={index < 4}
             hasRequiredOptions={needsDetailModal}
             onOpenDetail={() => setSelectedItemId(item.id)}
             onAddSimpleItem={handleAddSimpleItem}

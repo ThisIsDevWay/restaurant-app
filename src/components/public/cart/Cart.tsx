@@ -64,7 +64,7 @@ export function Cart() {
       {/* Drawer — always in DOM for animation */}
       <div
         className={`fixed inset-0 z-50 ${isDrawerOpen ? "" : "pointer-events-none"}`}
-        aria-hidden={!isDrawerOpen}
+        inert={!isDrawerOpen}
       >
         {/* Overlay */}
         <div
@@ -118,7 +118,7 @@ export function Cart() {
               </p>
             </div>
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs text-text-muted">IVA (16%)</span>
+              <span className="text-xs text-text-muted">IVA incluido (16%)</span>
               <p className="text-xs font-medium text-text-main">
                 {formatBs(totalBsCents - Math.round(totalBsCents / 1.16))}
               </p>

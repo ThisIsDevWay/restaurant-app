@@ -39,9 +39,15 @@ export async function updateMenuItem(id: string, data: unknown) {
   }
 
   try {
+    const updateData = {
+      ...parsed.output,
+      updatedAt: new Date(),
+      ...(parsed.output.costUsdCents != null && { costUpdatedAt: new Date() }),
+    };
+
     const [item] = await db
       .update(menuItems)
-      .set({ ...parsed.output, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(menuItems.id, id))
       .returning();
     revalidatePath("/");

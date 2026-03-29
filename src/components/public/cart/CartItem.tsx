@@ -59,7 +59,7 @@ export function CartItem({
                   <p key={idx} className="text-[11px] text-text-muted">
                     {s.substituteName}
                     <span className="text-[10px] opacity-70 ml-1">
-                      (en vez de {s.originalName})
+                      (en lugar de {s.originalName})
                     </span>
                   </p>
                 ))}

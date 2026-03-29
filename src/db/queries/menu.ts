@@ -1,12 +1,14 @@
 import { db } from "../index";
-import { menuItems, optionGroups, options, categories, menuItemAdicionales, menuItemContornos, menuItemBebidas } from "../schema";
-import { eq } from "drizzle-orm";
+import { menuItems, optionGroups, options, categories, menuItemAdicionales, menuItemContornos, menuItemBebidas, orders } from "../schema";
+import { eq, sql, and, gte, lte, isNotNull, asc } from "drizzle-orm";
 
 export interface MenuWithGroups {
   id: string;
   name: string;
   description: string | null;
   priceUsdCents: number;
+  costUsdCents: number | null;
+  costUpdatedAt: Date | null;
   categoryId: string;
   categoryName: string;
   categoryAllowAlone: boolean;
@@ -30,6 +32,8 @@ export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
       name: menuItems.name,
       description: menuItems.description,
       priceUsdCents: menuItems.priceUsdCents,
+      costUsdCents: menuItems.costUsdCents,
+      costUpdatedAt: menuItems.costUpdatedAt,
       categoryId: menuItems.categoryId,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
@@ -122,6 +126,8 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
       name: menuItems.name,
       description: menuItems.description,
       priceUsdCents: menuItems.priceUsdCents,
+      costUsdCents: menuItems.costUsdCents,
+      costUpdatedAt: menuItems.costUpdatedAt,
       categoryId: menuItems.categoryId,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
@@ -434,4 +440,142 @@ export async function getCategories() {
     })
     .from(categories)
     .orderBy(categories.sortOrder);
+}
+
+export interface MenuItemProfitability {
+  id: string;
+  name: string;
+  priceUsdCents: number;
+  costUsdCents: number | null;
+  costUpdatedAt: string | null;
+  marginPct: number | null;
+}
+
+export async function getMenuItemProfitability(): Promise<MenuItemProfitability[]> {
+  const items = await db
+    .select({
+      id: menuItems.id,
+      name: menuItems.name,
+      priceUsdCents: menuItems.priceUsdCents,
+      costUsdCents: menuItems.costUsdCents,
+      costUpdatedAt: menuItems.costUpdatedAt,
+    })
+    .from(menuItems)
+    .where(eq(menuItems.isAvailable, true))
+    .orderBy(menuItems.sortOrder);
+
+  return items.map((item) => ({
+    ...item,
+    costUpdatedAt: item.costUpdatedAt ? item.costUpdatedAt.toISOString() : null,
+    marginPct: item.costUsdCents !== null && item.priceUsdCents > 0
+      ? Math.round(((item.priceUsdCents - item.costUsdCents) / item.priceUsdCents) * 100)
+      : null,
+  }));
+}
+
+export interface WeightedMarginResult {
+  weightedMarginPct: number | null;
+  totalItemsSold: number;
+}
+
+export async function getWeightedAverageMarginToday(): Promise<WeightedMarginResult> {
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Caracas",
+  }).format(new Date());
+  const startOfDayVET = new Date(`${today}T00:00:00-04:00`);
+  const endOfDayVET = new Date(`${today}T23:59:59-04:00`);
+
+  // Get today's orders with items_snapshot
+  const todayOrders = await db
+    .select({
+      itemsSnapshot: orders.itemsSnapshot,
+    })
+    .from(orders)
+    .where(
+      and(
+        gte(orders.createdAt, startOfDayVET),
+        lte(orders.createdAt, endOfDayVET),
+        sql`${orders.status} IN ('paid', 'kitchen', 'delivered')`,
+      ),
+    );
+
+  if (todayOrders.length === 0) {
+    return { weightedMarginPct: null, totalItemsSold: 0 };
+  }
+
+  // Build a map of item costs from DB
+  const costRows = await db
+    .select({
+      id: menuItems.id,
+      priceUsdCents: menuItems.priceUsdCents,
+      costUsdCents: menuItems.costUsdCents,
+    })
+    .from(menuItems)
+    .where(isNotNull(menuItems.costUsdCents));
+
+  const costMap = new Map<string, { priceUsdCents: number; costUsdCents: number }>();
+  for (const row of costRows) {
+    if (row.costUsdCents !== null) {
+      costMap.set(row.id, { priceUsdCents: row.priceUsdCents, costUsdCents: row.costUsdCents });
+    }
+  }
+
+  // Calculate weighted margin
+  let totalRevenueUsdCents = 0;
+  let totalCostUsdCents = 0;
+  let totalItemsSold = 0;
+
+  for (const order of todayOrders) {
+    const snapshot = order.itemsSnapshot as Array<{
+      id: string;
+      priceUsdCents: number;
+      quantity: number;
+      costUsdCents?: number | null;
+    }>;
+    for (const item of snapshot) {
+      const actualCostUsdCents =
+        item.costUsdCents !== undefined && item.costUsdCents !== null
+          ? item.costUsdCents
+          : costMap.get(item.id)?.costUsdCents;
+
+      if (actualCostUsdCents != null) {
+        const revenue = item.priceUsdCents * item.quantity;
+        const cost = actualCostUsdCents * item.quantity;
+        totalRevenueUsdCents += revenue;
+        totalCostUsdCents += cost;
+        totalItemsSold += item.quantity;
+      }
+    }
+  }
+
+  if (totalRevenueUsdCents === 0) {
+    return { weightedMarginPct: null, totalItemsSold };
+  }
+
+  const weightedMarginPct = Math.round(
+    ((totalRevenueUsdCents - totalCostUsdCents) / totalRevenueUsdCents) * 100,
+  );
+
+  return { weightedMarginPct, totalItemsSold };
+}
+
+export async function getStaleCostItems(days: number = 7) {
+  const threshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  return db
+    .select({
+      id: menuItems.id,
+      name: menuItems.name,
+      costUsdCents: menuItems.costUsdCents,
+      costUpdatedAt: menuItems.costUpdatedAt,
+    })
+    .from(menuItems)
+    .where(
+      and(
+        eq(menuItems.isAvailable, true),
+        isNotNull(menuItems.costUsdCents),
+        sql`${menuItems.costUpdatedAt} IS NULL OR ${menuItems.costUpdatedAt} < ${threshold.toISOString()}`,
+      ),
+    )
+    .orderBy(asc(menuItems.costUpdatedAt));
 }

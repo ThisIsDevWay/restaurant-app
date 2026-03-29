@@ -83,7 +83,7 @@ function computeItemTotal(
     (sum, r) => sum + Math.round(r.priceUsdCents * (item.baseBsCents / Math.max(item.baseUsdCents, 1))),
     0,
   );
-  return (item.baseBsCents + fixedContornosBs + substitutionsBs + adicionalesBs + bebidasBs + removalsBs) * quantity;
+  return (item.baseBsCents + fixedContornosBs + substitutionsBs + adicionalesBs + bebidasBs - removalsBs) * quantity;
 }
 
 /** Deterministic key for cart deduplication — order-insensitive */

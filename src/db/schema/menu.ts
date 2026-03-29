@@ -23,6 +23,8 @@ export const menuItems = pgTable(
     isAvailable: boolean("is_available").notNull().default(true),
     imageUrl: text("image_url"),
     sortOrder: integer("sort_order").notNull().default(0),
+    costUsdCents: integer("cost_usd_cents"),
+    costUpdatedAt: timestamp("cost_updated_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

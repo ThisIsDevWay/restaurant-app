@@ -64,6 +64,9 @@ export default async function MenuAdminPage() {
                     Precio
                   </TableHead>
                   <TableHead className="font-semibold text-text-main">
+                    Margen
+                  </TableHead>
+                  <TableHead className="font-semibold text-text-main">
                     Estado
                   </TableHead>
                   <TableHead className="font-semibold text-text-main text-right pr-5">
@@ -109,6 +112,33 @@ export default async function MenuAdminPage() {
                       <span className="font-semibold text-price-green">
                         {formatRef(item.priceUsdCents)}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      {item.costUsdCents !== null ? (() => {
+                        const marginPct = Math.round(((item.priceUsdCents - item.costUsdCents) / item.priceUsdCents) * 100);
+                        const isStale = item.costUpdatedAt
+                          ? (Date.now() - new Date(item.costUpdatedAt).getTime()) > 7 * 24 * 60 * 60 * 1000
+                          : false;
+                        return (
+                          <div className="flex items-center gap-1.5">
+                            <span className={`inline-flex items-center gap-1 text-xs font-bold ${marginPct >= 40 ? "text-green-600" :
+                                marginPct >= 20 ? "text-yellow-600" :
+                                  "text-red-600"
+                              }`}>
+                              <span className={`h-2 w-2 rounded-full ${marginPct >= 40 ? "bg-green-500" :
+                                  marginPct >= 20 ? "bg-yellow-500" :
+                                    "bg-red-500"
+                                }`} />
+                              {marginPct}%
+                            </span>
+                            {isStale && (
+                              <span className="text-[10px] text-amber" title="Costo sin actualizar">⚠</span>
+                            )}
+                          </div>
+                        );
+                      })() : (
+                        <span className="text-xs text-text-muted">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge
