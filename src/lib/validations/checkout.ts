@@ -11,6 +11,8 @@ export const checkoutSchema = v.object({
   name: v.optional(v.pipe(v.string(), v.maxLength(50))),
   cedula: v.optional(v.pipe(v.string(), v.maxLength(20))),
   paymentMethod: v.picklist(["pago_movil", "transfer"]),
+  orderMode: v.optional(v.picklist(["on_site", "take_away", "delivery"])),
+  deliveryAddress: v.optional(v.pipe(v.string(), v.maxLength(200))),
   items: v.pipe(
     v.array(
       v.object({

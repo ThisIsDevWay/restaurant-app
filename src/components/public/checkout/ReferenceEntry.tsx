@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { formatBs } from "@/lib/money";
-import { Copy, Check, Loader2, Clock, ArrowLeft } from "lucide-react";
+import { Copy, Check, Loader2, Clock, ArrowLeft, ClipboardCopy } from "lucide-react";
 import type { CartItem } from "@/store/cartStore";
+import { buildPagoMovilClipboard } from "@/lib/clipboard-pago-movil";
+import { CopyAllButton } from "./CopyAllButton";
 
 interface ReferenceEntryProps {
   orderId: string;
@@ -33,9 +35,8 @@ function CopyButton({ value }: { value: string }) {
   return (
     <button
       onClick={handleCopy}
-      className={`flex h-9 w-9 items-center justify-center rounded-input transition-colors ${
-        copied ? "bg-success/10 text-success" : "bg-bg-image text-text-muted"
-      }`}
+      className={`flex h-9 w-9 items-center justify-center rounded-input transition-colors ${copied ? "bg-success/10 text-success" : "bg-bg-image text-text-muted"
+        }`}
       aria-label="Copiar"
     >
       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -165,7 +166,14 @@ export function ReferenceEntry({
         </div>
       </div>
 
-      {/* Reference input */}
+      {/* Copy all for Pago Móvil */}
+      <CopyAllButton
+        bankName={bankDetails.bankName}
+        bankCode={bankDetails.bankCode}
+        phone={bankDetails.accountPhone}
+        rifOrCedula={bankDetails.accountRif}
+        amountBsCents={totalBsCents}
+      />
       <div className="mt-6 rounded-card border border-border bg-white p-4 shadow-card">
         <p className="mb-3 text-sm font-semibold text-text-main">
           Ingresa la referencia del pago
@@ -179,9 +187,8 @@ export function ReferenceEntry({
             setVerifyError(null);
           }}
           placeholder="Ej: 01234567"
-          className={`w-full rounded-input border px-4 py-3 text-sm outline-none transition-colors ${
-            verifyError ? "border-error" : "border-border focus:border-primary"
-          }`}
+          className={`w-full rounded-input border px-4 py-3 text-sm outline-none transition-colors ${verifyError ? "border-error" : "border-border focus:border-primary"
+            }`}
           disabled={isVerifying}
         />
         {verifyError && (
@@ -220,9 +227,8 @@ export function ReferenceEntry({
 
       {/* Expiration countdown */}
       {secondsLeft > 0 && (
-        <div className={`mt-4 flex items-center justify-center gap-1.5 text-sm ${
-          secondsLeft < 300 ? "text-amber font-semibold" : "text-text-muted"
-        }`}>
+        <div className={`mt-4 flex items-center justify-center gap-1.5 text-sm ${secondsLeft < 300 ? "text-amber font-semibold" : "text-text-muted"
+          }`}>
           <Clock size={14} />
           {secondsLeft < 300
             ? `¡Apresúrate! ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`

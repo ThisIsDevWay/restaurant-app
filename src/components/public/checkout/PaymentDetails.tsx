@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { formatBs, formatRef } from "@/lib/money";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ClipboardCopy } from "lucide-react";
 import type { CartItem } from "@/store/cartStore";
+import { buildPagoMovilClipboard } from "@/lib/clipboard-pago-movil";
+import { CopyAllButton } from "./CopyAllButton";
 
 interface PaymentDetailsProps {
   orderId: string;
@@ -182,6 +184,15 @@ export function PaymentDetails({
           </div>
         </div>
       </div>
+
+      {/* Copy all for Pago Móvil */}
+      <CopyAllButton
+        bankName={bankDetails.bankName}
+        bankCode={bankDetails.bankCode}
+        phone={bankDetails.accountPhone}
+        rifOrCedula={bankDetails.accountRif}
+        amountBsCents={exactAmountBsCents}
+      />
 
       {/* Items summary */}
       <div className="mt-4 rounded-card border border-border bg-white p-4 shadow-card">

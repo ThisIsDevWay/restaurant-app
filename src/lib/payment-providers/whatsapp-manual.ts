@@ -14,6 +14,7 @@ import {
   type SnapshotItem,
 } from "@/lib/utils/format-items-detailed";
 import { formatBs, formatRef } from "@/lib/money";
+import { getTemplateByKey } from "@/db/queries/whatsapp-templates";
 
 export class WhatsAppManualProvider implements PaymentProvider {
   readonly id = "whatsapp_manual" as const;
@@ -35,7 +36,7 @@ export class WhatsAppManualProvider implements PaymentProvider {
 
     const ref = (order.subtotalBsCents / 100).toFixed(2).replace(".", ",");
 
-    const message = [
+    let message = [
       `🍔 *Nuevo pedido G&M*`,
       ``,
       `📋 Detalle:`,
@@ -49,6 +50,19 @@ export class WhatsAppManualProvider implements PaymentProvider {
       `□ Transferencia`,
       `□ Efectivo al recibir`,
     ].join("\n");
+
+    try {
+      const template = await getTemplateByKey("checkout_manual");
+      if (template && template.isActive) {
+        message = template.body
+          .replace(/\{items\}/g, itemsText)
+          .replace(/\{total\}/g, totalBs)
+          .replace(/\{ref\}/g, ref)
+          .replace(/\{telefono\}/g, order.customerPhone);
+      }
+    } catch (e) {
+      console.error("Error fetching checkout_manual template", e);
+    }
 
     const originalNumber = settings.whatsappNumber || "584140000000";
     const sanitizedNumber = originalNumber.replace(/\D/g, "");

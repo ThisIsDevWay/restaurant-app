@@ -83,7 +83,7 @@ export async function processCheckout(
       };
     }
 
-    const { phone, paymentMethod, name, cedula } = parsed.output;
+    const { phone, paymentMethod, name, cedula, orderMode, deliveryAddress } = parsed.output;
 
     // 2.5. Validate that cart doesn't contain ONLY restricted items
     const allRestricted = items.every((item) => !item.categoryAllowAlone);
@@ -169,6 +169,7 @@ export async function processCheckout(
       name: string;
       priceUsdCents: number;
       priceBsCents: number;
+      costUsdCents: number | null;
       fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
       selectedAdicionales: Array<{
         id: string;
@@ -397,6 +398,7 @@ export async function processCheckout(
         name: menuItem.name,
         priceUsdCents: menuItem.priceUsdCents,
         priceBsCents: itemBaseBsCents,
+        costUsdCents: menuItem.costUsdCents,
         fixedContornos,
         selectedAdicionales,
         selectedBebidas,
@@ -424,6 +426,8 @@ export async function processCheckout(
       status: provider.id === "whatsapp_manual" ? "whatsapp" : "pending",
       paymentMethod,
       paymentProvider: provider.id,
+      orderMode: orderMode ?? null,
+      deliveryAddress: deliveryAddress ?? null,
       exchangeRateId: settings.currentRateId!,
       rateSnapshotBsPerUsd: rate.toString(),
       expiresAt,
