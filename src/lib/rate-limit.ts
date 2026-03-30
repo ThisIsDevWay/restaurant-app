@@ -1,5 +1,16 @@
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+/**
+ * In-memory rate limiter using a sliding window algorithm.
+ * Zero external dependencies. Works in Node.js and Vercel serverless.
+ *
+ * Note: Each serverless function instance has its own memory. This means
+ * limits are per-instance, which is suitable for burst protection but not
+ * for strict global quotas across many concurrent users.
+ */
+
+interface Window {
+  count: number;
+  resetAt: number;
+}
 
 interface RateLimitResult {
   success: boolean;
@@ -8,61 +19,50 @@ interface RateLimitResult {
   reset: number;
 }
 
-function isConfigured(): boolean {
-  return Boolean(
-    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
-  );
-}
+function createLimiter(maxRequests: number, windowMs: number) {
+  const store = new Map<string, Window>();
 
-const passthrough: RateLimitResult = {
-  success: true,
-  limit: 999,
-  remaining: 999,
-  reset: 0,
-};
-
-function createLimiter(
-  limiter: ReturnType<typeof Ratelimit.slidingWindow>,
-  prefix: string,
-) {
-  if (!isConfigured()) {
-    return {
-      limit: () => {
-        if (process.env.NODE_ENV === "production") {
-          return Promise.reject(new Error("Upstash Redis must be configured in production"));
-        }
-        return Promise.resolve(passthrough);
-      }
-    };
+  // Periodically clean up expired windows to prevent memory leaks.
+  const cleanup = () => {
+    const now = Date.now();
+    for (const [key, win] of store) {
+      if (now > win.resetAt) store.delete(key);
+    }
+  };
+  // Run cleanup every minute (only in long-running environments)
+  if (typeof setInterval !== "undefined") {
+    setInterval(cleanup, 60_000).unref?.();
   }
 
-  return new Ratelimit({
-    redis: new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-    }),
-    limiter,
-    prefix,
-  });
+  return {
+    limit(identifier: string): Promise<RateLimitResult> {
+      const now = Date.now();
+      let win = store.get(identifier);
+
+      if (!win || now > win.resetAt) {
+        win = { count: 0, resetAt: now + windowMs };
+        store.set(identifier, win);
+      }
+
+      win.count++;
+      const remaining = Math.max(0, maxRequests - win.count);
+      const success = win.count <= maxRequests;
+
+      return Promise.resolve({
+        success,
+        limit: maxRequests,
+        remaining,
+        reset: win.resetAt,
+      });
+    },
+  };
 }
 
 export const rateLimiters = {
-  paymentWebhook: createLimiter(
-    Ratelimit.slidingWindow(100, "1 m"),
-    "rl:webhook",
-  ),
-  orderStatus: createLimiter(
-    Ratelimit.slidingWindow(30, "1 m"),
-    "rl:order-status",
-  ),
-  checkout: createLimiter(
-    Ratelimit.slidingWindow(10, "1 m"),
-    "rl:checkout",
-  ),
-  lookup: createLimiter(
-    Ratelimit.slidingWindow(20, "1 m"),
-    "rl:lookup",
-  ),
+  paymentWebhook: createLimiter(100, 60_000),  // 100 req/min
+  orderStatus: createLimiter(30, 60_000),  // 30 req/min
+  checkout: createLimiter(10, 60_000),  // 10 req/min
+  lookup: createLimiter(20, 60_000),  // 20 req/min
 };
 
 export function getIP(request: Request): string {

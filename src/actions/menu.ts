@@ -3,7 +3,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db";
 import { menuItems, optionGroups, options } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase";
 import { menuItemSchema, optionGroupSchema } from "@/lib/validations/menu-item";
@@ -15,6 +15,17 @@ export async function createMenuItem(data: unknown) {
   const parsed = v.safeParse(menuItemSchema, data);
   if (!parsed.success) {
     return { success: false, error: parsed.issues[0].message };
+  }
+
+  // Auto-calculate sortOrder if not provided
+  if (parsed.output.sortOrder === undefined) {
+    const lastItem = await db
+      .select({ sortOrder: menuItems.sortOrder })
+      .from(menuItems)
+      .where(eq(menuItems.categoryId, parsed.output.categoryId))
+      .orderBy(desc(menuItems.sortOrder))
+      .limit(1);
+    parsed.output.sortOrder = (lastItem[0]?.sortOrder ?? 0) + 1;
   }
 
   try {

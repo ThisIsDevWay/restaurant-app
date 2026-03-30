@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import withSerwistInit from "@serwist/next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+
 function getSupabaseDomain(): string {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   try {

@@ -21,7 +21,7 @@ export async function saveTemplate(
     return { success: false, error: "Key y body son requeridos" };
   }
 
-  const validKeys = ["received", "paid", "kitchen", "delivered"];
+  const validKeys = ["received", "paid", "kitchen", "delivered", "checkout_manual"];
   if (!validKeys.includes(key)) {
     return { success: false, error: "Key de plantilla inválida" };
   }

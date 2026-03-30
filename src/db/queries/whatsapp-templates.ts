@@ -96,6 +96,24 @@ export async function seedDefaultTemplates() {
         "¡Buen provecho! 🍽️",
       ].join("\n"),
     },
+    {
+      key: "checkout_manual",
+      label: "Pago Manual Cliente",
+      body: [
+        "🍔 *Nuevo pedido G&M*",
+        "",
+        "📋 Detalle:",
+        "{items}",
+        "",
+        "💰 Total: *Bs. {total}* (REF {ref})",
+        "📱 Teléfono: {telefono}",
+        "",
+        "¿Cómo deseas pagar?",
+        "□ Pago Móvil",
+        "□ Transferencia",
+        "□ Efectivo al recibir",
+      ].join("\n"),
+    },
   ];
 
   await db.insert(whatsappTemplates).values(defaults);

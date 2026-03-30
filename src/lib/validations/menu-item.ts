@@ -6,13 +6,13 @@ export const menuItemSchema = v.object({
   priceUsdCents: v.pipe(
     v.number(),
     v.integer(),
-    v.minValue(1, "Precio debe ser mayor a 0"),
+    v.minValue(0, "Precio no puede ser negativo"),
   ),
   costUsdCents: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
   categoryId: v.pipe(v.string(), v.uuid()),
   isAvailable: v.boolean(),
   imageUrl: v.optional(v.string()),
-  sortOrder: v.pipe(v.number(), v.integer()),
+  sortOrder: v.optional(v.pipe(v.number(), v.integer())),
 });
 
 export type MenuItemInput = v.InferOutput<typeof menuItemSchema>;
