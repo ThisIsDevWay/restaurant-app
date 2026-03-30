@@ -21,11 +21,16 @@ interface BCVRates {
  */
 export async function fetchBCVRates(): Promise<BCVRates> {
   return new Promise((resolve) => {
+    const options = {
+      timeout: TIMEOUT_MS,
+      rejectUnauthorized: false,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    };
     const req = https.get(
       BCV_URL,
-      {
-        timeout: TIMEOUT_MS,
-      },
+      options,
       (res) => {
         if (res.statusCode !== 200) {
           resolve({ usd: null, eur: null });
