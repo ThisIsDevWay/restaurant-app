@@ -1,0 +1,1 @@
+ALTER TABLE "settings" ADD COLUMN "restaurant_name" text DEFAULT 'G&M' NOT NULL;
