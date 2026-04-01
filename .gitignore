@@ -59,6 +59,20 @@ audit.mjs
 .agents/
 brain/
 
+# Testing artifacts
+/playwright-report/
+/test-results/
+/test-results-unit/
+/playwright/
+
+# Temp files
+status.txt
+digest.txt
+diff.txt
+filtered_diff.txt
+diff_stat.txt
+diff_checkout.txt
+
 # Removed artifacts
 .7z
 supabase/.temp/
