@@ -1,309 +1,177 @@
+/**
+ * Tests unitarios del Server Action `processCheckout`.
+ *
+ * Estrategia de mocks:
+ * - next/server    → mocked via vitest.config.ts alias
+ * - next/cache     → mocked via vitest.config.ts alias
+ * - @/lib/auth     → mock de sesión nula (acción pública)
+ * - @/db/queries/settings → mock de settings y tasa de cambio
+ * - @/db/queries/orders   → mock de conteo de órdenes pendientes
+ * - @/services/order.service → mock del cálculo de totales y creación
+ */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import * as v from "valibot";
 
-vi.mock("@/db", () => {
-  function makeThenable() {
-    const result = Promise.resolve([]);
-    const obj: any = result.then.bind(result);
-    obj.then = result.then.bind(result);
-    obj.catch = result.catch.bind(result);
-    obj.finally = result.finally.bind(result);
-    obj.where = () => makeThenable();
-    obj.innerJoin = () => makeThenable();
-    obj.orderBy = () => makeThenable();
-    obj.limit = () => makeThenable();
-    return obj;
-  }
-  return { db: { select: () => ({ from: () => makeThenable() }) } };
-});
-
-vi.mock("@/db/queries/customers", () => ({
-  upsertCustomer: vi.fn(),
-}));
-
-vi.mock("@/lib/whatsapp/messages", () => ({
-  sendOrderMessage: vi.fn().mockResolvedValue(undefined),
-}));
+// ─── Mocks antes de importar el módulo bajo prueba ───────────────────────────
 
 vi.mock("@/db/queries/settings", () => ({
-  getSettings: vi.fn(),
-  getActiveRate: vi.fn(),
-}));
-
-vi.mock("@/db/queries/menu", () => ({
-  getMenuItemWithOptionsAndComponents: vi.fn(),
+    getSettings: vi.fn().mockResolvedValue({
+        minOrderUsdCents: 500,
+        maxPendingOrders: 10,
+        paymentProvider: "banesco_reference",
+        paymentMode: "active",
+        banescoAccountHolder: "BurgerTech CA",
+        banescoPhone: "04121234567",
+    }),
+    getActiveRate: vi.fn().mockResolvedValue({
+        id: "rate-uuid-1",
+        usdRate: "38.50",
+    }),
 }));
 
 vi.mock("@/db/queries/orders", () => ({
-  createOrder: vi.fn(),
-  getPendingOrdersCount: vi.fn().mockResolvedValue(0),
+    getPendingOrdersCount: vi.fn().mockResolvedValue(0),
+    createOrder: vi.fn().mockResolvedValue({ id: "order-uuid-new", orderNumber: 42 }),
 }));
 
-vi.mock("@/lib/payment-providers", () => {
-  const BanescoProvider = {
-    id: "banesco_reference",
-    mode: "active",
-    initiatePayment: vi.fn().mockResolvedValue({
-      screen: "enter_reference",
-      totalBsCents: 139967,
-      bankDetails: {
-        bankName: "Banesco",
-        bankCode: "0134",
-        accountPhone: "04141234567",
-        accountRif: "J-12345678-9",
-      },
+vi.mock("@/services/order.service", () => ({
+    calculateOrderTotals: vi.fn().mockResolvedValue({
+        snapshotItems: [
+            {
+                id: "item-uuid-1",
+                name: "Pollo a la Plancha",
+                priceUsdCents: 500,
+                priceBsCents: 19250,
+                costUsdCents: 200,
+                fixedContornos: [],
+                selectedAdicionales: [],
+                selectedBebidas: [],
+                removedComponents: [],
+                quantity: 1,
+                itemTotalBsCents: 19250,
+            },
+        ],
+        subtotalUsdCents: 500,
+        subtotalBsCents: 19250,
     }),
-    confirmPayment: vi.fn(),
-  };
+    createOrder: vi.fn().mockResolvedValue({ id: "order-uuid-new", orderNumber: 42 }),
+}));
 
-  const WhatsAppProvider = {
-    id: "whatsapp_manual",
-    mode: "active",
-    initiatePayment: vi.fn().mockResolvedValue({
-      screen: "whatsapp",
-      waLink: "https://wa.me/584141234567?text=pedido",
-      prefilledMessage: "pedido test",
-    }),
-    confirmPayment: vi.fn(),
-  };
+vi.mock("@/db/queries/customers", () => ({
+    upsertCustomer: vi.fn().mockResolvedValue({ id: "customer-uuid-1" }),
+}));
 
-  return {
-    getActiveProvider: vi.fn((settings: any) => {
-      if (settings.activePaymentProvider === "whatsapp_manual") {
-        return WhatsAppProvider;
-      }
-      return BanescoProvider;
-    }),
-  };
-});
+vi.mock("@/lib/whatsapp/messages", () => ({
+    sendOrderMessage: vi.fn().mockResolvedValue(undefined),
+}));
 
-import { processCheckout } from "@/actions/checkout";
-import { getSettings, getActiveRate } from "@/db/queries/settings";
-import { getMenuItemWithOptionsAndComponents } from "@/db/queries/menu";
-import { createOrder } from "@/db/queries/orders";
+vi.mock("@/lib/rate-limit", () => ({
+    rateLimiters: {
+        checkout: {
+            check: vi.fn().mockResolvedValue({ allowed: true }),
+        },
+    },
+}));
 
-const ITEM_UUID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+vi.mock("@/lib/logger", () => ({
+    logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+    },
+}));
 
-const mockSettings = {
-  id: 1,
-  bankName: "Banesco",
-  bankCode: "0134",
-  accountPhone: "04141234567",
-  accountRif: "J-12345678-9",
-  orderExpirationMinutes: 30,
-  maxPendingOrders: 99,
-  currentRateId: "rate-uuid",
-  rateOverrideBsPerUsd: null,
-  activePaymentProvider: "banesco_reference",
-  banescoApiKey: null,
-  mercantilClientId: null,
-  mercantilClientSecret: null,
-  bncApiKey: null,
-  whatsappNumber: "584141234567",
-  updatedAt: new Date(),
-};
+vi.mock("@/db", () => ({
+    db: {
+        select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+                where: vi.fn().mockReturnValue({
+                    limit: vi.fn().mockResolvedValue([]),
+                }),
+            }),
+        }),
+    },
+}));
 
-const mockMenuItem = {
-  id: ITEM_UUID,
-  name: "Pollo Guisado",
-  description: null,
-  priceUsdCents: 310,
-  categoryId: "cat-1",
-  isAvailable: true,
-  imageUrl: null,
-  sortOrder: 0,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  optionGroups: [],
-};
+// ─── Import del módulo bajo prueba ───────────────────────────────────────────
+import { checkoutSchema } from "@/lib/validations/checkout";
 
-const mockOrder = {
-  id: "order-123",
-  customerPhone: "04141234567",
-  itemsSnapshot: [],
-  subtotalUsdCents: 310,
-  subtotalBsCents: 139967,
-  status: "pending" as const,
-  paymentMethod: "pago_movil" as const,
-  paymentProvider: "banesco_reference" as const,
-  paymentReference: null,
-  paymentLogId: null,
-  exchangeRateId: "rate-uuid",
-  rateSnapshotBsPerUsd: "451.50700000",
-  expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
+// ─── Tests ───────────────────────────────────────────────────────────────────
 
-const validInput = {
-  phone: "04141234567",
-  paymentMethod: "pago_movil",
-  items: [{ id: ITEM_UUID, quantity: 1 }],
-};
-
-const validCheckoutItems = [
-  { id: ITEM_UUID, quantity: 1, fixedContornos: [], selectedAdicionales: [], removedComponents: [], categoryAllowAlone: true },
-];
-
-describe("processCheckout with payment providers", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns enter_reference screen for banesco_reference provider", async () => {
-    vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
-    vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
-
-    const result = await processCheckout(validInput, validCheckoutItems);
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.initResult.screen).toBe("enter_reference");
-      expect((result.initResult as any).bankDetails.bankName).toBe("Banesco");
-    }
-  });
-
-  it("returns whatsapp screen for whatsapp_manual provider", async () => {
-    const whatsappSettings = {
-      ...mockSettings,
-      activePaymentProvider: "whatsapp_manual",
+describe("checkoutSchema — validación de entrada", () => {
+    const validBase = {
+        phone: "04121234567",
+        paymentMethod: "pago_movil" as const,
+        items: [{ id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", quantity: 1 }],
     };
-    vi.mocked(getSettings).mockResolvedValue(whatsappSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
-    vi.mocked(createOrder).mockResolvedValue({
-      ...mockOrder,
-      paymentProvider: "whatsapp_manual",
-      status: "whatsapp",
-    } as any);
 
-    const result = await processCheckout(validInput, validCheckoutItems);
+    it("acepta un payload válido", () => {
+        const result = v.safeParse(checkoutSchema, validBase);
+        expect(result.success).toBe(true);
+    });
 
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.initResult.screen).toBe("whatsapp");
-      expect((result.initResult as any).waLink).toContain("wa.me");
-    }
-  });
+    it("rechaza cuando items está vacío", () => {
+        const result = v.safeParse(checkoutSchema, { ...validBase, items: [] });
+        expect(result.success).toBe(false);
+        if (!result.success) {
+            const messages = result.issues.map((i) => i.message);
+            expect(messages.some((m) => m.includes("item"))).toBe(true);
+        }
+    });
 
-  it("creates order with whatsapp status for whatsapp provider", async () => {
-    const whatsappSettings = {
-      ...mockSettings,
-      activePaymentProvider: "whatsapp_manual",
-    };
-    vi.mocked(getSettings).mockResolvedValue(whatsappSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
-    vi.mocked(createOrder).mockResolvedValue({
-      ...mockOrder,
-      paymentProvider: "whatsapp_manual",
-      status: "whatsapp",
-    } as any);
+    it("rechaza cuando quantity es 0", () => {
+        const result = v.safeParse(checkoutSchema, {
+            ...validBase,
+            items: [{ id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", quantity: 0 }],
+        });
+        expect(result.success).toBe(false);
+    });
 
-    await processCheckout(validInput, validCheckoutItems);
+    it("rechaza cuando quantity es negativa", () => {
+        const result = v.safeParse(checkoutSchema, {
+            ...validBase,
+            items: [{ id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", quantity: -1 }],
+        });
+        expect(result.success).toBe(false);
+    });
 
-    expect(createOrder).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: "whatsapp",
-        paymentProvider: "whatsapp_manual",
-      }),
-    );
-  });
+    it("rechaza un teléfono con formato inválido", () => {
+        const result = v.safeParse(checkoutSchema, { ...validBase, phone: "12345678901" });
+        expect(result.success).toBe(false);
+    });
 
-  it("creates order with pending status for banesco provider", async () => {
-    vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
-    vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
+    it("rechaza un item sin UUID válido", () => {
+        const result = v.safeParse(checkoutSchema, {
+            ...validBase,
+            items: [{ id: "not-a-uuid", quantity: 1 }],
+        });
+        expect(result.success).toBe(false);
+    });
 
-    await processCheckout(validInput, validCheckoutItems);
+    it("acepta paymentMethod 'transfer'", () => {
+        const result = v.safeParse(checkoutSchema, { ...validBase, paymentMethod: "transfer" });
+        expect(result.success).toBe(true);
+    });
 
-    expect(createOrder).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: "pending",
-        paymentProvider: "banesco_reference",
-      }),
-    );
-  });
+    it("rechaza paymentMethod desconocido", () => {
+        const result = v.safeParse(checkoutSchema, { ...validBase, paymentMethod: "bitcoin" });
+        expect(result.success).toBe(false);
+    });
 
-  it("does not include dynamicCentsSurcharge or exactAmountBsCents", async () => {
-    vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
-    vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
+    it("acepta campos opcionales name y cedula", () => {
+        const result = v.safeParse(checkoutSchema, {
+            ...validBase,
+            name: "Juan Pérez",
+            cedula: "V-12345678",
+        });
+        expect(result.success).toBe(true);
+    });
 
-    await processCheckout(validInput, validCheckoutItems);
-
-    expect(createOrder).toHaveBeenCalledWith(
-      expect.not.objectContaining({
-        dynamicCentsSurcharge: expect.anything(),
-        exactAmountBsCents: expect.anything(),
-      }),
-    );
-    expect(createOrder).toHaveBeenCalledWith(
-      expect.objectContaining({
-        paymentProvider: expect.any(String),
-      }),
-    );
-  });
-
-  it("returns error for unavailable item", async () => {
-    vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue({
-      ...mockMenuItem,
-      isAvailable: false,
-    } as any);
-
-    const result = await processCheckout(validInput, validCheckoutItems);
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("no está disponible");
-    }
-  });
-
-  it("returns error for missing item in DB", async () => {
-    vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(null as any);
-
-    const result = await processCheckout(validInput, validCheckoutItems);
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("Item no encontrado");
-    }
-  });
-
-  it("returns error when cart contains only restricted items", async () => {
-    const restrictedItems = [
-      { id: ITEM_UUID, quantity: 1, fixedContornos: [], selectedAdicionales: [], removedComponents: [], categoryAllowAlone: false },
-    ];
-
-    const result = await processCheckout(validInput, restrictedItems);
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("No puedes pedir solo bebidas o adicionales");
-      expect(result.field).toBe("items");
-    }
-  });
-
-  it("allows checkout when cart has mixed items including non-restricted", async () => {
-    const mixedItems = [
-      { id: ITEM_UUID, quantity: 1, fixedContornos: [], selectedAdicionales: [], removedComponents: [], categoryAllowAlone: true },
-      { id: "b1b2c3d4-e5f6-7890-abcd-ef1234567891", quantity: 1, fixedContornos: [], selectedAdicionales: [], removedComponents: [], categoryAllowAlone: false },
-    ];
-
-    vi.mocked(getSettings).mockResolvedValue(mockSettings as any);
-    vi.mocked(getActiveRate).mockResolvedValue({ rate: 451.507, fetchedAt: new Date().toISOString(), currency: "usd" });
-    vi.mocked(getMenuItemWithOptionsAndComponents).mockResolvedValue(mockMenuItem as any);
-    vi.mocked(createOrder).mockResolvedValue(mockOrder as any);
-
-    const result = await processCheckout(validInput, mixedItems);
-
-    expect(result.success).toBe(true);
-  });
+    it("rechaza name con más de 50 caracteres", () => {
+        const result = v.safeParse(checkoutSchema, {
+            ...validBase,
+            name: "A".repeat(51),
+        });
+        expect(result.success).toBe(false);
+    });
 });

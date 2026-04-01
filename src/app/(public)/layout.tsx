@@ -1,5 +1,5 @@
 import { QueryProvider } from "@/providers/QueryProvider";
-import { OfflineBanner } from "@/components/client/OfflineBanner";
+import { OfflineBanner } from "@/components/customer/OfflineBanner";
 
 export default function PublicLayout({
   children,

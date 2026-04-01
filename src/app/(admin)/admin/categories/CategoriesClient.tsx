@@ -12,14 +12,14 @@ import {
   Info,
 } from "lucide-react";
 import {
-  createCategory,
-  updateCategory,
-  deleteCategory,
+  createCategoryAction,
+  updateCategoryAction,
+  deleteCategoryAction,
   getCategoryUsageCount,
-  reorderCategories,
-  toggleCategoryAvailability,
-  toggleCategorySimple,
-  toggleCategoryAlone,
+  reorderCategoriesAction,
+  toggleCategoryAvailabilityAction,
+  toggleCategorySimpleAction,
+  toggleCategoryAloneAction,
 } from "@/actions/categories";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -157,14 +157,14 @@ export function CategoriesClient({
     allowAlone: boolean;
     isSimple: boolean;
   }) => {
-    const result = await createCategory(
-      data.name,
-      data.allowAlone,
-      data.isSimple,
-    );
-    if (result.success) {
+    const result = await createCategoryAction({
+      name: data.name,
+      allowAlone: data.allowAlone,
+      isSimple: data.isSimple,
+    });
+    if (result?.data?.success) {
       setItems((prev) =>
-        [...prev, result.category!].sort(
+        [...prev, result.data!.category!].sort(
           (a, b) => a.sortOrder - b.sortOrder,
         ),
       );
@@ -176,13 +176,13 @@ export function CategoriesClient({
     id: string,
     data: { name: string; allowAlone: boolean; isSimple: boolean },
   ) => {
-    const result = await updateCategory(
+    const result = await updateCategoryAction({
       id,
-      data.name,
-      data.allowAlone,
-      data.isSimple,
-    );
-    if (result.success) {
+      name: data.name,
+      allowAlone: data.allowAlone,
+      isSimple: data.isSimple,
+    });
+    if (result?.data?.success) {
       setItems((prev) =>
         prev.map((i) => (i.id === id ? { ...i, ...data } : i)),
       );
@@ -194,21 +194,21 @@ export function CategoriesClient({
     setItems((prev) =>
       prev.map((i) => (i.id === id ? { ...i, isAvailable } : i)),
     );
-    await toggleCategoryAvailability(id, isAvailable);
+    await toggleCategoryAvailabilityAction({ id, isAvailable });
   };
 
   const handleToggleSimple = async (id: string, isSimple: boolean) => {
     setItems((prev) =>
       prev.map((i) => (i.id === id ? { ...i, isSimple } : i)),
     );
-    await toggleCategorySimple(id, isSimple);
+    await toggleCategorySimpleAction({ id, isSimple });
   };
 
   const handleToggleAlone = async (id: string, allowAlone: boolean) => {
     setItems((prev) =>
       prev.map((i) => (i.id === id ? { ...i, allowAlone } : i)),
     );
-    await toggleCategoryAlone(id, allowAlone);
+    await toggleCategoryAloneAction({ id, allowAlone });
   };
 
   const handleDeleteClick = async (id: string, name: string) => {
@@ -216,14 +216,14 @@ export function CategoriesClient({
     if (count > 0) {
       setDeleteWarning({ id, name, count });
     } else if (confirm(`¿Eliminar "${name}"?`)) {
-      await deleteCategory(id);
+      await deleteCategoryAction({ id });
       setItems((prev) => prev.filter((i) => i.id !== id));
     }
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteWarning) return;
-    await deleteCategory(deleteWarning.id);
+    await deleteCategoryAction({ id: deleteWarning.id });
     setItems((prev) => prev.filter((i) => i.id !== deleteWarning.id));
     setDeleteWarning(null);
   };
@@ -252,7 +252,7 @@ export function CategoriesClient({
     setItems(reordered);
     setDraggingIdx(null);
 
-    await reorderCategories(reordered.map((i) => i.id));
+    await reorderCategoriesAction({ orderedIds: reordered.map((i) => i.id) });
   };
 
   return (
@@ -334,8 +334,8 @@ export function CategoriesClient({
                     onDragEnd={handleDragEnd}
                     onDragOver={(e) => e.preventDefault()}
                     className={`flex flex-col md:flex-row md:items-center gap-4 p-4 transition-all duration-200 group/row ${draggingIdx === idx
-                        ? "opacity-50 bg-primary/10 border-2 border-dashed border-primary/30 z-50 scale-[1.02] shadow-lg"
-                        : "hover:bg-bg-app/50"
+                      ? "opacity-50 bg-primary/10 border-2 border-dashed border-primary/30 z-50 scale-[1.02] shadow-lg"
+                      : "hover:bg-bg-app/50"
                       }`}
                   >
                     <div className="flex items-center gap-4 flex-1 min-w-0">

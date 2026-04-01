@@ -8,143 +8,133 @@ import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase";
 import { menuItemSchema, optionGroupSchema } from "@/lib/validations/menu-item";
 import * as v from "valibot";
+import { adminActionClient } from "@/lib/safe-action";
 
-export async function createMenuItem(data: unknown) {
-  await requireAdmin();
+export const createMenuItemAction = adminActionClient
+  .schema(menuItemSchema)
+  .action(async ({ parsedInput }) => {
+    try {
+      if (parsedInput.sortOrder === undefined) {
+        const lastItem = await db
+          .select({ sortOrder: menuItems.sortOrder })
+          .from(menuItems)
+          .where(eq(menuItems.categoryId, parsedInput.categoryId))
+          .orderBy(desc(menuItems.sortOrder))
+          .limit(1);
+        parsedInput.sortOrder = (lastItem[0]?.sortOrder ?? 0) + 1;
+      }
 
-  const parsed = v.safeParse(menuItemSchema, data);
-  if (!parsed.success) {
-    return { success: false, error: parsed.issues[0].message };
-  }
-
-  // Auto-calculate sortOrder if not provided
-  if (parsed.output.sortOrder === undefined) {
-    const lastItem = await db
-      .select({ sortOrder: menuItems.sortOrder })
-      .from(menuItems)
-      .where(eq(menuItems.categoryId, parsed.output.categoryId))
-      .orderBy(desc(menuItems.sortOrder))
-      .limit(1);
-    parsed.output.sortOrder = (lastItem[0]?.sortOrder ?? 0) + 1;
-  }
-
-  try {
-    const [item] = await db
-      .insert(menuItems)
-      .values(parsed.output)
-      .returning();
-    revalidatePath("/");
-    revalidatePath("/admin/catalogo");
-    return { success: true, item };
-  } catch {
-    return { success: false, error: "Error al crear item" };
-  }
-}
-
-export async function updateMenuItem(id: string, data: unknown) {
-  await requireAdmin();
-
-  const parsed = v.safeParse(menuItemSchema, data);
-  if (!parsed.success) {
-    return { success: false, error: parsed.issues[0].message };
-  }
-
-  try {
-    const updateData = {
-      ...parsed.output,
-      updatedAt: new Date(),
-      ...(parsed.output.costUsdCents != null && { costUpdatedAt: new Date() }),
-    };
-
-    const [item] = await db
-      .update(menuItems)
-      .set(updateData)
-      .where(eq(menuItems.id, id))
-      .returning();
-    revalidatePath("/");
-    revalidatePath("/admin/catalogo");
-    return { success: true, item };
-  } catch {
-    return { success: false, error: "Error al actualizar item" };
-  }
-}
-
-export async function deleteMenuItem(id: string) {
-  await requireAdmin();
-
-  try {
-    await db.delete(menuItems).where(eq(menuItems.id, id));
-    revalidatePath("/");
-    revalidatePath("/admin/catalogo");
-    return { success: true };
-  } catch {
-    return { success: false, error: "Error al eliminar item" };
-  }
-}
-
-export async function createOptionGroup(
-  menuItemId: string,
-  data: unknown,
-) {
-  await requireAdmin();
-
-  const parsed = v.safeParse(optionGroupSchema, data);
-  if (!parsed.success) {
-    return { success: false, error: parsed.issues[0].message };
-  }
-
-  try {
-    const [group] = await db
-      .insert(optionGroups)
-      .values({
-        menuItemId,
-        name: parsed.output.name,
-        type: parsed.output.type,
-        required: parsed.output.required,
-        sortOrder: parsed.output.sortOrder,
-      })
-      .returning();
-
-    for (const opt of parsed.output.options) {
-      await db.insert(options).values({
-        groupId: group.id,
-        name: opt.name,
-        priceUsdCents: opt.priceUsdCents,
-        isAvailable: opt.isAvailable,
-        sortOrder: opt.sortOrder,
-      });
+      const [item] = await db.insert(menuItems).values(parsedInput).returning();
+      revalidatePath("/");
+      revalidatePath("/admin");
+      revalidatePath("/admin/catalogo");
+      return { success: true, item };
+    } catch {
+      return { success: false, error: "Error al crear item" };
     }
+  });
 
-    revalidatePath("/");
-    return { success: true, group };
-  } catch {
-    return { success: false, error: "Error al crear grupo de opciones" };
-  }
-}
 
-export async function generateUploadUrl(
-  fileName: string,
-): Promise<{ success: true; url: string; path: string } | { success: false; error: string }> {
-  await requireAdmin();
 
-  const path = `menu/${Date.now()}-${fileName}`;
+export const updateMenuItemAction = adminActionClient
+  .schema(v.object({ id: v.string(), data: menuItemSchema }))
+  .action(async ({ parsedInput: { id, data } }) => {
+    try {
+      const updateData = {
+        ...data,
+        updatedAt: new Date(),
+        ...(data.costUsdCents != null && { costUpdatedAt: new Date() }),
+      };
 
-  try {
-    const { data, error } = await supabase.storage
-      .from("menu")
-      .createSignedUploadUrl(path);
-
-    if (error || !data) {
-      return { success: false, error: "Error al generar URL de subida" };
+      const [item] = await db
+        .update(menuItems)
+        .set(updateData)
+        .where(eq(menuItems.id, id))
+        .returning();
+      revalidatePath("/");
+      revalidatePath("/admin");
+      revalidatePath("/admin/catalogo");
+      return { success: true, item };
+    } catch {
+      return { success: false, error: "Error al actualizar item" };
     }
+  });
 
-    return { success: true, url: data.signedUrl, path };
-  } catch {
-    return { success: false, error: "Error al generar URL de subida" };
-  }
-}
 
-export async function getPublicUrl(path: string): Promise<string> {
-  const { data } = supabase.storage.from("menu").getPublicUrl(path);
-  return data.publicUrl;
-}
+
+export const deleteMenuItemAction = adminActionClient
+  .schema(v.object({ id: v.string() }))
+  .action(async ({ parsedInput: { id } }) => {
+    try {
+      await db.delete(menuItems).where(eq(menuItems.id, id));
+      revalidatePath("/");
+      revalidatePath("/admin");
+      revalidatePath("/admin/catalogo");
+      return { success: true };
+    } catch {
+      return { success: false, error: "Error al eliminar item" };
+    }
+  });
+
+
+
+export const createOptionGroupAction = adminActionClient
+  .schema(v.object({ menuItemId: v.string(), data: optionGroupSchema }))
+  .action(async ({ parsedInput: { menuItemId, data } }) => {
+    try {
+      const [group] = await db
+        .insert(optionGroups)
+        .values({
+          menuItemId,
+          name: data.name,
+          type: data.type,
+          required: data.required,
+          sortOrder: data.sortOrder,
+        })
+        .returning();
+
+      for (const opt of data.options) {
+        await db.insert(options).values({
+          groupId: group.id,
+          name: opt.name,
+          priceUsdCents: opt.priceUsdCents,
+          isAvailable: opt.isAvailable,
+          sortOrder: opt.sortOrder,
+        });
+      }
+
+      revalidatePath("/");
+      return { success: true, group };
+    } catch {
+      return { success: false, error: "Error al crear grupo de opciones" };
+    }
+  });
+
+
+
+export const generateUploadUrlAction = adminActionClient
+  .schema(v.object({ fileName: v.string() }))
+  .action(async ({ parsedInput: { fileName } }) => {
+    const path = `menu/${Date.now()}-${fileName}`;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from("menu")
+        .createSignedUploadUrl(path);
+
+      if (error || !data) {
+        return { success: false as const, error: "Error al generar URL de subida" };
+      }
+
+      return { success: true as const, url: data.signedUrl, path };
+    } catch {
+      return { success: false as const, error: "Error al generar URL de subida" };
+    }
+  });
+
+export const getPublicUrlAction = adminActionClient
+  .schema(v.object({ path: v.string() }))
+  .action(async ({ parsedInput: { path } }) => {
+    const { data } = supabase.storage.from("menu").getPublicUrl(path);
+    return data.publicUrl;
+  });

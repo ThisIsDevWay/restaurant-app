@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { orders } from "@/db/schema";
 import {
   CheckCircle,
   ChefHat,
@@ -9,15 +10,8 @@ import {
   LayoutList,
 } from "lucide-react";
 
-export type OrderStatus =
-  | "pending"
-  | "paid"
-  | "kitchen"
-  | "delivered"
-  | "expired"
-  | "failed"
-  | "whatsapp"
-  | "cancelled";
+/** Single source of truth: derived from the Drizzle schema `orders.status` column */
+export type OrderStatus = NonNullable<typeof orders.$inferSelect["status"]>;
 
 export interface StatusConfig {
   label: string;

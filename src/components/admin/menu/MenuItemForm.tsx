@@ -8,10 +8,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { createMenuItem, updateMenuItem, deleteMenuItem, generateUploadUrl, getPublicUrl } from "@/actions/menu";
-import { saveMenuItemAdicionales } from "@/actions/adicionales";
-import { saveMenuItemContornos } from "@/actions/contornos";
-import { saveMenuItemBebidas } from "@/actions/bebidas";
+import {
+  createMenuItemAction,
+  updateMenuItemAction,
+  deleteMenuItemAction,
+  generateUploadUrlAction,
+  getPublicUrlAction
+} from "@/actions/menu";
+import { saveMenuItemAdicionalesAction } from "@/actions/adicionales";
+import { saveMenuItemContornosAction } from "@/actions/contornos";
+import { saveMenuItemBebidasAction } from "@/actions/bebidas";
 import {
   Image as ImageIcon,
   Upload,
@@ -184,8 +190,10 @@ export function MenuItemForm({
     if (!initialData) return;
     setSubmitting(true);
     try {
-      const result = await deleteMenuItem(initialData.id);
-      if (!result.success) throw new Error(result.error);
+      const result = await deleteMenuItemAction({ id: initialData.id });
+      if (result?.serverError) throw new Error(result.serverError);
+      if (result?.validationErrors) throw new Error("Error de validación al eliminar");
+
       router.push("/admin/catalogo");
       router.refresh();
     } catch (err) {
@@ -200,12 +208,18 @@ export function MenuItemForm({
     if (!file) return;
     try {
       setUploading(true);
-      const result = await generateUploadUrl(file.name);
-      if (!result.success) throw new Error(result.error);
-      await fetch(result.url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      const publicUrl = await getPublicUrl(result.path);
-      setPreviewUrl(publicUrl);
-      setValue("imageUrl", publicUrl);
+      const result = await generateUploadUrlAction({ fileName: file.name });
+      if (result?.serverError) throw new Error(result.serverError);
+      if (result?.validationErrors) throw new Error("Datos inválidos al generar URL");
+      if (!result?.data?.success) throw new Error(result?.data?.error || "Error");
+
+      await fetch(result.data.url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      const publicUrlResult = await getPublicUrlAction({ path: result.data.path });
+      if (publicUrlResult?.serverError) throw new Error(publicUrlResult.serverError);
+      if (!publicUrlResult?.data) throw new Error("Error obteniendo URL pública");
+
+      setPreviewUrl(publicUrlResult.data);
+      setValue("imageUrl", publicUrlResult.data);
     } catch {
       setError("Error al subir la imagen");
     } finally {
@@ -223,23 +237,39 @@ export function MenuItemForm({
         : undefined;
       let itemId: string;
       if (isEdit) {
-        await updateMenuItem(initialData.id, { ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "" });
+        const updateResult = await updateMenuItemAction({
+          id: initialData.id,
+          data: { ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "" }
+        });
+        if (updateResult?.serverError) throw new Error(updateResult.serverError);
+        if (updateResult?.validationErrors) throw new Error("Error de validación al actualizar");
         itemId = initialData.id;
       } else {
-        const result = await createMenuItem({ ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "" });
-        if (!result.success || !result.item) throw new Error(result.error ?? "Error al crear");
-        itemId = result.item.id;
+        const createResult = await createMenuItemAction({
+          ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? ""
+        });
+        if (createResult?.serverError) throw new Error(createResult.serverError);
+        if (createResult?.validationErrors) throw new Error("Error de validación al crear");
+        if (!createResult?.data?.success || !createResult?.data?.item) throw new Error(createResult?.data?.error ?? "Error al crear");
+        itemId = createResult.data.item.id;
       }
-      await saveMenuItemAdicionales(itemId, selectedAdicionalIds);
-      await saveMenuItemBebidas(itemId, selectedBebidaIds);
-      await saveMenuItemContornos(
-        itemId,
-        selectedContornos.map((c) => ({
+
+      const adicResult = await saveMenuItemAdicionalesAction({ menuItemId: itemId, adicionalIds: selectedAdicionalIds });
+      if (adicResult?.serverError) throw new Error(adicResult.serverError);
+
+      const bebResult = await saveMenuItemBebidasAction({ menuItemId: itemId, bebidaItemIds: selectedBebidaIds });
+      if (bebResult?.serverError) throw new Error(bebResult.serverError);
+
+      const contResult = await saveMenuItemContornosAction({
+        menuItemId: itemId,
+        items: selectedContornos.map((c) => ({
           contornoId: c.id,
           removable: c.removable,
           substituteContornoIds: c.substituteContornoIds,
-        })),
-      );
+        }))
+      });
+      if (contResult?.serverError) throw new Error(contResult.serverError);
+
       router.push("/admin/catalogo");
       router.refresh();
     } catch (err) {

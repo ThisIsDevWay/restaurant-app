@@ -10,7 +10,7 @@ import {
   Info,
   Save,
 } from "lucide-react";
-import { saveTemplate, toggleTemplate } from "@/actions/whatsapp-templates";
+import { saveTemplateAction, toggleTemplateAction } from "@/actions/whatsapp-templates";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -77,8 +77,8 @@ export function TemplateEditor({ templates }: { templates: Template[] }) {
     const body = editingBody[key];
     if (body === undefined) return;
     setSaving(key);
-    const result = await saveTemplate(key, body);
-    if (result.success) {
+    const result = await saveTemplateAction({ key, body });
+    if (result?.data?.success) {
       setEditingBody((prev) => {
         const n = { ...prev };
         delete n[key];
@@ -89,7 +89,7 @@ export function TemplateEditor({ templates }: { templates: Template[] }) {
   };
 
   const handleToggle = async (key: string, enabled: boolean) => {
-    await toggleTemplate(key, enabled);
+    await toggleTemplateAction({ key, isActive: enabled });
   };
 
   return (

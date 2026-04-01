@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, ChefHat, Timer, Flame, CheckCircle2, AlertCircle, MapPin, Store, Package } from "lucide-react";
 import { obfuscatePhone } from "@/lib/utils";
-import { updateOrderStatus } from "@/actions/orders";
+import { updateOrderStatusAction } from "@/actions/orders";
 
 const ORDER_MODE_LABELS: Record<string, { label: string; icon: typeof Store; color: string }> = {
   on_site: { label: "En sitio", icon: Store, color: "bg-info/10 text-info border-info/20" },
@@ -106,11 +106,15 @@ export function KitchenQueue({ restaurantName }: { restaurantName: string }) {
   }, [orders]);
 
   const handleTakeOrder = async (orderId: string) => {
-    await updateOrderStatus(orderId, "kitchen");
+    const result = await updateOrderStatusAction({ orderId, status: "kitchen" });
+    if (result?.serverError) throw new Error(result.serverError);
+    if (result?.validationErrors) throw new Error("Error de validación al tomar pedido");
   };
 
   const handleDeliver = async (orderId: string) => {
-    await updateOrderStatus(orderId, "delivered");
+    const result = await updateOrderStatusAction({ orderId, status: "delivered" });
+    if (result?.serverError) throw new Error(result.serverError);
+    if (result?.validationErrors) throw new Error("Error de validación al entregar pedido");
   };
 
   const pendingOrders = orders.filter((o) => o.status === "paid");

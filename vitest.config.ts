@@ -7,6 +7,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Aliases para evitar que next-auth@5-beta explote en entorno jsdom
+      "next/server": path.resolve(__dirname, "./tests/__mocks__/next-server.ts"),
+      "next/cache": path.resolve(__dirname, "./tests/__mocks__/next-cache.ts"),
+      "next/navigation": path.resolve(__dirname, "./tests/__mocks__/next-navigation.ts"),
     },
   },
   test: {

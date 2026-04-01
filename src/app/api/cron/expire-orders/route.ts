@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
-import { expirePendingOrders } from "@/db/queries/orders";
+import { expireUnpaidOrders } from "@/services/payment.service";
 import { logger } from "@/lib/logger";
 
 export async function GET(req: Request) {
@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const result = await expirePendingOrders();
+    const result = await expireUnpaidOrders();
     const expired =
       "rowCount" in result ? (result.rowCount as number) ?? 0 : 0;
 

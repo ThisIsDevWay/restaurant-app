@@ -20,13 +20,13 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
-  syncDailyMenu,
-  syncDailyAdicionales,
-  syncDailyBebidas,
-  syncDailyContornos,
-  copyDailyMenuFrom,
+  syncDailyMenuAction,
+  syncDailyAdicionalesAction,
+  syncDailyBebidasAction,
+  syncDailyContornosAction,
+  copyDailyMenuFromAction,
 } from "@/actions/daily-menu";
-import { saveMenuItemContornos } from "@/actions/contornos";
+import { saveMenuItemContornosAction } from "@/actions/contornos";
 import { formatRef } from "@/lib/money";
 
 interface ContornoSelection {
@@ -146,10 +146,14 @@ export function DailyMenuClient({
     startTransition(async () => {
       try {
         await Promise.all([
-          syncDailyMenu(selectedDate, dailyItemIds),
-          syncDailyAdicionales(selectedDate, dailyAdicionalIds),
-          syncDailyBebidas(selectedDate, dailyBebidaIds),
-          syncDailyContornos(selectedDate, dailyContornoIds),
+          syncDailyMenuAction({ date: selectedDate, menuItemIds: dailyItemIds })
+            .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación menú"); return r; }),
+          syncDailyAdicionalesAction({ date: selectedDate, adicionalIds: dailyAdicionalIds })
+            .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación adicionales"); return r; }),
+          syncDailyBebidasAction({ date: selectedDate, bebidaIds: dailyBebidaIds })
+            .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación bebidas"); return r; }),
+          syncDailyContornosAction({ date: selectedDate, contornoIds: dailyContornoIds })
+            .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación contornos"); return r; }),
         ]);
         setIsDirty(false);
       } catch (error) {
@@ -237,9 +241,13 @@ export function DailyMenuClient({
   async function handleCopyFrom() {
     if (!copyDate) return;
     setCopying(true);
-    const result = await copyDailyMenuFrom(copyDate, selectedDate);
+    const result = await copyDailyMenuFromAction({ fromDate: copyDate, toDate: selectedDate });
     setCopying(false);
-    if (result.success) {
+    if (result?.serverError || result?.validationErrors) {
+      console.error(result.serverError || "Error de validación al copiar");
+      return;
+    }
+    if (result?.data?.success) {
       router.refresh(); // re-fetch the new initialDailyItemIds
       setCopyDate("");
     }
@@ -454,11 +462,17 @@ export function DailyMenuClient({
                             setTimeout(() => {
                               startTransition(async () => {
                                 const selections = newSelections!;
-                                await saveMenuItemContornos(item.id, selections.map(c => ({
-                                  contornoId: c.id,
-                                  removable: c.removable,
-                                  substituteContornoIds: c.substituteContornoIds,
-                                })));
+                                const result = await saveMenuItemContornosAction({
+                                  menuItemId: item.id,
+                                  items: selections.map(c => ({
+                                    contornoId: c.id,
+                                    removable: c.removable,
+                                    substituteContornoIds: c.substituteContornoIds,
+                                  }))
+                                });
+                                if (result?.serverError || result?.validationErrors) {
+                                  console.error(result.serverError || "Error validando contornos");
+                                }
                               });
                             }, 0);
                           };
@@ -474,11 +488,17 @@ export function DailyMenuClient({
                             setTimeout(() => {
                               startTransition(async () => {
                                 const selections = newSelections!;
-                                await saveMenuItemContornos(item.id, selections.map(c => ({
-                                  contornoId: c.id,
-                                  removable: c.removable,
-                                  substituteContornoIds: c.substituteContornoIds,
-                                })));
+                                const result = await saveMenuItemContornosAction({
+                                  menuItemId: item.id,
+                                  items: selections.map(c => ({
+                                    contornoId: c.id,
+                                    removable: c.removable,
+                                    substituteContornoIds: c.substituteContornoIds,
+                                  }))
+                                });
+                                if (result?.serverError || result?.validationErrors) {
+                                  console.error(result.serverError || "Error validando contornos");
+                                }
                               });
                             }, 0);
                           };

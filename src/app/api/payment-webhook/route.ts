@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { verifyWebhookSignature } from "@/lib/crypto";
-import { getSettings } from "@/db/queries/settings";
-import { getActiveProvider } from "@/lib/payment-providers";
 import { rateLimiters, getIP } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { processWebhookPayload } from "@/services/payment.service";
 
 export async function POST(req: Request) {
   try {
@@ -14,7 +13,7 @@ export async function POST(req: Request) {
     if (!success) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
-    // 1. Read raw body BEFORE parsing — HMAC verified on original string
+    // 1. Read raw body BEFORE parsing
     const rawBody = await req.text();
 
     // 2. Verify HMAC-SHA256
@@ -37,25 +36,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Get active provider
-    const settings = await getSettings();
-    if (!settings) {
-      return NextResponse.json({ outcome: "error" });
-    }
-
-    const provider = getActiveProvider(settings);
-
-    // 4. Only passive providers handle webhooks
-    if (provider.mode !== "passive") {
-      return NextResponse.json({ outcome: "ignored" });
-    }
-
-    // 5. Delegate to provider
-    const result = await provider.confirmPayment({
-      type: "webhook_c2p",
-      rawBody,
-      signature,
-    });
+    // 3. Delegate to provider via service
+    const result = await processWebhookPayload(rawBody, undefined, signature);
 
     if (result.success) {
       return NextResponse.json({ outcome: "confirmed" });

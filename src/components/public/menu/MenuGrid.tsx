@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MenuItemCard } from "./MenuItemCard";
-import { ItemDetailModal } from "@/components/client/ItemDetailModal";
+import { ItemDetailModal } from "@/components/customer/ItemDetailModal";
 import { useCartStore } from "@/store/cartStore";
 import {
   Dialog,

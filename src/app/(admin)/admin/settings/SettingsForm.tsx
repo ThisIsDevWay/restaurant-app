@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { saveSettings } from "@/actions/settings";
+import { saveSettingsAction } from "@/actions/settings";
 import {
   Loader2,
   Save,
@@ -172,15 +172,15 @@ export function SettingsForm({
     setIsSaving(true);
     setMessage(null);
 
-    const result = await saveSettings({
+    const result = await saveSettingsAction({
       ...form,
       rateOverrideBsPerUsd: form.rateOverrideBsPerUsd || undefined,
-    });
+    } as any);
 
-    if (result.success) {
+    if (result?.data?.success) {
       setMessage({ type: "success", text: "Configuración guardada" });
     } else {
-      setMessage({ type: "error", text: result.error });
+      setMessage({ type: "error", text: result?.data?.error || result?.serverError || "Error al guardar configuración" });
     }
 
     setIsSaving(false);

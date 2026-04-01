@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSettings } from "@/db/queries/settings";
 import { getOrderById } from "@/db/queries/orders";
-import { getActiveProvider } from "@/lib/payment-providers";
 import { rateLimiters, getIP } from "@/lib/rate-limit";
+import { confirmPayment } from "@/services/payment.service";
 import * as v from "valibot";
 
 const confirmSchema = v.object({
@@ -31,23 +30,6 @@ export async function POST(req: Request) {
 
     const { orderId, reference } = parsed.output;
 
-    const settings = await getSettings();
-    if (!settings) {
-      return NextResponse.json(
-        { success: false, error: "Configuración no encontrada" },
-        { status: 500 },
-      );
-    }
-
-    const provider = getActiveProvider(settings);
-
-    if (provider.mode !== "active") {
-      return NextResponse.json(
-        { success: false, error: "Este provider no acepta confirmaciones manuales" },
-        { status: 400 },
-      );
-    }
-
     const order = await getOrderById(orderId);
     if (!order) {
       return NextResponse.json(
@@ -56,11 +38,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await provider.confirmPayment({
-      type: "reference",
-      reference,
-      orderId,
-    });
+    const result = await confirmPayment(orderId, reference);
 
     if (result.success) {
       return NextResponse.json({
@@ -74,10 +52,10 @@ export async function POST(req: Request) {
       reason: result.reason,
       message: result.message,
     });
-  } catch {
+  } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: "Error interno del servidor" },
-      { status: 500 },
+      { success: false, error: err.message || "Error interno del servidor" },
+      { status: err.message?.includes("Configuración") || err.message?.includes("provider") ? 400 : 500 },
     );
   }
 }

@@ -1,24 +1,27 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { updateOrderStatus as updateOrderStatusDb } from "@/db/queries/orders";
+import { updateOrderStatus as updateOrderStatusService } from "@/services/order.service";
 import { revalidatePath } from "next/cache";
+import * as v from "valibot";
+import { authenticatedActionClient } from "@/lib/safe-action";
 
-export async function updateOrderStatus(
-  orderId: string,
-  status: "kitchen" | "delivered",
-) {
-  const session = await auth();
-  if (!session?.user?.role || !["admin", "kitchen"].includes(session.user.role)) {
-    return { success: false, error: "No autorizado" };
-  }
+export const updateOrderStatusAction = authenticatedActionClient
+  .schema(
+    v.object({
+      orderId: v.string(),
+      status: v.picklist(["kitchen", "delivered"]),
+    }),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    if (!["admin", "kitchen"].includes(ctx.user.role as string)) {
+      throw new Error("No autorizado");
+    }
 
-  try {
-    await updateOrderStatusDb(orderId, status);
+    await updateOrderStatusService(parsedInput.orderId, parsedInput.status);
     revalidatePath("/kitchen");
     revalidatePath("/admin/orders");
     return { success: true };
-  } catch {
-    return { success: false, error: "Error al actualizar la orden" };
-  }
-}
+  });
+
+

@@ -4,7 +4,7 @@ import { getCategories } from "@/db/queries/menu";
 import { getAllContornos } from "@/db/queries/contornos";
 import { getActiveRate, getSettings } from "@/db/queries/settings";
 import { HeaderCartButton } from "./HeaderCartButton";
-import { MenuGridSkeleton } from "@/components/client/MenuGridSkeleton";
+import { MenuGridSkeleton } from "@/components/customer/MenuGridSkeleton";
 import { MenuClient } from "./MenuClient";
 import { Cart } from "@/components/public/cart/Cart";
 import { ActiveOrdersBanner } from "@/components/public/ActiveOrdersBanner";

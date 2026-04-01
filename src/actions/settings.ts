@@ -8,81 +8,74 @@ import { revalidatePath } from "next/cache";
 import { exchangeRates, settings } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { db } from "@/db";
+import { adminActionClient } from "@/lib/safe-action";
 
 type ActionResult =
   | { success: true; error?: never }
   | { success: false; error: string };
 
-export async function saveSettings(data: unknown): Promise<ActionResult> {
-  await requireAdmin();
+export const saveSettingsAction = adminActionClient
+  .schema(settingsSchema)
+  .action(async ({ parsedInput }) => {
+    try {
+      const updatePayload = { ...parsedInput } as any;
 
-  const parsed = v.safeParse(settingsSchema, data);
-  if (!parsed.success) {
-    return { success: false, error: parsed.issues[0].message };
-  }
-
-  try {
-    const updatePayload = { ...parsed.output } as any;
-
-    // Drizzle ignores undefined values in updates. To clear the manual rate,
-    // we must explicitly send null to the database.
-    if (updatePayload.rateOverrideBsPerUsd === undefined) {
-      updatePayload.rateOverrideBsPerUsd = null;
-    }
-
-    // Sync currentRateId with the selected currency's latest rate
-    if (updatePayload.rateCurrency) {
-      const [latestRate] = await db
-        .select()
-        .from(exchangeRates)
-        .where(eq(exchangeRates.currency, updatePayload.rateCurrency))
-        .orderBy(desc(exchangeRates.fetchedAt))
-        .limit(1);
-
-      if (latestRate) {
-        updatePayload.currentRateId = latestRate.id;
+      if (updatePayload.rateOverrideBsPerUsd === undefined) {
+        updatePayload.rateOverrideBsPerUsd = null;
       }
+
+      if (updatePayload.rateCurrency) {
+        const [latestRate] = await db
+          .select()
+          .from(exchangeRates)
+          .where(eq(exchangeRates.currency, updatePayload.rateCurrency))
+          .orderBy(desc(exchangeRates.fetchedAt))
+          .limit(1);
+
+        if (latestRate) {
+          updatePayload.currentRateId = latestRate.id;
+        }
+      }
+
+      await updateSettingsDb(updatePayload);
+      revalidatePath("/");
+      revalidatePath("/admin/settings");
+      return { success: true } as ActionResult;
+    } catch (error) {
+      console.error("Save settings error:", error);
+      return { success: false, error: "Error al guardar configuración" };
     }
+  });
 
-    await updateSettingsDb(updatePayload);
-    revalidatePath("/");
-    revalidatePath("/admin/settings");
-    return { success: true };
-  } catch (error) {
-    console.error("Save settings error:", error);
-    return { success: false, error: "Error al guardar configuración" };
-  }
-}
 
-export async function toggleGlobalAdicionales(enabled: boolean) {
-  await requireAdmin();
-  try {
+
+export const toggleGlobalAdicionalesAction = adminActionClient
+  .schema(v.object({ enabled: v.boolean() }))
+  .action(async ({ parsedInput: { enabled } }) => {
     await updateSettingsDb({ adicionalesEnabled: enabled });
     revalidatePath("/");
     revalidatePath("/admin/catalogo");
     return { success: true };
-  } catch {
-    return { success: false, error: "Error al actualizar la configuración" };
-  }
-}
+  });
 
-export async function toggleGlobalBebidas(enabled: boolean) {
-  await requireAdmin();
-  try {
+
+
+export const toggleGlobalBebidasAction = adminActionClient
+  .schema(v.object({ enabled: v.boolean() }))
+  .action(async ({ parsedInput: { enabled } }) => {
     await updateSettingsDb({ bebidasEnabled: enabled });
     revalidatePath("/");
     revalidatePath("/admin/catalogo");
     return { success: true };
-  } catch {
-    return { success: false, error: "Error al actualizar la configuración" };
-  }
-}
+  });
 
-export async function fetchActiveRate() {
+
+
+export const fetchActiveRate = async () => {
   return getActiveRate();
-}
+};
 
-export async function fetchCheckoutSettings() {
+export const fetchCheckoutSettings = async () => {
   const [rateResult, s] = await Promise.all([
     getActiveRate(),
     getSettings()

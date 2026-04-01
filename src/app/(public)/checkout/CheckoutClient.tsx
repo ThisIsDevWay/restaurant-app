@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
-import { processCheckout, type CheckoutResult, type CheckoutItem } from "@/actions/checkout";
+import { processCheckoutAction, type CheckoutResult, type CheckoutItem } from "@/actions/checkout";
 import { formatBs } from "@/lib/money";
 import { Loader2, AlertCircle } from "lucide-react";
 import { ReferenceEntry } from "@/components/public/checkout/ReferenceEntry";
@@ -127,10 +127,24 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
     });
 
     try {
-      const result: CheckoutResult = await processCheckout(
-        { phone, paymentMethod, name, cedula, orderMode, deliveryAddress, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })) },
-        checkoutItems,
-      );
+      const actionResult = await processCheckoutAction({
+        input: { phone, paymentMethod, name, cedula, orderMode, deliveryAddress, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })) },
+        items: checkoutItems,
+      });
+
+      if (actionResult?.serverError || actionResult?.validationErrors) {
+        setError(actionResult.serverError || "Error validando los datos del checkout");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const result = actionResult?.data as CheckoutResult | undefined;
+
+      if (!result) {
+        setError(actionResult?.serverError || "Error validando datos");
+        setIsSubmitting(false);
+        return;
+      }
 
       if (result.success) {
         const init = result.initResult;
