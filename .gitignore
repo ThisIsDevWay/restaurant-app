@@ -58,3 +58,9 @@ audit.mjs
 .agent/
 .agents/
 brain/
+
+# Removed artifacts
+.7z
+supabase/.temp/
+test-*.ts
+opencode.jsonc
