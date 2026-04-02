@@ -2,6 +2,7 @@ import { getSettings } from "@/db/queries/settings";
 import { getAllTemplates } from "@/db/queries/whatsapp-templates";
 import { SettingsForm } from "./SettingsForm";
 import { WhatsAppStatus } from "@/components/admin/whatsapp/WhatsAppStatus";
+import type { PaymentProvider } from "./SettingsForm.types";
 
 export default async function SettingsPage() {
   const [settings, templates] = await Promise.all([
@@ -39,7 +40,7 @@ export default async function SettingsPage() {
               rateCurrency: (settings.rateCurrency ?? "usd") as "usd" | "eur",
               showRateInMenu: settings.showRateInMenu ?? true,
               rateOverrideBsPerUsd: settings.rateOverrideBsPerUsd ?? "",
-              activePaymentProvider: settings.activePaymentProvider,
+              activePaymentProvider: (settings.activePaymentProvider ?? "banesco_reference") as PaymentProvider,
               banescoApiKey: settings.banescoApiKey ?? "",
               mercantilClientId: settings.mercantilClientId ?? "",
               mercantilClientSecret: settings.mercantilClientSecret ?? "",

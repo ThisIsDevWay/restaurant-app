@@ -1,98 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Minus, Plus, Check } from "lucide-react";
+import { X } from "lucide-react";
 import Image from "next/image";
 import { formatBs, formatRef } from "@/lib/money";
-import { useCartStore, type ContornoSubstitution } from "@/store/cartStore";
-
-interface Option {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-  sortOrder: number;
-}
-
-interface OptionGroup {
-  id: string;
-  name: string;
-  type: "radio" | "checkbox";
-  required: boolean;
-  sortOrder: number;
-  options: Option[];
-}
-
-interface Adicional {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-  sortOrder: number;
-}
-
-interface Contorno {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-  removable: boolean;
-  substituteContornoIds: string[];
-  sortOrder: number;
-}
-
-interface GlobalContorno {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-  sortOrder: number;
-}
-
-interface SimpleItem {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-  sortOrder: number;
-}
-
-interface Bebida {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-  sortOrder: number;
-}
-
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string | null;
-  priceUsdCents: number;
-  categoryId: string;
-  categoryName: string;
-  categoryAllowAlone: boolean;
-  isAvailable: boolean;
-  imageUrl: string | null;
-  optionGroups: OptionGroup[];
-  adicionales: Adicional[];
-  bebidas?: Bebida[];
-  contornos: Contorno[];
-}
-
-interface ItemDetailModalProps {
-  item: MenuItem;
-  isOpen: boolean;
-  onClose: () => void;
-  currentRateBsPerUsd: number;
-  allContornos: GlobalContorno[];
-  adicionalesEnabled?: boolean;
-  bebidasEnabled?: boolean;
-  dailyAdicionales: SimpleItem[];
-  dailyBebidas: SimpleItem[];
-  maxQuantityPerItem?: number;
-}
+import { useCartStore } from "@/store/cartStore";
+import { useItemDetailModal } from "@/hooks/useItemDetailModal";
+import { useCartCalculation } from "@/hooks/useCartCalculation";
+import { ContornoSelector } from "./ContornoSelector";
+import { AdicionalesList } from "./AdicionalesList";
+import { BebidasList } from "./BebidasList";
+import { OptionGroupSection } from "./OptionGroupSection";
+import { ModalFooter } from "./ModalFooter";
+import type { ItemDetailModalProps } from "./ItemDetailModal.types";
 
 export function ItemDetailModal({
   item,
@@ -107,225 +26,49 @@ export function ItemDetailModal({
   maxQuantityPerItem = 10,
 }: ItemDetailModalProps) {
   const addItem = useCartStore((s) => s.addItem);
-  // Track substitution per removable contorno: null = keep original, string = substitute ID
-  const [substitutionMap, setSubstitutionMap] = useState<Record<string, string | null>>({});
-  // Track which removable contornos have the "Cambiar" picker open
-  const [expandedContornos, setExpandedContornos] = useState<Set<string>>(new Set());
-  const [selectedRadio, setSelectedRadio] = useState<Record<string, string>>({});
-  const [selectedAdicionalIds, setSelectedAdicionalIds] = useState<Set<string>>(new Set());
-  const [selectedBebidaIds, setSelectedBebidaIds] = useState<Set<string>>(new Set());
-  const [quantity, setQuantity] = useState(1);
-  const [closing, setClosing] = useState(false);
-  const dialogRef = useRef<HTMLDivElement>(null);
 
-  const availableContornos = item.contornos.filter((c) => c.isAvailable);
-  const fixedContornos = availableContornos.filter((c) => !c.removable);
-  const removableContornos = availableContornos.filter((c) => c.removable);
-
-  // Collect all active substitute IDs for duplicate detection in adicionales
-  const activeSubstituteIds = new Set(
-    Object.values(substitutionMap).filter((v): v is string => v !== null && v !== undefined),
-  );
-
-  useEffect(() => {
-    if (isOpen) {
-      setSubstitutionMap({});
-      setExpandedContornos(new Set());
-      setSelectedRadio({});
-      setSelectedAdicionalIds(new Set());
-      setSelectedBebidaIds(new Set());
-      setQuantity(1);
-      setClosing(false);
-    }
-  }, [isOpen]);
-
-  const handleClose = useCallback(() => {
-    setClosing(true);
-    setTimeout(onClose, 300);
-  }, [onClose]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") handleClose();
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [isOpen, handleClose]);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
-  function toggleExpandContorno(contornoId: string) {
-    setExpandedContornos((prev) => {
-      const next = new Set(prev);
-      if (next.has(contornoId)) {
-        next.delete(contornoId);
-      } else {
-        next.add(contornoId);
-      }
-      return next;
-    });
-  }
-
-  function selectSubstitute(contornoId: string, substituteId: string | null) {
-    setSubstitutionMap((prev) => ({ ...prev, [contornoId]: substituteId }));
-    // Auto-collapse after selection
-    setExpandedContornos((prev) => {
-      const next = new Set(prev);
-      next.delete(contornoId);
-      return next;
-    });
-  }
-
-  function toggleAdicional(adicionalId: string) {
-    // Prevent selecting an adicional that is already an active contorno substitute
-    if (activeSubstituteIds.has(adicionalId)) return;
-    setSelectedAdicionalIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(adicionalId)) {
-        next.delete(adicionalId);
-      } else {
-        next.add(adicionalId);
-      }
-      return next;
-    });
-  }
-
-  function toggleBebida(bebidaId: string) {
-    setSelectedBebidaIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(bebidaId)) {
-        next.delete(bebidaId);
-      } else {
-        next.add(bebidaId);
-      }
-      return next;
-    });
-  }
-
-  const optionGroupsToRender = item.optionGroups.filter((g) => g.type === "radio");
-  const requiredGroups = optionGroupsToRender.filter((g) => g.required);
-  const unsatisfiedGroup = requiredGroups.find((g) => selectedRadio[g.id] === undefined);
-  const allRequiredSatisfied = unsatisfiedGroup === undefined;
-
-  // Build all fixed contornos (those that were NOT substituted)
-  const cartFixedContornos = fixedContornos.map((c) => ({
-    id: c.id,
-    name: c.name,
-    priceUsdCents: c.priceUsdCents,
-    priceBsCents: Math.round(c.priceUsdCents * currentRateBsPerUsd),
-  }));
-
-  // Add any removable contorno that was NOT substituted to the fixed list for the cart
-  removableContornos.forEach((c) => {
-    if (!substitutionMap[c.id]) {
-      cartFixedContornos.push({
-        id: c.id,
-        name: c.name,
-        priceUsdCents: c.priceUsdCents,
-        priceBsCents: Math.round(c.priceUsdCents * currentRateBsPerUsd),
-      });
-    }
+  const modal = useItemDetailModal({
+    item,
+    isOpen,
+    onClose,
+    allContornos,
+    dailyAdicionales,
+    dailyBebidas,
   });
 
-  // Collect ALL substitutions
-  const cartContornoSubstitutions: ContornoSubstitution[] = [];
-  let substitutionUsdCents = 0;
-
-  for (const [contornoId, substituteId] of Object.entries(substitutionMap)) {
-    if (substituteId) {
-      const substitute = allContornos.find((c) => c.id === substituteId);
-      const original = availableContornos.find((c) => c.id === contornoId);
-      if (substitute && original) {
-        substitutionUsdCents += substitute.priceUsdCents;
-        cartContornoSubstitutions.push({
-          originalId: contornoId,
-          originalName: original.name,
-          substituteId: substitute.id,
-          substituteName: substitute.name,
-          priceUsdCents: substitute.priceUsdCents,
-          priceBsCents: Math.round(substitute.priceUsdCents * currentRateBsPerUsd),
-        });
-      }
-    }
-  }
-
-  // Build cart adicionales (pure extras only, no substitutions)
-  const cartAdicionales: Array<{
-    id: string;
-    name: string;
-    priceUsdCents: number;
-    priceBsCents: number;
-  }> = [];
-
-  let additionalUsdCents = 0;
-  for (const adicionalId of selectedAdicionalIds) {
-    // Look in dailyAdicionales first (matches checkout.ts order), then item-level
-    const adicional = dailyAdicionales.find((a) => a.id === adicionalId)
-      || item.adicionales.find((a) => a.id === adicionalId);
-    if (adicional && adicional.isAvailable) {
-      additionalUsdCents += adicional.priceUsdCents;
-      cartAdicionales.push({
-        id: adicional.id,
-        name: adicional.name,
-        priceUsdCents: adicional.priceUsdCents,
-        priceBsCents: Math.round(adicional.priceUsdCents * currentRateBsPerUsd),
-      });
-    }
-  }
-
-  // Build cart bebidas
-  const cartBebidas: Array<{
-    id: string;
-    name: string;
-    priceUsdCents: number;
-    priceBsCents: number;
-  }> = [];
-
-  let bebidasUsdCents = 0;
-  for (const bebidaId of selectedBebidaIds) {
-    // Look in dailyBebidas first (matches checkout.ts order), then item-level
-    const bebida = dailyBebidas.find((b) => b.id === bebidaId)
-      || item.bebidas?.find((b) => b.id === bebidaId);
-    if (bebida && bebida.isAvailable) {
-      bebidasUsdCents += bebida.priceUsdCents;
-      cartBebidas.push({
-        id: bebida.id,
-        name: bebida.name,
-        priceUsdCents: bebida.priceUsdCents,
-        priceBsCents: Math.round(bebida.priceUsdCents * currentRateBsPerUsd),
-      });
-    }
-  }
-
-  const extrasCount = cartAdicionales.length + cartContornoSubstitutions.length + cartBebidas.length;
-  const totalUsdCents = (item.priceUsdCents + substitutionUsdCents + additionalUsdCents + bebidasUsdCents) * quantity;
-  const totalBsCents = Math.round(totalUsdCents * currentRateBsPerUsd);
-
-  const CATEGORY_EMOJI: Record<string, string> = {
-    pollos: "🍗",
-    carnes: "🥩",
-    pastas: "🍝",
-    mariscos: "🍤",
-    ensaladas: "🥗",
-    bebidas: "🥤",
-    adicionales: "🍟",
-  };
-  const categoryKey = item.categoryName
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-  const emoji = CATEGORY_EMOJI[categoryKey] || "🍽️";
+  const cart = useCartCalculation({
+    item,
+    availableContornos: modal.availableContornos,
+    fixedContornos: modal.fixedContornos,
+    removableContornos: modal.removableContornos,
+    substitutionMap: modal.substitutionMap,
+    selectedAdicionalIds: modal.selectedAdicionalIds,
+    selectedBebidaIds: modal.selectedBebidaIds,
+    selectedRadio: modal.selectedRadio,
+    dailyAdicionales,
+    dailyBebidas,
+    allContornos,
+    quantity: modal.quantity,
+    currentRateBsPerUsd,
+  });
 
   function handleAdd() {
-    if (!allRequiredSatisfied) return;
+    if (!cart.allRequiredSatisfied) return;
+
+    const CATEGORY_EMOJI: Record<string, string> = {
+      pollos: "🍗",
+      carnes: "🥩",
+      pastas: "🍝",
+      mariscos: "🍤",
+      ensaladas: "🥗",
+      bebidas: "🥤",
+      adicionales: "🍟",
+    };
+    const categoryKey = item.categoryName
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    const emoji = CATEGORY_EMOJI[categoryKey] || "🍽️";
 
     addItem({
       id: item.id,
@@ -333,10 +76,10 @@ export function ItemDetailModal({
       baseUsdCents: item.priceUsdCents,
       baseBsCents: Math.round(item.priceUsdCents * currentRateBsPerUsd),
       emoji,
-      fixedContornos: cartFixedContornos,
-      contornoSubstitutions: cartContornoSubstitutions,
-      selectedAdicionales: cartAdicionales,
-      selectedBebidas: cartBebidas,
+      fixedContornos: cart.cartFixedContornos,
+      contornoSubstitutions: cart.cartContornoSubstitutions,
+      selectedAdicionales: cart.cartAdicionales,
+      selectedBebidas: cart.cartBebidas,
       removedComponents: [],
       categoryAllowAlone: item.categoryAllowAlone,
     });
@@ -344,42 +87,29 @@ export function ItemDetailModal({
     if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate(30);
     }
-    handleClose();
+    modal.handleClose();
   }
 
-  if (!isOpen && !closing) return null;
+  if (!isOpen && !modal.closing) return null;
 
   const itemBaseBsCents = Math.round(item.priceUsdCents * currentRateBsPerUsd);
 
-  // Get other contornos available for substitution (excluding the one being substituted)
-  function getSubstituteOptions(contornoId: string) {
-    const contorno = availableContornos.find((c) => c.id === contornoId);
-    if (!contorno || contorno.substituteContornoIds.length === 0) {
-      // No substitutes configured — return empty to prevent exposing unconfigured contornos
-      return [];
-    }
-    // Show configured substitution options from global contornos pool
-    return allContornos.filter(
-      (c) => contorno.substituteContornoIds.includes(c.id) && c.isAvailable,
-    );
-  }
+  // Filter option groups to radio type for rendering
+  const optionGroupsToRender = cart.optionGroupsToRender;
 
   return (
     <div className="fixed inset-0 z-50">
-      {/* Overlay */}
       <div
-        className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ${closing ? "opacity-0" : "opacity-100"
+        className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ${modal.closing ? "opacity-0" : "opacity-100"
           }`}
-        onClick={handleClose}
+        onClick={modal.handleClose}
       />
 
-      {/* Bottom sheet */}
       <div
-        ref={dialogRef}
-        className={`absolute bottom-0 left-0 right-0 flex max-h-[90vh] flex-col rounded-t-[20px] bg-white shadow-modal transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${closing ? "translate-y-full" : "translate-y-0"
+        ref={modal.dialogRef}
+        className={`absolute bottom-0 left-0 right-0 flex max-h-[90vh] flex-col rounded-t-[20px] bg-white shadow-modal transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${modal.closing ? "translate-y-full" : "translate-y-0"
           }`}
       >
-        {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
           {/* Image hero */}
           <div className="relative aspect-[16/9] w-full bg-bg-image">
@@ -394,11 +124,11 @@ export function ItemDetailModal({
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-6xl">
-                {emoji}
+                🍽️
               </div>
             )}
             <button
-              onClick={handleClose}
+              onClick={modal.handleClose}
               className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white shadow-md backdrop-blur-sm"
               aria-label="Cerrar"
             >
@@ -427,370 +157,61 @@ export function ItemDetailModal({
           </div>
 
           {/* Contornos */}
-          {availableContornos.length > 0 && (
-            <div className="border-b border-border px-4 py-3">
-              <h3 className="mb-2 text-[14px] font-semibold text-text-main">
-                Contornos
-              </h3>
-              <div className="flex flex-col gap-0.5">
-                {/* Fixed (non-removable) contornos - show Fijo badge */}
-                {fixedContornos.map((contorno) => (
-                  <div
-                    key={contorno.id}
-                    className="flex items-center gap-3 rounded-input px-1 py-2.5"
-                  >
-                    <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-primary" />
-                    <div className="flex-1">
-                      <span className="text-[14px] text-text-main">
-                        {contorno.name}
-                      </span>
-                    </div>
-                    <span className="rounded-[4px] bg-border/60 px-1.5 py-0.5 text-[10px] font-semibold text-text-muted">
-                      Fijo
-                    </span>
-                  </div>
-                ))}
-
-                {/* Removable contornos — inline "Cambiar" selector */}
-                {removableContornos.map((contorno) => {
-                  const substitution = substitutionMap[contorno.id];
-                  const isExpanded = expandedContornos.has(contorno.id);
-                  // Resolve the display name: substituted or original
-                  const activeSubstitute = substitution
-                    ? allContornos.find((c) => c.id === substitution)
-                    : null;
-                  const isAlreadyOnDish = activeSubstitute && availableContornos.some((c) => {
-                    if (c.id === contorno.id) return false;
-                    const subValue = substitutionMap[c.id];
-                    const currentSlotId = subValue === undefined || subValue === null ? c.id : subValue;
-                    return currentSlotId === activeSubstitute.id;
-                  });
-                  const displayName = activeSubstitute
-                    ? (isAlreadyOnDish ? `Más ${activeSubstitute.name}` : activeSubstitute.name)
-                    : contorno.name;
-                  const isSubstituted = !!activeSubstitute;
-
-                  return (
-                    <div key={contorno.id}>
-                      <div className="flex w-full items-center gap-3 rounded-input px-1 py-2.5">
-                        <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${isSubstituted ? "bg-amber" : "bg-primary"}`} />
-                        <div className="flex-1">
-                          <span className="text-[14px] text-text-main">
-                            {displayName}
-                          </span>
-                          {isSubstituted && (
-                            <p className="text-[11px] text-text-muted/70">
-                              en lugar de {contorno.name}
-                            </p>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => toggleExpandContorno(contorno.id)}
-                          className="rounded-[6px] border border-primary/30 px-2 py-0.5 text-[11px] font-semibold text-primary transition-colors active:bg-primary/10"
-                        >
-                          {isExpanded ? "Cerrar" : "Cambiar"}
-                        </button>
-                      </div>
-
-                      {/* Expanded inline picker */}
-                      {isExpanded && (
-                        <div className="ml-6 mt-1 space-y-0.5 rounded-xl border border-border/50 bg-bg-app/50 p-2 animate-in">
-                          {/* Original option */}
-                          <button
-                            onClick={() => selectSubstitute(contorno.id, null)}
-                            className="flex w-full items-center gap-3 rounded-input px-2 py-2 text-left active:bg-white"
-                          >
-                            <div
-                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${!substitution
-                                ? "border-primary bg-primary"
-                                : "border-gray-400"
-                                }`}
-                            >
-                              {!substitution && (
-                                <div className="h-1.5 w-1.5 rounded-full bg-white" />
-                              )}
-                            </div>
-                            <span className="flex-1 text-[13px] text-text-main font-medium">
-                              {contorno.name}
-                            </span>
-                            <span className="text-[11px] text-text-muted">
-                              Original
-                            </span>
-                          </button>
-                          {/* Substitute options */}
-                          {getSubstituteOptions(contorno.id).map((sub) => {
-                            const isAlreadyOnDish = availableContornos.some((c) => {
-                              if (c.id === contorno.id) return false;
-                              const subValue = substitutionMap[c.id];
-                              const currentSlotId = subValue === undefined || subValue === null ? c.id : subValue;
-                              return currentSlotId === sub.id;
-                            });
-                            return (
-                              <button
-                                key={sub.id}
-                                onClick={() => selectSubstitute(contorno.id, sub.id)}
-                                className="flex w-full items-center gap-3 rounded-input px-2 py-2 text-left active:bg-white"
-                              >
-                                <div
-                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${substitution === sub.id
-                                    ? "border-primary bg-primary"
-                                    : "border-gray-400"
-                                    }`}
-                                >
-                                  {substitution === sub.id && (
-                                    <div className="h-1.5 w-1.5 rounded-full bg-white" />
-                                  )}
-                                </div>
-                                <span className="flex-1 text-[13px] text-text-main">
-                                  {isAlreadyOnDish ? `Más ${sub.name}` : sub.name}
-                                </span>
-                                <span className="text-[12px] text-text-muted">
-                                  {sub.priceUsdCents === 0
-                                    ? "Incluido"
-                                    : `+${formatBs(Math.round(sub.priceUsdCents * currentRateBsPerUsd))}`}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <ContornoSelector
+            fixedContornos={modal.fixedContornos}
+            removableContornos={modal.removableContornos}
+            substitutionMap={modal.substitutionMap}
+            expandedContornos={modal.expandedContornos}
+            onToggleExpand={modal.toggleExpandContorno}
+            onSelectSubstitute={modal.selectSubstitute}
+            getSubstituteOptions={modal.getSubstituteOptions}
+            availableContornos={modal.availableContornos}
+            currentRateBsPerUsd={currentRateBsPerUsd}
+          />
 
           {/* Option groups (radio only) */}
-          {optionGroupsToRender.map((group) => (
-            <div
-              key={group.id}
-              className="border-b border-border px-4 py-3"
-            >
-              <div className="mb-2 flex items-center gap-2">
-                <h3 className="text-[14px] font-semibold text-text-main">
-                  {group.name}
-                </h3>
-                <span
-                  className={`rounded-[4px] px-1.5 py-0.5 text-[10px] font-semibold ${group.required
-                    ? "bg-error/10 text-error"
-                    : "bg-border text-text-muted"
-                    }`}
-                >
-                  {group.required ? "OBLIGATORIO" : "OPCIONAL"}
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-0.5">
-                {group.options
-                  .filter((o) => o.isAvailable)
-                  .map((option) => (
-                    <button
-                      key={option.id}
-                      onClick={() =>
-                        setSelectedRadio((prev) => ({
-                          ...prev,
-                          [group.id]: option.id,
-                        }))
-                      }
-                      className="flex items-center gap-3 rounded-input px-1 py-2.5 text-left transition-colors active:bg-bg-app"
-                    >
-                      <div
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${selectedRadio[group.id] === option.id
-                          ? "border-primary bg-primary"
-                          : "border-gray-400"
-                          }`}
-                      >
-                        {selectedRadio[group.id] === option.id && (
-                          <div className="h-2 w-2 rounded-full bg-white" />
-                        )}
-                      </div>
-                      <span className="flex-1 text-[14px] text-text-main">
-                        {option.name}
-                      </span>
-                      <span className="text-[12px] text-text-muted">
-                        {option.priceUsdCents === 0
-                          ? "Incluido"
-                          : `+${formatBs(
-                            Math.round(
-                              option.priceUsdCents * currentRateBsPerUsd,
-                            ),
-                          )}`}
-                      </span>
-                    </button>
-                  ))}
-              </div>
-            </div>
-          ))}
+          <OptionGroupSection
+            groups={optionGroupsToRender}
+            selectedRadio={modal.selectedRadio}
+            onSelectRadio={(groupId, optionId) =>
+              modal.setSelectedRadio((prev) => ({ ...prev, [groupId]: optionId }))
+            }
+            currentRateBsPerUsd={currentRateBsPerUsd}
+          />
 
           {/* Adicionales del día */}
-          {adicionalesEnabled && dailyAdicionales.length > 0 && (
-            <div className="border-b border-border px-4 py-3">
-              <h3 className="mb-2 text-[14px] font-semibold text-text-main">
-                Adicionales del día
-              </h3>
-              <p className="mb-2 text-[11px] text-text-muted">
-                Extras disponibles hoy para cualquier plato
-              </p>
-              <div className="flex flex-col gap-0.5">
-                {dailyAdicionales.map((adicional) => {
-                  const isChecked = selectedAdicionalIds.has(adicional.id);
-                  const isAlreadySubstitute = activeSubstituteIds.has(adicional.id);
-                  return (
-                    <button
-                      key={adicional.id}
-                      onClick={() => toggleAdicional(adicional.id)}
-                      disabled={isAlreadySubstitute}
-                      className={`flex items-center gap-3 rounded-input px-1 py-2.5 text-left transition-colors ${isAlreadySubstitute ? "opacity-50 cursor-not-allowed" : "active:bg-bg-app"
-                        }`}
-                    >
-                      <div
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${isChecked
-                          ? "border-primary bg-primary"
-                          : "border-gray-400 bg-white"
-                          }`}
-                      >
-                        {isChecked && (
-                          <Check
-                            className="h-3 w-3 text-white"
-                            strokeWidth={3}
-                          />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-[14px] text-text-main">
-                          {adicional.name}
-                        </span>
-                        {isAlreadySubstitute && (
-                          <p className="text-[11px] text-primary/70">
-                            Ya incluido como contorno
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right text-[12px] text-text-muted leading-tight">
-                        {adicional.priceUsdCents === 0 ? (
-                          <span>Incluido</span>
-                        ) : (
-                          <>
-                            <div>
-                              +{formatBs(Math.round(adicional.priceUsdCents * currentRateBsPerUsd))}
-                            </div>
-                            <div className="text-[10px] opacity-80">
-                              / {formatRef(adicional.priceUsdCents)}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+          {adicionalesEnabled && (
+            <AdicionalesList
+              dailyAdicionales={dailyAdicionales}
+              selectedAdicionalIds={modal.selectedAdicionalIds}
+              onToggle={modal.toggleAdicional}
+              activeSubstituteIds={modal.activeSubstituteIds}
+              currentRateBsPerUsd={currentRateBsPerUsd}
+            />
           )}
 
           {/* Bebidas del día */}
-          {bebidasEnabled && dailyBebidas.length > 0 && (
-            <div className="border-b border-border px-4 py-3">
-              <h3 className="mb-2 text-[14px] font-semibold text-text-main">
-                Bebidas del día
-              </h3>
-              <p className="mb-2 text-[11px] text-text-muted">
-                Bebidas disponibles hoy
-              </p>
-              <div className="flex flex-col gap-0.5">
-                {dailyBebidas.map((bebida) => {
-                  const isChecked = selectedBebidaIds.has(bebida.id);
-                  return (
-                    <button
-                      key={bebida.id}
-                      onClick={() => toggleBebida(bebida.id)}
-                      className="flex items-center gap-3 rounded-input px-1 py-2.5 text-left transition-colors active:bg-bg-app"
-                    >
-                      <div
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border-2 transition-colors ${isChecked
-                          ? "border-primary bg-primary"
-                          : "border-gray-400 bg-white"
-                          }`}
-                      >
-                        {isChecked && (
-                          <Check
-                            className="h-3 w-3 text-white"
-                            strokeWidth={3}
-                          />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-[14px] text-text-main">
-                          {bebida.name}
-                        </span>
-                      </div>
-                      <div className="text-right text-[12px] text-text-muted leading-tight">
-                        {bebida.priceUsdCents === 0 ? (
-                          <span>Incluido</span>
-                        ) : (
-                          <>
-                            <div>
-                              +{formatBs(Math.round(bebida.priceUsdCents * currentRateBsPerUsd))}
-                            </div>
-                            <div className="text-[10px] opacity-80">
-                              / {formatRef(bebida.priceUsdCents)}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+          {bebidasEnabled && (
+            <BebidasList
+              dailyBebidas={dailyBebidas}
+              selectedBebidaIds={modal.selectedBebidaIds}
+              onToggle={modal.toggleBebida}
+              currentRateBsPerUsd={currentRateBsPerUsd}
+            />
           )}
         </div>
 
         {/* Footer (fixed) */}
-        <div className="shrink-0 border-t border-border bg-white px-4 py-3">
-          {/* Quantity */}
-          <div className="mb-3 flex flex-col items-center justify-center gap-1.5">
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-text-main transition-colors active:bg-bg-app"
-                aria-label="Reducir cantidad"
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="w-8 text-center text-lg font-bold">
-                {quantity}
-              </span>
-              <button
-                onClick={() => setQuantity((q) => Math.min(maxQuantityPerItem, q + 1))}
-                disabled={quantity >= maxQuantityPerItem}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white transition-colors active:bg-primary-hover disabled:opacity-40"
-                aria-label="Aumentar cantidad"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-            {quantity > 1 && (
-              <span className="text-center text-[10px] text-text-muted/90 max-w-[280px] leading-tight animate-in fade-in slide-in-from-bottom-1 duration-200">
-                Para que cada plato tenga sus propios contornos o adicionales, agrégalos uno por uno.
-              </span>
-            )}
-          </div>
-
-          {/* Add button */}
-          <button
-            onClick={handleAdd}
-            disabled={!allRequiredSatisfied}
-            className={`w-full rounded-input py-3 text-[15px] font-semibold transition-colors ${allRequiredSatisfied
-              ? "bg-primary text-white active:bg-primary-hover"
-              : "bg-border text-text-muted"
-              }`}
-          >
-            {allRequiredSatisfied
-              ? `Agregar${extrasCount > 0 ? ` (${extrasCount} extra${extrasCount > 1 ? "s" : ""})` : ""} · ${formatBs(totalBsCents)}`
-              : unsatisfiedGroup?.name ?? "Selecciona una opción"}
-          </button>
-        </div>
+        <ModalFooter
+          quantity={modal.quantity}
+          maxQuantityPerItem={maxQuantityPerItem}
+          onQuantityChange={modal.setQuantity}
+          onAdd={handleAdd}
+          allRequiredSatisfied={cart.allRequiredSatisfied}
+          unsatisfiedGroupName={cart.unsatisfiedGroup?.name}
+          extrasCount={cart.extrasCount}
+          totalBsCents={cart.totalBsCents}
+        />
       </div>
     </div>
   );
