@@ -26,43 +26,45 @@ export interface MenuWithComponents extends MenuWithGroups {
 }
 
 export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
-  const items = await db
-    .select({
-      id: menuItems.id,
-      name: menuItems.name,
-      description: menuItems.description,
-      priceUsdCents: menuItems.priceUsdCents,
-      costUsdCents: menuItems.costUsdCents,
-      costUpdatedAt: menuItems.costUpdatedAt,
-      categoryId: menuItems.categoryId,
-      categoryName: categories.name,
-      categoryAllowAlone: categories.allowAlone,
-      categoryIsSimple: categories.isSimple,
-      isAvailable: menuItems.isAvailable,
-      imageUrl: menuItems.imageUrl,
-      sortOrder: menuItems.sortOrder,
-    })
-    .from(menuItems)
-    .innerJoin(categories, eq(menuItems.categoryId, categories.id))
-    .orderBy(categories.sortOrder, menuItems.sortOrder);
+  const [items, groupRows] = await Promise.all([
+    db
+      .select({
+        id: menuItems.id,
+        name: menuItems.name,
+        description: menuItems.description,
+        priceUsdCents: menuItems.priceUsdCents,
+        costUsdCents: menuItems.costUsdCents,
+        costUpdatedAt: menuItems.costUpdatedAt,
+        categoryId: menuItems.categoryId,
+        categoryName: categories.name,
+        categoryAllowAlone: categories.allowAlone,
+        categoryIsSimple: categories.isSimple,
+        isAvailable: menuItems.isAvailable,
+        imageUrl: menuItems.imageUrl,
+        sortOrder: menuItems.sortOrder,
+      })
+      .from(menuItems)
+      .innerJoin(categories, eq(menuItems.categoryId, categories.id))
+      .orderBy(categories.sortOrder, menuItems.sortOrder),
 
-  const groupRows = await db
-    .select({
-      groupId: optionGroups.id,
-      menuItemId: optionGroups.menuItemId,
-      groupName: optionGroups.name,
-      groupType: optionGroups.type,
-      groupRequired: optionGroups.required,
-      groupSortOrder: optionGroups.sortOrder,
-      optionId: options.id,
-      optionName: options.name,
-      optionPriceUsdCents: options.priceUsdCents,
-      optionIsAvailable: options.isAvailable,
-      optionSortOrder: options.sortOrder,
-    })
-    .from(optionGroups)
-    .innerJoin(options, eq(optionGroups.id, options.groupId))
-    .orderBy(optionGroups.sortOrder, options.sortOrder);
+    db
+      .select({
+        groupId: optionGroups.id,
+        menuItemId: optionGroups.menuItemId,
+        groupName: optionGroups.name,
+        groupType: optionGroups.type,
+        groupRequired: optionGroups.required,
+        groupSortOrder: optionGroups.sortOrder,
+        optionId: options.id,
+        optionName: options.name,
+        optionPriceUsdCents: options.priceUsdCents,
+        optionIsAvailable: options.isAvailable,
+        optionSortOrder: options.sortOrder,
+      })
+      .from(optionGroups)
+      .innerJoin(options, eq(optionGroups.id, options.groupId))
+      .orderBy(optionGroups.sortOrder, options.sortOrder),
+  ]);
 
   const optionsByItem = new Map<
     string,
@@ -120,88 +122,90 @@ export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
 }
 
 export async function getMenuWithOptionsAndComponents(): Promise<MenuWithComponents[]> {
-  const items = await db
-    .select({
-      id: menuItems.id,
-      name: menuItems.name,
-      description: menuItems.description,
-      priceUsdCents: menuItems.priceUsdCents,
-      costUsdCents: menuItems.costUsdCents,
-      costUpdatedAt: menuItems.costUpdatedAt,
-      categoryId: menuItems.categoryId,
-      categoryName: categories.name,
-      categoryAllowAlone: categories.allowAlone,
-      categoryIsSimple: categories.isSimple,
-      isAvailable: menuItems.isAvailable,
-      imageUrl: menuItems.imageUrl,
-      sortOrder: menuItems.sortOrder,
-    })
-    .from(menuItems)
-    .innerJoin(categories, eq(menuItems.categoryId, categories.id))
-    .where(eq(categories.isAvailable, true))
-    .orderBy(categories.sortOrder, menuItems.sortOrder);
+  const [items, groupRows, adicionalRows, contornoRows, bebidaRows] = await Promise.all([
+    db
+      .select({
+        id: menuItems.id,
+        name: menuItems.name,
+        description: menuItems.description,
+        priceUsdCents: menuItems.priceUsdCents,
+        costUsdCents: menuItems.costUsdCents,
+        costUpdatedAt: menuItems.costUpdatedAt,
+        categoryId: menuItems.categoryId,
+        categoryName: categories.name,
+        categoryAllowAlone: categories.allowAlone,
+        categoryIsSimple: categories.isSimple,
+        isAvailable: menuItems.isAvailable,
+        imageUrl: menuItems.imageUrl,
+        sortOrder: menuItems.sortOrder,
+      })
+      .from(menuItems)
+      .innerJoin(categories, eq(menuItems.categoryId, categories.id))
+      .where(eq(categories.isAvailable, true))
+      .orderBy(categories.sortOrder, menuItems.sortOrder),
 
-  const groupRows = await db
-    .select({
-      groupId: optionGroups.id,
-      menuItemId: optionGroups.menuItemId,
-      groupName: optionGroups.name,
-      groupType: optionGroups.type,
-      groupRequired: optionGroups.required,
-      groupSortOrder: optionGroups.sortOrder,
-      optionId: options.id,
-      optionName: options.name,
-      optionPriceUsdCents: options.priceUsdCents,
-      optionIsAvailable: options.isAvailable,
-      optionSortOrder: options.sortOrder,
-    })
-    .from(optionGroups)
-    .innerJoin(options, eq(optionGroups.id, options.groupId))
-    .orderBy(optionGroups.sortOrder, options.sortOrder);
+    db
+      .select({
+        groupId: optionGroups.id,
+        menuItemId: optionGroups.menuItemId,
+        groupName: optionGroups.name,
+        groupType: optionGroups.type,
+        groupRequired: optionGroups.required,
+        groupSortOrder: optionGroups.sortOrder,
+        optionId: options.id,
+        optionName: options.name,
+        optionPriceUsdCents: options.priceUsdCents,
+        optionIsAvailable: options.isAvailable,
+        optionSortOrder: options.sortOrder,
+      })
+      .from(optionGroups)
+      .innerJoin(options, eq(optionGroups.id, options.groupId))
+      .orderBy(optionGroups.sortOrder, options.sortOrder),
 
-  // Fetch adicionales assignments
-  const adicionalRows = await db
-    .select({
-      menuItemId: menuItemAdicionales.menuItemId,
-      id: menuItems.id,
-      name: menuItems.name,
-      priceUsdCents: menuItems.priceUsdCents,
-      isAvailable: menuItems.isAvailable,
-      sortOrder: menuItems.sortOrder,
-    })
-    .from(menuItemAdicionales)
-    .innerJoin(menuItems, eq(menuItemAdicionales.adicionalItemId, menuItems.id))
-    .orderBy(menuItems.sortOrder);
+    // Fetch adicionales assignments
+    db
+      .select({
+        menuItemId: menuItemAdicionales.menuItemId,
+        id: menuItems.id,
+        name: menuItems.name,
+        priceUsdCents: menuItems.priceUsdCents,
+        isAvailable: menuItems.isAvailable,
+        sortOrder: menuItems.sortOrder,
+      })
+      .from(menuItemAdicionales)
+      .innerJoin(menuItems, eq(menuItemAdicionales.adicionalItemId, menuItems.id))
+      .orderBy(menuItems.sortOrder),
 
-  // Fetch contornos assignments
-  const contornoRows = await db
-    .select({
-      menuItemId: menuItemContornos.menuItemId,
-      id: menuItems.id,
-      name: menuItems.name,
-      priceUsdCents: menuItems.priceUsdCents,
-      isAvailable: menuItems.isAvailable,
-      sortOrder: menuItems.sortOrder,
-      removable: menuItemContornos.removable,
-      substituteContornoIds: menuItemContornos.substituteContornoIds,
-    })
-    .from(menuItemContornos)
-    .innerJoin(menuItems, eq(menuItemContornos.contornoItemId, menuItems.id))
-    .orderBy(menuItems.sortOrder);
+    // Fetch contornos assignments
+    db
+      .select({
+        menuItemId: menuItemContornos.menuItemId,
+        id: menuItems.id,
+        name: menuItems.name,
+        priceUsdCents: menuItems.priceUsdCents,
+        isAvailable: menuItems.isAvailable,
+        sortOrder: menuItems.sortOrder,
+        removable: menuItemContornos.removable,
+        substituteContornoIds: menuItemContornos.substituteContornoIds,
+      })
+      .from(menuItemContornos)
+      .innerJoin(menuItems, eq(menuItemContornos.contornoItemId, menuItems.id))
+      .orderBy(menuItems.sortOrder),
 
-  // Fetch bebidas assignments
-  const bebidaRows = await db
-    .select({
-      menuItemId: menuItemBebidas.menuItemId,
-      id: menuItems.id,
-      name: menuItems.name,
-      priceUsdCents: menuItems.priceUsdCents,
-      isAvailable: menuItems.isAvailable,
-      sortOrder: menuItems.sortOrder,
-    })
-    .from(menuItemBebidas)
-    .innerJoin(menuItems, eq(menuItemBebidas.bebidaItemId, menuItems.id))
-    .orderBy(menuItems.sortOrder);
+    // Fetch bebidas assignments
+    db
+      .select({
+        menuItemId: menuItemBebidas.menuItemId,
+        id: menuItems.id,
+        name: menuItems.name,
+        priceUsdCents: menuItems.priceUsdCents,
+        isAvailable: menuItems.isAvailable,
+        sortOrder: menuItems.sortOrder,
+      })
+      .from(menuItemBebidas)
+      .innerJoin(menuItems, eq(menuItemBebidas.bebidaItemId, menuItems.id))
+      .orderBy(menuItems.sortOrder),
+  ]);
 
   const optionsByItem = new Map<string, Array<{
     id: string;
