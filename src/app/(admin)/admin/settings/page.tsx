@@ -52,6 +52,7 @@ export default async function SettingsPage() {
               whatsappNumber: settings.whatsappNumber,
               whatsappMicroserviceUrl: settings.whatsappMicroserviceUrl ?? "",
               instagramUrl: settings.instagramUrl ?? "",
+              logoUrl: settings.logoUrl ?? "",
               adicionalesEnabled: settings.adicionalesEnabled ?? true,
               bebidasEnabled: settings.bebidasEnabled ?? true,
               orderModeOnSiteEnabled: settings.orderModeOnSiteEnabled ?? true,
@@ -64,6 +65,7 @@ export default async function SettingsPage() {
               deliveryCoverage: settings.deliveryCoverage ?? "",
               paymentPagoMovilEnabled: settings.paymentPagoMovilEnabled ?? true,
               paymentTransferEnabled: settings.paymentTransferEnabled ?? true,
+              menuLayout: (settings.menuLayout ?? "modern") as "modern" | "classic",
             }
             : null
         }

@@ -50,6 +50,7 @@ const DEFAULT_FORM: SettingsFormData = {
   whatsappNumber: "",
   whatsappMicroserviceUrl: "",
   instagramUrl: "",
+  logoUrl: "",
   orderModeOnSiteEnabled: true,
   orderModeTakeAwayEnabled: true,
   orderModeDeliveryEnabled: true,
@@ -60,6 +61,7 @@ const DEFAULT_FORM: SettingsFormData = {
   deliveryCoverage: "",
   paymentPagoMovilEnabled: true,
   paymentTransferEnabled: true,
+  menuLayout: "modern",
 };
 
 export function useSettingsForm({ initialData }: UseSettingsFormParams): UseSettingsFormReturn {
@@ -84,6 +86,7 @@ export function useSettingsForm({ initialData }: UseSettingsFormParams): UseSett
 
   function validate(): boolean {
     const e: FormErrors = {};
+    if (!form.restaurantName.trim()) e.restaurantName = "Nombre del restaurante requerido";
     if (!form.bankName.trim()) e.bankName = "Nombre del banco requerido";
     if (!form.bankCode.trim()) e.bankCode = "Código del banco requerido";
     if (!form.accountPhone.trim()) e.accountPhone = "Teléfono requerido";

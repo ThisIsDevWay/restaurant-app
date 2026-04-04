@@ -50,6 +50,7 @@ export const settings = pgTable("settings", {
   bebidasEnabled: boolean("bebidas_enabled").notNull().default(true),
   maxQuantityPerItem: integer("max_quantity_per_item").notNull().default(10),
   instagramUrl: text("instagram_url"),
+  logoUrl: text("logo_url"),
   orderModeOnSiteEnabled: boolean("order_mode_on_site_enabled").notNull().default(true),
   orderModeTakeAwayEnabled: boolean("order_mode_take_away_enabled").notNull().default(true),
   orderModeDeliveryEnabled: boolean("order_mode_delivery_enabled").notNull().default(true),
@@ -60,6 +61,7 @@ export const settings = pgTable("settings", {
   deliveryCoverage: text("delivery_coverage"),
   paymentPagoMovilEnabled: boolean("payment_pago_movil_enabled").notNull().default(true),
   paymentTransferEnabled: boolean("payment_transfer_enabled").notNull().default(true),
+  menuLayout: text("menu_layout").notNull().default("modern"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

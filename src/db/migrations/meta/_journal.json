@@ -57,6 +57,13 @@
       "when": 1775006434844,
       "tag": "0007_spotty_millenium_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1775206238560,
+      "tag": "0008_chief_salo",
+      "breakpoints": true
     }
   ]
 }

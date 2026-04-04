@@ -35,6 +35,7 @@ export const settingsSchema = v.object({
   adicionalesEnabled: v.optional(v.boolean()),
   bebidasEnabled: v.optional(v.boolean()),
   instagramUrl: v.optional(v.string()),
+  logoUrl: v.optional(v.string()),
   orderModeOnSiteEnabled: v.optional(v.boolean()),
   orderModeTakeAwayEnabled: v.optional(v.boolean()),
   orderModeDeliveryEnabled: v.optional(v.boolean()),
@@ -45,6 +46,7 @@ export const settingsSchema = v.object({
   deliveryCoverage: v.optional(v.string()),
   paymentPagoMovilEnabled: v.optional(v.boolean()),
   paymentTransferEnabled: v.optional(v.boolean()),
+  menuLayout: v.optional(v.picklist(["modern", "classic"])),
 });
 
 export type SettingsInput = v.InferOutput<typeof settingsSchema>;

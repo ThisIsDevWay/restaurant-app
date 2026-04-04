@@ -38,6 +38,7 @@ export interface SettingsFormData {
   whatsappNumber: string;
   whatsappMicroserviceUrl: string;
   instagramUrl: string;
+  logoUrl: string;
   orderModeOnSiteEnabled: boolean;
   orderModeTakeAwayEnabled: boolean;
   orderModeDeliveryEnabled: boolean;
@@ -48,6 +49,7 @@ export interface SettingsFormData {
   deliveryCoverage: string;
   paymentPagoMovilEnabled: boolean;
   paymentTransferEnabled: boolean;
+  menuLayout: "modern" | "classic";
 }
 
 export type FormErrors = Partial<Record<keyof SettingsFormData, string>>;

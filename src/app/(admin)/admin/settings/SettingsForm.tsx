@@ -5,6 +5,7 @@ import {
   Package,
   CreditCard,
   Smartphone,
+  ListFilter,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ import { SettingsGeneralTab } from "./SettingsGeneralTab";
 import { SettingsOperationTab } from "./SettingsOperationTab";
 import { SettingsPaymentsTab } from "./SettingsPaymentsTab";
 import { SettingsMessagingTab } from "./SettingsMessagingTab";
+import { SettingsDesignTab } from "./SettingsDesignTab";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 import type { SettingsFormProps } from "./SettingsForm.types";
 
@@ -46,6 +48,10 @@ export function SettingsForm({ initialData, templates = [] }: SettingsFormProps)
               <Settings className="h-4 w-4 mr-2" />
               General
             </TabsTrigger>
+            <TabsTrigger value="design" className="rounded-xl py-3.5 data-active:bg-white data-active:text-primary data-active:shadow-md transition-all hidden md:flex">
+              <ListFilter className="h-4 w-4 mr-2" />
+              Diseño
+            </TabsTrigger>
             <TabsTrigger value="operation" className="rounded-xl py-3.5 data-active:bg-white data-active:text-primary data-active:shadow-md transition-all">
               <Package className="h-4 w-4 mr-2" />
               Operación
@@ -58,10 +64,17 @@ export function SettingsForm({ initialData, templates = [] }: SettingsFormProps)
               <Smartphone className="h-4 w-4 mr-2" />
               Mensajería
             </TabsTrigger>
+            <TabsTrigger value="design" className="rounded-xl py-3.5 data-active:bg-white data-active:text-primary data-active:shadow-md transition-all md:hidden">
+              <ListFilter className="h-4 w-4" />
+            </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="design">
+            <SettingsDesignTab form={form} updateField={updateField} />
+          </TabsContent>
+
           <TabsContent value="general">
-            <SettingsGeneralTab form={form} updateField={updateField} />
+            <SettingsGeneralTab form={form} updateField={updateField} errors={errors} />
           </TabsContent>
 
           <TabsContent value="operation">
