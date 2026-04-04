@@ -67,6 +67,7 @@
     "drizzle-kit": "^0.30.6",
     "eslint": "^9.27.0",
     "eslint-config-next": "15.4.11",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "jsdom": "^29.0.0",
     "postcss": "^8.5.4",
     "tailwindcss": "^4.1.8",
