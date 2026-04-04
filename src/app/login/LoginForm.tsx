@@ -3,11 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
-export function LoginForm({ restaurantName }: { restaurantName: string }) {
+export function LoginForm({ restaurantName, logoUrl }: { restaurantName: string; logoUrl?: string }) {
+    const searchParams = useSearchParams();
+    const urlError = searchParams.get("error");
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(
+        urlError === "MissingCSRF"
+            ? "Error de seguridad (CSRF). Por favor intenta de nuevo."
+            : null
+    );
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
@@ -42,9 +50,20 @@ export function LoginForm({ restaurantName }: { restaurantName: string }) {
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-bg-app px-4">
-            <div className="w-full max-w-sm rounded-modal bg-white p-6 shadow-modal">
-                <h1 className="font-display text-2xl font-bold text-primary">{restaurantName}</h1>
-                <p className="mt-1 text-sm text-text-muted">Panel de administración</p>
+            <div className="w-full max-w-sm rounded-modal bg-white p-8 shadow-modal">
+                <div className="flex flex-col items-center text-center">
+                    {logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={logoUrl}
+                            alt={restaurantName}
+                            className="h-20 w-auto max-w-full object-contain mb-4"
+                        />
+                    ) : (
+                        <h1 className="font-display text-3xl font-bold text-primary mb-2">{restaurantName}</h1>
+                    )}
+                    <p className="text-sm text-text-muted">Panel de administración</p>
+                </div>
 
                 <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                     <div>

@@ -15,8 +15,8 @@ interface CartItemProps {
 function computeItemUsdCents(item: CartItemType): number {
   const fixedContornosUsd = (item.fixedContornos ?? []).reduce((sum, c) => sum + c.priceUsdCents, 0);
   const substitutionsUsd = (item.contornoSubstitutions ?? []).reduce((sum, s) => sum + s.priceUsdCents, 0);
-  const adicionalesUsd = (item.selectedAdicionales ?? []).reduce((sum, a) => sum + a.priceUsdCents, 0);
-  const bebidasUsd = (item.selectedBebidas ?? []).reduce((sum, b) => sum + b.priceUsdCents, 0);
+  const adicionalesUsd = (item.selectedAdicionales ?? []).reduce((sum, a) => sum + a.priceUsdCents * (a.quantity ?? 1), 0);
+  const bebidasUsd = (item.selectedBebidas ?? []).reduce((sum, b) => sum + b.priceUsdCents * (b.quantity ?? 1), 0);
   const removalsUsd = (item.removedComponents ?? []).reduce((sum, r) => sum + r.priceUsdCents, 0);
   return item.baseUsdCents + fixedContornosUsd + substitutionsUsd + adicionalesUsd + bebidasUsd + removalsUsd;
 }
@@ -165,10 +165,10 @@ export function CartItem({
                       key={ad.id}
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-black/[0.04] text-text-main"
                     >
-                      {ad.name}
+                      {(ad.quantity ?? 1) > 1 ? `${ad.quantity}× ` : ""}{ad.name}
                       {ad.priceBsCents > 0 && (
                         <span className="text-[10px] opacity-70 font-normal">
-                          {formatBs(ad.priceBsCents)}
+                          {formatBs(ad.priceBsCents * (ad.quantity ?? 1))}
                         </span>
                       )}
                     </span>
@@ -189,10 +189,10 @@ export function CartItem({
                       key={b.id}
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-black/[0.06] text-text-main"
                     >
-                      {b.name}
+                      {(b.quantity ?? 1) > 1 ? `${b.quantity}× ` : ""}{b.name}
                       {b.priceBsCents > 0 && (
                         <span className="text-[10px] opacity-70 font-normal">
-                          {formatBs(b.priceBsCents)}
+                          {formatBs(b.priceBsCents * (b.quantity ?? 1))}
                         </span>
                       )}
                     </span>

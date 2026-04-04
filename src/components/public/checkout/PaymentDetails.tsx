@@ -214,12 +214,12 @@ export function PaymentDetails({
             )}
             {item.selectedAdicionales.length > 0 && (
               <p className="text-xs text-text-muted">
-                + {item.selectedAdicionales.map((a) => a.name).join(", ")}
+                + {item.selectedAdicionales.map((a) => (a.quantity ?? 1) > 1 ? `${a.quantity}× ${a.name}` : a.name).join(", ")}
               </p>
             )}
             {(item.selectedBebidas ?? []).length > 0 && (
               <p className="text-xs text-text-muted">
-                + {(item.selectedBebidas ?? []).map((b) => b.name).join(", ")}
+                + {(item.selectedBebidas ?? []).map((b) => (b.quantity ?? 1) > 1 ? `${b.quantity}× ${b.name}` : b.name).join(", ")}
               </p>
             )}
             <p className="text-sm font-semibold text-price-green">

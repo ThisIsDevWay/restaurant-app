@@ -25,16 +25,27 @@ export async function GET(
   const recentOrders = await db
     .select({
       id: orders.id,
+      orderNumber: orders.orderNumber,
       status: orders.status,
       subtotalBsCents: orders.subtotalBsCents,
       createdAt: orders.createdAt,
       expiresAt: orders.expiresAt,
       itemsSnapshot: orders.itemsSnapshot,
+      deliveryAddress: orders.deliveryAddress,
     })
     .from(orders)
     .where(eq(orders.customerPhone, sanitized))
     .orderBy(desc(orders.createdAt))
-    .limit(10);
+    .limit(15);
 
-  return NextResponse.json({ orders: recentOrders });
+  // Mask sensitive data (PII protection)
+  const maskedOrders = recentOrders.map((order) => ({
+    ...order,
+    deliveryAddress:
+      order.deliveryAddress && order.deliveryAddress.length > 8
+        ? `${order.deliveryAddress.slice(0, 4)}...${order.deliveryAddress.slice(-4)}`
+        : order.deliveryAddress,
+  }));
+
+  return NextResponse.json({ orders: maskedOrders });
 }

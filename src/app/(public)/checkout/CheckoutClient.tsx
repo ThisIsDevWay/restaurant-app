@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
-import { processCheckoutAction, type CheckoutResult, type CheckoutItem } from "@/actions/checkout";
+import { processCheckoutAction, type CheckoutResult } from "@/actions/checkout";
+import { type CheckoutItem } from "@/lib/types/checkout";
 import { formatBs } from "@/lib/money";
 import { Loader2, AlertCircle } from "lucide-react";
 import { ReferenceEntry } from "@/components/public/checkout/ReferenceEntry";
@@ -93,6 +94,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
         name: a.name,
         priceUsdCents: a.priceUsdCents,
         priceBsCents: a.priceBsCents,
+        quantity: a.quantity ?? 1,
       }));
 
       // If there are contorno substitutions, add them as adicionales with substitutesComponentId
@@ -102,6 +104,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
           name: s.substituteName,
           priceUsdCents: s.priceUsdCents,
           priceBsCents: s.priceBsCents,
+          quantity: 1,
           substitutesComponentId: s.originalId,
           substitutesComponentName: s.originalName,
         } as any);
@@ -113,6 +116,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
         name: b.name,
         priceUsdCents: b.priceUsdCents,
         priceBsCents: b.priceBsCents,
+        quantity: b.quantity ?? 1,
       }));
 
       return {

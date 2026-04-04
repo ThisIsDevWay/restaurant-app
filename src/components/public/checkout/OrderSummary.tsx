@@ -135,9 +135,9 @@ export function OrderSummary({
                   <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Adicionales</div>
                   {item.selectedAdicionales.map((adicional) => (
                     <div key={adicional.id} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
-                      <span className="text-[12px] text-[#5A3A3A]">{adicional.name}</span>
+                      <span className="text-[12px] text-[#5A3A3A]">{(adicional.quantity ?? 1) > 1 ? `${adicional.quantity}× ` : ""}{adicional.name}</span>
                       <span className="text-[12px] font-medium text-[#7B2D2D]">
-                        {adicional.priceBsCents > 0 ? `+ ${formatBs(adicional.priceBsCents)}` : "incluido"}
+                        {adicional.priceBsCents > 0 ? `+ ${formatBs(adicional.priceBsCents * (adicional.quantity ?? 1))}` : "incluido"}
                       </span>
                     </div>
                   ))}
@@ -150,9 +150,9 @@ export function OrderSummary({
                   <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Bebidas</div>
                   {(item.selectedBebidas ?? []).map((bebida) => (
                     <div key={bebida.id} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
-                      <span className="text-[12px] text-[#5A3A3A]">{bebida.name}</span>
+                      <span className="text-[12px] text-[#5A3A3A]">{(bebida.quantity ?? 1) > 1 ? `${bebida.quantity}× ` : ""}{bebida.name}</span>
                       <span className="text-[12px] font-medium text-[#7B2D2D]">
-                        {bebida.priceBsCents > 0 ? `+ ${formatBs(bebida.priceBsCents)}` : "incluido"}
+                        {bebida.priceBsCents > 0 ? `+ ${formatBs(bebida.priceBsCents * (bebida.quantity ?? 1))}` : "incluido"}
                       </span>
                     </div>
                   ))}
@@ -229,7 +229,7 @@ export function OrderSummary({
             <div className="text-right">
               <div className="text-[17px] font-medium text-[#7B2D2D]">{formatBs(grandTotalBsCents)}</div>
               <div className="text-[12px] text-[#9A6A5A]">
-                {formatRef(grandTotalUsdCents)} · tasa BCV
+                {formatRef(grandTotalUsdCents)}
               </div>
             </div>
           </div>

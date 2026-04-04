@@ -24,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { signOut } from "next-auth/react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -37,7 +38,7 @@ const navItems = [
 ];
 
 /* ── Desktop: icon-only 64px sidebar ────────────────────────── */
-function DesktopSidebar({ restaurantName }: { restaurantName: string }) {
+function DesktopSidebar({ restaurantName, logoUrl }: { restaurantName: string; logoUrl?: string }) {
   const pathname = usePathname();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -49,9 +50,17 @@ function DesktopSidebar({ restaurantName }: { restaurantName: string }) {
           <TooltipTrigger asChild>
             <Link
               href="/admin"
-              className="mb-6 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/25 transition-transform hover:scale-105"
+              className={cn(
+                "mb-6 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-lg transition-transform hover:scale-105 overflow-hidden",
+                logoUrl ? "bg-white border border-border/50" : "bg-primary text-white shadow-primary/25"
+              )}
             >
-              <ChefHat className="h-5 w-5" />
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt={restaurantName} className="h-full w-full object-contain p-1" />
+              ) : (
+                <ChefHat className="h-5 w-5" />
+              )}
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right">{restaurantName} Restaurante</TooltipContent>
@@ -93,14 +102,12 @@ function DesktopSidebar({ restaurantName }: { restaurantName: string }) {
           {/* Logout */}
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
-              <form action="/api/auth/signout" method="POST">
-                <button
-                  type="submit"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-text-muted transition-all duration-200 hover:bg-error/10 hover:text-error"
-                >
-                  <LogOut className="h-[18px] w-[18px]" />
-                </button>
-              </form>
+              <button
+                onClick={() => signOut()}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-text-muted transition-all duration-200 hover:bg-error/10 hover:text-error cursor-pointer"
+              >
+                <LogOut className="h-[18px] w-[18px]" />
+              </button>
             </TooltipTrigger>
             <TooltipContent side="right">Cerrar sesión</TooltipContent>
           </Tooltip>
@@ -135,15 +142,13 @@ function DesktopSidebar({ restaurantName }: { restaurantName: string }) {
                     Configuración
                   </Link>
                   <div className="my-1 h-px bg-border" />
-                  <form action="/api/auth/signout" method="POST">
-                    <button
-                      type="submit"
-                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-error hover:bg-error/5 transition-colors"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Cerrar sesión
-                    </button>
-                  </form>
+                  <button
+                    onClick={() => signOut()}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-error hover:bg-error/5 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Cerrar sesión
+                  </button>
                 </div>
               </>
             )}
@@ -155,7 +160,7 @@ function DesktopSidebar({ restaurantName }: { restaurantName: string }) {
 }
 
 /* ── Mobile: slide-in drawer ─────────────────────────────────── */
-function MobileSidebar({ restaurantName }: { restaurantName: string }) {
+function MobileSidebar({ restaurantName, logoUrl }: { restaurantName: string; logoUrl?: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -201,7 +206,16 @@ function MobileSidebar({ restaurantName }: { restaurantName: string }) {
               <ChefHat className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="font-bold text-base text-text-main leading-tight">{restaurantName}</h1>
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoUrl}
+                  alt={restaurantName}
+                  className="h-10 w-auto max-w-[150px] object-contain"
+                />
+              ) : (
+                <h1 className="font-bold text-base text-text-main leading-tight">{restaurantName}</h1>
+              )}
               <p className="text-[11px] text-text-muted leading-tight">Panel de administración</p>
             </div>
           </div>
@@ -249,15 +263,13 @@ function MobileSidebar({ restaurantName }: { restaurantName: string }) {
 
         {/* Footer */}
         <div className="border-t border-border px-3 py-3">
-          <form action="/api/auth/signout" method="POST">
-            <button
-              type="submit"
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-text-muted transition-all hover:bg-error/5 hover:text-error"
-            >
-              <LogOut className="h-[18px] w-[18px]" />
-              Cerrar sesión
-            </button>
-          </form>
+          <button
+            onClick={() => signOut()}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-text-muted transition-all hover:bg-error/5 hover:text-error cursor-pointer"
+          >
+            <LogOut className="h-[18px] w-[18px]" />
+            Cerrar sesión
+          </button>
         </div>
       </aside>
     </>
@@ -265,13 +277,13 @@ function MobileSidebar({ restaurantName }: { restaurantName: string }) {
 }
 
 /* ── Combined export ─────────────────────────────────────────── */
-export function Sidebar({ restaurantName }: { restaurantName: string }) {
+export function Sidebar({ restaurantName, logoUrl }: { restaurantName: string; logoUrl?: string }) {
   return (
     <>
       <div className="hidden lg:block">
-        <DesktopSidebar restaurantName={restaurantName} />
+        <DesktopSidebar restaurantName={restaurantName} logoUrl={logoUrl} />
       </div>
-      <MobileSidebar restaurantName={restaurantName} />
+      <MobileSidebar restaurantName={restaurantName} logoUrl={logoUrl} />
     </>
   );
 }

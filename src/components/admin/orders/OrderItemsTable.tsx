@@ -111,9 +111,9 @@ export function OrderItemsTable({
                         <div className="text-[10px] font-semibold uppercase text-text-muted mt-1 mb-0.5">Adicionales</div>
                         {pureAdicionales.map((ad, adIdx) => (
                           <div key={`ad-${adIdx}`} className="flex justify-between items-center pl-2 border-l-2 border-border/50">
-                            <span className="text-xs text-text-main">{ad.name}</span>
+                            <span className="text-xs text-text-main">{(ad.quantity ?? 1) > 1 ? `${ad.quantity}× ` : ""}{ad.name}</span>
                             <span className="text-xs font-semibold text-price-green">
-                              {ad.priceBsCents > 0 ? `+ ${formatBs(ad.priceBsCents)}` : "incluido"}
+                              {ad.priceBsCents > 0 ? `+ ${formatBs(ad.priceBsCents * (ad.quantity ?? 1))}` : "incluido"}
                             </span>
                           </div>
                         ))}
@@ -126,9 +126,9 @@ export function OrderItemsTable({
                         <div className="text-[10px] font-semibold uppercase text-text-muted mt-1 mb-0.5">Bebidas</div>
                         {item.selectedBebidas.map((b, bIdx) => (
                           <div key={`beb-${bIdx}`} className="flex justify-between items-center pl-2 border-l-2 border-border/50">
-                            <span className="text-xs text-text-main">{b.name}</span>
+                            <span className="text-xs text-text-main">{(b.quantity ?? 1) > 1 ? `${b.quantity}× ` : ""}{b.name}</span>
                             <span className="text-xs font-semibold text-price-green">
-                              {b.priceBsCents > 0 ? `+ ${formatBs(b.priceBsCents)}` : "incluido"}
+                              {b.priceBsCents > 0 ? `+ ${formatBs(b.priceBsCents * (b.quantity ?? 1))}` : "incluido"}
                             </span>
                           </div>
                         ))}

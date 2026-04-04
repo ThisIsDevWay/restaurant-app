@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { ChevronRight, User, LogOut, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { signOut } from "next-auth/react";
 
 const pathLabels: Record<string, string> = {
   admin: "Dashboard",
@@ -90,15 +91,13 @@ export function AdminHeader() {
               Configuración
             </Link>
             <div className="my-1 h-px bg-border" />
-            <form action="/api/auth/signout" method="POST">
-              <button
-                type="submit"
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-error hover:bg-error/5 transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Cerrar sesión
-              </button>
-            </form>
+            <button
+              onClick={() => signOut()}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-error hover:bg-error/5 transition-colors cursor-pointer"
+            >
+              <LogOut className="h-4 w-4" />
+              Cerrar sesión
+            </button>
           </div>
         )}
       </div>

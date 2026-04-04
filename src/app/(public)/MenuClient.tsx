@@ -89,6 +89,7 @@ interface MenuClientProps {
   dailyAdicionales: SimpleItem[];
   dailyBebidas: SimpleItem[];
   maxQuantityPerItem?: number;
+  menuLayout?: "modern" | "classic";
 }
 
 export function MenuClient({
@@ -101,6 +102,7 @@ export function MenuClient({
   dailyAdicionales,
   dailyBebidas,
   maxQuantityPerItem = 10,
+  menuLayout = "modern",
 }: MenuClientProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const recalculateBsPrices = useCartStore((s) => s.recalculateBsPrices);
@@ -133,6 +135,7 @@ export function MenuClient({
         dailyAdicionales={dailyAdicionales}
         dailyBebidas={dailyBebidas}
         maxQuantityPerItem={maxQuantityPerItem}
+        menuLayout={menuLayout}
       />
     </>
   );

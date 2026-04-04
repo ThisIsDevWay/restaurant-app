@@ -71,9 +71,11 @@ export function CategoryFilter({
       {/* Fade + chevron indicator */}
       {showFade && (
         <div className="pointer-events-none absolute right-0 top-0 flex h-full items-center">
-          <div className="h-full w-12 bg-gradient-to-l from-bg-app to-transparent" />
-          <div className="pr-3">
-            <ChevronRight className="h-4 w-4 text-text-muted" />
+          <div className="h-full w-14 bg-gradient-to-l from-white via-white/80 to-transparent" />
+          <div className="bg-white pr-2 py-1 flex items-center h-full">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white shadow-sm border border-border/40">
+              <ChevronRight className="h-4 w-4 text-primary animate-pulse-subtle" strokeWidth={3} />
+            </div>
           </div>
         </div>
       )}

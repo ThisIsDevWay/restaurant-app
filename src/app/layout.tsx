@@ -1,15 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Epilogue, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
 });
 
-const playfair = Playfair_Display({
+const epilogue = Epilogue({
   subsets: ["latin"],
-  variable: "--font-playfair",
+  variable: "--font-display",
+  weight: ["400", "600", "700", "800"],
 });
 
 import { getSettings } from "@/db/queries/settings";
@@ -30,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#8B2500",
+  themeColor: "#bb0005",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -42,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html lang="es" className={`${plusJakartaSans.variable} ${epilogue.variable}`} suppressHydrationWarning>
       <body className="bg-bg-app text-text-main antialiased" suppressHydrationWarning>{children}</body>
     </html>
   );

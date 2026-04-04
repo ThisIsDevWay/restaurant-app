@@ -48,7 +48,7 @@ export function ModalFooter({
           </button>
         </div>
         {quantity > 1 && (
-          <span className="text-center text-[10px] text-text-muted/90 max-w-[280px] leading-tight animate-in fade-in slide-in-from-bottom-1 duration-200">
+          <span className="max-w-[280px] animate-in slide-in-from-bottom-1 fade-in text-center text-[10px] leading-tight text-text-muted/90 duration-200">
             Para que cada plato tenga sus propios contornos o adicionales, agrégalos uno por uno.
           </span>
         )}
@@ -63,9 +63,9 @@ export function ModalFooter({
           }`}
       >
         {allRequiredSatisfied
-          ? `Agregar${extrasCount > 0 ? ` (${extrasCount} extra${extrasCount > 1 ? "s" : ""})` : ""} · ${formatBs(totalBsCents)}`
+          ? `Agregar${quantity > 1 ? ` ${quantity} Servicios` : ""}${extrasCount > 0 ? ` (${extrasCount} extra${extrasCount > 1 ? "s" : ""})` : ""} · ${formatBs(totalBsCents)}`
           : unsatisfiedGroupName ?? "Selecciona una opción"}
       </button>
-    </div>
+    </div >
   );
 }

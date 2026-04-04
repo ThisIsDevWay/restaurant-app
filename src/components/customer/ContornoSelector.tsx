@@ -30,9 +30,12 @@ export function ContornoSelector({
 
   return (
     <div className="border-b border-border px-4 py-3">
-      <h3 className="mb-2 text-[14px] font-semibold text-text-main">
+      <h3 className="mb-1 text-[14px] font-semibold text-text-main">
         Contornos
       </h3>
+      <p className="mb-2 text-[11px] text-text-muted">
+        Contornos incluidos en el plato
+      </p>
       <div className="flex flex-col gap-0.5">
         {/* Fixed (non-removable) contornos */}
         {fixedContornos.map((contorno) => (
@@ -93,7 +96,7 @@ export function ContornoSelector({
                   onClick={() => onToggleExpand(contorno.id)}
                   className="rounded-[6px] border border-primary/30 px-2 py-0.5 text-[11px] font-semibold text-primary transition-colors active:bg-primary/10"
                 >
-                  {isExpanded ? "Cerrar" : "Cambiar"}
+                  {isExpanded ? "Cerrar" : "Elegir opción"}
                 </button>
               </div>
 

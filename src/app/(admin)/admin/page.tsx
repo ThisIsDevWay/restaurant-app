@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { db } from "@/db";
-import { orders, menuItems } from "@/db/schema";
-import { sql, desc, isNotNull } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   DollarSign,
   CheckCircle2,
@@ -26,56 +24,21 @@ import { formatBs, formatRef } from "@/lib/money";
 import { OrdersChart } from "@/components/admin/dashboard/OrdersChart";
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
 import { todayCaracas } from "@/lib/utils/date";
-import { and, gte, lte } from "drizzle-orm";
+import { and, gte, lte, desc } from "drizzle-orm";
 import { getWeightedAverageMarginToday, getMenuItemProfitability, getStaleCostItems } from "@/db/queries/menu";
+import { getDashboardStats, getRecentOrders, getTodayOrdersRaw } from "@/db/queries/dashboard";
 
 export default async function AdminDashboard() {
-  const today = todayCaracas();
-  const startOfDayVET = new Date(`${today}T00:00:00-04:00`);
-  const endOfDayVET = new Date(`${today}T23:59:59-04:00`);
-
-  const [todayStats] = await db
-    .select({
-      totalSales: sql<number>`COALESCE(SUM(${orders.subtotalBsCents}), 0)::int`,
-      completedOrders: sql<number>`COUNT(*) FILTER (WHERE ${orders.status} IN ('paid', 'kitchen', 'delivered'))::int`,
-      pendingOrders: sql<number>`COUNT(*) FILTER (WHERE ${orders.status} = 'pending')::int`,
-    })
-    .from(orders)
-    .where(
-      and(
-        gte(orders.createdAt, startOfDayVET),
-        lte(orders.createdAt, endOfDayVET),
-      ),
-    );
+  const [todayStats, recentOrders, todayOrdersRaw] = await Promise.all([
+    getDashboardStats(),
+    getRecentOrders(10),
+    getTodayOrdersRaw(),
+  ]);
 
   const avgTicket =
     todayStats.completedOrders > 0
       ? Math.round(todayStats.totalSales / todayStats.completedOrders)
       : 0;
-
-  const recentOrders = await db
-    .select({
-      id: orders.id,
-      status: orders.status,
-      subtotalBsCents: orders.subtotalBsCents,
-      customerPhone: orders.customerPhone,
-      createdAt: orders.createdAt,
-    })
-    .from(orders)
-    .orderBy(desc(orders.createdAt))
-    .limit(10);
-
-  // Most ordered product today
-  const todayOrdersRaw = await db
-    .select({ itemsSnapshot: orders.itemsSnapshot, createdAt: orders.createdAt })
-    .from(orders)
-    .where(
-      and(
-        gte(orders.createdAt, startOfDayVET),
-        lte(orders.createdAt, endOfDayVET),
-        sql`${orders.status} IN ('paid', 'kitchen', 'delivered')`,
-      ),
-    );
 
   const itemCounts = new Map<string, { id: string; name: string; count: number }>();
   for (const row of todayOrdersRaw) {
@@ -331,10 +294,10 @@ export default async function AdminDashboard() {
                   <TooltipTrigger asChild>
                     <Badge
                       className={`text-xs cursor-help ${weightedMargin.weightedMarginPct >= 40
-                          ? "bg-green-100 text-green-700"
-                          : weightedMargin.weightedMarginPct >= 20
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-red-100 text-red-700"
+                        ? "bg-green-100 text-green-700"
+                        : weightedMargin.weightedMarginPct >= 20
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-red-100 text-red-700"
                         }`}
                     >
                       Margen ponderado hoy: {weightedMargin.weightedMarginPct}%

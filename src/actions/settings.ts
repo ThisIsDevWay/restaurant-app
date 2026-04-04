@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
-import { updateSettings as updateSettingsDb, getActiveRate, getSettings } from "@/db/queries/settings";
+import { updateSettings as updateSettingsDb, getActiveRate, getSettings, getLatestRateByCurrency } from "@/db/queries/settings";
 import { settingsSchema } from "@/lib/validations/settings";
 import * as v from "valibot";
 import { revalidatePath } from "next/cache";
@@ -9,6 +9,7 @@ import { exchangeRates, settings } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { db } from "@/db";
 import { adminActionClient } from "@/lib/safe-action";
+import { supabase } from "@/lib/supabase";
 
 type ActionResult =
   | { success: true; error?: never }
@@ -25,13 +26,7 @@ export const saveSettingsAction = adminActionClient
       }
 
       if (updatePayload.rateCurrency) {
-        const [latestRate] = await db
-          .select()
-          .from(exchangeRates)
-          .where(eq(exchangeRates.currency, updatePayload.rateCurrency))
-          .orderBy(desc(exchangeRates.fetchedAt))
-          .limit(1);
-
+        const latestRate = await getLatestRateByCurrency(updatePayload.rateCurrency);
         if (latestRate) {
           updatePayload.currentRateId = latestRate.id;
         }
@@ -100,3 +95,31 @@ export const fetchCheckoutSettings = async () => {
     restaurantName: s?.restaurantName ?? "G&M",
   };
 }
+
+export const uploadLogoAction = adminActionClient
+  .schema(v.object({ fileName: v.string() }))
+  .action(async ({ parsedInput: { fileName } }) => {
+    const ext = fileName.split(".").pop() ?? "png";
+    const path = `branding/logo-${Date.now()}.${ext}`;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from("menu")
+        .createSignedUploadUrl(path);
+
+      if (error || !data) {
+        return { success: false as const, error: "Error al generar URL de subida" };
+      }
+
+      const { data: publicData } = supabase.storage.from("menu").getPublicUrl(path);
+
+      return {
+        success: true as const,
+        signedUrl: data.signedUrl,
+        publicUrl: publicData.publicUrl,
+      };
+    } catch {
+      return { success: false as const, error: "Error al subir logo" };
+    }
+  });
+

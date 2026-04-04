@@ -88,6 +88,7 @@ interface MenuGridProps {
   dailyAdicionales: SimpleItem[];
   dailyBebidas: SimpleItem[];
   maxQuantityPerItem?: number;
+  menuLayout?: "modern" | "classic";
 }
 
 export function MenuGrid({
@@ -99,6 +100,7 @@ export function MenuGrid({
   dailyAdicionales,
   dailyBebidas,
   maxQuantityPerItem = 10,
+  menuLayout = "modern",
 }: MenuGridProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [drinkWarningItem, setDrinkWarningItem] = useState<{ payload: any; categoryName: string } | null>(null);
@@ -139,8 +141,12 @@ export function MenuGrid({
     }
   };
 
+  const gridClasses = menuLayout === "classic"
+    ? "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4" // Adding responsive stops for better scaling on desktop
+    : "flex flex-col gap-3";
+
   return (
-    <div className="grid grid-cols-2 gap-3 px-4 pb-4">
+    <div className={`${gridClasses} px-4 pb-4`}>
       {sortedItems.map((item, index) => {
         const hasContornos = item.contornos.some((c) => c.isAvailable);
         const hasRequiredOptions = item.optionGroups.some((g) => g.required);
@@ -170,6 +176,7 @@ export function MenuGrid({
             hasRequiredOptions={needsDetailModal}
             onOpenDetail={() => setSelectedItemId(item.id)}
             onAddSimpleItem={handleAddSimpleItem}
+            menuLayout={menuLayout}
           />
         );
       })}
@@ -186,6 +193,7 @@ export function MenuGrid({
           dailyAdicionales={dailyAdicionales}
           dailyBebidas={dailyBebidas}
           maxQuantityPerItem={maxQuantityPerItem}
+          menuLayout={menuLayout}
         />
       )}
 

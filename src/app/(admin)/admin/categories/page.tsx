@@ -1,14 +1,13 @@
-import { getCategories } from "@/db/queries/menu";
-import { getCategoryUsageCount } from "@/actions/categories";
+import { getCategoriesWithItemCount } from "@/db/queries/menu";
 import { CategoriesClient } from "./CategoriesClient";
 
 export default async function CategoriesPage() {
-  const categories = await getCategories();
+  const categoriesWithCounts = await getCategoriesWithItemCount();
 
-  const itemCounts: Record<string, number> = {};
-  for (const cat of categories) {
-    itemCounts[cat.id] = await getCategoryUsageCount(cat.id);
-  }
+  const categories = categoriesWithCounts.map(({ itemCount, ...cat }) => cat);
+  const itemCounts = Object.fromEntries(
+    categoriesWithCounts.map(({ id, itemCount }) => [id, itemCount])
+  );
 
   return <CategoriesClient categories={categories} itemCounts={itemCounts} />;
 }

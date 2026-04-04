@@ -23,12 +23,14 @@ interface KitchenOrder {
     selectedAdicionales: Array<{
       id: string;
       name: string;
+      quantity?: number;
       substitutesComponentId?: string;
       substitutesComponentName?: string;
     }>;
     selectedBebidas?: Array<{
       id: string;
       name: string;
+      quantity?: number;
     }>;
     removedComponents: Array<{
       isRemoval: true;
@@ -74,7 +76,7 @@ function useClock() {
   return time;
 }
 
-export function KitchenQueue({ restaurantName }: { restaurantName: string }) {
+export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: string; logoUrl?: string }) {
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["kitchen-orders"],
     queryFn: fetchKitchenOrders,
@@ -143,15 +145,32 @@ export function KitchenQueue({ restaurantName }: { restaurantName: string }) {
       <header className="sticky top-0 z-10 border-b border-border bg-white/90 backdrop-blur-md shadow-sm">
         <div className="flex items-center justify-between px-4 sm:px-6 py-3">
           <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white">
-              <ChefHat className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="font-display text-xl font-bold text-primary leading-tight">
-                {restaurantName} Cocina
-              </h1>
-              <p className="text-xs text-text-muted">Sistema KDS</p>
-            </div>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoUrl}
+                alt={restaurantName}
+                className="h-12 w-auto max-w-[180px] object-contain rounded-sm"
+              />
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white">
+                  <ChefHat className="h-5 w-5" />
+                </div>
+                <div>
+                  <h1 className="font-display text-xl font-bold text-primary leading-tight">
+                    {restaurantName} Cocina
+                  </h1>
+                </div>
+              </div>
+            )}
+            {!logoUrl && <p className="text-xs text-text-muted">Sistema KDS</p>}
+            {logoUrl && (
+              <div className="hidden sm:block">
+                <h1 className="font-display text-lg font-bold text-primary leading-tight">Cocina</h1>
+                <p className="text-xs text-text-muted">Sistema KDS</p>
+              </div>
+            )}
           </div>
 
           {/* Clock */}
@@ -281,7 +300,7 @@ export function KitchenQueue({ restaurantName }: { restaurantName: string }) {
                                   key={adIdx}
                                   className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-sm font-bold text-primary border border-primary/20"
                                 >
-                                  + {ad.name}
+                                  + {(ad.quantity ?? 1) > 1 ? `${ad.quantity}× ` : ""}{ad.name}
                                 </span>
                               ))}
                             </div>
@@ -294,7 +313,7 @@ export function KitchenQueue({ restaurantName }: { restaurantName: string }) {
                                   key={`beb-${bIdx}`}
                                   className="inline-flex items-center rounded-lg bg-info/10 px-2 py-1 text-sm font-bold text-info border border-info/20"
                                 >
-                                  🍹 {b.name}
+                                  🍹 {(b.quantity ?? 1) > 1 ? `${b.quantity}× ` : ""}{b.name}
                                 </span>
                               ))}
                             </div>
@@ -408,7 +427,7 @@ export function KitchenQueue({ restaurantName }: { restaurantName: string }) {
                                   key={adIdx}
                                   className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-sm font-bold text-primary border border-primary/20"
                                 >
-                                  + {ad.name}
+                                  + {(ad.quantity ?? 1) > 1 ? `${ad.quantity}× ` : ""}{ad.name}
                                 </span>
                               ))}
                             </div>
@@ -421,7 +440,7 @@ export function KitchenQueue({ restaurantName }: { restaurantName: string }) {
                                   key={`beb-${bIdx}`}
                                   className="inline-flex items-center rounded-lg bg-info/10 px-2 py-1 text-sm font-bold text-info border border-info/20"
                                 >
-                                  🍹 {b.name}
+                                  🍹 {(b.quantity ?? 1) > 1 ? `${b.quantity}× ` : ""}{b.name}
                                 </span>
                               ))}
                             </div>

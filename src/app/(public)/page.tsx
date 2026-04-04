@@ -43,9 +43,18 @@ export default async function MenuPage() {
         <header className="sticky top-0 z-30 bg-white shadow-elevated">
           <div className="flex items-center justify-between px-3 py-3 sm:px-4 gap-2 overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-2 shrink-0">
-              <h1 className="font-display text-2xl font-bold text-primary">
-                {appSettings?.restaurantName ?? "G&M"}
-              </h1>
+              {appSettings?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={appSettings.logoUrl}
+                  alt={appSettings.restaurantName ?? "Logo"}
+                  className="h-12 w-auto max-w-[180px] object-contain"
+                />
+              ) : (
+                <h1 className="font-display text-2xl font-bold text-primary">
+                  {appSettings?.restaurantName ?? "G&M"}
+                </h1>
+              )}
               {appSettings?.instagramUrl && (() => {
                 const url = appSettings.instagramUrl;
                 const formattedUrl = url.startsWith("http")
@@ -98,9 +107,18 @@ export default async function MenuPage() {
       <header className="sticky top-0 z-30 bg-white shadow-elevated">
         <div className="flex items-center justify-between px-3 py-3 sm:px-4 gap-2 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-2 shrink-0">
-            <h1 className="font-display text-xl sm:text-2xl font-bold text-primary">
-              {appSettings?.restaurantName ?? "G&M"}
-            </h1>
+            {appSettings?.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={appSettings.logoUrl}
+                alt={appSettings.restaurantName ?? "Logo"}
+                className="h-12 w-auto max-w-[180px] object-contain"
+              />
+            ) : (
+              <h1 className="font-display text-xl sm:text-2xl font-bold text-primary">
+                {appSettings?.restaurantName ?? "G&M"}
+              </h1>
+            )}
             {appSettings?.instagramUrl && (() => {
               const url = appSettings.instagramUrl;
               const formattedUrl = url.startsWith("http")
@@ -150,6 +168,7 @@ export default async function MenuPage() {
           dailyAdicionales={dailyAdicionales}
           dailyBebidas={dailyBebidas}
           maxQuantityPerItem={maxQuantityPerItem}
+          menuLayout={appSettings?.menuLayout as "modern" | "classic" | undefined}
         />
       </Suspense>
 
