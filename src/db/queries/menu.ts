@@ -1,6 +1,13 @@
 import { db } from "../index";
 import { menuItems, optionGroups, options, categories, menuItemAdicionales, menuItemContornos, menuItemBebidas, orders } from "../schema";
 import { eq, sql, and, gte, lte, isNotNull, asc } from "drizzle-orm";
+import type {
+  MenuItemWithComponents,
+  OptionGroupWithOptions,
+  OptionItem,
+  SimpleComponent,
+  ContornoComponent,
+} from "@/types/menu.types";
 
 export interface MenuWithGroups {
   id: string;
@@ -16,14 +23,10 @@ export interface MenuWithGroups {
   isAvailable: boolean;
   imageUrl: string | null;
   sortOrder: number;
-  optionGroups: any[];
+  optionGroups: OptionGroupWithOptions[];
 }
 
-export interface MenuWithComponents extends MenuWithGroups {
-  adicionales: any[];
-  contornos: any[];
-  bebidas: any[];
-}
+export type MenuWithComponents = MenuItemWithComponents;
 
 export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
   const [items, groupRows] = await Promise.all([
@@ -68,21 +71,7 @@ export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
 
   const optionsByItem = new Map<
     string,
-    Array<{
-      id: string;
-      menuItemId: string;
-      name: string;
-      type: "radio" | "checkbox";
-      required: boolean;
-      sortOrder: number;
-      options: Array<{
-        id: string;
-        name: string;
-        priceUsdCents: number;
-        isAvailable: boolean;
-        sortOrder: number;
-      }>;
-    }>
+    OptionGroupWithOptions[]
   >();
 
   for (const row of groupRows) {
@@ -96,7 +85,6 @@ export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
     if (!group) {
       group = {
         id: row.groupId,
-        menuItemId: row.menuItemId,
         name: row.groupName,
         type: row.groupType,
         required: row.groupRequired,
@@ -207,21 +195,7 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
       .orderBy(menuItems.sortOrder),
   ]);
 
-  const optionsByItem = new Map<string, Array<{
-    id: string;
-    menuItemId: string;
-    name: string;
-    type: "radio" | "checkbox";
-    required: boolean;
-    sortOrder: number;
-    options: Array<{
-      id: string;
-      name: string;
-      priceUsdCents: number;
-      isAvailable: boolean;
-      sortOrder: number;
-    }>;
-  }>>();
+  const optionsByItem = new Map<string, OptionGroupWithOptions[]>();
 
   for (const row of groupRows) {
     let groups = optionsByItem.get(row.menuItemId);
@@ -234,7 +208,6 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
     if (!group) {
       group = {
         id: row.groupId,
-        menuItemId: row.menuItemId,
         name: row.groupName,
         type: row.groupType,
         required: row.groupRequired,
@@ -253,34 +226,54 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
     });
   }
 
-  const adicionalesByItem = new Map<string, typeof adicionalRows>();
+  const adicionalesByItem = new Map<string, SimpleComponent[]>();
   for (const row of adicionalRows) {
     let list = adicionalesByItem.get(row.menuItemId);
     if (!list) {
       list = [];
       adicionalesByItem.set(row.menuItemId, list);
     }
-    list.push(row);
+    list.push({
+      id: row.id,
+      name: row.name,
+      priceUsdCents: row.priceUsdCents,
+      isAvailable: row.isAvailable,
+      sortOrder: row.sortOrder,
+    });
   }
 
-  const contornosByItem = new Map<string, typeof contornoRows>();
+  const contornosByItem = new Map<string, ContornoComponent[]>();
   for (const row of contornoRows) {
     let list = contornosByItem.get(row.menuItemId);
     if (!list) {
       list = [];
       contornosByItem.set(row.menuItemId, list);
     }
-    list.push(row);
+    list.push({
+      id: row.id,
+      name: row.name,
+      priceUsdCents: row.priceUsdCents,
+      isAvailable: row.isAvailable,
+      removable: row.removable,
+      substituteContornoIds: row.substituteContornoIds,
+      sortOrder: row.sortOrder,
+    });
   }
 
-  const bebidasByItem = new Map<string, typeof bebidaRows>();
+  const bebidasByItem = new Map<string, SimpleComponent[]>();
   for (const row of bebidaRows) {
     let list = bebidasByItem.get(row.menuItemId);
     if (!list) {
       list = [];
       bebidasByItem.set(row.menuItemId, list);
     }
-    list.push(row);
+    list.push({
+      id: row.id,
+      name: row.name,
+      priceUsdCents: row.priceUsdCents,
+      isAvailable: row.isAvailable,
+      sortOrder: row.sortOrder,
+    });
   }
 
   return items.map((item) => ({

@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { Contorno, GlobalContorno, SimpleItem, MenuItem } from "@/components/customer/ItemDetailModal.types";
+import type {
+  ContornoComponent as Contorno,
+  SimpleComponent as GlobalContorno,
+  MenuItemWithComponents as MenuItem,
+} from "@/types/menu.types";
+import type { SimpleItem } from "@/components/customer/ItemDetailModal.types";
 
 export interface UseItemDetailModalParams {
   item: MenuItem;

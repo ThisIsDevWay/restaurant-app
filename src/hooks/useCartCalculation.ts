@@ -2,7 +2,12 @@
 
 import { useMemo } from "react";
 import type { ContornoSubstitution } from "@/store/cartStore";
-import type { Contorno, GlobalContorno, SimpleItem, MenuItem } from "@/components/customer/ItemDetailModal.types";
+import type {
+  ContornoComponent as Contorno,
+  SimpleComponent as GlobalContorno,
+  MenuItemWithComponents as MenuItem,
+} from "@/types/menu.types";
+import type { SimpleItem } from "@/components/customer/ItemDetailModal.types";
 
 interface CartItemResult {
   id: string;

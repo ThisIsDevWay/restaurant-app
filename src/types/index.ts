@@ -12,11 +12,7 @@ import {
 } from "@/db/schema";
 
 // Menu & Categories
-export type MenuItem = typeof menuItems.$inferSelect;
-export type NewMenuItem = typeof menuItems.$inferInsert;
-
-export type Category = typeof categories.$inferSelect;
-export type NewCategory = typeof categories.$inferInsert;
+export type { DbMenuItem, NewDbMenuItem, DbCategory, NewDbCategory } from "./menu.types";
 
 // Orders & Customers
 export type Order = typeof orders.$inferSelect;

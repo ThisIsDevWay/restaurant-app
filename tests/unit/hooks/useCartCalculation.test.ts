@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useCartCalculation } from "@/hooks/useCartCalculation";
-import type { Contorno, GlobalContorno, SimpleItem, MenuItem } from "@/components/customer/ItemDetailModal.types";
+import type {
+  ContornoComponent as Contorno,
+  SimpleComponent as GlobalContorno,
+  MenuItemWithComponents as MenuItem,
+} from "@/types/menu.types";
+import type { SimpleItem } from "@/components/customer/ItemDetailModal.types";
 
 const RATE = 36.50;
 
@@ -14,8 +19,10 @@ function makeItem(overrides: Partial<MenuItem> = {}): MenuItem {
     categoryId: "cat-1",
     categoryName: "Pollos",
     categoryAllowAlone: true,
+    categoryIsSimple: false,
     isAvailable: true,
     imageUrl: null,
+    sortOrder: 0,
     optionGroups: [],
     adicionales: [],
     bebidas: [],

@@ -1,45 +1,21 @@
-export interface Option {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-  sortOrder: number;
-}
+import type {
+  MenuItemWithComponents,
+  SimpleComponent,
+  OptionItem,
+  OptionGroupWithOptions,
+  ContornoComponent,
+} from "@/types/menu.types";
 
-export interface OptionGroup {
-  id: string;
-  name: string;
-  type: "radio" | "checkbox";
-  required: boolean;
-  sortOrder: number;
-  options: Option[];
-}
-
-export interface Adicional {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-  sortOrder: number;
-}
-
-export interface Contorno {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-  removable: boolean;
-  substituteContornoIds: string[];
-  sortOrder: number;
-}
-
-export interface GlobalContorno {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-  sortOrder: number;
-}
+// Re-exports con nombres legacy para compatibilidad con componentes existentes
+export type {
+  OptionItem as Option,
+  OptionGroupWithOptions as OptionGroup,
+  SimpleComponent as Adicional,
+  SimpleComponent as Bebida,
+  ContornoComponent as Contorno,
+  SimpleComponent as GlobalContorno,
+  MenuItemWithComponents as MenuItem,
+};
 
 export interface SimpleItem {
   id: string;
@@ -49,36 +25,12 @@ export interface SimpleItem {
   sortOrder: number;
 }
 
-export interface Bebida {
-  id: string;
-  name: string;
-  priceUsdCents: number;
-  isAvailable: boolean;
-  sortOrder: number;
-}
-
-export interface MenuItem {
-  id: string;
-  name: string;
-  description: string | null;
-  priceUsdCents: number;
-  categoryId: string;
-  categoryName: string;
-  categoryAllowAlone: boolean;
-  isAvailable: boolean;
-  imageUrl: string | null;
-  optionGroups: OptionGroup[];
-  adicionales: Adicional[];
-  bebidas?: Bebida[];
-  contornos: Contorno[];
-}
-
 export interface ItemDetailModalProps {
-  item: MenuItem;
+  item: MenuItemWithComponents;
   isOpen: boolean;
   onClose: () => void;
   currentRateBsPerUsd: number;
-  allContornos: GlobalContorno[];
+  allContornos: SimpleComponent[];
   adicionalesEnabled?: boolean;
   bebidasEnabled?: boolean;
   dailyAdicionales: SimpleItem[];

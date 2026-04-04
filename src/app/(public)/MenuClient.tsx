@@ -4,57 +4,7 @@ import { useState, useEffect } from "react";
 import { MenuGrid } from "@/components/public/menu/MenuGrid";
 import { CategoryFilter } from "@/components/public/menu/CategoryFilter";
 import { useCartStore } from "@/store/cartStore";
-
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string | null;
-  priceUsdCents: number;
-  categoryId: string;
-  categoryName: string;
-  categoryAllowAlone: boolean;
-  categoryIsSimple: boolean;
-  isAvailable: boolean;
-  imageUrl: string | null;
-  sortOrder: number;
-  optionGroups: Array<{
-    id: string;
-    name: string;
-    type: "radio" | "checkbox";
-    required: boolean;
-    sortOrder: number;
-    options: Array<{
-      id: string;
-      name: string;
-      priceUsdCents: number;
-      isAvailable: boolean;
-      sortOrder: number;
-    }>;
-  }>;
-  adicionales: Array<{
-    id: string;
-    name: string;
-    priceUsdCents: number;
-    isAvailable: boolean;
-    sortOrder: number;
-  }>;
-  bebidas?: Array<{
-    id: string;
-    name: string;
-    priceUsdCents: number;
-    isAvailable: boolean;
-    sortOrder: number;
-  }>;
-  contornos: Array<{
-    id: string;
-    name: string;
-    priceUsdCents: number;
-    isAvailable: boolean;
-    removable: boolean;
-    substituteContornoIds: string[];
-    sortOrder: number;
-  }>;
-}
+import type { MenuItemWithComponents as MenuItem } from "@/types/menu.types";
 
 interface Category {
   id: string;
