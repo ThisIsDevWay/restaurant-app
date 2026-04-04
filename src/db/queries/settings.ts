@@ -1,22 +1,24 @@
 import { db } from "../index";
 import { settings, exchangeRates } from "../schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
-let cached: { data: typeof settings.$inferSelect; at: number } | null = null;
+import { unstable_cache, revalidateTag } from "next/cache";
 
-export async function getSettings() {
-  if (cached && Date.now() - cached.at < 30_000) return cached.data;
-  const [row] = await db
-    .select()
-    .from(settings)
-    .where(eq(settings.id, 1))
-    .limit(1);
-  if (row) cached = { data: row, at: Date.now() };
-  return row ?? null;
-}
+export const getSettings = unstable_cache(
+  async () => {
+    const [row] = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.id, 1))
+      .limit(1);
+    return row ?? null;
+  },
+  ["settings"],
+  { tags: ["settings"], revalidate: 300 }
+);
 
 export function invalidateSettingsCache() {
-  cached = null;
+  revalidateTag("settings");
 }
 
 export async function getActiveRate(): Promise<{ rate: number; fetchedAt: string; currency: string } | null> {
@@ -49,4 +51,14 @@ export async function updateSettings(data: Partial<typeof settings.$inferInsert>
 
   invalidateSettingsCache();
   return row;
+}
+
+export async function getLatestRateByCurrency(currency: string) {
+  const [latestRate] = await db
+    .select()
+    .from(exchangeRates)
+    .where(eq(exchangeRates.currency, currency))
+    .orderBy(desc(exchangeRates.fetchedAt))
+    .limit(1);
+  return latestRate ?? null;
 }
