@@ -5,6 +5,7 @@ import {
   text,
   jsonb,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
 
 export const paymentsLog = pgTable("payments_log", {
@@ -12,7 +13,7 @@ export const paymentsLog = pgTable("payments_log", {
   orderId: uuid("order_id").notNull(),
   providerId: text("provider_id").notNull(),
   amountBsCents: integer("amount_bs_cents").notNull(),
-  reference: text("reference").unique(),
+  reference: text("reference"),
   senderPhone: text("sender_phone"),
   providerRaw: jsonb("provider_raw").notNull(),
   outcome: text("outcome")
@@ -22,4 +23,8 @@ export const paymentsLog = pgTable("payments_log", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => ({
+  uniqueReference: unique("payments_log_reference_unique")
+    .on(table.reference)
+    .nullsNotDistinct(),
+}));
