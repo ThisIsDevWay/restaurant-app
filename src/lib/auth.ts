@@ -48,11 +48,26 @@ const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id as string;
-        // Validar que el role sea uno de los permitidos
         const allowedRoles = ["admin", "kitchen", "user"];
         token.role = allowedRoles.includes(user.role as string)
           ? (user.role as string)
           : "user";
+      } else if (token.id && process.env.NEXT_RUNTIME !== "edge") {
+        // Re-validate role from DB to detect downgraded roles immediately
+        // Skip in Edge (Middleware) to avoid "net" module error
+        try {
+          const [dbUser] = await db
+            .select({ role: users.role })
+            .from(users)
+            .where(eq(users.id, token.id as string))
+            .limit(1);
+
+          if (dbUser) {
+            token.role = dbUser.role;
+          }
+        } catch (err) {
+          console.error("JWT role revalidation failed:", err);
+        }
       }
       return token;
     },
