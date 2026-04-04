@@ -446,6 +446,23 @@ export async function getCategories() {
     .orderBy(categories.sortOrder);
 }
 
+export async function getCategoriesWithItemCount() {
+  return db
+    .select({
+      id: categories.id,
+      name: categories.name,
+      sortOrder: categories.sortOrder,
+      allowAlone: categories.allowAlone,
+      isSimple: categories.isSimple,
+      isAvailable: categories.isAvailable,
+      itemCount: sql<number>`count(${menuItems.id})::int`,
+    })
+    .from(categories)
+    .leftJoin(menuItems, eq(menuItems.categoryId, categories.id))
+    .groupBy(categories.id)
+    .orderBy(asc(categories.sortOrder));
+}
+
 export interface MenuItemProfitability {
   id: string;
   name: string;
