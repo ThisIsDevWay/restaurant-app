@@ -9,6 +9,7 @@ interface CartItemResult {
   name: string;
   priceUsdCents: number;
   priceBsCents: number;
+  quantity: number;
 }
 
 interface UseCartCalculationParams {
@@ -17,8 +18,8 @@ interface UseCartCalculationParams {
   fixedContornos: Contorno[];
   removableContornos: Contorno[];
   substitutionMap: Record<string, string | null>;
-  selectedAdicionalIds: Set<string>;
-  selectedBebidaIds: Set<string>;
+  selectedAdicionalQtys: Record<string, number>;
+  selectedBebidaQtys: Record<string, number>;
   selectedRadio: Record<string, string>;
   dailyAdicionales: SimpleItem[];
   dailyBebidas: SimpleItem[];
@@ -47,8 +48,8 @@ export function useCartCalculation({
   fixedContornos,
   removableContornos,
   substitutionMap,
-  selectedAdicionalIds,
-  selectedBebidaIds,
+  selectedAdicionalQtys,
+  selectedBebidaQtys,
   selectedRadio,
   dailyAdicionales,
   dailyBebidas,
@@ -77,6 +78,7 @@ export function useCartCalculation({
       name: c.name,
       priceUsdCents: c.priceUsdCents,
       priceBsCents: Math.round(c.priceUsdCents * currentRateBsPerUsd),
+      quantity: 1,
     }));
     removableContornos.forEach((c) => {
       if (!substitutionMap[c.id]) {
@@ -85,6 +87,7 @@ export function useCartCalculation({
           name: c.name,
           priceUsdCents: c.priceUsdCents,
           priceBsCents: Math.round(c.priceUsdCents * currentRateBsPerUsd),
+          quantity: 1,
         });
       }
     });
@@ -113,7 +116,8 @@ export function useCartCalculation({
 
   const cartAdicionales = useMemo<CartItemResult[]>(() => {
     const result: CartItemResult[] = [];
-    for (const adicionalId of selectedAdicionalIds) {
+    for (const [adicionalId, qty] of Object.entries(selectedAdicionalQtys)) {
+      if (qty <= 0) continue;
       const adicional = dailyAdicionales.find((a) => a.id === adicionalId)
         || item.adicionales.find((a) => a.id === adicionalId);
       if (adicional && adicional.isAvailable) {
@@ -122,15 +126,17 @@ export function useCartCalculation({
           name: adicional.name,
           priceUsdCents: adicional.priceUsdCents,
           priceBsCents: Math.round(adicional.priceUsdCents * currentRateBsPerUsd),
+          quantity: qty,
         });
       }
     }
     return result;
-  }, [selectedAdicionalIds, dailyAdicionales, item.adicionales, currentRateBsPerUsd]);
+  }, [selectedAdicionalQtys, dailyAdicionales, item.adicionales, currentRateBsPerUsd]);
 
   const cartBebidas = useMemo<CartItemResult[]>(() => {
     const result: CartItemResult[] = [];
-    for (const bebidaId of selectedBebidaIds) {
+    for (const [bebidaId, qty] of Object.entries(selectedBebidaQtys)) {
+      if (qty <= 0) continue;
       const bebida = dailyBebidas.find((b) => b.id === bebidaId)
         || item.bebidas?.find((b) => b.id === bebidaId);
       if (bebida && bebida.isAvailable) {
@@ -139,11 +145,12 @@ export function useCartCalculation({
           name: bebida.name,
           priceUsdCents: bebida.priceUsdCents,
           priceBsCents: Math.round(bebida.priceUsdCents * currentRateBsPerUsd),
+          quantity: qty,
         });
       }
     }
     return result;
-  }, [selectedBebidaIds, dailyBebidas, item.bebidas, currentRateBsPerUsd]);
+  }, [selectedBebidaQtys, dailyBebidas, item.bebidas, currentRateBsPerUsd]);
 
   const substitutionUsdCents = useMemo(
     () => cartContornoSubstitutions.reduce((sum, s) => sum + s.priceUsdCents, 0),
@@ -151,16 +158,16 @@ export function useCartCalculation({
   );
 
   const additionalUsdCents = useMemo(
-    () => cartAdicionales.reduce((sum, a) => sum + a.priceUsdCents, 0),
+    () => cartAdicionales.reduce((sum, a) => sum + a.priceUsdCents * a.quantity, 0),
     [cartAdicionales],
   );
 
   const bebidasUsdCents = useMemo(
-    () => cartBebidas.reduce((sum, b) => sum + b.priceUsdCents, 0),
+    () => cartBebidas.reduce((sum, b) => sum + b.priceUsdCents * b.quantity, 0),
     [cartBebidas],
   );
 
-  const extrasCount = cartAdicionales.length + cartContornoSubstitutions.length + cartBebidas.length;
+  const extrasCount = cartAdicionales.reduce((sum, a) => sum + a.quantity, 0) + cartContornoSubstitutions.length + cartBebidas.reduce((sum, b) => sum + b.quantity, 0);
 
   const totalUsdCents = (item.priceUsdCents + substitutionUsdCents + additionalUsdCents + bebidasUsdCents) * quantity;
   const totalBsCents = Math.round(totalUsdCents * currentRateBsPerUsd);

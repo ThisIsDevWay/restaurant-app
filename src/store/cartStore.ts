@@ -31,12 +31,14 @@ export interface CartItem {
     name: string;
     priceUsdCents: number;
     priceBsCents: number;
+    quantity: number;
   }>;
   selectedBebidas?: Array<{
     id: string;
     name: string;
     priceUsdCents: number;
     priceBsCents: number;
+    quantity: number;
   }>;
   removedComponents: RemovedComponent[];
   quantity: number;
@@ -72,11 +74,11 @@ function computeItemTotal(
   const fixedContornosBs = (item.fixedContornos ?? []).reduce((sum, c) => sum + c.priceBsCents, 0);
   const substitutionsBs = (item.contornoSubstitutions ?? []).reduce((sum, s) => sum + s.priceBsCents, 0);
   const adicionalesBs = (item.selectedAdicionales ?? []).reduce(
-    (sum, a) => sum + a.priceBsCents,
+    (sum, a) => sum + a.priceBsCents * (a.quantity ?? 1),
     0,
   );
   const bebidasBs = (item.selectedBebidas ?? []).reduce(
-    (sum, b) => sum + b.priceBsCents,
+    (sum, b) => sum + b.priceBsCents * (b.quantity ?? 1),
     0,
   );
   const removalsBs = (item.removedComponents ?? []).reduce(
@@ -90,8 +92,8 @@ function computeItemTotal(
 function cartItemKey(item: Omit<CartItem, "quantity" | "itemTotalBsCents">): string {
   const contornoIds = (item.fixedContornos ?? []).map(c => c.id).sort().join(",");
   const subIds = (item.contornoSubstitutions ?? []).map(s => `${s.originalId}>${s.substituteId}`).sort().join(",");
-  const adIds = (item.selectedAdicionales ?? []).map(a => a.id).sort().join(",");
-  const bebIds = (item.selectedBebidas ?? []).map(b => b.id).sort().join(",");
+  const adIds = (item.selectedAdicionales ?? []).map(a => `${a.id}:${a.quantity ?? 1}`).sort().join(",");
+  const bebIds = (item.selectedBebidas ?? []).map(b => `${b.id}:${b.quantity ?? 1}`).sort().join(",");
   const remIds = (item.removedComponents ?? []).map(r => r.componentId).sort().join(",");
   return `${item.id}|${contornoIds}|${subIds}|${adIds}|${bebIds}|${remIds}`;
 }
@@ -102,11 +104,11 @@ function computeItemUsdCents(
   const fixedContornosUsd = (item.fixedContornos ?? []).reduce((sum, c) => sum + c.priceUsdCents, 0);
   const substitutionsUsd = (item.contornoSubstitutions ?? []).reduce((sum, s) => sum + s.priceUsdCents, 0);
   const adicionalesUsd = (item.selectedAdicionales ?? []).reduce(
-    (sum, a) => sum + a.priceUsdCents,
+    (sum, a) => sum + a.priceUsdCents * (a.quantity ?? 1),
     0,
   );
   const bebidasUsd = (item.selectedBebidas ?? []).reduce(
-    (sum, b) => sum + b.priceUsdCents,
+    (sum, b) => sum + b.priceUsdCents * (b.quantity ?? 1),
     0,
   );
   const removalsUsd = (item.removedComponents ?? []).reduce(

@@ -10,6 +10,7 @@ export interface UseItemDetailModalParams {
   allContornos: GlobalContorno[];
   dailyAdicionales: SimpleItem[];
   dailyBebidas: SimpleItem[];
+  maxQuantityPerItem?: number;
 }
 
 export interface UseItemDetailModalReturn {
@@ -17,8 +18,8 @@ export interface UseItemDetailModalReturn {
   expandedContornos: Set<string>;
   selectedRadio: Record<string, string>;
   setSelectedRadio: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  selectedAdicionalIds: Set<string>;
-  selectedBebidaIds: Set<string>;
+  adicionalQuantities: Record<string, number>;
+  bebidaQuantities: Record<string, number>;
   quantity: number;
   setQuantity: React.Dispatch<React.SetStateAction<number>>;
   closing: boolean;
@@ -26,8 +27,8 @@ export interface UseItemDetailModalReturn {
   handleClose: () => void;
   toggleExpandContorno: (contornoId: string) => void;
   selectSubstitute: (contornoId: string, substituteId: string | null) => void;
-  toggleAdicional: (adicionalId: string) => void;
-  toggleBebida: (bebidaId: string) => void;
+  updateAdicionalQty: (adicionalId: string, delta: number) => void;
+  updateBebidaQty: (bebidaId: string, delta: number) => void;
   getSubstituteOptions: (contornoId: string) => GlobalContorno[];
   availableContornos: Contorno[];
   fixedContornos: Contorno[];
@@ -42,12 +43,13 @@ export function useItemDetailModal({
   allContornos,
   dailyAdicionales,
   dailyBebidas,
+  maxQuantityPerItem = 10,
 }: UseItemDetailModalParams): UseItemDetailModalReturn {
   const [substitutionMap, setSubstitutionMap] = useState<Record<string, string | null>>({});
   const [expandedContornos, setExpandedContornos] = useState<Set<string>>(new Set());
   const [selectedRadio, setSelectedRadio] = useState<Record<string, string>>({});
-  const [selectedAdicionalIds, setSelectedAdicionalIds] = useState<Set<string>>(new Set());
-  const [selectedBebidaIds, setSelectedBebidaIds] = useState<Set<string>>(new Set());
+  const [adicionalQuantities, setAdicionalQuantities] = useState<Record<string, number>>({});
+  const [bebidaQuantities, setBebidaQuantities] = useState<Record<string, number>>({});
   const [quantity, setQuantity] = useState(1);
   const [closing, setClosing] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -66,8 +68,8 @@ export function useItemDetailModal({
       setSubstitutionMap({});
       setExpandedContornos(new Set());
       setSelectedRadio({});
-      setSelectedAdicionalIds(new Set());
-      setSelectedBebidaIds(new Set());
+      setAdicionalQuantities({});
+      setBebidaQuantities({});
       setQuantity(1);
       setClosing(false);
     }
@@ -119,30 +121,38 @@ export function useItemDetailModal({
     });
   }
 
-  function toggleAdicional(adicionalId: string) {
+  const updateAdicionalQty = useCallback((adicionalId: string, delta: number) => {
     if (activeSubstituteIds.has(adicionalId)) return;
-    setSelectedAdicionalIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(adicionalId)) {
-        next.delete(adicionalId);
-      } else {
-        next.add(adicionalId);
-      }
-      return next;
-    });
-  }
+    setAdicionalQuantities((prev) => {
+      const current = prev[adicionalId] ?? 0;
+      const next = Math.max(0, current + delta);
+      const clampedNext = Math.min(next, maxQuantityPerItem);
 
-  function toggleBebida(bebidaId: string) {
-    setSelectedBebidaIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(bebidaId)) {
-        next.delete(bebidaId);
+      const newQtys = { ...prev };
+      if (clampedNext === 0) {
+        delete newQtys[adicionalId];
       } else {
-        next.add(bebidaId);
+        newQtys[adicionalId] = clampedNext;
       }
-      return next;
+      return newQtys;
     });
-  }
+  }, [maxQuantityPerItem, activeSubstituteIds]);
+
+  const updateBebidaQty = useCallback((bebidaId: string, delta: number) => {
+    setBebidaQuantities((prev) => {
+      const current = prev[bebidaId] ?? 0;
+      const next = Math.max(0, current + delta);
+      const clampedNext = Math.min(next, maxQuantityPerItem);
+
+      const newQtys = { ...prev };
+      if (clampedNext === 0) {
+        delete newQtys[bebidaId];
+      } else {
+        newQtys[bebidaId] = clampedNext;
+      }
+      return newQtys;
+    });
+  }, [maxQuantityPerItem]);
 
   function getSubstituteOptions(contornoId: string) {
     const contorno = availableContornos.find((c) => c.id === contornoId);
@@ -159,8 +169,8 @@ export function useItemDetailModal({
     expandedContornos,
     selectedRadio,
     setSelectedRadio,
-    selectedAdicionalIds,
-    selectedBebidaIds,
+    adicionalQuantities,
+    bebidaQuantities,
     quantity,
     setQuantity,
     closing,
@@ -168,8 +178,8 @@ export function useItemDetailModal({
     handleClose,
     toggleExpandContorno,
     selectSubstitute,
-    toggleAdicional,
-    toggleBebida,
+    updateAdicionalQty,
+    updateBebidaQty,
     getSubstituteOptions,
     availableContornos,
     fixedContornos,

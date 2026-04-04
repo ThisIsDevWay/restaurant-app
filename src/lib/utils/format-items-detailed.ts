@@ -10,6 +10,7 @@ export interface SnapshotItem {
     name: string;
     priceUsdCents: number;
     priceBsCents: number;
+    quantity?: number;
     substitutesComponentId?: string;
     substitutesComponentName?: string;
   }>;
@@ -18,6 +19,7 @@ export interface SnapshotItem {
     name: string;
     priceUsdCents: number;
     priceBsCents: number;
+    quantity?: number;
   }>;
   removedComponents?: Array<{
     isRemoval?: boolean;
@@ -86,8 +88,10 @@ export function formatItemsDetailed(
       if (pureAdicionales.length > 0) {
         lines.push(`Adicionales`);
         for (const a of pureAdicionales) {
-          const priceStr = a.priceBsCents > 0 ? `+ ${formatPrice(a.priceBsCents)}` : "incluido";
-          lines.push(`  ${a.name} · ${priceStr}`);
+          const qty = a.quantity ?? 1;
+          const priceStr = a.priceBsCents > 0 ? `+ ${formatPrice(a.priceBsCents * qty)}` : "incluido";
+          const prefix = qty > 1 ? `${qty}× ` : "";
+          lines.push(`  ${prefix}${a.name} · ${priceStr}`);
         }
       }
 
@@ -95,8 +99,10 @@ export function formatItemsDetailed(
       if (item.selectedBebidas && item.selectedBebidas.length > 0) {
         lines.push(`Bebidas`);
         for (const b of item.selectedBebidas) {
-          const priceStr = b.priceBsCents > 0 ? `+ ${formatPrice(b.priceBsCents)}` : "incluido";
-          lines.push(`  ${b.name} · ${priceStr}`);
+          const qty = b.quantity ?? 1;
+          const priceStr = b.priceBsCents > 0 ? `+ ${formatPrice(b.priceBsCents * qty)}` : "incluido";
+          const prefix = qty > 1 ? `${qty}× ` : "";
+          lines.push(`  ${prefix}${b.name} · ${priceStr}`);
         }
       }
 

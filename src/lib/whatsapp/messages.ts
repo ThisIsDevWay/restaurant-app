@@ -59,11 +59,11 @@ export async function sendOrderMessage(
     }
     // Adicionales (incluye sustituciones)
     for (const a of item.selectedAdicionales) {
-      totalUsdCents += a.priceUsdCents * item.quantity;
+      totalUsdCents += a.priceUsdCents * (a.quantity ?? 1) * item.quantity;
     }
     // Bebidas
     for (const b of item.selectedBebidas ?? []) {
-      totalUsdCents += b.priceUsdCents * item.quantity;
+      totalUsdCents += b.priceUsdCents * (b.quantity ?? 1) * item.quantity;
     }
     // Removidos (descuento, priceUsdCents es negativo)
     for (const r of item.removedComponents ?? []) {
@@ -92,3 +92,4 @@ export async function sendOrderMessage(
   const result = await sendMessage(formattedPhone, message, baseUrl);
   return result;
 }
+

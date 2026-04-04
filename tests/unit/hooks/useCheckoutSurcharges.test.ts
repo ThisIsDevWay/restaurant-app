@@ -80,8 +80,8 @@ describe("useCheckoutSurcharges", () => {
         items: [
           makeCartItem({
             quantity: 1,
-            selectedAdicionales: [{ id: "a1", name: "Queso", priceUsdCents: 60, priceBsCents: 2190 }],
-            selectedBebidas: [{ id: "b1", name: "Cola", priceUsdCents: 100, priceBsCents: 3650 }],
+            selectedAdicionales: [{ id: "a1", name: "Queso", priceUsdCents: 60, priceBsCents: 2190, quantity: 1 }],
+            selectedBebidas: [{ id: "b1", name: "Cola", priceUsdCents: 100, priceBsCents: 3650, quantity: 1 }],
           }),
         ],
         orderMode: "take_away",

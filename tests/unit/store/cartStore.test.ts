@@ -17,8 +17,8 @@ describe("cartStore deduplication and pricing", () => {
     });
 
     it("should deduplicate items with same components regardless of order", () => {
-        const additional1 = { id: "a1", name: "Extra 1", priceUsdCents: 100, priceBsCents: 4000 };
-        const additional2 = { id: "a2", name: "Extra 2", priceUsdCents: 200, priceBsCents: 8000 };
+        const additional1 = { id: "a1", name: "Extra 1", priceUsdCents: 100, priceBsCents: 4000, quantity: 1 };
+        const additional2 = { id: "a2", name: "Extra 2", priceUsdCents: 200, priceBsCents: 8000, quantity: 1 };
 
         const item1: Omit<CartItem, "quantity" | "itemTotalBsCents"> = {
             id: "item1",

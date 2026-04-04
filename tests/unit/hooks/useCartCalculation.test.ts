@@ -58,8 +58,8 @@ describe("useCartCalculation", () => {
         fixedContornos: [],
         removableContornos: [],
         substitutionMap: {},
-        selectedAdicionalIds: new Set(),
-        selectedBebidaIds: new Set(),
+        selectedAdicionalQtys: {},
+        selectedBebidaQtys: {},
         selectedRadio: {},
         dailyAdicionales: [],
         dailyBebidas: [],
@@ -126,9 +126,9 @@ describe("useCartCalculation", () => {
   it("includes adicionales and bebidas in totals", () => {
     const { result } = renderCalc({
       dailyAdicionales: [adicional],
-      selectedAdicionalIds: new Set(["a1"]),
+      selectedAdicionalQtys: { "a1": 1 },
       dailyBebidas: [bebida],
-      selectedBebidaIds: new Set(["b1"]),
+      selectedBebidaQtys: { "b1": 1 },
     });
     // totalUsdCents = (500 + 60 + 100) * 1 = 660
     expect(result.current.totalUsdCents).toBe(660);

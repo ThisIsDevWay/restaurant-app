@@ -53,8 +53,8 @@ export function useCheckoutSurcharges({
 
     items.forEach((item) => {
       plateCount += item.quantity;
-      adicionalCount += item.selectedAdicionales.length * item.quantity;
-      bebidaCount += (item.selectedBebidas ?? []).length * item.quantity;
+      adicionalCount += item.selectedAdicionales.reduce((sum, a) => sum + (a.quantity ?? 1), 0) * item.quantity;
+      bebidaCount += (item.selectedBebidas ?? []).reduce((sum, b) => sum + (b.quantity ?? 1), 0) * item.quantity;
     });
 
     const packagingUsdCents =

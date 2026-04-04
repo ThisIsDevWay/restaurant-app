@@ -29,12 +29,14 @@ export const orders = pgTable("orders", {
         priceBsCents: number;
         substitutesComponentId?: string;
         substitutesComponentName?: string;
+        quantity?: number;
       }>;
       selectedBebidas?: Array<{
         id: string;
         name: string;
         priceUsdCents: number;
         priceBsCents: number;
+        quantity?: number;
       }>;
       removedComponents: Array<{
         isRemoval: true;
