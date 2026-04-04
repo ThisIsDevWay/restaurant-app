@@ -108,13 +108,14 @@ export class BanescoReferenceProvider implements PaymentProvider {
     }
 
     // Verify amount with Banesco API (or mock)
+    const banescoApiKey = process.env.BANESCO_API_KEY || this.settings.banescoApiKey;
     const mockMode = process.env.NODE_ENV !== "production" &&
-      (process.env.BANESCO_API_MOCK === "true" || !this.settings.banescoApiKey);
+      (process.env.BANESCO_API_MOCK === "true" || !banescoApiKey);
     let apiResponse: unknown;
 
     if (mockMode) {
       logger.warn("BANESCO EN MODO MOCK — no verificar en producción", {
-        reason: this.settings.banescoApiKey ? "BANESCO_API_MOCK=true" : "banescoApiKey no configurada",
+        reason: banescoApiKey ? "BANESCO_API_MOCK=true" : "banescoApiKey no configurada",
       });
       // In mock mode, accept any reference with 8+ digits
       apiResponse = {
@@ -125,7 +126,7 @@ export class BanescoReferenceProvider implements PaymentProvider {
       };
     } else {
       try {
-        const apiKey = this.settings.banescoApiKey;
+        const apiKey = banescoApiKey;
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
 
@@ -179,6 +180,7 @@ export class BanescoReferenceProvider implements PaymentProvider {
         .select()
         .from(paymentsLog)
         .where(eq(paymentsLog.reference, reference.trim()))
+        .for("update")
         .limit(1);
 
       if (existingLog) {

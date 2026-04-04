@@ -109,12 +109,18 @@ export class MercantilC2PProvider implements PaymentProvider {
       };
     }
 
+    const clientId = process.env.MERCANTIL_CLIENT_ID || this.settings.mercantilClientId;
+    const secretKey = process.env.MERCANTIL_SECRET_KEY || this.settings.mercantilSecretKey;
+    const merchantId = process.env.MERCANTIL_MERCHANT_ID || this.settings.mercantilMerchantId;
+    const integratorId = process.env.MERCANTIL_INTEGRATOR_ID || this.settings.mercantilIntegratorId;
+    const terminalId = process.env.MERCANTIL_TERMINAL_ID || this.settings.mercantilTerminalId;
+
     const hasCreds = Boolean(
-      this.settings.mercantilClientId &&
-      this.settings.mercantilSecretKey &&
-      this.settings.mercantilMerchantId &&
-      this.settings.mercantilIntegratorId &&
-      this.settings.mercantilTerminalId
+      clientId &&
+      secretKey &&
+      merchantId &&
+      integratorId &&
+      terminalId
     );
 
     const mockMode = process.env.MERCANTIL_API_MOCK === "true" || !hasCreds;
@@ -144,16 +150,16 @@ export class MercantilC2PProvider implements PaymentProvider {
         const trx_date = `${String(orderDate.getDate()).padStart(2, '0')}/${String(orderDate.getMonth() + 1).padStart(2, '0')}/${orderDate.getFullYear()}`;
 
         // Encrypt phone numbers
-        const destPhone = mercantilEncrypt(this.settings.accountPhone, this.settings.mercantilSecretKey!);
+        const destPhone = mercantilEncrypt(this.settings.accountPhone, secretKey!);
         // For Pago Móvil P2C search, origin_mobile_number (customer) is optional but if required by bank, must be encrypted.
         // We use the account's own phone just to satisfy the origin field if customer isn't strictly needed for search by reference.
-        const originPhone = mercantilEncrypt(order.customerPhone || "00000000000", this.settings.mercantilSecretKey!);
+        const originPhone = mercantilEncrypt(order.customerPhone || "00000000000", secretKey!);
 
         const body = {
           merchant_identify: {
-            integratorId: this.settings.mercantilIntegratorId,
-            merchantId: this.settings.mercantilMerchantId,
-            terminalId: this.settings.mercantilTerminalId,
+            integratorId: integratorId,
+            merchantId: merchantId,
+            terminalId: terminalId,
           },
           client_identify: {
             ipaddress: "127.0.0.1",
@@ -179,7 +185,7 @@ export class MercantilC2PProvider implements PaymentProvider {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-IBM-Client-ID": this.settings.mercantilClientId!,
+            "X-IBM-Client-ID": clientId!,
           },
           body: JSON.stringify(body),
           signal: controller.signal,
