@@ -26,7 +26,30 @@ export async function getPendingOrdersCount(): Promise<number> {
     .from(orders)
     .where(eq(orders.status, "pending"));
 
-  return result.count;
+  return result?.count ?? 0;
+}
+
+export async function createOrderWithCapacityCheck(
+  data: typeof orders.$inferInsert,
+  maxPending: number,
+): Promise<{ order: typeof orders.$inferSelect | null; reason: "capacity_exceeded" | null }> {
+  return await db.transaction(async (tx) => {
+    // Use an advisory lock to serialize the capacity check.
+    // hashtext() provides a stable integer ID for the lock name.
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('orders_capacity_check'), 1)`);
+
+    const [result] = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(orders)
+      .where(eq(orders.status, "pending"));
+
+    if ((result?.count ?? 0) >= maxPending) {
+      return { order: null, reason: "capacity_exceeded" };
+    }
+
+    const [newOrder] = await tx.insert(orders).values(data).returning();
+    return { order: newOrder, reason: null };
+  });
 }
 
 export async function createOrder(data: typeof orders.$inferInsert) {
