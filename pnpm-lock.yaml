@@ -108,6 +108,9 @@ importers:
       '@napi-rs/canvas':
         specifier: ^0.1.97
         version: 0.1.97
+      '@next/eslint-plugin-next':
+        specifier: ^16.2.2
+        version: 16.2.2
       '@playwright/test':
         specifier: ^1.52.0
         version: 1.58.2
@@ -1164,6 +1167,9 @@ packages:
 
   '@next/eslint-plugin-next@15.4.11':
     resolution: {integrity: sha512-WSY6ZwahlbR3JLfXrBezo2H4OmCeF2aFpguZuTkGV/n7+C10wYP17gxsCXbKVI6TpWmHZysp/AhwovUObPjfEA==}
+
+  '@next/eslint-plugin-next@16.2.2':
+    resolution: {integrity: sha512-IOPbWzDQ+76AtjZioaCjpIY72xNSDMnarZ2GMQ4wjNLvnJEJHqxQwGFhgnIWLV9klb4g/+amg88Tk5OXVpyLTw==}
 
   '@next/swc-darwin-arm64@15.4.8':
     resolution: {integrity: sha512-Pf6zXp7yyQEn7sqMxur6+kYcywx5up1J849psyET7/8pG2gQTVMjU3NzgIt8SeEP5to3If/SaWmaA6H6ysBr1A==}
@@ -5711,6 +5717,10 @@ snapshots:
   '@next/env@15.4.11': {}
 
   '@next/eslint-plugin-next@15.4.11':
+    dependencies:
+      fast-glob: 3.3.1
+
+  '@next/eslint-plugin-next@16.2.2':
     dependencies:
       fast-glob: 3.3.1
 
