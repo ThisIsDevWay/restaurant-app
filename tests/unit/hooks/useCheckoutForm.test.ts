@@ -195,6 +195,11 @@ describe("useCheckoutForm", () => {
         result.current.handlePhoneChange({ target: { value: "04141234567" } } as React.ChangeEvent<HTMLInputElement>);
       });
 
+      // Select an order mode (required for submission)
+      act(() => {
+        result.current.setOrderMode("take_away");
+      });
+
       // Wait for debounce to resolve (no lookup needed for submit test)
       await act(async () => {
         vi.advanceTimersByTime(400);
@@ -209,8 +214,9 @@ describe("useCheckoutForm", () => {
         "pago_movil",
         undefined,
         undefined,
+        "take_away",
         undefined,
-        undefined,
+        undefined, // surcharges
       );
     });
   });

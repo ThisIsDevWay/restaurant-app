@@ -24,9 +24,9 @@ const MODE_LABELS: Record<string, string> = {
 };
 
 const MODE_DESCRIPTIONS: Record<string, string> = {
-  on_site: "Recoge tu pedido en el restaurante",
-  take_away: "Llévalo contigo",
-  delivery: "Envíalo a tu dirección",
+  on_site: "Para comer en el local",
+  take_away: "Retira en el local",
+  delivery: "A domicilio",
 };
 
 export function CheckoutForm({
@@ -39,19 +39,24 @@ export function CheckoutForm({
   settings,
 }: CheckoutFormProps) {
   const router = useRouter();
+
   const form = useCheckoutForm({
     isSubmitting,
     onSubmit,
     settings,
   });
 
-  const surcharges = useCheckoutSurcharges({
+  // Compute surcharges with the actual selected orderMode from form
+  const surchargesWithMode = useCheckoutSurcharges({
     items,
     orderMode: form.orderMode,
     settings,
     totalBsCents,
     totalUsdCents,
   });
+
+  // Keep form's surcharges in sync for handleSubmit → clientSurcharges
+  form.surchargesRef.current = surchargesWithMode.surcharges;
 
   // Build available modes
   const availableModes = [
@@ -96,20 +101,20 @@ export function CheckoutForm({
             onSetDeliveryAddress={form.setDeliveryAddress}
             settings={settings}
             isSubmitting={isSubmitting}
-            surcharges={surcharges.surcharges}
+            surcharges={surchargesWithMode.surcharges}
           />
 
           <OrderSummary
             items={items}
-            itemCount={surcharges.itemCount}
+            itemCount={surchargesWithMode.itemCount}
             summaryExpanded={form.summaryExpanded}
             onToggleSummary={() => form.setSummaryExpanded((v) => !v)}
             totalBsCents={totalBsCents}
             totalUsdCents={totalUsdCents}
-            surcharges={surcharges.surcharges}
-            rate={surcharges.rate}
-            grandTotalBsCents={surcharges.grandTotalBsCents}
-            grandTotalUsdCents={surcharges.grandTotalUsdCents}
+            surcharges={surchargesWithMode.surcharges}
+            rate={surchargesWithMode.rate}
+            grandTotalBsCents={surchargesWithMode.grandTotalBsCents}
+            grandTotalUsdCents={surchargesWithMode.grandTotalUsdCents}
             settings={settings}
           />
 
@@ -137,7 +142,8 @@ export function CheckoutForm({
         onSubmit={form.handleSubmit}
         isSubmitting={isSubmitting}
         phoneValid={form.phoneValid}
-        grandTotalBsCents={surcharges.grandTotalBsCents}
+        grandTotalBsCents={surchargesWithMode.grandTotalBsCents}
+        orderModeSelected={form.orderModeSelected}
       />
     </div>
   );

@@ -28,6 +28,7 @@ export async function GET(
       orderNumber: orders.orderNumber,
       status: orders.status,
       subtotalBsCents: orders.subtotalBsCents,
+      grandTotalBsCents: orders.grandTotalBsCents,
       createdAt: orders.createdAt,
       expiresAt: orders.expiresAt,
       itemsSnapshot: orders.itemsSnapshot,

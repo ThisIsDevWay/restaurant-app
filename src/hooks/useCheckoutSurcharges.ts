@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { CartItem } from "@/store/cartStore";
 import type { CheckoutSettings, OrderMode } from "@/components/public/checkout/CheckoutForm.types";
+import { calculateSurcharges } from "@/lib/utils/calculate-surcharges";
 
 export interface SurchargeResult {
   plateCount: number;
@@ -47,44 +48,13 @@ export function useCheckoutSurcharges({
       return { plateCount: 0, adicionalCount: 0, bebidaCount: 0, packagingUsdCents: 0, deliveryUsdCents: 0, totalSurchargeUsdCents: 0 };
     }
 
-    let plateCount = 0;
-    let adicionalCount = 0;
-    let bebidaCount = 0;
-
-    items.forEach((item) => {
-      if (item.categoryIsSimple) {
-        // Simple items (accessories/drinks) ordered alone
-        // Use category name to distinguish drinks from accessories — more robust than emoji
-        const isDrink = item.categoryName.toLowerCase().includes("bebida");
-        if (isDrink) {
-          bebidaCount += item.quantity;
-        } else {
-          adicionalCount += item.quantity;
-        }
-      } else {
-        // Main dishes (platos)
-        plateCount += item.quantity;
-        // Also count sub-items selected within the dish
-        adicionalCount += item.selectedAdicionales.reduce((sum, a) => sum + (a.quantity ?? 1), 0) * item.quantity;
-        bebidaCount += (item.selectedBebidas ?? []).reduce((sum, b) => sum + (b.quantity ?? 1), 0) * item.quantity;
-      }
+    // Delegate to the pure shared function — single source of truth
+    return calculateSurcharges(items, orderMode, {
+      packagingFeePerPlateUsdCents: settings.packagingFeePerPlateUsdCents,
+      packagingFeePerAdicionalUsdCents: settings.packagingFeePerAdicionalUsdCents,
+      packagingFeePerBebidaUsdCents: settings.packagingFeePerBebidaUsdCents,
+      deliveryFeeUsdCents: settings.deliveryFeeUsdCents,
     });
-
-    const packagingUsdCents =
-      plateCount * settings.packagingFeePerPlateUsdCents +
-      adicionalCount * settings.packagingFeePerAdicionalUsdCents +
-      bebidaCount * settings.packagingFeePerBebidaUsdCents;
-
-    const deliveryUsdCents = orderMode === "delivery" ? settings.deliveryFeeUsdCents : 0;
-
-    return {
-      plateCount,
-      adicionalCount,
-      bebidaCount,
-      packagingUsdCents,
-      deliveryUsdCents,
-      totalSurchargeUsdCents: packagingUsdCents + deliveryUsdCents,
-    };
   }, [items, orderMode, settings]);
 
   const rate = settings?.rate ?? 0;

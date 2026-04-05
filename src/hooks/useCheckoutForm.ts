@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type MutableRefObject } from "react";
 import { useRouter } from "next/navigation";
 import type { PaymentMethod, OrderMode, CheckoutSettings } from "@/components/public/checkout/CheckoutForm.types";
+import type { SurchargeResult } from "@/hooks/useCheckoutSurcharges";
 
 export interface UseCheckoutFormParams {
   isSubmitting: boolean;
-  onSubmit: (phone: string, paymentMethod: PaymentMethod, name?: string, cedula?: string, orderMode?: OrderMode, deliveryAddress?: string) => void;
+  onSubmit: (phone: string, paymentMethod: PaymentMethod, name?: string, cedula?: string, orderMode?: OrderMode, deliveryAddress?: string, clientSurcharges?: SurchargeResult) => void;
   settings: CheckoutSettings | null;
 }
 
@@ -32,6 +33,8 @@ export interface UseCheckoutFormReturn {
   getFormattedPhone: () => string;
   phoneValid: boolean;
   handleSubmit: (e?: React.FormEvent) => void;
+  surchargesRef: MutableRefObject<SurchargeResult | null>;
+  orderModeSelected: boolean;
 }
 
 export function useCheckoutForm({
@@ -53,6 +56,7 @@ export function useCheckoutForm({
   const [customerFieldsVisible, setCustomerFieldsVisible] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
   const lookupTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const surchargesRef = useRef<SurchargeResult | null>(null);
 
   function validatePhone(value: string): string | null {
     if (!/^(0414|0424|0412|0416|0426)\d{7}$/.test(value)) {
@@ -114,6 +118,7 @@ export function useCheckoutForm({
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!orderMode) return;
     const err = validatePhone(phone);
     if (err) {
       document.getElementById('phone-input')?.focus();
@@ -124,8 +129,9 @@ export function useCheckoutForm({
       paymentMethod,
       name.trim() || undefined,
       cedula.trim() || undefined,
-      orderMode ?? undefined,
+      orderMode,
       deliveryAddress.trim() || undefined,
+      surchargesRef.current ?? undefined,
     );
   };
 
@@ -153,5 +159,7 @@ export function useCheckoutForm({
     getFormattedPhone,
     phoneValid,
     handleSubmit,
+    surchargesRef,
+    orderModeSelected: orderMode !== null,
   };
 }

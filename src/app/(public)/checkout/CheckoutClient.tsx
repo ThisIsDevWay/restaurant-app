@@ -12,6 +12,7 @@ import { WhatsAppPayment } from "@/components/public/checkout/WhatsAppPayment";
 import { WaitingPayment } from "@/components/public/checkout/WaitingPayment";
 import { PaymentSuccess } from "@/components/public/checkout/PaymentSuccess";
 import { CheckoutForm } from "@/components/public/checkout/CheckoutForm";
+import { useCheckoutSurcharges } from "@/hooks/useCheckoutSurcharges";
 import type { PaymentInitResult, BankDetails } from "@/lib/payment-providers";
 
 type CheckoutState =
@@ -56,6 +57,15 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
   );
   const [settings, setSettings] = useState<CheckoutSettings>(initialSettings);
 
+  // Compute surcharges from cart items + settings
+  const { surcharges } = useCheckoutSurcharges({
+    items,
+    orderMode: null, // Will be set by form; we compute here for display
+    settings,
+    totalBsCents: cartTotalBsCents,
+    totalUsdCents,
+  });
+
   if (items.length === 0 && state.type === "form") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
@@ -82,6 +92,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
     cedula?: string,
     orderMode?: "on_site" | "take_away" | "delivery",
     deliveryAddress?: string,
+    clientSurcharges?: typeof surcharges,
   ) => {
     setIsSubmitting(true);
     setError(null);
@@ -127,12 +138,14 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
         selectedBebidas: bebidas,
         removedComponents: item.removedComponents,
         categoryAllowAlone: item.categoryAllowAlone,
+        categoryIsSimple: item.categoryIsSimple,
+        categoryName: item.categoryName,
       };
     });
 
     try {
       const actionResult = await processCheckoutAction({
-        input: { phone, paymentMethod, name, cedula, orderMode, deliveryAddress, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })) },
+        input: { phone, paymentMethod, name, cedula, orderMode, deliveryAddress, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })), clientSurcharges },
         items: checkoutItems,
       });
 

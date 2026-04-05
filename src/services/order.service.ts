@@ -10,6 +10,8 @@ import { getActiveProvider } from "@/lib/payment-providers";
 import { getMenuItemWithOptionsAndComponents } from "@/db/queries/menu";
 import { usdCentsToBsCents } from "@/lib/money";
 import { generateDailyMenuSnapshot } from "@/services/menu.service";
+import { calculateSurcharges, buildSurchargesSnapshot } from "@/lib/utils/calculate-surcharges";
+import { logger } from "@/lib/logger";
 
 export async function createOrder(data: typeof orders.$inferInsert) {
     return createOrderDb(data);
@@ -277,7 +279,7 @@ export async function processCheckout(params: ProcessCheckoutParams) {
     }
 
     const settings = await getSettings();
-    if (!settings) throw new Error("Configuración no encontrada");
+    if (!settings) throw new Error("Configuracion no encontrada");
 
     const rateResult = await getActiveRate();
     if (!rateResult) throw new Error("Tasa de cambio no disponible");
@@ -287,10 +289,43 @@ export async function processCheckout(params: ProcessCheckoutParams) {
         timeZone: "America/Caracas",
     }).format(new Date());
 
-    // 1. Calculate totals (re-validating everything)
+    // 1. Calculate item totals (re-validating everything)
     const { snapshotItems, subtotalUsdCents, subtotalBsCents } = await calculateOrderTotals(items, rate, today);
 
-    // 2. Create order with atomic capacity check
+    // 2. Server-side surcharge recalculation — single source of truth
+    const serverSurcharges = calculateSurcharges(items, input.orderMode ?? null, {
+        packagingFeePerPlateUsdCents: settings.packagingFeePerPlateUsdCents,
+        packagingFeePerAdicionalUsdCents: settings.packagingFeePerAdicionalUsdCents,
+        packagingFeePerBebidaUsdCents: settings.packagingFeePerBebidaUsdCents,
+        deliveryFeeUsdCents: settings.deliveryFeeUsdCents,
+    });
+
+    // Compare with client-supplied surcharges (detect manipulation or drift)
+    if (input.clientSurcharges) {
+        const diff = Math.abs(serverSurcharges.totalSurchargeUsdCents - input.clientSurcharges.totalSurchargeUsdCents);
+        if (diff > 1) {
+            logger.warn("Client/server surcharge mismatch", {
+                clientTotal: input.clientSurcharges.totalSurchargeUsdCents,
+                serverTotal: serverSurcharges.totalSurchargeUsdCents,
+                diff,
+                orderMode: input.orderMode,
+            });
+        }
+    }
+
+    // Build full audit snapshot
+    const surchargesSnapshot = buildSurchargesSnapshot(serverSurcharges, input.orderMode ?? null, {
+        packagingFeePerPlateUsdCents: settings.packagingFeePerPlateUsdCents,
+        packagingFeePerAdicionalUsdCents: settings.packagingFeePerAdicionalUsdCents,
+        packagingFeePerBebidaUsdCents: settings.packagingFeePerBebidaUsdCents,
+        deliveryFeeUsdCents: settings.deliveryFeeUsdCents,
+    });
+
+    // Grand totals = subtotal + surcharges
+    const grandTotalUsdCents = subtotalUsdCents + serverSurcharges.totalSurchargeUsdCents;
+    const grandTotalBsCents = usdCentsToBsCents(grandTotalUsdCents, rate);
+
+    // 3. Create order with atomic capacity check
     const expiresAt = new Date(Date.now() + settings.orderExpirationMinutes * 60 * 1000);
     const provider = getActiveProvider(settings);
 
@@ -299,6 +334,11 @@ export async function processCheckout(params: ProcessCheckoutParams) {
         itemsSnapshot: snapshotItems,
         subtotalUsdCents,
         subtotalBsCents,
+        packagingUsdCents: serverSurcharges.packagingUsdCents,
+        deliveryUsdCents: serverSurcharges.deliveryUsdCents,
+        grandTotalUsdCents,
+        grandTotalBsCents,
+        surchargesSnapshot,
         status: provider.id === "whatsapp_manual" ? "whatsapp" : "pending",
         paymentMethod: input.paymentMethod,
         paymentProvider: provider.id,
@@ -310,19 +350,19 @@ export async function processCheckout(params: ProcessCheckoutParams) {
     }, settings.maxPendingOrders);
 
     if (reason === "capacity_exceeded") {
-        throw new Error("No podemos recibir más pedidos ahora. Intenta en unos minutos.");
+        throw new Error("No podemos recibir mas pedidos ahora. Intenta en unos minutos.");
     }
 
     if (!order) throw new Error("Error al crear la orden");
 
-    // 3. Initiate payment
+    // 4. Initiate payment — use grand total, not subtotal
     let initResult = await provider.initiatePayment(order, settings);
 
     // Override for transfer
     if (input.paymentMethod === "transfer") {
         initResult = {
             screen: "enter_reference",
-            totalBsCents: subtotalBsCents,
+            totalBsCents: grandTotalBsCents,
             bankDetails: {
                 bankName: settings.bankName,
                 bankCode: settings.bankCode,
@@ -336,5 +376,6 @@ export async function processCheckout(params: ProcessCheckoutParams) {
         };
     }
 
-    return { order, initResult, subtotalBsCents, snapshotItems, settings };
+    return { order, initResult, subtotalBsCents, grandTotalBsCents, snapshotItems, settings, surchargesSnapshot };
 }
+

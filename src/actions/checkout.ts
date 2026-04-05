@@ -37,7 +37,7 @@ export const processCheckoutAction = actionClient
         return { success: false, error: "Demasiados intentos. Espera un momento." };
       }
 
-      // 1. Validate basic input structure
+      // 1. Validate basic input structure (now includes clientSurcharges)
       const parsed = v.safeParse(checkoutSchema, input);
       if (!parsed.success) {
         return {
@@ -48,7 +48,7 @@ export const processCheckoutAction = actionClient
       }
 
       // 2. Delegate entire business logic to service
-      const { order, initResult, subtotalBsCents, snapshotItems, settings } = await processCheckout({
+      const { order, initResult, subtotalBsCents, grandTotalBsCents, snapshotItems, settings, surchargesSnapshot } = await processCheckout({
         items,
         input: parsed.output,
       });
@@ -60,16 +60,24 @@ export const processCheckoutAction = actionClient
 
       after(async () => {
         try {
-          await sendOrderMessage(
-            "received",
-            parsed.output.phone,
-            String(order.orderNumber),
-            parsed.output.name ?? null,
-            snapshotItems,
-            subtotalBsCents,
-            undefined,
-            settings.whatsappMicroserviceUrl,
-          );
+          const rate = parseFloat(order.rateSnapshotBsPerUsd);
+          await sendOrderMessage({
+            templateKey: "received",
+            phone: parsed.output.phone,
+            orderNumber: String(order.orderNumber),
+            customerName: parsed.output.name ?? null,
+            items: snapshotItems,
+            grandTotalBsCents,
+            surcharges: surchargesSnapshot
+              ? {
+                packagingUsdCents: surchargesSnapshot.packagingUsdCents,
+                deliveryUsdCents: surchargesSnapshot.deliveryUsdCents,
+                rate,
+                orderMode: surchargesSnapshot.orderMode,
+              }
+              : undefined,
+            baseUrl: settings.whatsappMicroserviceUrl,
+          });
         } catch (err) {
           logger.error("WhatsApp Error", { error: String(err) });
         }

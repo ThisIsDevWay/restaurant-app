@@ -79,6 +79,23 @@ export const orders = pgTable("orders", {
   orderMode: text("order_mode")
     .$type<"on_site" | "take_away" | "delivery">(),
   deliveryAddress: text("delivery_address"),
+  // Surcharges — packaging + delivery fees calculados al momento del checkout
+  packagingUsdCents: integer("packaging_usd_cents").notNull().default(0),
+  deliveryUsdCents: integer("delivery_usd_cents").notNull().default(0),
+  grandTotalUsdCents: integer("grand_total_usd_cents").notNull().default(0),
+  grandTotalBsCents: integer("grand_total_bs_cents").notNull().default(0),
+  surchargesSnapshot: jsonb("surcharges_snapshot").$type<{
+    plateCount: number;
+    adicionalCount: number;
+    bebidaCount: number;
+    packagingFeePerPlateUsdCents: number;
+    packagingFeePerAdicionalUsdCents: number;
+    packagingFeePerBebidaUsdCents: number;
+    packagingUsdCents: number;
+    deliveryFeeUsdCents: number;
+    deliveryUsdCents: number;
+    orderMode: string;
+  }>(),
   exchangeRateId: uuid("exchange_rate_id")
     .notNull()
     .references(() => exchangeRates.id),

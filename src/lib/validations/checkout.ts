@@ -1,11 +1,21 @@
 import * as v from "valibot";
 
+// Client-supplied surcharges — validated structurally but server recalculates
+const clientSurchargesSchema = v.optional(v.object({
+  plateCount: v.pipe(v.number(), v.integer(), v.minValue(0)),
+  adicionalCount: v.pipe(v.number(), v.integer(), v.minValue(0)),
+  bebidaCount: v.pipe(v.number(), v.integer(), v.minValue(0)),
+  packagingUsdCents: v.pipe(v.number(), v.integer(), v.minValue(0)),
+  deliveryUsdCents: v.pipe(v.number(), v.integer(), v.minValue(0)),
+  totalSurchargeUsdCents: v.pipe(v.number(), v.integer(), v.minValue(0)),
+}));
+
 export const checkoutSchema = v.object({
   phone: v.pipe(
     v.string(),
     v.regex(
       /^(0414|0424|0412|0416|0426)\d{7}$/,
-      "Número de teléfono venezolano inválido",
+      "Numero de telefono venezolano invalido",
     ),
   ),
   name: v.optional(v.pipe(v.string(), v.maxLength(50))),
@@ -22,6 +32,8 @@ export const checkoutSchema = v.object({
     ),
     v.minLength(1, "Debe agregar al menos un item"),
   ),
+  clientSurcharges: clientSurchargesSchema,
 });
 
 export type CheckoutInput = v.InferOutput<typeof checkoutSchema>;
+export type ClientSurcharges = NonNullable<CheckoutInput["clientSurcharges"]>;

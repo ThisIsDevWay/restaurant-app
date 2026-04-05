@@ -25,4 +25,6 @@ export type CheckoutItem = {
         priceUsdCents: number;
     }>;
     categoryAllowAlone: boolean;
+    categoryIsSimple: boolean;
+    categoryName: string;
 };

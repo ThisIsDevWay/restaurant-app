@@ -8,6 +8,7 @@ interface CheckoutStickyFooterProps {
   isSubmitting: boolean;
   phoneValid: boolean;
   grandTotalBsCents: number;
+  orderModeSelected: boolean;
 }
 
 export function CheckoutStickyFooter({
@@ -15,12 +16,14 @@ export function CheckoutStickyFooter({
   isSubmitting,
   phoneValid,
   grandTotalBsCents,
+  orderModeSelected,
 }: CheckoutStickyFooterProps) {
+  const canSubmit = phoneValid && orderModeSelected;
   return (
     <div className="sticky bottom-0 bg-[#F8EFE6] border-t-[0.5px] border-black/10 px-4 pt-3 pb-6 mt-auto">
       <button
         onClick={() => onSubmit()}
-        disabled={isSubmitting || !phoneValid}
+        disabled={isSubmitting || !canSubmit}
         className="w-full h-[52px] bg-[#7B2D2D] hover:bg-[#6A2323] text-white rounded-[14px] font-medium flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
       >
         {isSubmitting ? (

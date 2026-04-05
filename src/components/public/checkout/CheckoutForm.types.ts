@@ -1,4 +1,5 @@
 import type { CartItem } from "@/store/cartStore";
+import type { SurchargeResult } from "@/hooks/useCheckoutSurcharges";
 
 export interface CheckoutSettings {
   rate: number | null;
@@ -27,6 +28,14 @@ export interface CheckoutFormProps {
   totalUsdCents: number;
   isSubmitting: boolean;
   error: string | null;
-  onSubmit: (phone: string, paymentMethod: PaymentMethod, name?: string, cedula?: string, orderMode?: OrderMode, deliveryAddress?: string) => void;
+  onSubmit: (
+    phone: string,
+    paymentMethod: PaymentMethod,
+    name?: string,
+    cedula?: string,
+    orderMode?: OrderMode,
+    deliveryAddress?: string,
+    clientSurcharges?: SurchargeResult,
+  ) => void;
   settings: CheckoutSettings | null;
 }

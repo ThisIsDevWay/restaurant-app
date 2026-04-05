@@ -8,6 +8,7 @@ interface Order {
   id: string;
   status: string;
   subtotalBsCents: number;
+  grandTotalBsCents: number;
   createdAt: string;
   expiresAt: string | null;
   itemsSnapshot: Array<{
@@ -159,7 +160,7 @@ export default function MisPedidosPage() {
 
                     <div className="mt-2 border-t border-border pt-2">
                       <p className="text-sm font-bold text-price-green">
-                        {formatBs(order.subtotalBsCents)}
+                        {formatBs(order.grandTotalBsCents || order.subtotalBsCents)}
                       </p>
                     </div>
                   </div>

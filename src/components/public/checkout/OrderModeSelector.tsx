@@ -34,9 +34,9 @@ const MODE_LABELS: Record<string, string> = {
 };
 
 const MODE_DESCRIPTIONS: Record<string, string> = {
-  on_site: "Recoge tu pedido en el restaurante",
-  take_away: "Llévalo contigo",
-  delivery: "Envíalo a tu dirección",
+  on_site: "Para comer en el local",
+  take_away: "Retira en el local",
+  delivery: "A domicilio",
 };
 
 export function OrderModeSelector({
