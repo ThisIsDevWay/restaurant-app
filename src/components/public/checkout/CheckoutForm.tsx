@@ -56,7 +56,8 @@ export function CheckoutForm({
   });
 
   // Keep form's surcharges in sync for handleSubmit → clientSurcharges
-  form.surchargesRef.current = surchargesWithMode.surcharges;
+  const { surchargesRef } = form;
+  surchargesRef.current = surchargesWithMode.surcharges;
 
   // Build available modes
   const availableModes = [

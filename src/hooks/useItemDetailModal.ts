@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type {
   ContornoComponent as Contorno,
   SimpleComponent as GlobalContorno,
@@ -63,9 +63,9 @@ export function useItemDetailModal({
   const fixedContornos = availableContornos.filter((c) => !c.removable);
   const removableContornos = availableContornos.filter((c) => c.removable);
 
-  const activeSubstituteIds = new Set(
+  const activeSubstituteIds = useMemo(() => new Set(
     Object.values(substitutionMap).filter((v): v is string => v !== null && v !== undefined),
-  );
+  ), [substitutionMap]);
 
   // Reset state when modal opens
   useEffect(() => {
