@@ -50,6 +50,7 @@ export default async function OrderDetailPage({
 
   const latestLog = paymentLogs[0] ?? null;
   const items = order.itemsSnapshot as ItemsSnapshot;
+  const surcharges = order.surchargesSnapshot as typeof order.surchargesSnapshot;
 
   return (
     <div className="space-y-6">
@@ -94,6 +95,9 @@ export default async function OrderDetailPage({
             subtotalBsCents={order.subtotalBsCents}
             subtotalUsdCents={order.subtotalUsdCents}
             exchangeRate={order.rateSnapshotBsPerUsd}
+            surcharges={surcharges}
+            grandTotalBsCents={order.grandTotalBsCents}
+            grandTotalUsdCents={order.grandTotalUsdCents}
           />
         </div>
 

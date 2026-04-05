@@ -43,17 +43,30 @@ export async function POST(
     if (result.success) {
       const customer = await getCustomerByPhone(order.customerPhone);
       const snapshotItems = order.itemsSnapshot as SnapshotItem[];
+      const surchargesSnapshot = order.surchargesSnapshot as {
+        packagingUsdCents: number;
+        deliveryUsdCents: number;
+        orderMode: string;
+      } | null;
+      const rate = parseFloat(order.rateSnapshotBsPerUsd);
 
-      await sendOrderMessage(
-        "paid",
-        order.customerPhone,
-        String(order.orderNumber),
-        customer?.name ?? null,
-        snapshotItems,
-        order.subtotalBsCents,
-        undefined,
-        settings.whatsappMicroserviceUrl,
-      ).catch((err) => {
+      await sendOrderMessage({
+        templateKey: "paid",
+        phone: order.customerPhone,
+        orderNumber: String(order.orderNumber),
+        customerName: customer?.name ?? null,
+        items: snapshotItems,
+        grandTotalBsCents: order.grandTotalBsCents,
+        surcharges: surchargesSnapshot
+          ? {
+            packagingUsdCents: surchargesSnapshot.packagingUsdCents,
+            deliveryUsdCents: surchargesSnapshot.deliveryUsdCents,
+            rate,
+            orderMode: surchargesSnapshot.orderMode,
+          }
+          : undefined,
+        baseUrl: settings.whatsappMicroserviceUrl,
+      }).catch((err) => {
         console.error("WhatsApp Error:", err);
       });
 

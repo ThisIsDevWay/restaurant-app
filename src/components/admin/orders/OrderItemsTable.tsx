@@ -17,12 +17,35 @@ export function OrderItemsTable({
   subtotalBsCents,
   subtotalUsdCents,
   exchangeRate,
+  surcharges,
+  grandTotalBsCents,
+  grandTotalUsdCents,
 }: {
   items: SnapshotItem[];
   subtotalBsCents: number;
   subtotalUsdCents: number;
   exchangeRate?: string | null;
+  surcharges?: {
+    plateCount: number;
+    adicionalCount: number;
+    bebidaCount: number;
+    packagingFeePerPlateUsdCents: number;
+    packagingFeePerAdicionalUsdCents: number;
+    packagingFeePerBebidaUsdCents: number;
+    packagingUsdCents: number;
+    deliveryFeeUsdCents: number;
+    deliveryUsdCents: number;
+    orderMode: string;
+  } | null;
+  grandTotalBsCents?: number;
+  grandTotalUsdCents?: number;
 }) {
+  const rate = exchangeRate ? parseFloat(exchangeRate) : 0;
+  const packagingBsCents = surcharges ? Math.round(surcharges.packagingUsdCents * rate) : 0;
+  const deliveryBsCents = surcharges ? Math.round(surcharges.deliveryUsdCents * rate) : 0;
+  const hasSurcharges = surcharges && (surcharges.packagingUsdCents > 0 || surcharges.deliveryUsdCents > 0);
+  const displayTotalBs = grandTotalBsCents ?? subtotalBsCents;
+  const displayTotalUsd = grandTotalUsdCents ?? subtotalUsdCents;
   return (
     <Card className="ring-1 ring-border">
       <CardHeader className="border-b border-border">
@@ -59,7 +82,7 @@ export function OrderItemsTable({
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-semibold text-text-main">
-                      {formatBs(item.itemTotalBsCents * item.quantity)}
+                      {formatBs(item.itemTotalBsCents)}
                     </div>
                   </div>
                 </div>
@@ -144,16 +167,47 @@ export function OrderItemsTable({
       <CardFooter className="flex-col items-stretch gap-2">
         <Separator className="mb-2" />
         <div className="flex items-center justify-between">
+          <span className="text-sm text-text-muted">Subtotal</span>
+          <span className="text-sm text-text-main">
+            {formatBs(subtotalBsCents)}
+          </span>
+        </div>
+        {hasSurcharges && surcharges && (
+          <>
+            {surcharges.packagingUsdCents > 0 && (
+              <div className="flex items-center justify-between text-xs text-text-muted">
+                <span>
+                  Envases ({surcharges.plateCount} plato{surcharges.plateCount !== 1 ? "s" : ""} · {surcharges.adicionalCount} adicional{
+                    surcharges.adicionalCount !== 1 ? "es" : ""
+                  } · {surcharges.bebidaCount} bebida{surcharges.bebidaCount !== 1 ? "s" : ""})
+                </span>
+                <span className="text-xs text-text-main">
+                  + {formatBs(packagingBsCents)}
+                </span>
+              </div>
+            )}
+            {surcharges.deliveryUsdCents > 0 && (
+              <div className="flex items-center justify-between text-xs text-text-muted">
+                <span>Delivery</span>
+                <span className="text-xs text-text-main">
+                  + {formatBs(deliveryBsCents)}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+        <Separator />
+        <div className="flex items-center justify-between">
           <span className="text-base font-bold text-text-main">TOTAL</span>
           <span className="text-lg font-bold text-price-green">
-            {formatBs(subtotalBsCents)}
+            {formatBs(displayTotalBs)}
           </span>
         </div>
         {exchangeRate && (
           <div className="flex items-center justify-between text-xs text-text-muted">
             <span>
               ≈ USD{" "}
-              {(subtotalUsdCents / 100).toLocaleString("en-US", {
+              {(displayTotalUsd / 100).toLocaleString("en-US", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}

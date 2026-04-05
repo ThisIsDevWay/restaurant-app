@@ -72,17 +72,30 @@ export async function POST(
         getSettings(),
       ]);
       const snapshotItems = order.itemsSnapshot as SnapshotItem[];
+      const surchargesSnapshot = order.surchargesSnapshot as {
+        packagingUsdCents: number;
+        deliveryUsdCents: number;
+        orderMode: string;
+      } | null;
+      const rate = parseFloat(order.rateSnapshotBsPerUsd);
 
-      await sendOrderMessage(
+      await sendOrderMessage({
         templateKey,
-        order.customerPhone,
-        String(order.orderNumber),
-        customer?.name ?? null,
-        snapshotItems,
-        order.subtotalBsCents,
-        undefined,
-        settings?.whatsappMicroserviceUrl,
-      ).catch((err) => {
+        phone: order.customerPhone,
+        orderNumber: String(order.orderNumber),
+        customerName: customer?.name ?? null,
+        items: snapshotItems,
+        grandTotalBsCents: order.grandTotalBsCents,
+        surcharges: surchargesSnapshot
+          ? {
+            packagingUsdCents: surchargesSnapshot.packagingUsdCents,
+            deliveryUsdCents: surchargesSnapshot.deliveryUsdCents,
+            rate,
+            orderMode: surchargesSnapshot.orderMode,
+          }
+          : undefined,
+        baseUrl: settings?.whatsappMicroserviceUrl,
+      }).catch((err) => {
         logger.error("WhatsApp Error", { error: String(err) });
       });
     }

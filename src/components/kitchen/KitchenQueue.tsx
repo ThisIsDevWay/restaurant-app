@@ -20,6 +20,7 @@ interface KitchenOrder {
     id: string;
     name: string;
     selectedContorno: { id: string; name: string } | null;
+    fixedContornos?: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
     selectedAdicionales: Array<{
       id: string;
       name: string;
@@ -270,28 +271,93 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                             )}
                             {item.name}
                           </p>
-                          {/* Default contorno (not modified) */}
-                          {item.selectedContorno && !item.removedComponents?.length && !item.selectedAdicionales?.some(a => a.substitutesComponentId) && (
-                            <p className="ml-8 mt-0.5 text-sm text-text-muted">
-                              {item.selectedContorno.name}
-                            </p>
-                          )}
-                          {/* Removed components */}
-                          {item.removedComponents?.map((r, rIdx) => (
-                            <div key={rIdx} className="ml-8 mt-1">
-                              <span className="inline-flex items-center rounded-lg bg-error/10 px-2 py-1 text-sm font-bold text-error border border-error/20">
-                                ✗ {r.name}
-                              </span>
-                            </div>
-                          ))}
-                          {/* Substitutions */}
-                          {item.selectedAdicionales?.filter(a => a.substitutesComponentId).map((ad, adIdx) => (
-                            <div key={`sub-${adIdx}`} className="ml-8 mt-1">
-                              <span className="inline-flex items-center rounded-lg bg-amber/10 px-2 py-1 text-sm font-bold text-amber border border-amber/20">
-                                ↺ {ad.substitutesComponentName ? `${ad.substitutesComponentName} → ${ad.name}` : ad.name}
-                              </span>
-                            </div>
-                          ))}
+                          {/* Contornos — Option C: resolved final state */}
+                          {(() => {
+                            const substitutions = item.selectedAdicionales?.filter(a => a.substitutesComponentId) ?? [];
+                            const hasModifications = (item.removedComponents?.length ?? 0) > 0 || substitutions.length > 0;
+
+                            const hasFixedContornos = (item.fixedContornos?.length ?? 0) > 0;
+
+                            if (!hasModifications && !item.selectedContorno && !hasFixedContornos) {
+                              return null;
+                            }
+
+                            if (!hasModifications) {
+                              return (
+                                <div className="ml-8 mt-1.5 space-y-1">
+                                  {item.selectedContorno && (
+                                    <div>
+                                      <span className="inline-flex items-center rounded-lg bg-success/10 px-2 py-1 text-sm font-bold text-success border border-success/20">
+                                        ● {item.selectedContorno.name}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {item.fixedContornos?.map(fc => (
+                                    <div key={fc.id}>
+                                      <span className="inline-flex items-center rounded-lg bg-success/10 px-2 py-1 text-sm font-bold text-success border border-success/20">
+                                        ● {fc.name}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            }
+
+                            // Map of what replaced what to avoid showing it twice in "pure removals"
+                            const replacedComponentIds = new Set(substitutions.map(s => s.substitutesComponentId));
+                            const pureRemovals = item.removedComponents?.filter(r => !replacedComponentIds.has(r.componentId)) ?? [];
+
+                            return (
+                              <div className="ml-8 mt-1.5 space-y-1">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-amber flex items-center gap-1.5 mb-1">
+                                  Contornos <span className="inline-block w-2 h-2 rounded-full bg-amber" /> modificados
+                                </p>
+
+                                {/* 1. Kept default contorno (if not replaced/removed) */}
+                                {item.selectedContorno && !item.removedComponents?.some(r => r.componentId === item.selectedContorno?.id) && (
+                                  <div>
+                                    <span className="inline-flex items-center rounded-lg bg-success/10 px-2 py-1 text-sm font-bold text-success border border-success/20">
+                                      ● {item.selectedContorno.name}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* 1.b Kept fixed contornos */}
+                                {item.fixedContornos?.filter(fc => !item.removedComponents?.some(r => r.componentId === fc.id)).map(fc => (
+                                  <div key={fc.id}>
+                                    <span className="inline-flex items-center rounded-lg bg-success/10 px-2 py-1 text-sm font-bold text-success border border-success/20">
+                                      ● {fc.name}
+                                    </span>
+                                  </div>
+                                ))}
+
+                                {/* 2. Substitutions: Green active + Strikethrough original on the right */}
+                                {substitutions.map((sub, i) => (
+                                  <div key={`sub-${i}`} className="flex items-center gap-2">
+                                    <span className="inline-flex items-center rounded-lg bg-success/10 px-2 py-1 text-sm font-bold text-success border border-success/20">
+                                      ● {sub.name}
+                                    </span>
+                                    {sub.substitutesComponentName && (
+                                      <span className="text-xs text-text-muted/40 line-through">
+                                        {sub.substitutesComponentName}
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+
+                                {/* 3. Pure removals (omitted without replacement) */}
+                                {pureRemovals.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 pt-0.5">
+                                    {pureRemovals.map((r, i) => (
+                                      <span key={`rem-${i}`} className="text-xs text-text-muted/40 line-through">
+                                        {r.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                           {/* Regular adicionales */}
                           {item.selectedAdicionales?.filter(a => !a.substitutesComponentId).length > 0 && (
                             <div className="ml-8 mt-1.5 flex flex-wrap gap-1">
@@ -324,15 +390,6 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
 
                     {/* Footer */}
                     <div className="border-t border-border px-4 py-3">
-                      <p className="mb-2 text-xs text-text-muted">
-                        {order.customerPhone}
-                      </p>
-                      {order.orderMode === "delivery" && order.deliveryAddress && (
-                        <p className="mb-2 flex items-start gap-1 text-xs text-text-main">
-                          <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-success" />
-                          {order.deliveryAddress}
-                        </p>
-                      )}
                       <button
                         onClick={() => handleTakeOrder(order.id)}
                         className="w-full rounded-xl bg-amber py-4 text-base font-bold text-white shadow-sm active:scale-[0.98] transition-transform hover:bg-amber/90"
@@ -401,25 +458,89 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                             )}
                             {item.name}
                           </p>
-                          {item.selectedContorno && !item.removedComponents?.length && !item.selectedAdicionales?.some(a => a.substitutesComponentId) && (
-                            <p className="ml-8 mt-0.5 text-sm text-text-muted">
-                              {item.selectedContorno.name}
-                            </p>
-                          )}
-                          {item.removedComponents?.map((r, rIdx) => (
-                            <div key={rIdx} className="ml-8 mt-1">
-                              <span className="inline-flex items-center rounded-lg bg-error/10 px-2 py-1 text-sm font-bold text-error border border-error/20">
-                                ✗ {r.name}
-                              </span>
-                            </div>
-                          ))}
-                          {item.selectedAdicionales?.filter(a => a.substitutesComponentId).map((ad, adIdx) => (
-                            <div key={`sub-${adIdx}`} className="ml-8 mt-1">
-                              <span className="inline-flex items-center rounded-lg bg-amber/10 px-2 py-1 text-sm font-bold text-amber border border-amber/20">
-                                ↺ {ad.substitutesComponentName ? `${ad.substitutesComponentName} → ${ad.name}` : ad.name}
-                              </span>
-                            </div>
-                          ))}
+                          {/* Contornos — Option C: resolved final state */}
+                          {(() => {
+                            const substitutions = item.selectedAdicionales?.filter(a => a.substitutesComponentId) ?? [];
+                            const hasModifications = (item.removedComponents?.length ?? 0) > 0 || substitutions.length > 0;
+
+                            const hasFixedContornos = (item.fixedContornos?.length ?? 0) > 0;
+
+                            if (!hasModifications && !item.selectedContorno && !hasFixedContornos) {
+                              return null;
+                            }
+
+                            if (!hasModifications) {
+                              return (
+                                <div className="ml-8 mt-1.5 space-y-1">
+                                  {item.selectedContorno && (
+                                    <div>
+                                      <span className="inline-flex items-center rounded-lg bg-success/10 px-2 py-1 text-sm font-bold text-success border border-success/20">
+                                        ● {item.selectedContorno.name}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {item.fixedContornos?.map(fc => (
+                                    <div key={fc.id}>
+                                      <span className="inline-flex items-center rounded-lg bg-success/10 px-2 py-1 text-sm font-bold text-success border border-success/20">
+                                        ● {fc.name}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            }
+
+                            const replacedComponentIds = new Set(substitutions.map(s => s.substitutesComponentId));
+                            const pureRemovals = item.removedComponents?.filter(r => !replacedComponentIds.has(r.componentId)) ?? [];
+
+                            return (
+                              <div className="ml-8 mt-1.5 space-y-1">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-amber flex items-center gap-1.5 mb-1">
+                                  Contornos <span className="inline-block w-2 h-2 rounded-full bg-amber" /> modificados
+                                </p>
+
+                                {item.selectedContorno && !item.removedComponents?.some(r => r.componentId === item.selectedContorno?.id) && (
+                                  <div>
+                                    <span className="inline-flex items-center rounded-lg bg-success/10 px-2 py-1 text-sm font-bold text-success border border-success/20">
+                                      ● {item.selectedContorno.name}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* 1.b Kept fixed contornos */}
+                                {item.fixedContornos?.filter(fc => !item.removedComponents?.some(r => r.componentId === fc.id)).map(fc => (
+                                  <div key={fc.id}>
+                                    <span className="inline-flex items-center rounded-lg bg-success/10 px-2 py-1 text-sm font-bold text-success border border-success/20">
+                                      ● {fc.name}
+                                    </span>
+                                  </div>
+                                ))}
+
+                                {substitutions.map((sub, i) => (
+                                  <div key={`sub-${i}`} className="flex items-center gap-2">
+                                    <span className="inline-flex items-center rounded-lg bg-success/10 px-2 py-1 text-sm font-bold text-success border border-success/20">
+                                      ● {sub.name}
+                                    </span>
+                                    {sub.substitutesComponentName && (
+                                      <span className="text-xs text-text-muted/40 line-through">
+                                        {sub.substitutesComponentName}
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+
+                                {pureRemovals.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 pt-0.5">
+                                    {pureRemovals.map((r, i) => (
+                                      <span key={`rem-${i}`} className="text-xs text-text-muted/40 line-through">
+                                        {r.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                           {item.selectedAdicionales?.filter(a => !a.substitutesComponentId).length > 0 && (
                             <div className="ml-8 mt-1.5 flex flex-wrap gap-1">
                               {item.selectedAdicionales.filter(a => !a.substitutesComponentId).map((ad, adIdx) => (
@@ -451,15 +572,6 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
 
                     {/* Footer */}
                     <div className="border-t border-border px-4 py-3">
-                      <p className="mb-2 text-xs text-text-muted">
-                        {order.customerPhone}
-                      </p>
-                      {order.orderMode === "delivery" && order.deliveryAddress && (
-                        <p className="mb-2 flex items-start gap-1 text-xs text-text-main">
-                          <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-success" />
-                          {order.deliveryAddress}
-                        </p>
-                      )}
                       <button
                         onClick={() => handleDeliver(order.id)}
                         className="w-full rounded-xl bg-info py-4 text-base font-bold text-white shadow-sm active:scale-[0.98] transition-transform hover:bg-info/90"
