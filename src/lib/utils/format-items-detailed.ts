@@ -107,7 +107,7 @@ export function formatItemsDetailed(
       }
 
       // Item total
-      lines.push(`💰 Total ítem: ${formatPrice(item.itemTotalBsCents * item.quantity)}`);
+      lines.push(`💰 Total ítem: ${formatPrice(item.itemTotalBsCents)}`);
 
       return lines.join("\n");
     })

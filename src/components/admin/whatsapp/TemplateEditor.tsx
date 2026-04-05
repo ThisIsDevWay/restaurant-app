@@ -42,27 +42,42 @@ const TEMPLATE_DESCRIPTIONS: Record<string, string> = {
 };
 
 const AVAILABLE_VARIABLES = [
-  { key: "{nombre}", label: "Nombre" },
-  { key: "{numeroPedido}", label: "Orden" },
-  { key: "{items}", label: "Productos" },
-  { key: "{total}", label: "Total Bs." },
-  { key: "{ref}", label: "Ref $" },
-  { key: "{tiempoEstimado}", label: "Tiempo" },
-  { key: "{telefono}", label: "Teléfono" },
+  // Core
+  { key: "{nombre}", label: "Nombre", sample: "Juan" },
+  { key: "{numeroPedido}", label: "Orden", sample: "#42" },
+  { key: "{items}", label: "Productos", sample: "__ITEMS__" },
+  { key: "{telefono}", label: "Teléfono", sample: "04141234567" },
+  { key: "{restaurantName}", label: "Restaurante", sample: "Mi Restaurante" },
+  { key: "{modoPedido}", label: "Modo pedido", sample: "📦 Retira en el local" },
+  { key: "{tiempoEstimado}", label: "Tiempo est.", sample: "25 min" },
+  // Financial
+  { key: "{total}", label: "Total Bs.", sample: "Bs. 15.340,58" },
+  { key: "{baseImponible}", label: "Base imp.", sample: "Bs. 13.224,64" },
+  { key: "{iva}", label: "IVA (16%)", sample: "Bs. 2.115,94" },
+  { key: "{ref}", label: "Ref $", sample: "REF 32,36" },
+  // Surcharges
+  { key: "{packagingFee}", label: "Envases", sample: "Bs. 2.284,97" },
+  { key: "{deliveryFee}", label: "Delivery fee", sample: "Bs. 500,00" },
 ];
 
 const SAMPLE_ITEMS = [
-  "*1× Hamburguesa Doble*",
-  "  Papas fritas · incluido",
-  "  Soda · + Bs. 45,00",
-  "💰 Total: Bs. 850,00",
+  "*Pechuga a la plancha*",
+  "Base · Bs. 2.702,14 / REF 5,70",
+  "Contornos",
+  "  Arroz Amarillo (en lugar de Ensalada) · incluido",
+  "Adicionales",
+  "  2× Papas Fritas · + Bs. 1.896,24",
+  "  2× Patacones · + Bs. 1.706,62",
+  "Bebidas",
+  "  2× Jugo de Parchita · + Bs. 1.137,74",
+  "💰 Total ítem: Bs. 13.055,61",
 ].join("\n");
 
 function renderPreview(body: string): string {
   let result = body;
   for (const v of AVAILABLE_VARIABLES) {
-    const val = v.key === "{items}" ? SAMPLE_ITEMS : (v.key.replace("{", "").replace("}", ""));
-    result = result.replaceAll(v.key, val.charAt(0).toUpperCase() + val.slice(1));
+    const val = v.key === "{items}" ? SAMPLE_ITEMS : v.sample;
+    result = result.replaceAll(v.key, val);
   }
   return result;
 }

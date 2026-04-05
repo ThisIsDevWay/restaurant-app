@@ -9,12 +9,8 @@ import type {
 import { db } from "@/db";
 import { orders, paymentsLog } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import {
-  formatItemsDetailed,
-  type SnapshotItem,
-} from "@/lib/utils/format-items-detailed";
-import { formatBs, formatRef } from "@/lib/money";
-import { getTemplateByKey } from "@/db/queries/whatsapp-templates";
+import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
+import { buildOrderMessage, type SurchargesInfo } from "@/lib/whatsapp/messages";
 
 export class WhatsAppManualProvider implements PaymentProvider {
   readonly id = "whatsapp_manual" as const;
@@ -27,52 +23,55 @@ export class WhatsAppManualProvider implements PaymentProvider {
     settings: SettingsRow,
   ): Promise<PaymentInitResult> {
     const snapshot = order.itemsSnapshot as SnapshotItem[];
+    const rate = parseFloat(order.rateSnapshotBsPerUsd);
 
-    const itemsText = formatItemsDetailed(snapshot, formatBs, formatRef);
+    // Build surcharges info from the order's persisted snapshot
+    const surchargesSnapshot = order.surchargesSnapshot as {
+      packagingUsdCents: number;
+      deliveryUsdCents: number;
+      orderMode: string;
+    } | null;
 
-    const totalBs = (order.subtotalBsCents / 100).toLocaleString("es-VE", {
-      minimumFractionDigits: 2,
+    const surcharges: SurchargesInfo | undefined = surchargesSnapshot
+      ? {
+        packagingUsdCents: surchargesSnapshot.packagingUsdCents,
+        deliveryUsdCents: surchargesSnapshot.deliveryUsdCents,
+        rate,
+        orderMode: surchargesSnapshot.orderMode,
+      }
+      : undefined;
+
+    // Use the unified template system — single source of truth
+    const message = await buildOrderMessage({
+      templateKey: "checkout_manual",
+      phone: order.customerPhone,
+      orderNumber: String(order.orderNumber),
+      customerName: null, // Not available at this point
+      items: snapshot,
+      grandTotalBsCents: order.grandTotalBsCents,
+      surcharges,
+      restaurantName: settings.restaurantName ?? undefined,
     });
 
-    const ref = (order.subtotalBsCents / 100).toFixed(2).replace(".", ",");
-
-    let message = [
-      `🍔 *Nuevo pedido ${settings.restaurantName ?? "G&M"}*`,
+    // Fallback message if template is inactive or missing
+    const finalMessage = message ?? [
+      `🍔 *Nuevo pedido ${settings.restaurantName ?? ""}*`,
       ``,
-      `📋 Detalle:`,
-      itemsText,
-      ``,
-      `💰 Total: *Bs. ${totalBs}* (REF ${ref})`,
+      `📋 Pedido #${order.orderNumber}`,
       `📱 Teléfono: ${order.customerPhone}`,
       ``,
       `¿Cómo deseas pagar?`,
-      `□ Pago Móvil`,
-      `□ Transferencia`,
-      `□ Efectivo al recibir`,
     ].join("\n");
-
-    try {
-      const template = await getTemplateByKey("checkout_manual");
-      if (template && template.isActive) {
-        message = template.body
-          .replace(/\{items\}/g, itemsText)
-          .replace(/\{total\}/g, totalBs)
-          .replace(/\{ref\}/g, ref)
-          .replace(/\{telefono\}/g, order.customerPhone);
-      }
-    } catch (e) {
-      console.error("Error fetching checkout_manual template", e);
-    }
 
     const originalNumber = settings.whatsappNumber || "584140000000";
     const sanitizedNumber = originalNumber.replace(/\D/g, "");
     const international = sanitizedNumber.startsWith("0") ? "58" + sanitizedNumber.slice(1) : sanitizedNumber;
-    const waLink = `https://wa.me/${international}?text=${encodeURIComponent(message)}`;
+    const waLink = `https://wa.me/${international}?text=${encodeURIComponent(finalMessage)}`;
 
     return {
       screen: "whatsapp",
       waLink,
-      prefilledMessage: message,
+      prefilledMessage: finalMessage,
     };
   }
 
@@ -123,7 +122,7 @@ export class WhatsAppManualProvider implements PaymentProvider {
       await tx.insert(paymentsLog).values({
         orderId,
         providerId: this.id,
-        amountBsCents: order.subtotalBsCents,
+        amountBsCents: order.grandTotalBsCents,
         senderPhone: order.customerPhone,
         providerRaw: { confirmedBy: adminUserId },
         outcome: "manual",
