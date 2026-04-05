@@ -83,6 +83,8 @@ export function ItemDetailModalClassic({
             selectedBebidas: cart.cartBebidas,
             removedComponents: [],
             categoryAllowAlone: item.categoryAllowAlone,
+            categoryIsSimple: item.categoryIsSimple,
+            categoryName: item.categoryName,
         };
 
         for (let i = 0; i < modal.quantity; i++) {

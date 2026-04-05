@@ -173,9 +173,7 @@ export function MenuItemForm({
             uploading={form.uploading}
             fileInputRef={form.fileInputRef}
             onUpload={form.handleImageUpload}
-            onRemoveImage={() => {
-              form.setValue("imageUrl", "");
-            }}
+            onRemoveImage={form.handleRemoveImage}
           />
         </div>
 

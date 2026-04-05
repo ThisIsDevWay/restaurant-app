@@ -52,9 +52,22 @@ export function useCheckoutSurcharges({
     let bebidaCount = 0;
 
     items.forEach((item) => {
-      plateCount += item.quantity;
-      adicionalCount += item.selectedAdicionales.reduce((sum, a) => sum + (a.quantity ?? 1), 0) * item.quantity;
-      bebidaCount += (item.selectedBebidas ?? []).reduce((sum, b) => sum + (b.quantity ?? 1), 0) * item.quantity;
+      if (item.categoryIsSimple) {
+        // Simple items (accessories/drinks) ordered alone
+        // Use category name to distinguish drinks from accessories — more robust than emoji
+        const isDrink = item.categoryName.toLowerCase().includes("bebida");
+        if (isDrink) {
+          bebidaCount += item.quantity;
+        } else {
+          adicionalCount += item.quantity;
+        }
+      } else {
+        // Main dishes (platos)
+        plateCount += item.quantity;
+        // Also count sub-items selected within the dish
+        adicionalCount += item.selectedAdicionales.reduce((sum, a) => sum + (a.quantity ?? 1), 0) * item.quantity;
+        bebidaCount += (item.selectedBebidas ?? []).reduce((sum, b) => sum + (b.quantity ?? 1), 0) * item.quantity;
+      }
     });
 
     const packagingUsdCents =

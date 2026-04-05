@@ -18,6 +18,8 @@ function makeCartItem(overrides: Partial<CartItem> = {}): CartItem {
     quantity: 1,
     itemTotalBsCents: 18250,
     categoryAllowAlone: true,
+    categoryIsSimple: false,
+    categoryName: "Platos Fuertes",
     ...overrides,
   };
 }
@@ -59,7 +61,7 @@ describe("useCheckoutSurcharges", () => {
   it("calculates packaging for take_away", () => {
     const { result } = renderHook(() =>
       useCheckoutSurcharges({
-        items: [makeCartItem({ quantity: 2 })],
+        items: [makeCartItem({ quantity: 2, categoryIsSimple: false, categoryName: "Platos Fuertes" })],
         orderMode: "take_away",
         settings,
         totalBsCents: 36500,
@@ -126,5 +128,57 @@ describe("useCheckoutSurcharges", () => {
     );
 
     expect(result.current.surcharges.totalSurchargeUsdCents).toBe(0);
+  });
+});
+
+describe("useCheckoutSurcharges accessories fix", () => {
+  it("counts individual accessories as adicionalCount instead of plateCount", () => {
+    const { result } = renderHook(() =>
+      useCheckoutSurcharges({
+        items: [
+          makeCartItem({
+            name: "Papas Fritas",
+            emoji: "🍟",
+            categoryIsSimple: true,
+            categoryName: "Adicionales",
+            quantity: 3,
+          }),
+        ],
+        orderMode: "take_away",
+        settings,
+        totalBsCents: 3000,
+        totalUsdCents: 100,
+      }),
+    );
+
+    expect(result.current.surcharges.plateCount).toBe(0);
+    expect(result.current.surcharges.adicionalCount).toBe(3);
+    // 3 × 100 = 300
+    expect(result.current.surcharges.packagingUsdCents).toBe(300);
+  });
+
+  it("counts individual drinks as bebidaCount instead of plateCount", () => {
+    const { result } = renderHook(() =>
+      useCheckoutSurcharges({
+        items: [
+          makeCartItem({
+            name: "Pepsi",
+            emoji: "🥤",
+            categoryIsSimple: true,
+            categoryName: "Bebidas",
+            quantity: 2,
+          }),
+        ],
+        orderMode: "take_away",
+        settings,
+        totalBsCents: 2000,
+        totalUsdCents: 50,
+      }),
+    );
+
+    expect(result.current.surcharges.plateCount).toBe(0);
+    expect(result.current.surcharges.bebidaCount).toBe(2);
+    // 2 × 100 = 200
+    expect(result.current.surcharges.packagingUsdCents).toBe(200);
   });
 });

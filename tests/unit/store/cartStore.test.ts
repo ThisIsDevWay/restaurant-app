@@ -31,6 +31,8 @@ describe("cartStore deduplication and pricing", () => {
             selectedAdicionales: [additional1, additional2],
             removedComponents: [],
             categoryAllowAlone: true,
+            categoryIsSimple: false,
+            categoryName: "Platos Fuertes",
         };
 
         const item2: Omit<CartItem, "quantity" | "itemTotalBsCents"> = {
@@ -60,6 +62,8 @@ describe("cartStore deduplication and pricing", () => {
                 { isRemoval: true, componentId: "c1", name: "No Onions", priceUsdCents: 50 }
             ],
             categoryAllowAlone: true,
+            categoryIsSimple: false,
+            categoryName: "Platos Fuertes",
         };
 
         // The current computeItemTotal in cartStore.ts uses:

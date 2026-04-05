@@ -26,6 +26,7 @@ interface MenuItemCardProps {
   imageUrl: string | null;
   priority?: boolean;
   hasRequiredOptions: boolean;
+  categoryIsSimple: boolean;
   onOpenDetail: () => void;
   onAddSimpleItem?: (payload: any, categoryName: string) => void;
 }
@@ -42,6 +43,7 @@ export function MenuItemCardModern({
   imageUrl,
   priority = false,
   hasRequiredOptions,
+  categoryIsSimple,
   onOpenDetail,
   onAddSimpleItem,
 }: MenuItemCardProps) {
@@ -68,6 +70,8 @@ export function MenuItemCardModern({
       selectedAdicionales: [],
       removedComponents: [],
       categoryAllowAlone,
+      categoryIsSimple,
+      categoryName,
     };
 
     if (onAddSimpleItem) {

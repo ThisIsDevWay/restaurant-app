@@ -124,6 +124,7 @@ export function MenuGrid({
             imageUrl={item.imageUrl}
             priority={index < 4}
             hasRequiredOptions={needsDetailModal}
+            categoryIsSimple={item.categoryIsSimple}
             onOpenDetail={() => setSelectedItemId(item.id)}
             onAddSimpleItem={handleAddSimpleItem}
             menuLayout={menuLayout}

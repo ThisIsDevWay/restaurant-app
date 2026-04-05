@@ -44,6 +44,8 @@ export interface CartItem {
   quantity: number;
   itemTotalBsCents: number;
   categoryAllowAlone: boolean;
+  categoryIsSimple: boolean;
+  categoryName: string;
 }
 
 interface CartState {
