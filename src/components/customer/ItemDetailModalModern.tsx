@@ -2,6 +2,8 @@
 
 import { X, Minus, Plus } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { formatBs, formatRef } from "@/lib/money";
 import { useCartStore } from "@/store/cartStore";
 import { useItemDetailModal } from "@/hooks/useItemDetailModal";
@@ -25,6 +27,7 @@ export function ItemDetailModalModern({
   dailyBebidas,
   maxQuantityPerItem = 10,
 }: ItemDetailModalProps) {
+  const [imageLoaded, setImageLoaded] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
 
   const modal = useItemDetailModal({
@@ -83,6 +86,8 @@ export function ItemDetailModalModern({
       selectedBebidas: cart.cartBebidas,
       removedComponents: [],
       categoryAllowAlone: item.categoryAllowAlone,
+      categoryIsSimple: item.categoryIsSimple,
+      categoryName: item.categoryName,
     };
 
     for (let i = 0; i < modal.quantity; i++) {
@@ -115,7 +120,7 @@ export function ItemDetailModalModern({
       >
         <div className="flex-1 overflow-y-auto w-full">
           {/* Spacer to push white card down. Allows image overlay. */}
-          <div className="h-29 w-full shrink-0" />
+          <div className="h-36 w-full shrink-0" />
 
           <div className="relative flex min-h-[calc(100%-7rem)] w-full flex-col rounded-t-[32px] bg-white px-4 pb-4 pt-4 shadow-modal">
             {/* Close button */}
@@ -129,7 +134,10 @@ export function ItemDetailModalModern({
 
             {/* Suspended image */}
             {item.imageUrl ? (
-              <div className="absolute -top-[120px] left-1/2 z-20 h-[240px] w-[240px] -translate-x-1/2 pointer-events-none">
+              <div className={cn(
+                "absolute -top-[145px] left-1/2 z-20 h-[260px] w-[260px] -translate-x-1/2 pointer-events-none transition-all duration-700 ease-out",
+                imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-90"
+              )}>
                 <Image
                   src={item.imageUrl}
                   alt={item.name}
@@ -138,6 +146,7 @@ export function ItemDetailModalModern({
                   sizes="(max-width: 500px) 240px, 240px"
                   quality={90}
                   priority
+                  onLoad={() => setImageLoaded(true)}
                 />
               </div>
             ) : (

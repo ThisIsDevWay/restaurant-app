@@ -10,6 +10,8 @@ import { eq, desc, and } from "drizzle-orm";
 import { db } from "@/db";
 import { adminActionClient } from "@/lib/safe-action";
 import { supabase } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
+import * as Sentry from "@sentry/nextjs";
 
 type ActionResult =
   | { success: true; error?: never }
@@ -37,7 +39,8 @@ export const saveSettingsAction = adminActionClient
       revalidatePath("/admin/settings");
       return { success: true } as ActionResult;
     } catch (error) {
-      console.error("Save settings error:", error);
+      logger.error("Save settings error", { error });
+      Sentry.captureException(error);
       return { success: false, error: "Error al guardar configuración" };
     }
   });

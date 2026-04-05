@@ -91,6 +91,55 @@ export function SettingsDesignTab({ form, updateField }: SettingsDesignTabProps)
                         </div>
                     </RadioGroup>
                 </div>
+
+                <div className="mt-10 pt-8 border-t border-border">
+                    <h2 className="text-xl font-bold flex items-center gap-2 text-text-main mb-1">
+                        <ListFilter className="h-5 w-5 text-primary" />
+                        Ordenamiento del Menú
+                    </h2>
+                    <p className="text-text-muted text-sm mb-6">
+                        Configura cómo se ordenarán los platos dentro de cada categoría en el menú público.
+                    </p>
+
+                    <RadioGroup
+                        value={form.menuItemSortMode}
+                        onValueChange={(val) => updateField("menuItemSortMode", val as "custom" | "price_asc" | "price_desc")}
+                        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                    >
+                        <Label
+                            onClick={() => updateField("menuItemSortMode", "custom")}
+                            className={cn(
+                                "flex flex-col rounded-xl border-2 bg-bg-app p-4 hover:bg-gray-50 cursor-pointer transition-all text-center",
+                                form.menuItemSortMode === "custom" ? "border-primary bg-primary/5" : "border-border"
+                            )}
+                        >
+                            <span className="font-semibold text-text-main text-sm">Personalizado</span>
+                            <span className="text-[10px] text-text-muted mt-1">Orden manual</span>
+                        </Label>
+
+                        <Label
+                            onClick={() => updateField("menuItemSortMode", "price_asc")}
+                            className={cn(
+                                "flex flex-col rounded-xl border-2 bg-bg-app p-4 hover:bg-gray-50 cursor-pointer transition-all text-center",
+                                form.menuItemSortMode === "price_asc" ? "border-primary bg-primary/5" : "border-border"
+                            )}
+                        >
+                            <span className="font-semibold text-text-main text-sm">Precio (Asc.)</span>
+                            <span className="text-[10px] text-text-muted mt-1">Menor a mayor</span>
+                        </Label>
+
+                        <Label
+                            onClick={() => updateField("menuItemSortMode", "price_desc")}
+                            className={cn(
+                                "flex flex-col rounded-xl border-2 bg-bg-app p-4 hover:bg-gray-50 cursor-pointer transition-all text-center",
+                                form.menuItemSortMode === "price_desc" ? "border-primary bg-primary/5" : "border-border"
+                            )}
+                        >
+                            <span className="font-semibold text-text-main text-sm">Precio (Desc.)</span>
+                            <span className="text-[10px] text-text-muted mt-1">Mayor a menor</span>
+                        </Label>
+                    </RadioGroup>
+                </div>
             </div>
         </div>
     );

@@ -66,6 +66,7 @@ export default async function SettingsPage() {
               paymentPagoMovilEnabled: settings.paymentPagoMovilEnabled ?? true,
               paymentTransferEnabled: settings.paymentTransferEnabled ?? true,
               menuLayout: (settings.menuLayout ?? "modern") as "modern" | "classic",
+              menuItemSortMode: (settings.menuItemSortMode ?? "custom") as "custom" | "price_asc" | "price_desc",
             }
             : null
         }

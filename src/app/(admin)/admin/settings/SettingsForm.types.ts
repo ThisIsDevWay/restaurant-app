@@ -50,6 +50,7 @@ export interface SettingsFormData {
   paymentPagoMovilEnabled: boolean;
   paymentTransferEnabled: boolean;
   menuLayout: "modern" | "classic";
+  menuItemSortMode: "custom" | "price_asc" | "price_desc";
 }
 
 export type FormErrors = Partial<Record<keyof SettingsFormData, string>>;

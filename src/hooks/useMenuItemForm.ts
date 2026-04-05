@@ -72,6 +72,7 @@ export interface UseMenuItemFormReturn {
   setSelectedContornos: React.Dispatch<React.SetStateAction<ContornoSelection[]>>;
   selectedBebidaIds: string[];
   setSelectedBebidaIds: React.Dispatch<React.SetStateAction<string[]>>;
+  handleRemoveImage: () => void;
   showDeleteConfirm: boolean;
   setShowDeleteConfirm: React.Dispatch<React.SetStateAction<boolean>>;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -79,7 +80,7 @@ export interface UseMenuItemFormReturn {
   toggleContornoRemovable: (id: string) => void;
   toggleSubstituteContorno: (contornoId: string, subId: string) => void;
   onDelete: () => Promise<void>;
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement> | File) => Promise<void>;
   onFormSubmit: (data: FormValues) => Promise<void>;
 }
 
@@ -168,9 +169,29 @@ export function useMenuItemForm({
     }
   }
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  function handleRemoveImage() {
+    setValue("imageUrl", "");
+    setPreviewUrl(null);
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement> | File) {
+    const file = e instanceof File ? e : e.target.files?.[0];
     if (!file) return;
+
+    // Validation: Type (JPG, PNG, WebP)
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setError("Formato no soportado. Usa JPG, PNG o WebP.");
+      return;
+    }
+
+    // Validation: Size (Max 5MB)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      setError("Imagen demasiado grande. Máximo 5MB.");
+      return;
+    }
+
     try {
       setUploading(true);
       const result = await generateUploadUrlAction({ fileName: file.name });
@@ -270,6 +291,7 @@ export function useMenuItemForm({
     toggleSubstituteContorno,
     onDelete,
     handleImageUpload,
+    handleRemoveImage,
     onFormSubmit,
   };
 }
