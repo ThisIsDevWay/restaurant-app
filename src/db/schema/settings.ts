@@ -62,6 +62,7 @@ export const settings = pgTable("settings", {
   paymentPagoMovilEnabled: boolean("payment_pago_movil_enabled").notNull().default(true),
   paymentTransferEnabled: boolean("payment_transfer_enabled").notNull().default(true),
   menuLayout: text("menu_layout").notNull().default("modern"),
+  menuItemSortMode: text("menu_item_sort_mode").notNull().default("custom"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

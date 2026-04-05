@@ -1,6 +1,8 @@
 import { db } from "../index";
 import { menuItems, optionGroups, options, categories, menuItemAdicionales, menuItemContornos, menuItemBebidas, orders } from "../schema";
-import { eq, sql, and, gte, lte, isNotNull, asc } from "drizzle-orm";
+import { eq, sql, and, gte, lte, isNotNull, asc, desc, SQL } from "drizzle-orm";
+import { getSettings } from "./settings";
+import { buildMenuItemSortColumns, type MenuItemSortMode } from "./sort-utils";
 import type {
   MenuItemWithComponents,
   OptionGroupWithOptions,
@@ -29,6 +31,10 @@ export interface MenuWithGroups {
 export type MenuWithComponents = MenuItemWithComponents;
 
 export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
+  const settings = await getSettings();
+  const sortMode = (settings?.menuItemSortMode ?? "custom") as MenuItemSortMode;
+  const itemsSortColumns = buildMenuItemSortColumns(sortMode);
+
   const [items, groupRows] = await Promise.all([
     db
       .select({
@@ -48,7 +54,7 @@ export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
       })
       .from(menuItems)
       .innerJoin(categories, eq(menuItems.categoryId, categories.id))
-      .orderBy(categories.sortOrder, menuItems.sortOrder),
+      .orderBy(...itemsSortColumns),
 
     db
       .select({
@@ -110,6 +116,10 @@ export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
 }
 
 export async function getMenuWithOptionsAndComponents(): Promise<MenuWithComponents[]> {
+  const settings = await getSettings();
+  const sortMode = (settings?.menuItemSortMode ?? "custom") as MenuItemSortMode;
+  const itemsSortColumns = buildMenuItemSortColumns(sortMode);
+
   const [items, groupRows, adicionalRows, contornoRows, bebidaRows] = await Promise.all([
     db
       .select({
@@ -130,7 +140,7 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
       .from(menuItems)
       .innerJoin(categories, eq(menuItems.categoryId, categories.id))
       .where(eq(categories.isAvailable, true))
-      .orderBy(categories.sortOrder, menuItems.sortOrder),
+      .orderBy(...itemsSortColumns),
 
     db
       .select({
@@ -286,11 +296,16 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
 }
 
 export async function getAvailableMenuItems() {
+  const settings = await getSettings();
+  const sortMode = (settings?.menuItemSortMode ?? "custom") as MenuItemSortMode;
+  const itemsSortColumns = buildMenuItemSortColumns(sortMode);
+
   return db
     .select()
     .from(menuItems)
+    .innerJoin(categories, eq(menuItems.categoryId, categories.id))
     .where(eq(menuItems.isAvailable, true))
-    .orderBy(menuItems.sortOrder);
+    .orderBy(...itemsSortColumns);
 }
 
 export async function getMenuItemById(id: string) {

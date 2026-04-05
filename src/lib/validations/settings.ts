@@ -47,6 +47,7 @@ export const settingsSchema = v.object({
   paymentPagoMovilEnabled: v.optional(v.boolean()),
   paymentTransferEnabled: v.optional(v.boolean()),
   menuLayout: v.optional(v.picklist(["modern", "classic"])),
+  menuItemSortMode: v.optional(v.picklist(["custom", "price_asc", "price_desc"])),
 });
 
 export type SettingsInput = v.InferOutput<typeof settingsSchema>;

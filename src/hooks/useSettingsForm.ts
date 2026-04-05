@@ -62,6 +62,7 @@ const DEFAULT_FORM: SettingsFormData = {
   paymentPagoMovilEnabled: true,
   paymentTransferEnabled: true,
   menuLayout: "modern",
+  menuItemSortMode: "custom",
 };
 
 export function useSettingsForm({ initialData }: UseSettingsFormParams): UseSettingsFormReturn {
