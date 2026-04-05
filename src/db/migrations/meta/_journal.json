@@ -64,6 +64,34 @@
       "when": 1775206238560,
       "tag": "0008_chief_salo",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1775363410140,
+      "tag": "0009_add_logo_url",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1775363410141,
+      "tag": "0010_add_menu_layout",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1775363410142,
+      "tag": "0011_add_menu_item_sort_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1775363410143,
+      "tag": "0012_drop_is_cutout",
+      "breakpoints": true
     }
   ]
 }
