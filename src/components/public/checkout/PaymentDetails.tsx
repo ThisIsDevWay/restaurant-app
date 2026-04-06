@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { formatBs, formatRef } from "@/lib/money";
-import { Copy, Check, ClipboardCopy } from "lucide-react";
+import { ClipboardCopy } from "lucide-react";
 import type { CartItem } from "@/store/cartStore";
 import { buildPagoMovilClipboard } from "@/lib/clipboard-pago-movil";
 import { CopyAllButton } from "./CopyAllButton";
+import { CopyButton } from "./CopyButton";
 
 interface PaymentDetailsProps {
   orderId: string;
@@ -77,26 +78,7 @@ function usePaymentPolling(
   return { status };
 }
 
-function CopyButton({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <button
-      onClick={handleCopy}
-      className={`flex h-9 w-9 items-center justify-center rounded-input transition-colors ${copied ? "bg-success/10 text-success" : "bg-bg-image text-text-muted"
-        }`}
-      aria-label="Copiar"
-    >
-      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-    </button>
-  );
-}
 
 export function PaymentDetails({
   orderId,

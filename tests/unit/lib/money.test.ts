@@ -15,7 +15,7 @@ describe("usdCentsToBsCents", () => {
     expect(usdCentsToBsCents(1000, 451.5072)).toBe(451507);
   });
 
-  it("handles zero", () => {
+  it("handles zero usdCents", () => {
     expect(usdCentsToBsCents(0, 451.507)).toBe(0);
   });
 
@@ -33,7 +33,24 @@ describe("usdCentsToBsCents", () => {
       }
     }
   });
+
+  it("throws for rate = 0", () => {
+    expect(() => usdCentsToBsCents(100, 0)).toThrow();
+  });
+
+  it("throws for negative rate", () => {
+    expect(() => usdCentsToBsCents(100, -5)).toThrow();
+  });
+
+  it("throws for NaN usdCents", () => {
+    expect(() => usdCentsToBsCents(NaN, 36.5)).toThrow();
+  });
+
+  it("throws for NaN rate", () => {
+    expect(() => usdCentsToBsCents(100, NaN)).toThrow();
+  });
 });
+
 
 describe("formatRef", () => {
   it("formats 310 as 'REF 3,10'", () => {
@@ -51,7 +68,20 @@ describe("formatRef", () => {
   it("formats 100000 as 'REF 1000,00'", () => {
     expect(formatRef(100000)).toBe("REF 1000,00");
   });
+
+  it("returns 'REF —' for null", () => {
+    expect(formatRef(null)).toBe("REF —");
+  });
+
+  it("returns 'REF —' for undefined", () => {
+    expect(formatRef(undefined)).toBe("REF —");
+  });
+
+  it("returns 'REF —' for NaN", () => {
+    expect(formatRef(NaN)).toBe("REF —");
+  });
 });
+
 
 describe("formatBs", () => {
   it("formats 139967 as 'Bs. 1.399,67'", () => {
@@ -74,7 +104,20 @@ describe("formatBs", () => {
   it("formats 0 as 'Bs. 0,00'", () => {
     expect(formatBs(0)).toBe("Bs. 0,00");
   });
+
+  it("returns 'Bs. —' for null", () => {
+    expect(formatBs(null)).toBe("Bs. —");
+  });
+
+  it("returns 'Bs. —' for undefined", () => {
+    expect(formatBs(undefined)).toBe("Bs. —");
+  });
+
+  it("returns 'Bs. —' for NaN", () => {
+    expect(formatBs(NaN)).toBe("Bs. —");
+  });
 });
+
 
 describe("totalFromItems", () => {
   it("sums items correctly", () => {

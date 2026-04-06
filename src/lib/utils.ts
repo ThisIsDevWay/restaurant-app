@@ -19,6 +19,12 @@ export function maskPhone(phone: string | null | undefined): string {
   return `****${cleaned.slice(-4)}`;
 }
 
+/** Format phone number for display (unmasked), handling null/undefined */
+export function formatPhone(phone: string | null | undefined): string {
+  if (!phone) return "—";
+  return phone.replace(/\D/g, "");
+}
+
 /** Format date consistently for es-VE locale */
 export function formatOrderDate(date: Date | string): string {
   return new Intl.DateTimeFormat("es-VE", {
