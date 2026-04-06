@@ -56,6 +56,7 @@ export const STATUS_STYLES: Record<OrderStatus, StatusConfig> = {
 export type ActionType =
   | "confirm"
   | "confirm_manual"
+  | "confirm_with_ref"     // pending → paid, requires reference number
   | "mark_kitchen"
   | "mark_delivered"
   | "cancel";
@@ -68,15 +69,17 @@ export interface QuickAction {
 }
 
 export const ACTION_MAP: Record<OrderStatus, QuickAction[]> = {
+  // pending = customer hasn't paid yet
+  // Admin must capture the payment reference before confirming
   pending: [
-    { label: "Confirmar", icon: CheckCircle, action: "confirm", variant: "default" },
+    { label: "Confirmar con referencia", icon: CheckCircle, action: "confirm_with_ref", variant: "default" },
   ],
+  // whatsapp = manual payment provider, confirm via provider flow
   whatsapp: [
     { label: "Confirmar pago", icon: CheckCircle, action: "confirm_manual", variant: "default" },
   ],
-  paid: [
-    { label: "Enviar a cocina", icon: ChefHat, action: "mark_kitchen", variant: "default" },
-  ],
+  // paid = already visible in KDS, no manual push to kitchen needed
+  paid: [],
   kitchen: [
     { label: "Marcar entregada", icon: Truck, action: "mark_delivered", variant: "default" },
   ],
@@ -96,6 +99,12 @@ export const ACTION_ENDPOINTS: Record<
   },
   confirm_manual: {
     url: (id) => `/api/admin/orders/${id}/confirm-manual`,
+  },
+  // confirm_with_ref requires a paymentReference in the body;
+  // the UI handles this by opening a modal before calling the endpoint.
+  confirm_with_ref: {
+    url: (id) => `/api/admin/orders/${id}/confirm-with-ref`,
+    // body is built dynamically with the reference the admin enters
   },
   mark_kitchen: {
     url: (id) => `/api/admin/orders/${id}/status`,

@@ -110,6 +110,7 @@ export default async function OrderDetailPage({
               paymentProvider: order.paymentProvider,
               paymentReference: order.paymentReference,
               rateSnapshotBsPerUsd: order.rateSnapshotBsPerUsd,
+              orderMode: order.orderMode ?? "delivery",
             }}
             latestLog={
               latestLog

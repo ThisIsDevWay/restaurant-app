@@ -4,13 +4,20 @@ import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { sql } from "drizzle-orm";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user?.role || session.user.role !== "admin") {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
   try {
+    const url = new URL(req.url);
+    const rawDate = url.searchParams.get("date");
+    let targetDate = new Date().toLocaleDateString("en-CA", { timeZone: "America/Caracas" });
+    if (rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+      targetDate = rawDate;
+    }
+
     const [result] = await db
       .select({
         total: sql<number>`count(*)::int`,
@@ -23,7 +30,8 @@ export async function GET() {
         failed: sql<number>`count(*) filter (where status = 'failed')::int`,
         cancelled: sql<number>`count(*) filter (where status = 'cancelled')::int`,
       })
-      .from(orders);
+      .from(orders)
+      .where(sql`date(timezone('America/Caracas', ${orders.createdAt})) = ${targetDate}`);
 
     return NextResponse.json({
       all: result.total,

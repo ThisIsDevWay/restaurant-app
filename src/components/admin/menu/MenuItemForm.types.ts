@@ -1,15 +1,11 @@
 import type * as v from "valibot";
+import type { ContornoSelection } from "@/types/contorno.types";
+export type { ContornoSelection };
 
 export const formSchema = {
   // Re-exported for use in the hook
 } as const;
 
-export interface ContornoSelection {
-  id: string;
-  name: string;
-  removable: boolean;
-  substituteContornoIds: string[];
-}
 
 export interface MenuItemFormProps {
   categories: { id: string; name: string; isSimple?: boolean }[];

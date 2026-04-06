@@ -1,3 +1,5 @@
+import type { ProviderId } from "@/lib/payment-providers/types";
+
 export interface Template {
   id: string;
   key: string;
@@ -6,7 +8,10 @@ export interface Template {
   isActive: boolean;
 }
 
-export type PaymentProvider = "banesco_reference" | "mercantil_c2p" | "bnc_p2c" | "whatsapp_manual";
+// Re-export so existing imports of PaymentProvider still compile
+export type { ProviderId };
+/** @deprecated Use ProviderId from @/lib/payment-providers/types */
+export type PaymentProvider = ProviderId;
 
 export interface SettingsFormData {
   bankName: string;
@@ -27,7 +32,7 @@ export interface SettingsFormData {
   rateCurrency: "usd" | "eur";
   showRateInMenu: boolean;
   rateOverrideBsPerUsd: string;
-  activePaymentProvider: PaymentProvider;
+  activePaymentProvider: ProviderId;
   banescoApiKey: string;
   mercantilClientId: string;
   mercantilClientSecret: string;
@@ -68,8 +73,9 @@ export const ORDER_MODES = [
 ] as const;
 
 export const PAYMENT_PROVIDERS = [
-  { id: "banesco_reference" as const, label: "Banesco (P2P / Ref.)" },
-  { id: "mercantil_c2p" as const, label: "Mercantil (Smart Pay)" },
-  { id: "bnc_p2c" as const, label: "BNC (Smart Pay)" },
-  { id: "whatsapp_manual" as const, label: "Confirmación WhatsApp" },
+  { id: "banesco_reference" as const satisfies ProviderId, label: "Banesco (P2P / Ref.)" },
+  { id: "mercantil_c2p" as const satisfies ProviderId, label: "Mercantil (Smart Pay)" },
+  { id: "bnc_feed" as const satisfies ProviderId, label: "BNC (Smart Pay)" },
+  { id: "whatsapp_manual" as const satisfies ProviderId, label: "Confirmación WhatsApp" },
 ] as const;
+// ^ Using `satisfies ProviderId` ensures TypeScript errors immediately if any id drifts from the canonical type

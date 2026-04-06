@@ -154,7 +154,7 @@ export function SettingsPaymentsTab({ form, updateField }: SettingsPaymentsTabPr
           </div>
 
           <div className="space-y-6">
-            {form.activePaymentProvider === "bnc_p2c" && (
+            {form.activePaymentProvider === "bnc_feed" && (
               <div className="space-y-4 animate-in slide-in-from-top-2">
                 <h4 className="font-bold text-sm flex items-center gap-2 text-text-main">
                   <CreditCard className="h-4 w-4 text-primary" /> BNC API Configuration

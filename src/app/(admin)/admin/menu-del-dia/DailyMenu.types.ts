@@ -1,9 +1,6 @@
-export interface ContornoSelection {
-  id: string;
-  name: string;
-  removable: boolean;
-  substituteContornoIds: string[];
-}
+import type { ContornoSelection } from "@/types/contorno.types";
+export type { ContornoSelection };
+
 
 export interface CatalogItem {
   id: string;
