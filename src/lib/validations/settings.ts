@@ -19,7 +19,7 @@ export const settingsSchema = v.object({
   activePaymentProvider: v.picklist([
     "banesco_reference",
     "mercantil_c2p",
-    "bnc_p2c",
+    "bnc_feed",
     "whatsapp_manual",
   ]),
   banescoApiKey: v.optional(v.string()),
