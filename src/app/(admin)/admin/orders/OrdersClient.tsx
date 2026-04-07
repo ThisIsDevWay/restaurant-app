@@ -22,7 +22,7 @@ export function OrdersClient({ orders, initialDate }: { orders: OrderListItem[],
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  const [activeTab, setActiveTab] = useState<TabFilter>("all");
+  const [activeTab, setActiveTab] = useState<TabFilter>("pending");
   const [search, setSearch] = useState("");
   // Transition flag suppresses the empty-state flash on tab change
   const [isPending, startTransition] = useTransition();

@@ -115,7 +115,7 @@ export function OrderItemsTable({
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-1.5">
                           <Layers className="h-3 w-3 text-primary/60" />
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Acompañantes</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Contornos</span>
                         </div>
                         <div className="space-y-1">
                           {item.fixedContornos.map((c, cIdx) => (
