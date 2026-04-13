@@ -47,23 +47,41 @@ export const processCheckoutAction = actionClient
         };
       }
 
+      // Log for idempotency debugging
+      logger.info("[CheckoutAction] Received token", { token: parsed.output.checkoutToken });
+
       // 2. Delegate entire business logic to service
       const { order, initResult, subtotalBsCents, grandTotalBsCents, snapshotItems, settings, surchargesSnapshot } = await processCheckout({
         items,
         input: parsed.output,
       });
 
-      // 3. Side effects (Customer upsert and WhatsApp)
-      if (parsed.output.name || parsed.output.cedula) {
-        await upsertCustomer(parsed.output.phone, parsed.output.name ?? null, parsed.output.cedula ?? null);
-      }
+      // 3. Side effects (WhatsApp)
 
       after(async () => {
+        // Solo enviar "received" en checkout para whatsapp_manual + transfer.
+        // Razón: en whatsapp_manual la orden ya fue coordinada manualmente en el
+        // formulario, por lo que el mensaje de confirmación tiene sentido de inmediato.
+        //
+        // Para proveedores de conciliación automática (banesco_reference, mercantil_c2p)
+        // el pago AÚN no ha sido verificado cuando se crea la orden (status = "pending").
+        // El mensaje "received" se enviará en /api/payment-confirm tras verificación exitosa.
+        //
+        // Para whatsapp_manual + pago_movil: el PagoMovilScreen maneja la comunicación
+        // vía WhatsApp con comprobante, así que tampoco enviamos aquí.
+        const isWhatsAppManual = settings.activePaymentProvider === "whatsapp_manual";
+        const isPagoMovil = parsed.output.paymentMethod === "pago_movil";
+
+        const shouldSendNow = isWhatsAppManual && !isPagoMovil;
+        if (!shouldSendNow) return;
+
         try {
           const rate = parseFloat(order.rateSnapshotBsPerUsd);
           await sendOrderMessage({
             templateKey: "received",
-            phone: parsed.output.phone,
+            phone: order.customerPhone,
+            orderId: order.id,
+            paymentMethod: order.paymentMethod,
             orderNumber: String(order.orderNumber),
             customerName: parsed.output.name ?? null,
             items: snapshotItems,

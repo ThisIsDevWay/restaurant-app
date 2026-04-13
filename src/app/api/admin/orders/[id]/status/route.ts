@@ -82,6 +82,8 @@ export async function POST(
       await sendOrderMessage({
         templateKey,
         phone: order.customerPhone,
+        orderId: order.id,
+        paymentMethod: order.paymentMethod,
         orderNumber: String(order.orderNumber),
         customerName: customer?.name ?? null,
         items: snapshotItems,

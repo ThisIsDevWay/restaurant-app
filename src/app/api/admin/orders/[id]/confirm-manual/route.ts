@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getOrderById } from "@/db/queries/orders";
 import { getSettings } from "@/db/queries/settings";
-import { getActiveProvider } from "@/lib/payment-providers";
+import { getProviderById } from "@/lib/payment-providers";
 import { getCustomerByPhone } from "@/db/queries/customers";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
@@ -32,7 +32,9 @@ export async function POST(
       );
     }
 
-    const provider = getActiveProvider(settings);
+    // Usar el provider que se guardó en la orden, no el activo actual.
+    // Esto evita fallos si el admin cambió el proveedor entre checkout y confirmación.
+    const provider = getProviderById(order.paymentProvider, settings);
 
     const result = await provider.confirmPayment({
       type: "manual",
@@ -53,6 +55,8 @@ export async function POST(
       await sendOrderMessage({
         templateKey: "paid",
         phone: order.customerPhone,
+        orderId: order.id,
+        paymentMethod: order.paymentMethod,
         orderNumber: String(order.orderNumber),
         customerName: customer?.name ?? null,
         items: snapshotItems,

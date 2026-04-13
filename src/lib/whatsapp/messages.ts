@@ -1,4 +1,5 @@
 import { getTemplateByKey } from "@/db/queries/whatsapp-templates";
+import { getCustomerByPhone } from "@/db/queries/customers";
 import { formatBs, formatRef } from "@/lib/money";
 import { sendMessage } from "./client";
 import {
@@ -23,10 +24,12 @@ interface TemplateVariables {
   // Surcharges — opcionales para backward compatibility con templates existentes
   packagingFee?: string;
   deliveryFee?: string;
+  orderRef?: string;
+  metodoPago?: string;
 }
 
 function renderTemplate(body: string, vars: TemplateVariables): string {
-  return body
+  let rendered = body
     .replace(/\{nombre\}/g, vars.nombre)
     .replace(/\{numeroPedido\}/g, vars.numeroPedido)
     .replace(/\{items\}/g, vars.items)
@@ -40,6 +43,16 @@ function renderTemplate(body: string, vars: TemplateVariables): string {
     .replace(/\{restaurantName\}/g, vars.restaurantName)
     .replace(/\{packagingFee\}/g, vars.packagingFee ?? "")
     .replace(/\{deliveryFee\}/g, vars.deliveryFee ?? "");
+
+  // Nuevos placeholders con comportamiento defensivo (si es undefined, no se reemplaza)
+  if (vars.orderRef !== undefined) {
+    rendered = rendered.replace(/\{orderRef\}/g, vars.orderRef);
+  }
+  if (vars.metodoPago !== undefined) {
+    rendered = rendered.replace(/\{metodoPago\}/g, vars.metodoPago);
+  }
+
+  return rendered;
 }
 
 // ─── Public interfaces ────────────────────────────────────────────────────────
@@ -59,9 +72,11 @@ export interface SurchargesInfo {
 export interface OrderMessageContext {
   templateKey: string;
   phone: string;
+  orderId?: string;
   orderNumber: string;
   customerName: string | null;
   items: SnapshotItem[];
+  paymentMethod?: string | null;
   /** SIEMPRE el total final (subtotal + surcharges) */
   grandTotalBsCents: number;
   surcharges?: SurchargesInfo | null;
@@ -76,6 +91,14 @@ const ORDER_MODE_LABELS: Record<string, string> = {
   on_site: "🏠 Comer en el local",
   take_away: "📦 Retira en el local",
   delivery: "🛵 Delivery",
+};
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  pago_movil: "💰 Pago Móvil",
+  transfer: "🏦 Transferencia",
+  whatsapp: "💬 Acordado por WhatsApp",
+  cash: "💵 Efectivo",
+  pos: "💳 Punto de Venta",
 };
 
 // ─── Core: build message string ───────────────────────────────────────────────
@@ -95,6 +118,15 @@ export async function buildOrderMessage(
   const template = await getTemplateByKey(ctx.templateKey);
   if (!template || !template.isActive) {
     return null;
+  }
+
+  // Fallback: Si el nombre no viene en el contexto, intentamos buscarlo en DB
+  let customerName = ctx.customerName;
+  if (!customerName) {
+    // Normalizar a formato interno (0414...) para el lookup en DB
+    const normalizedPhone = ctx.phone.replace(/\D/g, "").replace(/^58/, "0");
+    const customer = await getCustomerByPhone(normalizedPhone);
+    customerName = customer?.name ?? null;
   }
 
   const totalBs = ctx.grandTotalBsCents;
@@ -130,7 +162,7 @@ export async function buildOrderMessage(
   }
 
   const vars: TemplateVariables = {
-    nombre: ctx.customerName || "cliente",
+    nombre: customerName || "cliente",
     numeroPedido: `#${ctx.orderNumber}`,
     items: formatItemsDetailed(ctx.items, formatBs, formatRef),
     total: formatBs(totalBs),
@@ -148,6 +180,10 @@ export async function buildOrderMessage(
       : undefined,
     deliveryFee: ctx.surcharges && ctx.surcharges.deliveryUsdCents > 0
       ? formatBs(Math.round(ctx.surcharges.deliveryUsdCents * ctx.surcharges.rate))
+      : undefined,
+    orderRef: ctx.orderId ? ctx.orderId.slice(0, 8).toUpperCase() : undefined,
+    metodoPago: ctx.paymentMethod
+      ? PAYMENT_METHOD_LABELS[ctx.paymentMethod] ?? ctx.paymentMethod
       : undefined,
   };
 

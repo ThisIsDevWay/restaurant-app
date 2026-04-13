@@ -43,21 +43,23 @@ const TEMPLATE_DESCRIPTIONS: Record<string, string> = {
 
 const AVAILABLE_VARIABLES = [
   // Core
-  { key: "{nombre}", label: "Nombre", sample: "Juan" },
-  { key: "{numeroPedido}", label: "Orden", sample: "#42" },
-  { key: "{items}", label: "Productos", sample: "__ITEMS__" },
+  { key: "{nombre}", label: "Nombre del Cliente", sample: "Juan" },
+  { key: "{numeroPedido}", label: "Nro de Pedido", sample: "#42" },
+  { key: "{orderRef}", label: "Identificador del Pedido", sample: "A1B2C3D4" },
+  { key: "{items}", label: "Detalle del Pedido", sample: "__ITEMS__" },
   { key: "{telefono}", label: "Teléfono", sample: "04141234567" },
   { key: "{restaurantName}", label: "Restaurante", sample: "Mi Restaurante" },
   { key: "{modoPedido}", label: "Modo pedido", sample: "📦 Retira en el local" },
   { key: "{tiempoEstimado}", label: "Tiempo est.", sample: "25 min" },
   // Financial
   { key: "{total}", label: "Total Bs.", sample: "Bs. 15.340,58" },
-  { key: "{baseImponible}", label: "Base imp.", sample: "Bs. 13.224,64" },
+  { key: "{baseImponible}", label: "Base imponible", sample: "Bs. 13.224,64" },
   { key: "{iva}", label: "IVA (16%)", sample: "Bs. 2.115,94" },
   { key: "{ref}", label: "Ref $", sample: "REF 32,36" },
+  { key: "{metodoPago}", label: "Método de Pago", sample: "💰 Pago Móvil" },
   // Surcharges
-  { key: "{packagingFee}", label: "Envases", sample: "Bs. 2.284,97" },
-  { key: "{deliveryFee}", label: "Delivery fee", sample: "Bs. 500,00" },
+  { key: "{packagingFee}", label: "Costo Envases", sample: "Bs. 2.284,97" },
+  { key: "{deliveryFee}", label: "Costo Delivery", sample: "Bs. 500,00" },
 ];
 
 const SAMPLE_ITEMS = [
@@ -186,9 +188,12 @@ export function TemplateEditor({ templates }: { templates: Template[] }) {
                         <div className="text-[14px] leading-relaxed text-[#111b21] whitespace-pre-wrap font-medium">
                           {renderPreview(bodyContent)}
                         </div>
-                        <div className="text-[10px] text-[#667781] text-right mt-1.5 font-medium flex items-center justify-end gap-1">
+                        <div className="text-[10px] text-[#667781] text-right mt-1.5 font-medium flex items-center justify-end gap-0.5">
                           10:45 AM
-                          <Check className="h-3 w-3 text-sky-400" />
+                          <div className="flex -space-x-1.5 ml-1">
+                            <Check className="h-3 w-3 text-sky-400" />
+                            <Check className="h-3 w-3 text-sky-400" />
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getOrderById, updateOrderStatus } from "@/db/queries/orders";
+import { getOrderById } from "@/db/queries/orders";
 import { upsertCustomer } from "@/db/queries/customers";
 import { getSettings } from "@/db/queries/settings";
+import { getProviderById } from "@/lib/payment-providers";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 import { logger } from "@/lib/logger";
@@ -53,6 +54,14 @@ export async function POST(
             );
         }
 
+        const settings = await getSettings();
+        if (!settings) {
+            return NextResponse.json(
+                { error: "Configuración no encontrada" },
+                { status: 500 },
+            );
+        }
+
         // Upsert customer with the phone they paid from (may be different from order.customerPhone)
         const customer = await upsertCustomer(
             phone.trim(),
@@ -60,9 +69,24 @@ export async function POST(
             cedula?.trim() || null,
         );
 
-        await updateOrderStatus(orderId, "paid", undefined, paymentReference.trim());
+        // Delegar al provider almacenado en la orden — verifica con el banco,
+        // registra en payments_log, y actualiza status atómicamente.
+        const provider = getProviderById(order.paymentProvider, settings);
+        const result = await provider.confirmPayment({
+            type: "reference",
+            reference: paymentReference.trim(),
+            orderId,
+        });
 
-        const settings = await getSettings();
+        if (!result.success) {
+            return NextResponse.json({
+                success: false,
+                reason: result.reason,
+                message: result.message,
+            });
+        }
+
+        // Enviar mensaje "paid" al cliente tras verificación exitosa
         const snapshotItems = order.itemsSnapshot as SnapshotItem[];
         const surchargesSnapshot = order.surchargesSnapshot as {
             packagingUsdCents: number;
@@ -74,6 +98,8 @@ export async function POST(
         await sendOrderMessage({
             templateKey: "paid",
             phone: order.customerPhone,
+            orderId: order.id,
+            paymentMethod: order.paymentMethod,
             orderNumber: String(order.orderNumber),
             customerName: customer?.name ?? null,
             items: snapshotItems,
@@ -86,7 +112,7 @@ export async function POST(
                     orderMode: surchargesSnapshot.orderMode,
                 }
                 : undefined,
-            baseUrl: settings?.whatsappMicroserviceUrl,
+            baseUrl: settings.whatsappMicroserviceUrl,
         }).catch((err) => {
             logger.error("WhatsApp Error al confirmar con referencia", { error: String(err) });
         });
