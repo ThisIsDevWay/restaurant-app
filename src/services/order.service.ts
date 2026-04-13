@@ -1,4 +1,5 @@
 import { updateOrderStatus as updateOrderStatusDb, createOrder as createOrderDb } from "@/db/queries/orders";
+import { upsertCustomer } from "@/db/queries/customers";
 import { orders } from "@/db/schema";
 
 type OrderStatus = NonNullable<typeof orders.$inferSelect["status"]>;
@@ -269,9 +270,7 @@ export interface ProcessCheckoutParams {
     input: CheckoutInput;
 }
 
-export async function processCheckout(params: ProcessCheckoutParams) {
-    const { items, input } = params;
-
+export async function processCheckout({ items, input }: ProcessCheckoutParams) {
     // 0. Validate that cart doesn't contain ONLY restricted items
     const allRestricted = items.every((item) => !item.categoryAllowAlone);
     if (allRestricted && items.length > 0) {
@@ -347,6 +346,7 @@ export async function processCheckout(params: ProcessCheckoutParams) {
         exchangeRateId: settings.currentRateId!,
         rateSnapshotBsPerUsd: rate.toString(),
         expiresAt,
+        checkoutToken: input.checkoutToken,
     }, settings.maxPendingOrders);
 
     if (reason === "capacity_exceeded") {
@@ -354,6 +354,11 @@ export async function processCheckout(params: ProcessCheckoutParams) {
     }
 
     if (!order) throw new Error("Error al crear la orden");
+
+    // 3.5. Persist customer data before payment initiation
+    if (input.name || input.cedula) {
+        await upsertCustomer(input.phone, input.name ?? null, input.cedula ?? null);
+    }
 
     // 4. Initiate payment — use grand total, not subtotal
     let initResult = await provider.initiatePayment(order, settings);

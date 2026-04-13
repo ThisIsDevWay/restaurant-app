@@ -32,6 +32,7 @@ export const checkoutSchema = v.object({
     ),
     v.minLength(1, "Debe agregar al menos un item"),
   ),
+  checkoutToken: v.pipe(v.string(), v.uuid()),
   clientSurcharges: clientSurchargesSchema,
 });
 

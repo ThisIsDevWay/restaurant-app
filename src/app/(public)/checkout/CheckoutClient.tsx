@@ -12,13 +12,27 @@ import { WhatsAppPayment } from "@/components/public/checkout/WhatsAppPayment";
 import { WaitingPayment } from "@/components/public/checkout/WaitingPayment";
 import { PaymentSuccess } from "@/components/public/checkout/PaymentSuccess";
 import { CheckoutForm } from "@/components/public/checkout/CheckoutForm";
+import { PagoMovilScreen } from "@/components/public/checkout/PagoMovilScreen";
 import { useCheckoutSurcharges } from "@/hooks/useCheckoutSurcharges";
 import type { PaymentInitResult, BankDetails } from "@/lib/payment-providers";
+import type { GpsCoords } from "@/components/public/checkout/CheckoutForm.types";
 
 type CheckoutState =
   | { type: "form" }
   | { type: "enter_reference"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: BankDetails }
   | { type: "whatsapp"; orderId: string; waLink: string; prefilledMessage: string }
+  | {
+    type: "comprobante";
+    orderId: string;
+    totalBsCents: number;
+    totalUsdCents: number;
+    serverPrefilledMessage: string;
+    serverWaLink: string;
+    bankDetails: { bankName: string; accountPhone: string; accountRif: string; };
+    orderMode: string;
+    deliveryAddress: string;
+    gpsCoords: GpsCoords | null;
+  }
   | { type: "waiting_auto"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: BankDetails }
   | { type: "success"; orderId: string; totalBsCents: number }
   | { type: "error"; message: string };
@@ -39,6 +53,11 @@ interface CheckoutSettings {
   transferAccountRif: string;
   paymentPagoMovilEnabled: boolean;
   paymentTransferEnabled: boolean;
+  whatsappNumber: string;
+  bankName: string;
+  accountPhone: string;
+  accountRif: string;
+  activePaymentProvider: string;
 }
 
 export default function CheckoutClient({ initialSettings }: { initialSettings: CheckoutSettings }) {
@@ -47,6 +66,9 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
   const totalBsCentsFromRate = useCartStore((s) => s.totalBsCentsFromRate);
   const totalUsdCents = useCartStore((s) => s.totalUsdCents());
   const clearCart = useCartStore((s) => s.clearCart);
+  const checkoutToken = useCartStore((s) => s.checkoutToken);
+  const ensureCheckoutToken = useCartStore((s) => s.ensureCheckoutToken);
+  const clearCheckoutToken = useCartStore((s) => s.clearCheckoutToken);
   const router = useRouter();
   const [state, setState] = useState<CheckoutState>({ type: "form" });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,6 +78,11 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
     initialSettings.rate ? totalBsCentsFromRate(initialSettings.rate) : cartTotalBsCents
   );
   const [settings, setSettings] = useState<CheckoutSettings>(initialSettings);
+
+  // Ensure token on mount
+  useEffect(() => {
+    ensureCheckoutToken();
+  }, [ensureCheckoutToken]);
 
   // Compute surcharges from cart items + settings
   const { surcharges } = useCheckoutSurcharges({
@@ -93,6 +120,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
     orderMode?: "on_site" | "take_away" | "delivery",
     deliveryAddress?: string,
     clientSurcharges?: typeof surcharges,
+    gpsCoords?: GpsCoords | null,
   ) => {
     setIsSubmitting(true);
     setError(null);
@@ -144,8 +172,9 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
     });
 
     try {
+      const token = checkoutToken ?? ensureCheckoutToken();
       const actionResult = await processCheckoutAction({
-        input: { phone, paymentMethod, name, cedula, orderMode, deliveryAddress, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })), clientSurcharges },
+        input: { phone, paymentMethod, name, cedula, orderMode, deliveryAddress, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })), clientSurcharges, checkoutToken: token },
         items: checkoutItems,
       });
 
@@ -165,6 +194,32 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
 
       if (result.success) {
         const init = result.initResult;
+
+        if (paymentMethod === "pago_movil" && settings.activePaymentProvider === "whatsapp_manual") {
+          const finalSurchargesUsdTotal = clientSurcharges?.totalSurchargeUsdCents ?? 0;
+          const finalGrandTotalUsdCents = totalUsdCents + finalSurchargesUsdTotal;
+          const finalGrandTotalBsCents = totalBsCents + (settings.rate ? Math.round(finalSurchargesUsdTotal * settings.rate) : 0);
+
+          setState({
+            type: "comprobante",
+            orderId: result.orderId,
+            totalBsCents: finalGrandTotalBsCents,
+            totalUsdCents: finalGrandTotalUsdCents,
+            serverPrefilledMessage: init.screen === "whatsapp" ? init.prefilledMessage : "",
+            serverWaLink: init.screen === "whatsapp" ? init.waLink : "",
+            bankDetails: {
+              bankName: settings.bankName,
+              accountPhone: settings.accountPhone,
+              accountRif: settings.accountRif,
+            },
+            orderMode: orderMode ?? "on_site",
+            deliveryAddress: deliveryAddress ?? "",
+            gpsCoords: gpsCoords ?? null,
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
         if (init.screen === "enter_reference") {
           setState({
             type: "enter_reference",
@@ -234,6 +289,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
         : totalBsCents;
     setState({ type: "success", orderId, totalBsCents: bs });
     clearCart();
+    clearCheckoutToken();
   };
 
   const handleError = (message: string) => {
@@ -303,6 +359,19 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
           items={items}
           totalBsCents={totalBsCents}
           onPaid={handlePaid}
+        />
+      )}
+
+      {state.type === "comprobante" && (
+        <PagoMovilScreen
+          orderId={state.orderId}
+          totalBsCents={state.totalBsCents}
+          totalUsdCents={state.totalUsdCents}
+          bankDetails={state.bankDetails}
+          serverPrefilledMessage={state.serverPrefilledMessage}
+          serverWaLink={state.serverWaLink}
+          gpsCoords={state.gpsCoords}
+          onVolver={() => setState({ type: "form" })}
         />
       )}
 

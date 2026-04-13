@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { usdCentsToBsCents } from "@/lib/money";
+import type { MenuItemWithComponents as MenuItem } from "@/types/menu.types";
 
 export interface RemovedComponent {
   isRemoval: true;
@@ -50,6 +51,9 @@ export interface CartItem {
 
 interface CartState {
   items: CartItem[];
+  cartDate: string | null;
+  validItemIds: string[];
+  checkoutToken: string | null;
   mounted: boolean;
   isDrawerOpen: boolean;
   setMounted: () => void;
@@ -62,7 +66,10 @@ interface CartState {
   removeItem: (index: number) => void;
   updateQuantity: (index: number, quantity: number) => void;
   clearCart: () => void;
+  ensureCheckoutToken: () => string;
+  clearCheckoutToken: () => void;
   recalculateBsPrices: (rateBsPerUsd: number) => void;
+  syncWithMenu: (activeItems: MenuItem[]) => void;
   totalBsCents: () => number;
   totalUsdCents: () => number;
   totalBsCentsFromRate: (rateBsPerUsd: number) => number;
@@ -100,6 +107,18 @@ function cartItemKey(item: Omit<CartItem, "quantity" | "itemTotalBsCents">): str
   return `${item.id}|${contornoIds}|${subIds}|${adIds}|${bebIds}|${remIds}`;
 }
 
+function generateUUID() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Fallback for non-secure contexts (http, some mobile browsers)
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function computeItemUsdCents(
   item: Omit<CartItem, "quantity" | "itemTotalBsCents">,
 ): number {
@@ -124,6 +143,9 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      cartDate: null,
+      validItemIds: [],
+      checkoutToken: null,
       mounted: false,
       isDrawerOpen: false,
       setMounted: () => set({ mounted: true }),
@@ -174,7 +196,21 @@ export const useCartStore = create<CartState>()(
         set({ items });
       },
 
-      clearCart: () => set({ items: [] }),
+      clearCart: () => {
+        set({ items: [] });
+        get().clearCheckoutToken();
+      },
+
+      ensureCheckoutToken: () => {
+        const current = get().checkoutToken;
+        if (current) return current;
+
+        const newToken = generateUUID();
+        set({ checkoutToken: newToken });
+        return newToken;
+      },
+
+      clearCheckoutToken: () => set({ checkoutToken: null }),
 
       recalculateBsPrices: (rateBsPerUsd: number) => {
         const items = get().items.map((item) => {
@@ -211,6 +247,33 @@ export const useCartStore = create<CartState>()(
         set({ items });
       },
 
+      syncWithMenu: (activeItems) => {
+        const activeIds = activeItems.filter((m) => m.isAvailable).map((m) => m.id);
+        const currentItems = get().items;
+        const syncedItems = currentItems
+          .filter((cartItem) => {
+            const match = activeItems.find((m) => m.id === cartItem.id && m.isAvailable);
+            return !!match;
+          })
+          .map((cartItem) => {
+            const match = activeItems.find((m) => m.id === cartItem.id)!;
+            // Solo actualizamos USD acá, el useEffect del componente se encargará de gatillar 
+            // recalculateBsPrices(rate) para sincronizar Bs.
+            if (cartItem.baseUsdCents !== match.priceUsdCents) {
+              return {
+                ...cartItem,
+                baseUsdCents: match.priceUsdCents,
+              };
+            }
+            return cartItem;
+          });
+
+        set({
+          items: syncedItems,
+          validItemIds: activeIds,
+        });
+      },
+
       totalBsCents: () =>
         get().items.reduce((sum, i) => sum + i.itemTotalBsCents, 0),
 
@@ -235,7 +298,31 @@ export const useCartStore = create<CartState>()(
       name: "gm-cart",
       partialize: (state) => ({
         items: state.items,
+        cartDate: state.cartDate,
+        validItemIds: state.validItemIds,
+        checkoutToken: state.checkoutToken,
       }),
+      onRehydrateStorage: () => (state, error) => {
+        if (error || !state) return;
+
+        const todayCaracas = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/Caracas",
+        }).format(new Date());
+
+        // 1. Expiración por fecha (limpieza total si es un día distinto)
+        if (state.cartDate !== todayCaracas) {
+          state.items = [];
+          state.cartDate = todayCaracas;
+          state.validItemIds = [];
+          state.checkoutToken = null;
+        }
+        // 2. Filtrado atómico contra snapshot del catálogo previo
+        // Esto evita el flash de items que ya sabíamos que no estaban disponibles
+        else if (state.validItemIds.length > 0) {
+          const validSet = new Set(state.validItemIds);
+          state.items = state.items.filter((item) => validSet.has(item.id));
+        }
+      },
     },
   ),
 );

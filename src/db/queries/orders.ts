@@ -1,6 +1,6 @@
 import { db } from "../index";
 import { orders } from "../schema";
-import { eq, and, lt, sql } from "drizzle-orm";
+import { eq, and, lt, sql, inArray } from "drizzle-orm";
 
 export async function getOrderById(id: string) {
   const [order] = await db
@@ -24,7 +24,7 @@ export async function getPendingOrdersCount(): Promise<number> {
   const [result] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(orders)
-    .where(eq(orders.status, "pending"));
+    .where(inArray(orders.status, ["pending", "whatsapp"]));
 
   return result?.count ?? 0;
 }
@@ -38,15 +38,56 @@ export async function createOrderWithCapacityCheck(
     // hashtext() provides a stable integer ID for the lock name.
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('orders_capacity_check'), 1)`);
 
+    // 1. Idempotency Check: if checkoutToken exists, return/update existing order
+    if (data.checkoutToken) {
+      const [existingOrder] = await tx
+        .select()
+        .from(orders)
+        .where(eq(orders.checkoutToken, data.checkoutToken))
+        .limit(1);
+
+      if (existingOrder) {
+        const updateableStatuses = ["pending", "whatsapp"];
+        const isExpired = existingOrder.expiresAt < new Date();
+
+        if (updateableStatuses.includes(existingOrder.status) && !isExpired) {
+          console.log(`[Idempotency] Updating existing ${existingOrder.status} order ${existingOrder.id} for token ${data.checkoutToken}`);
+          const [updatedOrder] = await tx
+            .update(orders)
+            .set({
+              ...data,
+              updatedAt: new Date(),
+            })
+            .where(eq(orders.id, existingOrder.id))
+            .returning();
+          return { order: updatedOrder, reason: null };
+        } else {
+          // If already paid, or expired, or other status, ignore the token on the old order 
+          // and allow the new order to inherit it.
+          console.log(`[Idempotency] Order ${existingOrder.id} for token ${data.checkoutToken} is not updateable (status=${existingOrder.status}, isExpired=${isExpired}). Creating replacement.`);
+
+          // Null out the token in the old order to avoid UNIQUE constraint violation on the NEW order
+          await tx
+            .update(orders)
+            .set({ checkoutToken: null, updatedAt: new Date() })
+            .where(eq(orders.id, existingOrder.id));
+
+          // data.checkoutToken remains intact so the new order will use it
+        }
+      }
+    }
+
+    // 2. Capacity Check
     const [result] = await tx
       .select({ count: sql<number>`count(*)::int` })
       .from(orders)
-      .where(eq(orders.status, "pending"));
+      .where(inArray(orders.status, ["pending", "whatsapp"]));
 
     if ((result?.count ?? 0) >= maxPending) {
       return { order: null, reason: "capacity_exceeded" };
     }
 
+    // 3. Insert new order
     const [newOrder] = await tx.insert(orders).values(data).returning();
     return { order: newOrder, reason: null };
   });
@@ -82,7 +123,7 @@ export async function expirePendingOrders() {
     .set({ status: "expired", updatedAt: new Date() })
     .where(
       and(
-        sql`${orders.status} IN ('pending', 'whatsapp')`,
+        inArray(orders.status, ["pending", "whatsapp"]),
         lt(orders.expiresAt, new Date()),
       ),
     );

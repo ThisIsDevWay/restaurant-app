@@ -1,6 +1,6 @@
 {
-  "id": "9baeffb3-0e8c-41fd-9683-418c9011116c",
-  "prevId": "09afa0f4-c5e5-4004-bb84-d0e0e19e8660",
+  "id": "ee693e1d-fa29-4107-9db9-4919535f4e49",
+  "prevId": "9f3d8aa8-46be-47b9-a14a-a902390032b6",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -48,6 +48,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "temp_field": {
+          "name": "temp_field",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -941,6 +947,40 @@
           "primaryKey": false,
           "notNull": false
         },
+        "packaging_usd_cents": {
+          "name": "packaging_usd_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "delivery_usd_cents": {
+          "name": "delivery_usd_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "grand_total_usd_cents": {
+          "name": "grand_total_usd_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "grand_total_bs_cents": {
+          "name": "grand_total_bs_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "surcharges_snapshot": {
+          "name": "surcharges_snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "exchange_rate_id": {
           "name": "exchange_rate_id",
           "type": "uuid",
@@ -972,6 +1012,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "checkout_token": {
+          "name": "checkout_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -1004,7 +1050,15 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "orders_checkout_token_unique": {
+          "name": "orders_checkout_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "checkout_token"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

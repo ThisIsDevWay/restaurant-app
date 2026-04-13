@@ -110,4 +110,5 @@ export const orders = pgTable("orders", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  checkoutToken: text("checkout_token").unique(),
 });

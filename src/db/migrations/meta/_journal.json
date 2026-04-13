@@ -5,92 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1773958302513,
-      "tag": "0000_romantic_photon",
+      "when": 1775962018850,
+      "tag": "0000_exotic_bullseye",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1773960000000,
-      "tag": "0001_payment_providers",
+      "when": 1775962296962,
+      "tag": "0001_pink_surge",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1774565941942,
-      "tag": "0002_short_nebula",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1774707367381,
-      "tag": "0003_add_configurable_order_modes",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1774714518481,
-      "tag": "0004_supreme_nocturne",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1774797294374,
-      "tag": "0005_unusual_bruce_banner",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1775006259972,
-      "tag": "0006_typical_quentin_quire",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1775006434844,
-      "tag": "0007_spotty_millenium_guard",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1775206238560,
-      "tag": "0008_chief_salo",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1775363410140,
-      "tag": "0009_add_logo_url",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1775363410141,
-      "tag": "0010_add_menu_layout",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1775363410142,
-      "tag": "0011_add_menu_item_sort_mode",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1775363410143,
-      "tag": "0012_drop_is_cutout",
+      "when": 1775962324792,
+      "tag": "0002_breezy_brood",
       "breakpoints": true
     }
   ]

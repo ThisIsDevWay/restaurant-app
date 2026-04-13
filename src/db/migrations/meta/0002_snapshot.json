@@ -1,6 +1,6 @@
 {
-  "id": "21dc0b6f-eba1-4776-bd26-ba09b7a05057",
-  "prevId": "8eacbdc0-226f-46ae-a857-596b1fa69c0f",
+  "id": "09ebe62b-475d-4e28-83a0-f5d84e8996ab",
+  "prevId": "ee693e1d-fa29-4107-9db9-4919535f4e49",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -664,6 +664,18 @@
           "notNull": true,
           "default": 0
         },
+        "cost_usd_cents": {
+          "name": "cost_usd_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cost_updated_at": {
+          "name": "cost_updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -917,6 +929,52 @@
           "primaryKey": false,
           "notNull": false
         },
+        "order_mode": {
+          "name": "order_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "delivery_address": {
+          "name": "delivery_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "packaging_usd_cents": {
+          "name": "packaging_usd_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "delivery_usd_cents": {
+          "name": "delivery_usd_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "grand_total_usd_cents": {
+          "name": "grand_total_usd_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "grand_total_bs_cents": {
+          "name": "grand_total_bs_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "surcharges_snapshot": {
+          "name": "surcharges_snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "exchange_rate_id": {
           "name": "exchange_rate_id",
           "type": "uuid",
@@ -948,6 +1006,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "checkout_token": {
+          "name": "checkout_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -980,7 +1044,15 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "orders_checkout_token_unique": {
+          "name": "orders_checkout_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "checkout_token"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1058,7 +1130,7 @@
       "uniqueConstraints": {
         "payments_log_reference_unique": {
           "name": "payments_log_reference_unique",
-          "nullsNotDistinct": false,
+          "nullsNotDistinct": true,
           "columns": [
             "reference"
           ]
@@ -1101,6 +1173,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "restaurant_name": {
+          "name": "restaurant_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'G&M'"
+        },
         "account_phone": {
           "name": "account_phone",
           "type": "text",
@@ -1112,6 +1191,34 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "transfer_bank_name": {
+          "name": "transfer_bank_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "transfer_account_name": {
+          "name": "transfer_account_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "transfer_account_number": {
+          "name": "transfer_account_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "transfer_account_rif": {
+          "name": "transfer_account_rif",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
         },
         "order_expiration_minutes": {
           "name": "order_expiration_minutes",
@@ -1220,7 +1327,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'http://38.171.255.120:3333'"
+          "default": "''"
         },
         "adicionales_enabled": {
           "name": "adicionales_enabled",
@@ -1242,6 +1349,101 @@
           "primaryKey": false,
           "notNull": true,
           "default": 10
+        },
+        "instagram_url": {
+          "name": "instagram_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "logo_url": {
+          "name": "logo_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "order_mode_on_site_enabled": {
+          "name": "order_mode_on_site_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "order_mode_take_away_enabled": {
+          "name": "order_mode_take_away_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "order_mode_delivery_enabled": {
+          "name": "order_mode_delivery_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "packaging_fee_per_plate_usd_cents": {
+          "name": "packaging_fee_per_plate_usd_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "packaging_fee_per_adicional_usd_cents": {
+          "name": "packaging_fee_per_adicional_usd_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "packaging_fee_per_bebida_usd_cents": {
+          "name": "packaging_fee_per_bebida_usd_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "delivery_fee_usd_cents": {
+          "name": "delivery_fee_usd_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "delivery_coverage": {
+          "name": "delivery_coverage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_pago_movil_enabled": {
+          "name": "payment_pago_movil_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "payment_transfer_enabled": {
+          "name": "payment_transfer_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "menu_layout": {
+          "name": "menu_layout",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'modern'"
+        },
+        "menu_item_sort_mode": {
+          "name": "menu_item_sort_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'custom'"
         },
         "updated_at": {
           "name": "updated_at",
