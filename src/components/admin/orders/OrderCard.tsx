@@ -17,6 +17,7 @@ export interface OrderListItem {
   orderNumber?: number;
   status: string;
   subtotalBsCents: number;
+  grandTotalBsCents: number;
   customerPhone: string;
   createdAt: Date;
   paymentMethod: string;
@@ -86,7 +87,7 @@ export function OrderCard({ order }: { order: OrderListItem }) {
         <div className="flex flex-col">
           <span className="text-[10px] text-text-muted/80 uppercase tracking-widest font-semibold mb-0.5">Total</span>
           <span className="text-lg font-bold text-emerald-700 tracking-tight leading-none">
-            {formatBs(order.subtotalBsCents)}
+            {formatBs(order.grandTotalBsCents)}
           </span>
         </div>
         <QuickActions

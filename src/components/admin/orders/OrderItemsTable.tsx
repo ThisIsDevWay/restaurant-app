@@ -83,16 +83,11 @@ export function OrderItemsTable({
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-text-muted shrink-0 border border-border/50">
-                        {idx + 1}
+                      <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center text-xs font-black text-primary shrink-0 border border-primary/20">
+                        {item.quantity}x
                       </div>
                       <div>
                         <div className="text-base font-bold text-text-main flex items-center gap-2">
-                          {item.quantity > 1 && (
-                            <span className="text-primary font-black bg-primary/5 px-1.5 py-0.5 rounded text-sm">
-                              {item.quantity}×
-                            </span>
-                          )}
                           {item.name}
                         </div>
                         <div className="text-xs font-medium text-text-muted mt-0.5 flex items-center gap-1.5 opacity-80">

@@ -18,6 +18,7 @@ export async function GET(req: Request) {
                 orderNumber: orders.orderNumber,
                 status: orders.status,
                 subtotalBsCents: orders.subtotalBsCents,
+                grandTotalBsCents: orders.grandTotalBsCents,
                 customerPhone: orders.customerPhone,
                 createdAt: orders.createdAt,
                 paymentMethod: orders.paymentMethod,
