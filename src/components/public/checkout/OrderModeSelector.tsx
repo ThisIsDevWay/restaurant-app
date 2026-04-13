@@ -1,6 +1,7 @@
-import { Store, Package, MapPin, ChevronLeft } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Store, Package, MapPin, ChevronLeft, Loader2 } from "lucide-react";
 import { formatRef } from "@/lib/money";
-import type { OrderMode } from "./CheckoutForm.types";
+import type { OrderMode, GpsCoords } from "./CheckoutForm.types";
 
 interface OrderModeOption {
   id: OrderMode;
@@ -19,6 +20,8 @@ interface OrderModeSelectorProps {
   settings: { deliveryCoverage: string | null } | null;
   isSubmitting: boolean;
   surcharges: { deliveryUsdCents: number };
+  gpsCoords: GpsCoords | null;
+  onSetGpsCoords: (coords: GpsCoords | null) => void;
 }
 
 const MODE_ICONS: Record<string, typeof Store> = {
@@ -48,7 +51,46 @@ export function OrderModeSelector({
   settings,
   isSubmitting,
   surcharges,
+  gpsCoords,
+  onSetGpsCoords,
 }: OrderModeSelectorProps) {
+  const [isGeolocating, setIsGeolocating] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
+  const handleGetLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setGeoError("Tu navegador no soporta geolocalización.");
+      return;
+    }
+    setIsGeolocating(true);
+    setGeoError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords: GpsCoords = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        };
+        onSetGpsCoords(coords);
+        // Pre-rellenar el campo de dirección con las coordenadas
+        onSetDeliveryAddress(
+          `GPS: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)} (±${Math.round(coords.accuracy)}m)`
+        );
+        setIsGeolocating(false);
+      },
+      (err) => {
+        setIsGeolocating(false);
+        setGeoError(
+          err.code === err.PERMISSION_DENIED
+            ? "Permiso denegado. Escribe tu dirección manualmente."
+            : "No se pudo obtener ubicación. Escribe tu dirección manualmente."
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 }
+    );
+  }, [onSetGpsCoords, onSetDeliveryAddress]);
+
   return (
     <div className="bg-white rounded-[16px] p-4 border border-black/[0.06]">
       <div className="text-[11px] font-medium tracking-[0.06em] text-[#9A6A5A] uppercase mb-3">
@@ -89,6 +131,37 @@ export function OrderModeSelector({
               <span className="font-normal opacity-70">({settings.deliveryCoverage})</span>
             )}
           </div>
+
+          <button
+            type="button"
+            onClick={handleGetLocation}
+            disabled={isGeolocating}
+            className={`w-full flex items-center justify-center gap-2 rounded-[10px] py-2.5
+              text-[13px] font-medium transition-all active:scale-[0.98] disabled:opacity-60 mb-2
+              ${gpsCoords
+                ? "bg-green-50 border border-green-200 text-green-700"
+                : "bg-[#7B2D2D]/10 border border-[#7B2D2D]/20 text-[#7B2D2D]"
+              }`}
+          >
+            {isGeolocating ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Obteniendo ubicación...</>
+            ) : gpsCoords ? (
+              <><MapPin className="w-4 h-4" /> 📍 Ubicación obtenida ✓</>
+            ) : (
+              <><MapPin className="w-4 h-4" /> Usar mi ubicación actual (GPS)</>
+            )}
+          </button>
+
+          {geoError && (
+            <p className="text-[11px] text-red-600 mb-2 px-1">{geoError}</p>
+          )}
+
+          <div className="flex items-center gap-2 my-2">
+            <div className="flex-1 h-[0.5px] bg-black/10" />
+            <span className="text-[11px] text-[#9A6A5A]">o escribe la dirección</span>
+            <div className="flex-1 h-[0.5px] bg-black/10" />
+          </div>
+
           <input
             type="text"
             value={deliveryAddress}

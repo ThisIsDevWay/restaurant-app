@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback, type MutableRefObject } from "react";
 import { useRouter } from "next/navigation";
-import type { PaymentMethod, OrderMode, CheckoutSettings } from "@/components/public/checkout/CheckoutForm.types";
+import type { PaymentMethod, OrderMode, CheckoutSettings, GpsCoords } from "@/components/public/checkout/CheckoutForm.types";
 import type { SurchargeResult } from "@/hooks/useCheckoutSurcharges";
 
 export interface UseCheckoutFormParams {
   isSubmitting: boolean;
-  onSubmit: (phone: string, paymentMethod: PaymentMethod, name?: string, cedula?: string, orderMode?: OrderMode, deliveryAddress?: string, clientSurcharges?: SurchargeResult) => void;
+  onSubmit: (phone: string, paymentMethod: PaymentMethod, name?: string, cedula?: string, orderMode?: OrderMode, deliveryAddress?: string, clientSurcharges?: SurchargeResult, gpsCoords?: GpsCoords | null) => void;
   settings: CheckoutSettings | null;
 }
 
@@ -35,6 +35,8 @@ export interface UseCheckoutFormReturn {
   handleSubmit: (e?: React.FormEvent) => void;
   surchargesRef: MutableRefObject<SurchargeResult | null>;
   orderModeSelected: boolean;
+  gpsCoords: GpsCoords | null;
+  setGpsCoords: React.Dispatch<React.SetStateAction<GpsCoords | null>>;
 }
 
 export function useCheckoutForm({
@@ -55,6 +57,7 @@ export function useCheckoutForm({
   const [envasesExpanded, setEnvasesExpanded] = useState(false);
   const [customerFieldsVisible, setCustomerFieldsVisible] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
+  const [gpsCoords, setGpsCoords] = useState<GpsCoords | null>(null);
   const lookupTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const surchargesRef = useRef<SurchargeResult | null>(null);
 
@@ -132,6 +135,7 @@ export function useCheckoutForm({
       orderMode,
       deliveryAddress.trim() || undefined,
       surchargesRef.current ?? undefined,
+      gpsCoords
     );
   };
 
@@ -161,5 +165,7 @@ export function useCheckoutForm({
     handleSubmit,
     surchargesRef,
     orderModeSelected: orderMode !== null,
+    gpsCoords,
+    setGpsCoords,
   };
 }
