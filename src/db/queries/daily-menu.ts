@@ -152,11 +152,25 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
   const settings = await getSettings();
   const sortMode = (settings?.menuItemSortMode ?? "custom") as MenuItemSortMode;
 
-  const [dailyItemsData, dailyBebidasData, dailyContornosData, dailyAdicionalesData] = await Promise.all([
-    getDailyMenuItemsForDate(today),
-    getDailyBebidasAsMenuItemsForDate(today),
-    getDailyContornosAsMenuItemsForDate(today),
-    getDailyAdicionalesAsMenuItemsForDate(today),
+  // Ola 1: data base — siempre necesaria para procesar el resto
+  const dailyItemsData = await getDailyMenuItemsForDate(today);
+
+  // Cortocircuito: si no hay items base, evita 3 queries pesadas de componentes
+  if (dailyItemsData.length === 0) {
+    return {
+      items: [],
+      dailyAdicionales: [],
+      dailyBebidas: [],
+      dailyContornos: [],
+    };
+  }
+
+  // Ola 2: componentes en paralelo con fallback individual
+  // Usamos casts explicitos para asegurar que el catch retorne el tipo correcto esperado por Drizzle/TS
+  const [dailyBebidasData, dailyContornosData, dailyAdicionalesData] = await Promise.all([
+    getDailyBebidasAsMenuItemsForDate(today).catch(() => [] as Awaited<ReturnType<typeof getDailyBebidasAsMenuItemsForDate>>),
+    getDailyContornosAsMenuItemsForDate(today).catch(() => [] as Awaited<ReturnType<typeof getDailyContornosAsMenuItemsForDate>>),
+    getDailyAdicionalesAsMenuItemsForDate(today).catch(() => [] as Awaited<ReturnType<typeof getDailyAdicionalesAsMenuItemsForDate>>),
   ]);
 
   const uniqueItemsMap = new Map();
@@ -166,15 +180,6 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
   for (const item of dailyAdicionalesData) uniqueItemsMap.set(item.menuItemId, item);
 
   const dailyItems = sortDailyMenuItems(Array.from(uniqueItemsMap.values()), sortMode);
-
-  if (dailyItems.length === 0) {
-    return {
-      items: [],
-      dailyAdicionales: [],
-      dailyBebidas: [],
-      dailyContornos: [],
-    };
-  }
 
   const menuItemIds = dailyItems.map((d) => d.menuItemId);
 

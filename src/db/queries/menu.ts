@@ -120,7 +120,8 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
   const sortMode = (settings?.menuItemSortMode ?? "custom") as MenuItemSortMode;
   const itemsSortColumns = buildMenuItemSortColumns(sortMode);
 
-  const [items, groupRows, adicionalRows, contornoRows, bebidaRows] = await Promise.all([
+  // Wave 1: base queries
+  const [items, groupRows] = await Promise.all([
     db
       .select({
         id: menuItems.id,
@@ -159,7 +160,15 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
       .from(optionGroups)
       .innerJoin(options, eq(optionGroups.id, options.groupId))
       .orderBy(optionGroups.sortOrder, options.sortOrder),
+  ]);
 
+  // Short-circuit: if no items, avoids 3 unnecessary component queries
+  if (items.length === 0) {
+    return [];
+  }
+
+  // Wave 2: components in parallel
+  const [adicionalRows, contornoRows, bebidaRows] = await Promise.all([
     // Fetch adicionales assignments
     db
       .select({
