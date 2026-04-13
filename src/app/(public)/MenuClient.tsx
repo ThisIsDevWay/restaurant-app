@@ -56,6 +56,12 @@ export function MenuClient({
 }: MenuClientProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const recalculateBsPrices = useCartStore((s) => s.recalculateBsPrices);
+  const syncWithMenu = useCartStore((s) => s.syncWithMenu);
+
+  useEffect(() => {
+    // Sincronizar items del carrito con el catálogo activo
+    syncWithMenu(items);
+  }, [items, syncWithMenu]);
 
   useEffect(() => {
     if (rate) {

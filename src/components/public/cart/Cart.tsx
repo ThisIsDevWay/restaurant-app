@@ -22,12 +22,16 @@ export function Cart() {
   const router = useRouter();
   const isOnline = useOnlineStatus();
   const [taxOpen, setTaxOpen] = useState(false);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
+    const unsub = useCartStore.persist.onFinishHydration(() => setHasHydrated(true));
+    if (useCartStore.persist.hasHydrated()) setHasHydrated(true);
     setMounted();
+    return unsub;
   }, [setMounted]);
 
-  if (!mounted || items.length === 0) return null;
+  if (!hasHydrated || !mounted || items.length === 0) return null;
 
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
   const baseImponible = Math.round(totalBsCents / 1.16);
