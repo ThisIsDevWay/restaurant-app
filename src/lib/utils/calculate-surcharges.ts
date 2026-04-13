@@ -101,13 +101,26 @@ export function calculateSurcharges(
     } else {
       // Main dishes (platos)
       plateCount += item.quantity;
-      // Count sub-items selected within the dish
-      // Exclude contorno substitutions — they replace an existing item, not add a new one
+
+      // ┌───────────────────────────────────────────────────────────────────────┐
+      // │ ⚠️  NO multiplicar sub-items por item.quantity.                      │
+      // │                                                                      │
+      // │ Las cantidades en selectedAdicionales[].quantity y                    │
+      // │ selectedBebidas[].quantity ya representan el TOTAL de unidades        │
+      // │ del pedido, NO "por plato".                                          │
+      // │                                                                      │
+      // │ Ejemplo: 2× Tenders con 2× Papas Fritas = 2 envases de papas,       │
+      // │ NO 4.  El precio ya se multiplica correctamente por plate quantity   │
+      // │ en computeItemTotal (cartStore.ts).                                  │
+      // │                                                                      │
+      // │ Bug histórico: multiplicar aquí por item.quantity duplicaba los       │
+      // │ conteos de empaquetado.  NO reintroducir.                            │
+      // └───────────────────────────────────────────────────────────────────────┘
       const pureAdicionales = item.selectedAdicionales.filter(a => !a.substitutesComponentId);
       adicionalCount +=
-        pureAdicionales.reduce((sum, a) => sum + (a.quantity ?? 1), 0) * item.quantity;
+        pureAdicionales.reduce((sum, a) => sum + (a.quantity ?? 1), 0);
       bebidaCount +=
-        (item.selectedBebidas ?? []).reduce((sum, b) => sum + (b.quantity ?? 1), 0) * item.quantity;
+        (item.selectedBebidas ?? []).reduce((sum, b) => sum + (b.quantity ?? 1), 0);
     }
   }
 

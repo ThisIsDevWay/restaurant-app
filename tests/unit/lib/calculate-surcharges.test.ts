@@ -127,6 +127,37 @@ describe("calculateSurcharges", () => {
       expect(result.totalSurchargeUsdCents).toBe(500);
     });
 
+    /**
+     * ⚠️  REGRESIÓN — NO modificar sin validar con el equipo.
+     *
+     * Las cantidades de sub-items (selectedAdicionales[].quantity,
+     * selectedBebidas[].quantity) representan el TOTAL del pedido,
+     * NO "por plato".  Por lo tanto, el conteo de envases NO debe
+     * multiplicarse por item.quantity.
+     *
+     * Bug histórico: multiplicar sub-items por plate qty duplicaba
+     * los cargos de empaquetado.
+     */
+    it("does NOT multiply sub-item counts by dish quantity (regression)", () => {
+      const result = calculateSurcharges(
+        [
+          {
+            ...plate("Pollo", 2), // 2 platos
+            selectedAdicionales: [{ quantity: 2 }, { quantity: 2 }], // 4 adicionales total
+            selectedBebidas: [{ quantity: 2 }], // 2 bebidas total
+          },
+        ],
+        "take_away",
+        settings,
+      );
+      expect(result.plateCount).toBe(2);
+      expect(result.adicionalCount).toBe(4); // NOT 8 — sub-items are total, not per-plate
+      expect(result.bebidaCount).toBe(2);    // NOT 4
+      // 2×200 + 4×100 + 2×100 = 1000
+      expect(result.packagingUsdCents).toBe(1000);
+      expect(result.totalSurchargeUsdCents).toBe(1000);
+    });
+
     it("handles mixed order with plates, adicionales, and drinks", () => {
       const result = calculateSurcharges(
         [plate("Pollo", 2), adicional("Queso", 3), bebida("Pepsi", 1)],

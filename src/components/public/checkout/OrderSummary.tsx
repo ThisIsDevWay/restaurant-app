@@ -82,11 +82,12 @@ export function OrderSummary({
                 </div>
               </div>
               <div className="text-right">
+                {/* itemTotalBsCents ya incluye × quantity (computeItemTotal en cartStore.ts). NO volver a multiplicar. */}
                 <div className="text-[14px] font-medium text-[#1A0A0A]">
-                  {formatBs(item.itemTotalBsCents * item.quantity)}
+                  {formatBs(item.itemTotalBsCents)}
                 </div>
                 <div className="text-[11px] text-[#9A6A5A]">
-                  {formatRef(Math.round((item.itemTotalBsCents * item.quantity) / (totalBsCents / totalUsdCents)))}
+                  {formatRef(Math.round(item.itemTotalBsCents / (totalBsCents / totalUsdCents)))}
                 </div>
               </div>
             </div>
