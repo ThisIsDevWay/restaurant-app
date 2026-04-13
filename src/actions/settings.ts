@@ -96,6 +96,11 @@ export const fetchCheckoutSettings = async () => {
     paymentPagoMovilEnabled: s?.paymentPagoMovilEnabled ?? true,
     paymentTransferEnabled: s?.paymentTransferEnabled ?? true,
     restaurantName: s?.restaurantName ?? "G&M",
+    whatsappNumber: s?.whatsappNumber ?? "",
+    bankName: s?.bankName ?? "",
+    accountPhone: s?.accountPhone ?? "",
+    accountRif: s?.accountRif ?? "",
+    activePaymentProvider: s?.activePaymentProvider ?? "whatsapp_manual",
   };
 }
 

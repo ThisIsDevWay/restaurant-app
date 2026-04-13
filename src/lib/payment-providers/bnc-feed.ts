@@ -11,7 +11,7 @@ export class BNCFeedProvider implements PaymentProvider {
   readonly id = "bnc_feed" as const;
   readonly mode = "passive" as const;
 
-  constructor(_settings: SettingsRow) {}
+  constructor(_settings: SettingsRow) { }
 
   async initiatePayment(
     _order: OrderRow,

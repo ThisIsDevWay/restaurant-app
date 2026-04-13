@@ -45,6 +45,8 @@ export class WhatsAppManualProvider implements PaymentProvider {
     const message = await buildOrderMessage({
       templateKey: "checkout_manual",
       phone: order.customerPhone,
+      orderId: order.id,
+      paymentMethod: order.paymentMethod,
       orderNumber: String(order.orderNumber),
       customerName: null, // Not available at this point
       items: snapshot,

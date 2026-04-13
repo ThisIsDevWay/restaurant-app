@@ -1,4 +1,4 @@
-export { getActiveProvider } from "./factory";
+export { getActiveProvider, getProviderById } from "./factory";
 export type {
   ProviderId,
   PaymentInitResult,
