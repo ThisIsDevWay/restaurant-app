@@ -36,6 +36,21 @@ export interface CheckoutFormProps {
     orderMode?: OrderMode,
     deliveryAddress?: string,
     clientSurcharges?: SurchargeResult,
+    gpsCoords?: GpsCoords | null,
   ) => void;
   settings: CheckoutSettings | null;
+}
+
+export interface GpsCoords {
+  lat: number;
+  lng: number;
+  accuracy: number; // metros
+}
+
+export interface ComprobanteData {
+  file: File;
+  previewUrl: string;       // URL.createObjectURL(file) — para thumbnail
+  uploadedUrl: string | null; // URL pública de Supabase tras subida exitosa
+  isUploading: boolean;
+  uploadError: string | null;
 }

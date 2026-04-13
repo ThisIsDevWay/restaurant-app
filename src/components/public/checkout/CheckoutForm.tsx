@@ -103,6 +103,8 @@ export function CheckoutForm({
             settings={settings}
             isSubmitting={isSubmitting}
             surcharges={surchargesWithMode.surcharges}
+            gpsCoords={form.gpsCoords}
+            onSetGpsCoords={form.setGpsCoords}
           />
 
           <OrderSummary
