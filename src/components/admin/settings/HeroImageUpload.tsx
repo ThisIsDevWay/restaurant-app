@@ -1,15 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ImageIcon, Upload, Trash2, Loader2 } from "lucide-react";
-import { uploadLogoAction } from "@/actions/settings";
+import { ImageIcon, Upload, Trash2, Loader2, ImagePlus } from "lucide-react";
+import { uploadHeroImageAction } from "@/actions/settings";
 
-interface RestaurantLogoUploadProps {
-    logoUrl: string;
-    onLogoChange: (url: string) => void;
+interface HeroImageUploadProps {
+    coverImageUrl: string;
+    onImageChange: (url: string) => void;
 }
 
-export function RestaurantLogoUpload({ logoUrl, onLogoChange }: RestaurantLogoUploadProps) {
+export function HeroImageUpload({ coverImageUrl, onImageChange }: HeroImageUploadProps) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -22,16 +22,16 @@ export function RestaurantLogoUpload({ logoUrl, onLogoChange }: RestaurantLogoUp
         setError(null);
 
         try {
-            // Optimizar logo: Max 400px ancho, formato WebP, calidad 90%
+            // Optimizar imagen: Max 1920px ancho, formato WebP, calidad 85%
             const { optimizeImage } = await import("@/lib/utils/image-optimization");
             const optimizedFile = await optimizeImage(file, {
-                maxWidth: 400,
-                maxHeight: 400,
-                quality: 0.9,
+                maxWidth: 1920,
+                maxHeight: 1080,
+                quality: 0.85,
             });
 
             // 1. Get signed upload URL from action
-            const result = await uploadLogoAction({ fileName: optimizedFile.name });
+            const result = await uploadHeroImageAction({ fileName: optimizedFile.name });
 
             if (!result?.data?.success) {
                 setError("No se pudo generar la URL de subida");
@@ -53,9 +53,9 @@ export function RestaurantLogoUpload({ logoUrl, onLogoChange }: RestaurantLogoUp
             }
 
             // 3. Propagate public URL to parent form
-            onLogoChange(publicUrl);
+            onImageChange(publicUrl);
         } catch {
-            setError("Error inesperado al subir el logo");
+            setError("Error inesperado al subir la imagen");
         } finally {
             setUploading(false);
             // Reset input so the same file can be re-selected
@@ -64,42 +64,44 @@ export function RestaurantLogoUpload({ logoUrl, onLogoChange }: RestaurantLogoUp
     }
 
     function handleRemove() {
-        onLogoChange("");
+        onImageChange("");
         if (fileInputRef.current) fileInputRef.current.value = "";
     }
 
     return (
         <div className="flex flex-col items-center gap-4 pb-6 border-b border-border/30 mb-6">
-            <div className="relative">
-                {/* Logo preview / placeholder */}
+            <div className="relative w-full max-w-sm">
+                {/* Hero preview / placeholder */}
                 <div
-                    className="w-28 h-28 rounded-2xl flex items-center justify-center overflow-hidden border-2 transition-all"
+                    className="w-full aspect-[4/3] sm:aspect-video rounded-2xl flex items-center justify-center overflow-hidden border-2 transition-all bg-bg-app relative group"
                     style={{
-                        background: logoUrl ? "transparent" : "var(--color-surface-section)",
-                        borderColor: logoUrl ? "var(--color-primary)" : "var(--color-border)",
+                        borderColor: coverImageUrl ? "var(--color-primary)" : "var(--color-border)",
                     }}
                 >
-                    {logoUrl ? (
+                    {coverImageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                            src={logoUrl}
-                            alt="Logo del restaurante"
-                            className="w-full h-full object-contain p-1"
+                            src={coverImageUrl}
+                            alt="Fondo de la cabecera"
+                            className="w-full h-full object-cover"
                         />
                     ) : (
-                        <ImageIcon className="h-10 w-10" style={{ color: "var(--color-border)" }} />
+                        <div className="flex flex-col items-center gap-2 text-text-muted">
+                            <ImagePlus className="h-8 w-8 opacity-50" />
+                            <span className="text-xs font-semibold">Sin imagen (Fondo oscuro)</span>
+                        </div>
                     )}
                 </div>
 
                 {/* Remove button overlay */}
-                {logoUrl && !uploading && (
+                {coverImageUrl && !uploading && (
                     <button
                         type="button"
                         onClick={handleRemove}
-                        title="Eliminar logo"
-                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-sm bg-white border border-border/60 hover:bg-red-50 hover:border-red-200 transition-all"
+                        title="Eliminar imagen"
+                        className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm bg-white border border-border/60 hover:bg-red-50 hover:border-red-200 transition-all z-10"
                     >
-                        <Trash2 className="h-3 w-3 text-red-500" />
+                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
                     </button>
                 )}
 
@@ -111,9 +113,9 @@ export function RestaurantLogoUpload({ logoUrl, onLogoChange }: RestaurantLogoUp
                         className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center gap-1 opacity-0 hover:opacity-100 transition-opacity"
                         style={{ background: "rgba(187,0,5,0.08)" }}
                     >
-                        <Upload className="h-5 w-5" style={{ color: "var(--color-primary)" }} />
-                        <span className="text-[10px] font-semibold" style={{ color: "var(--color-primary)" }}>
-                            {logoUrl ? "Cambiar" : "Subir"}
+                        <Upload className="h-6 w-6 mb-1" style={{ color: "var(--color-primary)" }} />
+                        <span className="text-sm font-semibold" style={{ color: "var(--color-primary)" }}>
+                            {coverImageUrl ? "Cambiar fondo" : "Subir imagen"}
                         </span>
                     </button>
                 )}
@@ -127,26 +129,26 @@ export function RestaurantLogoUpload({ logoUrl, onLogoChange }: RestaurantLogoUp
             </div>
 
             {/* Call to action text */}
-            <div className="text-center">
+            <div className="text-center mt-2">
                 <p className="text-sm font-semibold" style={{ color: "var(--color-text-main)" }}>
-                    Logo del Restaurante
+                    Fondo de Cabecera (Hero)
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
-                    PNG, JPG o SVG — recomendado 256×256 px
+                <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+                    PNG o JPG — recomendado panorámico (ej. 16:9)
                 </p>
                 <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-all disabled:opacity-50"
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-full transition-all disabled:opacity-50"
                     style={{
                         background: "var(--color-surface-section)",
                         color: "var(--color-primary)",
                         border: "1px solid var(--color-border)",
                     }}
                 >
-                    <Upload className="h-3 w-3" />
-                    {uploading ? "Subiendo…" : logoUrl ? "Cambiar logo" : "Seleccionar archivo"}
+                    <Upload className="h-3.5 w-3.5" />
+                    {uploading ? "Subiendo…" : coverImageUrl ? "Cambiar imagen" : "Seleccionar fondo"}
                 </button>
             </div>
 

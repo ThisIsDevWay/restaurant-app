@@ -194,12 +194,26 @@ export function useMenuItemForm({
 
     try {
       setUploading(true);
-      const result = await generateUploadUrlAction({ fileName: file.name });
+      setError(null);
+
+      // Optimizar imagen: Max 1000px ancho, formato WebP, calidad 80%
+      const { optimizeImage } = await import("@/lib/utils/image-optimization");
+      const optimizedFile = await optimizeImage(file, {
+        maxWidth: 1000,
+        maxHeight: 1000,
+        quality: 0.8,
+      });
+
+      const result = await generateUploadUrlAction({ fileName: optimizedFile.name });
       if (result?.serverError) throw new Error(result.serverError);
       if (result?.validationErrors) throw new Error("Datos inválidos al generar URL");
       if (!result?.data?.success) throw new Error(result?.data?.error || "Error");
 
-      await fetch(result.data.url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      await fetch(result.data.url, {
+        method: "PUT",
+        body: optimizedFile,
+        headers: { "Content-Type": optimizedFile.type }
+      });
       const publicUrlResult = await getPublicUrlAction({ path: result.data.path });
       if (publicUrlResult?.serverError) throw new Error(publicUrlResult.serverError);
       if (!publicUrlResult?.data) throw new Error("Error obteniendo URL pública");
