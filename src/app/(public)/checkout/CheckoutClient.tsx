@@ -6,7 +6,7 @@ import { useCartStore } from "@/store/cartStore";
 import { processCheckoutAction, type CheckoutResult } from "@/actions/checkout";
 import { type CheckoutItem } from "@/lib/types/checkout";
 import { formatBs } from "@/lib/money";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, ChevronLeft } from "lucide-react";
 import { ReferenceEntry } from "@/components/public/checkout/ReferenceEntry";
 import { WhatsAppPayment } from "@/components/public/checkout/WhatsAppPayment";
 import { WaitingPayment } from "@/components/public/checkout/WaitingPayment";
@@ -28,10 +28,11 @@ type CheckoutState =
     totalUsdCents: number;
     serverPrefilledMessage: string;
     serverWaLink: string;
-    bankDetails: { bankName: string; accountPhone: string; accountRif: string; };
+    bankDetails: { bankName: string; bankCode: string; accountPhone: string; accountRif: string; };
     orderMode: string;
     deliveryAddress: string;
     gpsCoords: GpsCoords | null;
+    orderExpirationMinutes?: number;
   }
   | { type: "waiting_auto"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: BankDetails }
   | { type: "success"; orderId: string; totalBsCents: number }
@@ -55,9 +56,11 @@ interface CheckoutSettings {
   paymentTransferEnabled: boolean;
   whatsappNumber: string;
   bankName: string;
+  bankCode: string;
   accountPhone: string;
   accountRif: string;
   activePaymentProvider: string;
+  orderExpirationMinutes: number;
 }
 
 export default function CheckoutClient({ initialSettings }: { initialSettings: CheckoutSettings }) {
@@ -95,18 +98,21 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
 
   if (items.length === 0 && state.type === "form") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
-        <p className="text-lg font-semibold text-text-main">
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center px-6 text-center bg-bg-app">
+        <div className="w-20 h-20 rounded-full bg-border/30 flex items-center justify-center mb-6 animate-pulse">
+            <AlertCircle className="w-10 h-10 text-primary/40" strokeWidth={1} />
+        </div>
+        <h2 className="text-[22px] font-display font-black text-text-main mb-2">
           Tu carrito está vacío
-        </p>
-        <p className="mt-2 text-sm text-text-muted">
-          Agrega items del menú para continuar
+        </h2>
+        <p className="text-[15px] text-text-muted mb-8 max-w-[280px] font-medium leading-relaxed">
+          Explora nuestro menú y agrega tus platos favoritos para continuar.
         </p>
         <button
           onClick={() => router.push("/")}
-          className="mt-4 rounded-input bg-primary px-6 py-2.5 text-sm font-semibold text-white"
+          className="w-full max-w-[240px] rounded-2xl bg-primary px-6 py-4 text-[15px] font-display font-bold text-white shadow-xl shadow-primary/20 active:scale-[0.98] transition-all"
         >
-          Ver menú
+          Explorar menú
         </button>
       </div>
     );
@@ -209,12 +215,14 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
             serverWaLink: init.screen === "whatsapp" ? init.waLink : "",
             bankDetails: {
               bankName: settings.bankName,
+              bankCode: settings.bankCode,
               accountPhone: settings.accountPhone,
               accountRif: settings.accountRif,
             },
             orderMode: orderMode ?? "on_site",
             deliveryAddress: deliveryAddress ?? "",
             gpsCoords: gpsCoords ?? null,
+            orderExpirationMinutes: settings.orderExpirationMinutes,
           });
           setIsSubmitting(false);
           return;
@@ -302,27 +310,23 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
   };
 
   return (
-    <div className={`min-h-[100dvh] pb-safe ${state.type === "form" ? "bg-[#F8EFE6]" : "bg-bg-app"}`}>
+    <div className={`min-h-[100dvh] pb-safe ${state.type === "form" ? "bg-bg-app" : "bg-bg-app"}`}>
       {/* Header for non-form states */}
-      {state.type !== "form" && (
-        <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-white px-4 py-3">
+      {state.type !== "form" && state.type !== "success" && (
+        <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-bg-card px-5 py-4 shadow-sm">
           <button
             onClick={() => {
-              if (state.type === "success") {
-                router.push("/");
-              } else {
-                // Go back to form from payment screens
-                setState({ type: "form" });
-                setError(null);
-              }
+              // Go back to form from payment screens
+              setState({ type: "form" });
+              setError(null);
             }}
-            className="text-text-main"
+            className="w-9 h-9 rounded-full bg-bg-card border border-border flex items-center justify-center cursor-pointer active:bg-surface-section transition-colors"
             aria-label="Volver"
           >
-            ←
+            <ChevronLeft className="w-4 h-4 text-text-main" strokeWidth={2.5} />
           </button>
-          <h1 className="text-base font-semibold text-text-main">
-            Confirmar pago
+          <h1 className="text-[17px] font-display font-bold text-text-main">
+            Finalizar pedido
           </h1>
         </header>
       )}
@@ -371,6 +375,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
           serverPrefilledMessage={state.serverPrefilledMessage}
           serverWaLink={state.serverWaLink}
           gpsCoords={state.gpsCoords}
+          orderExpirationMinutes={state.orderExpirationMinutes}
           onVolver={() => setState({ type: "form" })}
         />
       )}
@@ -395,22 +400,26 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
       )}
 
       {state.type === "error" && (
-        <div className="flex flex-col items-center px-4 pt-20 text-center">
-          <AlertCircle className="h-12 w-12 text-amber" />
-          <h2 className="mt-4 text-xl font-bold text-text-main">
+        <div className="flex flex-col items-center px-6 pt-24 text-center bg-bg-app min-h-screen">
+          <div className="w-16 h-16 rounded-3xl bg-error/10 flex items-center justify-center mb-6">
+            <AlertCircle className="h-8 w-8 text-error" />
+          </div>
+          <h2 className="text-[22px] font-display font-black text-text-main mb-2">
             Algo salió mal
           </h2>
-          <p className="mt-2 text-sm text-text-muted">{state.message}</p>
-          <div className="mt-6 flex gap-3">
+          <p className="text-[15px] text-text-muted mb-10 max-w-[280px] font-medium leading-relaxed">
+            {state.message || "Ocurrió un error inesperado al procesar tu pedido."}
+          </p>
+          <div className="flex flex-col w-full max-w-[280px] gap-3">
             <button
               onClick={handleRetry}
-              className="rounded-input bg-primary px-6 py-2.5 text-sm font-semibold text-white"
+              className="w-full rounded-2xl bg-primary px-6 py-4 text-[15px] font-display font-bold text-white shadow-xl shadow-primary/20 active:scale-[0.98] transition-all"
             >
               Intentar de nuevo
             </button>
             <button
               onClick={() => router.push("/")}
-              className="rounded-input border border-border px-6 py-2.5 text-sm font-semibold text-text-main"
+              className="w-full rounded-2xl border-2 border-border bg-bg-card px-6 py-4 text-[15px] font-display font-bold text-text-main active:bg-surface-section transition-all"
             >
               Volver al menú
             </button>

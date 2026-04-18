@@ -98,52 +98,52 @@ export function WaitingPayment({
   }, [orderId, onPaid]);
 
   return (
-    <div className="px-4 pb-8">
+    <div className="px-4 pb-8 bg-bg-app min-h-screen">
       {/* Hero amount */}
-      <div className="mt-6 text-center">
-        <p className="text-xs text-text-muted">Transfiere</p>
-        <p className="mt-2 text-[36px] font-extrabold text-primary">
+      <div className="pt-8 pb-6 text-center animate-in fade-in slide-in-from-top-4 duration-500">
+        <p className="text-[11px] font-display font-bold tracking-[0.1em] text-text-muted uppercase mb-1">Total a transferir</p>
+        <p className="text-[42px] font-display font-black text-primary leading-tight">
           {formatBs(totalBsCents)}
         </p>
-        <div className="mt-2 flex items-center justify-center gap-2">
-          <span className="h-2 w-2 animate-pulse-dot rounded-full bg-success" />
-          <span className="text-xs text-text-muted">
+        <div className="mt-4 flex items-center justify-center gap-2.5 bg-success/5 border border-success/10 py-2.5 px-4 rounded-full mx-auto w-fit">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+          <span className="text-[11px] font-bold text-success/80 uppercase tracking-wider">
             Esperando confirmación automática...
           </span>
         </div>
       </div>
 
       {/* Bank details */}
-      <div className="mt-6 rounded-card border border-border bg-white p-4 shadow-card">
-        <p className="mb-3 text-sm font-semibold text-text-main">
-          Datos para Pago Móvil
+      <div className="mt-2 rounded-2xl border border-border bg-bg-card p-5 shadow-sm">
+        <p className="mb-4 text-[11px] font-display font-bold tracking-[0.08em] text-text-muted uppercase">
+          💳 Datos para Pago Móvil
         </p>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
             <div>
-              <p className="text-xs text-text-muted">Banco</p>
-              <p className="text-sm font-semibold text-text-main">
-                {bankDetails.bankName} ({bankDetails.bankCode})
+              <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Banco</p>
+              <p className="text-[14px] font-bold text-text-main">
+                {bankDetails.bankName} <span className="text-text-muted/70 font-medium">({bankDetails.bankCode})</span>
               </p>
             </div>
             <CopyButton value={`${bankDetails.bankName} (${bankDetails.bankCode})`} />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
             <div>
-              <p className="text-xs text-text-muted">Teléfono</p>
-              <p className="text-sm font-semibold text-text-main">
+              <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Teléfono</p>
+              <p className="text-[14px] font-bold text-text-main tracking-wide">
                 {bankDetails.accountPhone}
               </p>
             </div>
             <CopyButton value={bankDetails.accountPhone} />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-1">
             <div>
-              <p className="text-xs text-text-muted">RIF / Cédula</p>
-              <p className="text-sm font-semibold text-text-main">
+              <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">RIF / Cédula</p>
+              <p className="text-[14px] font-bold text-text-main tracking-wide">
                 {bankDetails.accountRif}
               </p>
             </div>
@@ -160,28 +160,33 @@ export function WaitingPayment({
         rifOrCedula={bankDetails.accountRif}
         amountBsCents={totalBsCents}
       />
-      <div className="mt-4 rounded-card border border-border bg-white p-4 shadow-card">
-        <p className="mb-2 text-sm font-semibold text-text-main">Resumen</p>
-        {items.map((item, idx) => (
-          <div key={idx} className="border-b border-border py-2 last:border-b-0">
-            <p className="text-sm text-text-main">
-              {item.quantity}× {item.name}
-            </p>
-            <p className="text-sm font-semibold text-price-green">
-              {formatBs(item.itemTotalBsCents)}
-            </p>
-          </div>
-        ))}
+      <div className="mt-4 rounded-2xl border border-border bg-bg-card p-5 shadow-sm">
+        <p className="mb-4 text-[11px] font-display font-bold tracking-[0.08em] text-text-muted uppercase">📦 Tu pedido</p>
+        <div className="space-y-1">
+          {items.map((item, idx) => (
+            <div key={idx} className="flex justify-between items-center py-2 border-b border-border/30 last:border-b-0">
+              <span className="text-[14px] font-medium text-text-main">
+                {item.quantity}× {item.name}
+              </span>
+              <span className="text-[14px] font-bold text-primary">
+                {formatBs(item.itemTotalBsCents)}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Expiration countdown */}
       {secondsLeft > 0 && (
-        <div className={`mt-4 flex items-center justify-center gap-1.5 text-sm ${secondsLeft < 300 ? "text-amber font-semibold" : "text-text-muted"
+        <div className={`mt-8 flex items-center justify-center gap-2 text-[13px] py-3 px-4 rounded-xl border ${
+          secondsLeft < 300 
+            ? "bg-warning/5 border-warning/20 text-warning font-bold animate-pulse" 
+            : "bg-surface-section border-border text-text-muted font-medium"
           }`}>
-          <Clock size={14} />
+          <Clock size={16} />
           {secondsLeft < 300
-            ? `¡Apresúrate! ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`
-            : `Expira en ${Math.floor(secondsLeft / 60)} min`}
+            ? `¡Tu orden expira pronto! ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`
+            : `Esta orden expira en ${Math.floor(secondsLeft / 60)} minutos`}
         </div>
       )}
     </div>

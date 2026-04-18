@@ -18,7 +18,11 @@ export function CopyButton({ value, successDurationMs = 2000, className }: CopyB
 
     const handleCopy = async () => {
         try {
-            await navigator.clipboard.writeText(value);
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(value);
+            } else {
+                throw new Error("Clipboard API unavailable");
+            }
         } catch {
             // Fallback for Safari/secure-context restrictions
             const ta = document.createElement("textarea");

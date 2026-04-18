@@ -113,31 +113,31 @@ export function PaymentDetails({
   return (
     <div className="px-4 pb-8">
       {/* Hero amount */}
-      <div className="mt-6 text-center">
-        <p className="text-xs text-text-muted">Transfiere exactamente</p>
-        <p className="mt-2 text-[36px] font-extrabold text-primary">
+      <div className="mt-8 text-center animate-in fade-in slide-in-from-top-4 duration-500">
+        <p className="text-[13px] text-text-muted font-medium uppercase tracking-widest mb-2">Transfiere exactamente</p>
+        <p className="text-[42px] font-display font-black text-text-main leading-tight">
           {formatBs(exactAmountBsCents)}
         </p>
-        <div className="mt-2 flex items-center justify-center gap-2">
-          <span className="h-2 w-2 animate-pulse-dot rounded-full bg-success" />
-          <span className="text-xs text-text-muted">
-            Esperando confirmación...
+        <div className="mt-4 flex items-center justify-center gap-2.5 bg-success/5 py-2 px-4 rounded-full w-fit mx-auto border border-success/10">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+          <span className="text-[12px] font-bold text-success uppercase tracking-wider">
+            Esperando pago...
           </span>
         </div>
       </div>
 
-      {/* Bank details */}
-      <div className="mt-6 rounded-card border border-border bg-white p-4 shadow-card">
-        <p className="mb-3 text-sm font-semibold text-text-main">
+      <div className="mt-8 rounded-2xl border border-border bg-bg-card p-5 shadow-sm overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
+        <p className="mb-4 text-[14px] font-display font-black text-text-main uppercase tracking-tight">
           Datos para Pago Móvil
         </p>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between group">
             <div>
-              <p className="text-xs text-text-muted">Banco</p>
-              <p className="text-sm font-semibold text-text-main">
-                {bankDetails.bankName} ({bankDetails.bankCode})
+              <p className="text-[11px] text-text-muted font-bold uppercase tracking-wider mb-0.5">Banco</p>
+              <p className="text-[15px] font-display font-bold text-text-main">
+                {bankDetails.bankName} <span className="text-text-muted font-medium text-[13px]">({bankDetails.bankCode})</span>
               </p>
             </div>
             <CopyButton
@@ -145,82 +145,69 @@ export function PaymentDetails({
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between group">
             <div>
-              <p className="text-xs text-text-muted">Teléfono</p>
-              <p className="text-sm font-semibold text-text-main">
+              <p className="text-[11px] text-text-muted font-bold uppercase tracking-wider mb-0.5">Teléfono</p>
+              <p className="text-[16px] font-display font-black text-text-main tracking-tight">
                 {bankDetails.accountPhone}
               </p>
             </div>
             <CopyButton value={bankDetails.accountPhone} />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between group border-t border-border/50 pt-3">
             <div>
-              <p className="text-xs text-text-muted">RIF / Cédula</p>
-              <p className="text-sm font-semibold text-text-main">
+              <p className="text-[11px] text-text-muted font-bold uppercase tracking-wider mb-0.5">RIF / Cédula</p>
+              <p className="text-[15px] font-display font-bold text-text-main">
                 {bankDetails.accountRif}
               </p>
             </div>
             <CopyButton value={bankDetails.accountRif} />
           </div>
         </div>
+
+        {/* Copy all for Pago Móvil */}
+        <div className="mt-5 border-t border-border pt-2">
+          <CopyAllButton
+            bankName={bankDetails.bankName}
+            bankCode={bankDetails.bankCode}
+            phone={bankDetails.accountPhone}
+            rifOrCedula={bankDetails.accountRif}
+            amountBsCents={exactAmountBsCents}
+          />
+        </div>
       </div>
 
-      {/* Copy all for Pago Móvil */}
-      <CopyAllButton
-        bankName={bankDetails.bankName}
-        bankCode={bankDetails.bankCode}
-        phone={bankDetails.accountPhone}
-        rifOrCedula={bankDetails.accountRif}
-        amountBsCents={exactAmountBsCents}
-      />
 
-      {/* Items summary */}
-      <div className="mt-4 rounded-card border border-border bg-white p-4 shadow-card">
-        <p className="mb-2 text-sm font-semibold text-text-main">Resumen</p>
+
+      <div className="mt-4 rounded-2xl border border-border bg-bg-card p-5 shadow-sm">
+        <p className="mb-3 text-[14px] font-display font-black text-text-main uppercase tracking-tight">Resumen</p>
         {items.map((item, idx) => (
-          <div key={idx} className="border-b border-border py-2 last:border-b-0">
-            <p className="text-sm text-text-main">
-              {item.quantity}× {item.name}
-            </p>
-            {(item.fixedContornos ?? []).length > 0 && (
-              <p className="text-xs text-text-muted">
-                {(item.fixedContornos ?? []).map((c: any) => c.name).join(", ")}
-              </p>
-            )}
-            {(item.contornoSubstitutions ?? []).length > 0 && (
-              <p className="text-xs text-text-muted">
-                {(item.contornoSubstitutions ?? []).map((s: any) => s.substituteName).join(", ")}
-              </p>
-            )}
-            {item.selectedAdicionales.length > 0 && (
-              <p className="text-xs text-text-muted">
-                + {item.selectedAdicionales.map((a) => (a.quantity ?? 1) > 1 ? `${a.quantity}× ${a.name}` : a.name).join(", ")}
-              </p>
-            )}
-            {(item.selectedBebidas ?? []).length > 0 && (
-              <p className="text-xs text-text-muted">
-                + {(item.selectedBebidas ?? []).map((b) => (b.quantity ?? 1) > 1 ? `${b.quantity}× ${b.name}` : b.name).join(", ")}
-              </p>
-            )}
-            <p className="text-sm font-semibold text-price-green">
-              {formatBs(item.itemTotalBsCents)}
-            </p>
+          <div key={idx} className="border-b border-border/50 py-3 last:border-b-0">
+            <div className="flex justify-between items-start gap-3">
+               <div className="flex-1">
+                <p className="text-[14px] font-bold text-text-main leading-tight mb-1">
+                  {item.quantity}× {item.name}
+                </p>
+                <p className="text-[14px] font-display font-black text-text-main whitespace-nowrap">
+                  {formatBs(item.itemTotalBsCents)}
+                </p>
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Timer */}
-      <div className="mt-4 text-center">
+      <div className="mt-6 flex flex-col items-center gap-1 bg-surface-section py-3 rounded-xl border border-border/50">
         <p
-          className={`text-sm font-semibold ${isUrgent ? "text-amber" : "text-text-muted"
-            }`}
+          className={`text-[13px] font-display font-black uppercase tracking-widest flex items-center gap-2 ${isUrgent ? "text-error" : "text-text-muted"} animate-in zoom-in duration-300`}
         >
-          ⏱ Expira en {minutes}:{seconds.toString().padStart(2, "0")}
+          <span className="text-[16px]">⏱</span> Expira en {minutes}:{seconds.toString().padStart(2, "0")}
         </p>
         {isUrgent && (
-          <p className="text-xs font-semibold text-amber">¡Apresúrate!</p>
+          <p className="text-[11px] font-bold text-error uppercase tracking-tighter animate-pulse">
+            ¡Realiza el pago antes de que expire!
+          </p>
         )}
       </div>
     </div>

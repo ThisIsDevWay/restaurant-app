@@ -3,7 +3,8 @@
 import { formatBs } from "@/lib/money";
 import Link from "next/link";
 import type { CartItem } from "@/store/cartStore";
-import { Clipboard } from "lucide-react";
+import { CheckCircle2, Clipboard, Check } from "lucide-react";
+import { useState } from "react";
 
 interface PaymentSuccessProps {
   orderId: string;
@@ -16,72 +17,71 @@ export function PaymentSuccess({
   exactAmountBsCents,
   items,
 }: PaymentSuccessProps) {
-  const shortId = orderId.slice(0, 8).toUpperCase();
+  const [copied, setCopied] = useState(false);
+  const shortId = orderId.slice(-6).toUpperCase();
 
   const copyId = () => {
     navigator.clipboard.writeText(orderId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="flex flex-col items-center px-4 pt-20 text-center">
-      <div className="flex h-20 w-20 animate-check-appear items-center justify-center rounded-full bg-success">
-        <svg
-          className="h-10 w-10 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={3}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-      </div>
-
-      <h2 className="mt-6 text-2xl font-bold text-success">
-        ¡Pago Confirmado!
-      </h2>
-      <p className="mt-2 text-sm text-text-muted">
-        Tu pedido ya está en cocina. En breve estará listo.
-      </p>
-
-      {/* Order ID */}
-      <div className="mt-4 flex items-center gap-2 rounded-full bg-bg-app px-4 py-2">
-        <span className="text-sm text-text-muted">Pedido:</span>
-        <span className="font-mono text-sm font-bold text-text-main">
-          #{shortId}
-        </span>
-        <button
-          onClick={copyId}
-          className="text-text-muted active:text-primary"
-          aria-label="Copiar ID"
-        >
-          <Clipboard className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div className="mt-8 w-full max-w-sm rounded-card border border-border bg-white p-4 text-left shadow-card">
-        <p className="mb-2 text-sm font-semibold text-text-main">Resumen</p>
-        {items.map((item, idx) => (
-          <p key={idx} className="text-sm text-text-main">
-            {item.quantity}× {item.name}
+    <div className="flex flex-col min-h-screen bg-bg-app">
+      <div className="flex-1 flex flex-col items-center justify-center px-5 py-10">
+        <div className="w-full max-w-sm bg-bg-card rounded-[32px] p-8 border border-border shadow-xl shadow-black/5 flex flex-col items-center text-center animate-in fade-in zoom-in duration-500">
+          <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mb-6">
+            <CheckCircle2 className="w-10 h-10 text-success" />
+          </div>
+          
+          <h1 className="text-2xl font-display font-black text-text-main mb-2">
+            ¡Pago confirmado!
+          </h1>
+          <p className="text-text-muted mb-8 leading-relaxed text-sm">
+            Tu pedido ha sido recibido con éxito y ya está en cocina.
           </p>
-        ))}
-        <div className="mt-3 border-t border-border pt-3">
-          <p className="text-sm font-bold text-price-green">
-            Total {formatBs(exactAmountBsCents)}
-          </p>
+
+          <div className="w-full bg-primary/5 rounded-2xl p-5 border border-primary/10 mb-8">
+            <div className="text-[10px] font-display font-bold uppercase tracking-[0.12em] text-text-muted/60 mb-1.5 text-center">
+              Número de Pedido
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-success/10 text-success rounded-full font-display font-black text-lg tracking-wider">
+                #{shortId}
+              </div>
+              <button
+                onClick={copyId}
+                className="p-2 rounded-full bg-surface-section border border-border text-text-muted active:text-primary transition-colors"
+                title="Copiar ID completo"
+              >
+                {copied ? <Check className="w-4 h-4 text-success" /> : <Clipboard className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full space-y-3 mb-8">
+             <Link
+                href="/"
+                className="w-full py-4 bg-primary text-white font-display font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-primary-hover transition-all active:scale-[0.98] shadow-lg shadow-primary/20"
+              >
+                Volver al Inicio
+              </Link>
+
+              <Link
+                href="/mis-pedidos"
+                className="w-full py-4 bg-surface-section text-text-main font-display font-bold rounded-xl border border-border hover:bg-border/20 transition-all active:scale-[0.98]"
+              >
+                Ver Mis Pedidos
+              </Link>
+          </div>
         </div>
       </div>
 
-      <Link
-        href="/"
-        className="mt-8 rounded-input bg-primary px-8 py-3 text-sm font-semibold text-white"
-      >
-        Volver al menú
-      </Link>
+      <div className="px-6 py-8 border-t border-border bg-bg-card/50 text-center">
+        <p className="text-[12px] text-text-muted leading-relaxed max-w-[280px] mx-auto">
+          Te enviaremos actualizaciones sobre el estado de tu pedido por WhatsApp.
+        </p>
+      </div>
     </div>
   );
 }

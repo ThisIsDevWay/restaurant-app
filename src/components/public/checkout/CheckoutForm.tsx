@@ -67,28 +67,28 @@ export function CheckoutForm({
   ].filter((m) => m.enabled);
 
   return (
-    <div className="flex flex-col h-full bg-[#F8EFE6]/30">
+    <div className="flex flex-col h-full bg-bg-app">
       {/* ─── CUSTOM TOP BAR ─── */}
       <div className="pt-5 px-5 pb-0">
         <div className="flex items-center gap-2 mb-4">
           <button
             type="button"
             onClick={() => router.back()}
-            className="w-8 h-8 rounded-full bg-white/70 border border-black/10 flex items-center justify-center cursor-pointer active:bg-white"
+            className="w-8 h-8 rounded-full bg-bg-card border border-border flex items-center justify-center cursor-pointer active:bg-surface-section transition-colors"
           >
-            <ChevronLeft className="w-[14px] h-[14px] text-[#3C1A1A]" strokeWidth={2.5} />
+            <ChevronLeft className="w-[14px] h-[14px] text-text-main" strokeWidth={2.5} />
           </button>
-          <span className="text-[20px] font-medium text-[#1A0A0A]">Checkout</span>
+          <span className="text-[20px] font-display font-bold text-text-main">Checkout</span>
           <div className="ml-auto flex items-center gap-[5px]">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#D4A9A0]" />
-            <div className="w-[18px] h-1.5 rounded-[3px] bg-[#7B2D2D]" />
+            <div className="w-1.5 h-1.5 rounded-full bg-primary/20" />
+            <div className="w-[18px] h-1.5 rounded-[3px] bg-primary" />
           </div>
         </div>
       </div>
 
       <div className="px-3 pb-32">
         {error && (
-          <div className="bg-[#A03030]/10 border border-[#A03030]/20 text-[#A03030] text-[13px] p-3 rounded-xl mb-4 animate-in fade-in">
+          <div className="bg-primary/10 border border-primary/20 text-primary text-[13px] p-3 rounded-xl mb-4 animate-in fade-in">
             {error}
           </div>
         )}
@@ -111,7 +111,7 @@ export function CheckoutForm({
             items={items}
             itemCount={surchargesWithMode.itemCount}
             summaryExpanded={form.summaryExpanded}
-            onToggleSummary={() => form.setSummaryExpanded((v) => !v)}
+            onToggleSummary={form.onToggleSummary}
             totalBsCents={totalBsCents}
             totalUsdCents={totalUsdCents}
             surcharges={surchargesWithMode.surcharges}
@@ -147,6 +147,8 @@ export function CheckoutForm({
         phoneValid={form.phoneValid}
         grandTotalBsCents={surchargesWithMode.grandTotalBsCents}
         orderModeSelected={form.orderModeSelected}
+        isReturning={form.isReturning}
+        name={form.name}
       />
     </div>
   );

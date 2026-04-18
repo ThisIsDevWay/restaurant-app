@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import Image from "next/image";
+import { ChevronDown, ShoppingBag, Info } from "lucide-react";
 import { formatBs, formatRef } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import type { CartItem } from "@/store/cartStore";
 import type { CheckoutSettings } from "./CheckoutForm.types";
 
@@ -44,193 +44,229 @@ export function OrderSummary({
   const [envasesExpanded, setEnvasesExpanded] = useState(false);
 
   return (
-    <div className="bg-white rounded-[16px] p-4 border border-black/[0.06]">
-      <div
+    <div className="bg-bg-card rounded-[20px] border border-border overflow-hidden shadow-sm transition-all duration-300">
+      {/* Header / Trigger - Heritage Editorial Style */}
+      <button
+        type="button"
         onClick={onToggleSummary}
-        className="flex items-center justify-between cursor-pointer"
+        className="w-full flex items-center justify-between p-5 cursor-pointer active:bg-surface-section transition-colors group"
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="bg-[#7B2D2D] text-white text-[11px] font-medium rounded-full px-2 py-[2.5px] whitespace-nowrap shrink-0">
-            {itemCount} {itemCount === 1 ? "plato" : "platos"}
-          </span>
-          <span className="text-[11px] font-medium tracking-[0.06em] text-[#9A6A5A] uppercase m-0 truncate">
-            Resumen del pedido
-          </span>
-        </div>
-        <div className="flex items-center gap-2.5 shrink-0 ml-2">
-          <span className="text-[13px] text-[#3C1A1A] font-medium whitespace-nowrap">
-            {formatBs(grandTotalBsCents)}
-          </span>
-          <div className={`transition-transform duration-200 flex ${summaryExpanded ? "rotate-180" : ""}`}>
-            <ChevronDown className="w-3.5 h-3.5 text-[#7B2D2D]" strokeWidth={1.8} />
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-[clamp(14px,4vw,16px)] font-display font-black text-text-main tracking-tight uppercase">
+              Resumen del pedido
+            </h2>
+            {itemCount > 0 && (
+              <span className="px-2 py-0.5 bg-[#7B2D2D]/10 text-[#7B2D2D] text-[10px] font-black rounded-md border border-[#7B2D2D]/20 uppercase tracking-tighter">
+                {itemCount} {itemCount === 1 ? 'plato' : 'platos'}
+              </span>
+            )}
           </div>
         </div>
-      </div>
-
-      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${summaryExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}>
-        <div className="h-[0.5px] bg-black/[0.07] my-3"></div>
-
-        {items.map((item, idx) => (
-          <div key={idx}>
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="text-[14px] font-medium text-[#1A0A0A]">
-                  {item.quantity > 1 ? `${item.quantity}× ` : ""}{item.name}
-                </div>
-                <div className="text-[12px] text-[#9A6A5A] mt-0.5">
-                  Base · {formatBs(item.baseBsCents)} / {formatRef(item.baseUsdCents)}
-                </div>
-              </div>
-              <div className="text-right">
-                {/* itemTotalBsCents ya incluye × quantity (computeItemTotal en cartStore.ts). NO volver a multiplicar. */}
-                <div className="text-[14px] font-medium text-[#1A0A0A]">
-                  {formatBs(item.itemTotalBsCents)}
-                </div>
-                <div className="text-[11px] text-[#9A6A5A]">
-                  {formatRef(Math.round(item.itemTotalBsCents / (totalBsCents / totalUsdCents)))}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-2.5 flex flex-col gap-[5px]">
-              {/* Contornos */}
-              {((item.fixedContornos ?? []).length > 0 || (item.contornoSubstitutions ?? []).length > 0) && (
-                <>
-                  <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Contornos</div>
-                  {(item.fixedContornos ?? []).map((c) => (
-                    <div key={c.id} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
-                      <span className="text-[12px] text-[#5A3A3A]">{c.name}</span>
-                      <span className="text-[11px] italic text-[#9A6A5A]">incluido</span>
-                    </div>
-                  ))}
-                  {(item.contornoSubstitutions ?? []).map((s, idx2) => (
-                    <div key={idx2} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
-                      <span className="text-[12px] text-[#5A3A3A]">
-                        {s.substituteName} <span className="opacity-70 text-[11px] ml-1">(en lugar de {s.originalName})</span>
-                      </span>
-                      {s.priceBsCents > 0 ? (
-                        <span className="text-[12px] font-medium text-[#7B2D2D]">+ {formatBs(s.priceBsCents)}</span>
-                      ) : (
-                        <span className="text-[11px] italic text-[#9A6A5A]">incluido</span>
-                      )}
-                    </div>
-                  ))}
-                </>
-              )}
-
-              {/* Sin (Removidos) */}
-              {(item.removedComponents ?? []).length > 0 && (
-                <>
-                  <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Removido</div>
-                  {(item.removedComponents ?? []).map((r) => (
-                    <div key={r.componentId} className="flex justify-between items-center pl-2 border-l-[1.5px] border-red-200">
-                      <span className="text-[12px] italic text-red-800/70">Sin {r.name}</span>
-                    </div>
-                  ))}
-                </>
-              )}
-
-              {/* Adicionales */}
-              {item.selectedAdicionales.length > 0 && (
-                <>
-                  <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Adicionales</div>
-                  {item.selectedAdicionales.map((adicional) => (
-                    <div key={adicional.id} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
-                      <span className="text-[12px] text-[#5A3A3A]">{(adicional.quantity ?? 1) > 1 ? `${adicional.quantity}× ` : ""}{adicional.name}</span>
-                      <span className="text-[12px] font-medium text-[#7B2D2D]">
-                        {adicional.priceBsCents > 0 ? `+ ${formatBs(adicional.priceBsCents * (adicional.quantity ?? 1))}` : "incluido"}
-                      </span>
-                    </div>
-                  ))}
-                </>
-              )}
-
-              {/* Bebidas */}
-              {(item.selectedBebidas ?? []).length > 0 && (
-                <>
-                  <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Bebidas</div>
-                  {(item.selectedBebidas ?? []).map((bebida) => (
-                    <div key={bebida.id} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
-                      <span className="text-[12px] text-[#5A3A3A]">{(bebida.quantity ?? 1) > 1 ? `${bebida.quantity}× ` : ""}{bebida.name}</span>
-                      <span className="text-[12px] font-medium text-[#7B2D2D]">
-                        {bebida.priceBsCents > 0 ? `+ ${formatBs(bebida.priceBsCents * (bebida.quantity ?? 1))}` : "incluido"}
-                      </span>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-            {idx !== items.length - 1 && <div className="h-[0.5px] bg-black/[0.07] my-3"></div>}
+        
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col items-end">
+            <span className="text-[clamp(15px,4.5vw,17px)] font-display font-black text-[#7B2D2D]">
+              {formatBs(grandTotalBsCents)}
+            </span>
           </div>
-        ))}
-
-        <div className="h-[0.5px] bg-black/[0.07] my-3"></div>
-
-        <div className="bg-[#FAF5F2] rounded-[10px] p-3 mt-3">
-          <div className="flex justify-between text-[12px] text-[#6A4040] py-[3px]">
-            <span>Subtotal platos</span>
-            <span>{formatBs(totalBsCents)}</span>
+          <div className={cn(
+            "w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500",
+            summaryExpanded ? "rotate-180 bg-[#7B2D2D]/5" : "bg-surface-section"
+          )}>
+            <ChevronDown className={cn("w-3.5 h-3.5 transition-colors", summaryExpanded ? "text-[#7B2D2D]" : "text-text-muted")} strokeWidth={3} />
           </div>
+        </div>
+      </button>
 
-          {surcharges.totalSurchargeUsdCents > 0 && (
-            <>
-              {surcharges.packagingUsdCents > 0 && (
-                <>
-                  <span
-                    className="text-[11px] text-[#7B2D2D] underline cursor-pointer mt-1.5 mb-1 inline-block"
-                    onClick={() => setEnvasesExpanded(!envasesExpanded)}
-                  >
-                    + Cargos por envases ({rate > 0 ? formatBs(Math.round(surcharges.packagingUsdCents * rate)) : formatRef(surcharges.packagingUsdCents)}) {envasesExpanded ? '▴' : '▾'}
-                  </span>
-                  <div className={`overflow-hidden transition-all duration-200 ease-in-out ${envasesExpanded ? "max-h-[100px]" : "max-h-0"}`}>
-                    <div className="mt-1">
-                      {surcharges.plateCount > 0 && settings!.packagingFeePerPlateUsdCents > 0 && (
-                        <div className="flex justify-between text-[12px] text-[#8A5050] py-[3px]">
-                          <span className="pl-2 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-[1.5px] before:bg-[#EDD8CF]">{surcharges.plateCount}× plato</span>
-                          <span>{rate > 0 ? `${formatBs(Math.round(settings!.packagingFeePerPlateUsdCents * rate))}/u` : `${formatRef(settings!.packagingFeePerPlateUsdCents)}/u`}</span>
-                        </div>
-                      )}
-                      {surcharges.adicionalCount > 0 && settings!.packagingFeePerAdicionalUsdCents > 0 && (
-                        <div className="flex justify-between text-[12px] text-[#8A5050] py-[3px]">
-                          <span className="pl-2 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-[1.5px] before:bg-[#EDD8CF]">{surcharges.adicionalCount}× adicional</span>
-                          <span>{rate > 0 ? `${formatBs(Math.round(settings!.packagingFeePerAdicionalUsdCents * rate))}/u` : `${formatRef(settings!.packagingFeePerAdicionalUsdCents)}/u`}</span>
-                        </div>
-                      )}
-                      {surcharges.bebidaCount > 0 && settings!.packagingFeePerBebidaUsdCents > 0 && (
-                        <div className="flex justify-between text-[12px] text-[#8A5050] py-[3px]">
-                          <span className="pl-2 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-[1.5px] before:bg-[#EDD8CF]">{surcharges.bebidaCount}× bebida</span>
-                          <span>{rate > 0 ? `${formatBs(Math.round(settings!.packagingFeePerBebidaUsdCents * rate))}/u` : `${formatRef(settings!.packagingFeePerBebidaUsdCents)}/u`}</span>
-                        </div>
-                      )}
+      {/* Expandable Content */}
+      <div className={cn(
+        "overflow-hidden transition-all duration-500 ease-in-out",
+        summaryExpanded ? "max-h-[3000px] opacity-100 border-t border-border/40" : "max-h-0 opacity-0"
+      )}>
+        <div className="p-5 space-y-5">
+          {items.map((item, idx) => (
+            <div key={idx} className="animate-in fade-in slide-in-from-top-2 duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex gap-3 min-w-0">
+                  <div className="w-5 h-5 rounded-md bg-surface-section border border-border flex items-center justify-center text-[11px] font-black text-text-main shrink-0 mt-0.5">
+                    {item.quantity}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[14px] font-display font-black text-text-main leading-tight truncate">
+                      {item.name}
+                    </div>
+                    <div className="text-[11px] font-bold text-text-muted/60 mt-1 uppercase tracking-wider">
+                      Base · {formatBs(item.baseBsCents)}
                     </div>
                   </div>
-                </>
-              )}
-              {surcharges.deliveryUsdCents > 0 && (
-                <div className="flex justify-between text-[12px] text-[#6A4040] py-[3px]">
-                  <span>Envío (Delivery)</span>
-                  <span>{rate > 0 ? formatBs(Math.round(surcharges.deliveryUsdCents * rate)) : formatRef(surcharges.deliveryUsdCents)}</span>
                 </div>
-              )}
-            </>
-          )}
+                <div className="text-right shrink-0">
+                  <div className="text-[14px] font-display font-black text-text-main">
+                    {formatBs(item.itemTotalBsCents)}
+                  </div>
+                </div>
+              </div>
 
-          <div className="h-[0.5px] bg-black/[0.08] my-1.5"></div>
-          <div className="flex justify-between text-[12px] text-[#8A5050] py-[3px]">
-            <span>Base imponible</span>
-            <span>{formatBs(Math.round(grandTotalBsCents / 1.16))}</span>
-          </div>
-          <div className="flex justify-between text-[12px] text-[#8A5050] py-[3px]">
-            <span>IVA incluido (16%)</span>
-            <span>{formatBs(grandTotalBsCents - Math.round(grandTotalBsCents / 1.16))}</span>
-          </div>
-          <div className="h-[0.5px] bg-black/[0.08] my-1.5"></div>
-          <div className="flex justify-between items-baseline mt-1">
-            <span className="text-[13px] font-medium text-[#1A0A0A]">Total a pagar</span>
-            <div className="text-right">
-              <div className="text-[17px] font-medium text-[#7B2D2D]">{formatBs(grandTotalBsCents)}</div>
-              <div className="text-[12px] text-[#9A6A5A]">
-                {formatRef(grandTotalUsdCents)}
+              {/* Components List */}
+              <div className="ml-8 space-y-3">
+                {/* Contornos Section */}
+                {((item.fixedContornos ?? []).length > 0 || (item.contornoSubstitutions ?? []).length > 0) && (
+                  <>
+                    <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Contornos</div>
+                    {(item.fixedContornos ?? []).map((c) => (
+                      <div key={c.id} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
+                        <span className="text-[12px] text-[#5A3A3A]">{c.name}</span>
+                        <span className="text-[11px] italic text-[#9A6A5A]">incluido</span>
+                      </div>
+                    ))}
+                    {(item.contornoSubstitutions ?? []).map((s, idx2) => (
+                      <div key={idx2} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
+                        <span className="text-[12px] text-[#5A3A3A]">
+                          {s.substituteName} <span className="opacity-70 text-[11px] ml-1">(en lugar de {s.originalName})</span>
+                        </span>
+                        {s.priceBsCents > 0 ? (
+                          <span className="text-[12px] font-medium text-[#7B2D2D]">+ {formatBs(s.priceBsCents)}</span>
+                        ) : (
+                          <span className="text-[11px] italic text-[#9A6A5A]">incluido</span>
+                        )}
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* SIN (Removidos) Section */}
+                {(item.removedComponents ?? []).length > 0 && (
+                  <>
+                    <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Removido</div>
+                    {(item.removedComponents ?? []).map((r) => (
+                      <div key={r.componentId} className="flex justify-between items-center pl-2 border-l-[1.5px] border-red-200">
+                        <span className="text-[12px] italic text-red-800/70">Sin {r.name}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* Adicionales Section */}
+                {(item.selectedAdicionales ?? []).length > 0 && (
+                  <>
+                    <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Adicionales</div>
+                    {item.selectedAdicionales.map((adicional) => (
+                      <div key={adicional.id} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
+                        <span className="text-[12px] text-[#5A3A3A]">{(adicional.quantity ?? 1) > 1 ? `${adicional.quantity}× ` : ""}{adicional.name}</span>
+                        <span className="text-[12px] font-medium text-[#7B2D2D]">
+                          {adicional.priceBsCents > 0 ? `+ ${formatBs(adicional.priceBsCents * (adicional.quantity ?? 1))}` : "incluido"}
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* Bebidas Section */}
+                {(item.selectedBebidas ?? []).length > 0 && (
+                  <>
+                    <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Bebidas</div>
+                    {(item.selectedBebidas ?? []).map((bebida) => (
+                      <div key={bebida.id} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
+                        <span className="text-[12px] text-[#5A3A3A]">{(bebida.quantity ?? 1) > 1 ? `${bebida.quantity}× ` : ""}{bebida.name}</span>
+                        <span className="text-[12px] font-medium text-[#7B2D2D]">
+                          {bebida.priceBsCents > 0 ? `+ ${formatBs(bebida.priceBsCents * (bebida.quantity ?? 1))}` : "incluido"}
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Surcharges Section */}
+          <div className="bg-surface-section rounded-[16px] p-4 space-y-3 mt-6 border border-border/40">
+            <div className="flex justify-between text-[13px] font-bold text-text-main uppercase tracking-tight">
+              <span>Subtotal platos</span>
+              <span>{formatBs(totalBsCents)}</span>
+            </div>
+
+            {surcharges.totalSurchargeUsdCents > 0 && (
+              <div className="space-y-2 pt-2 border-t border-border/20">
+                {surcharges.packagingUsdCents > 0 && (
+                  <div className="flex flex-col gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setEnvasesExpanded(!envasesExpanded)}
+                      className="flex justify-between items-center text-[12px] font-medium text-text-muted hover:text-text-main transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Info className="w-3 h-3" />
+                        Cargos por envases
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-[#7B2D2D]">
+                          + {formatBs(Math.round(surcharges.packagingUsdCents * rate))}
+                        </span>
+                        <ChevronDown className={cn("w-3 h-3 transition-transform", envasesExpanded ? "rotate-180" : "")} />
+                      </div>
+                    </button>
+                    
+                    <div className={cn(
+                      "overflow-hidden transition-all duration-300",
+                      envasesExpanded ? "max-h-20 opacity-100 mt-1" : "max-h-0 opacity-0"
+                    )}>
+                      <div className="pl-4 space-y-1 text-[11px] text-text-muted font-medium border-l border-border/60">
+                        {surcharges.plateCount > 0 && settings!.packagingFeePerPlateUsdCents > 0 && (
+                          <div className="flex justify-between">
+                            <span>{surcharges.plateCount}× Plato</span>
+                            <span>{formatBs(Math.round(settings!.packagingFeePerPlateUsdCents * rate))} c/u</span>
+                          </div>
+                        )}
+                        {surcharges.adicionalCount > 0 && settings!.packagingFeePerAdicionalUsdCents > 0 && (
+                          <div className="flex justify-between">
+                            <span>{surcharges.adicionalCount}× Adicional</span>
+                            <span>{formatBs(Math.round(settings!.packagingFeePerAdicionalUsdCents * rate))} c/u</span>
+                          </div>
+                        )}
+                        {surcharges.bebidaCount > 0 && settings!.packagingFeePerBebidaUsdCents > 0 && (
+                          <div className="flex justify-between">
+                            <span>{surcharges.bebidaCount}× Bebida</span>
+                            <span>{formatBs(Math.round(settings!.packagingFeePerBebidaUsdCents * rate))} c/u</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {surcharges.deliveryUsdCents > 0 && (
+                  <div className="flex justify-between text-[12px] font-medium text-text-muted">
+                    <span>Envío (Delivery)</span>
+                    <span className="font-black text-[#7B2D2D]">+ {formatBs(Math.round(surcharges.deliveryUsdCents * rate))}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tax Breakdown (MVP Rule) */}
+            <div className="space-y-1.5 pt-3 border-t border-border/20">
+              <div className="flex justify-between text-[11px] font-bold text-text-muted uppercase tracking-wider">
+                <span>Base imponible</span>
+                <span>{formatBs(Math.round(grandTotalBsCents / 1.16))}</span>
+              </div>
+              <div className="flex justify-between text-[11px] font-bold text-text-muted uppercase tracking-wider">
+                <span>IVA incluido (16%)</span>
+                <span>{formatBs(grandTotalBsCents - Math.round(grandTotalBsCents / 1.16))}</span>
+              </div>
+            </div>
+
+            {/* Total Row */}
+            <div className="pt-3 border-t-2 border-dashed border-border/60 flex justify-between items-baseline">
+              <span className="text-[13px] font-display font-black text-text-main uppercase tracking-widest">Total pedido</span>
+              <div className="text-right">
+                <div className="text-[clamp(18px,5vw,20px)] font-display font-black text-[#7B2D2D] leading-none">
+                  {formatBs(grandTotalBsCents)}
+                </div>
+                <div className="text-[clamp(10px,2.5vw,12px)] font-bold text-text-muted mt-1">
+                  Ref. {formatRef(grandTotalUsdCents)}
+                </div>
               </div>
             </div>
           </div>

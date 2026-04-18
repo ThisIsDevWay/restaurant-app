@@ -35,7 +35,7 @@ export function appendComprobanteToMessage({
     // Añadir comprobante siempre
     lines.push("");
     lines.push("─────────────────────");
-    lines.push("*📎 COMPROBANTE DE PAGO:*");
+    lines.push("*📎 CAPTURE DE PAGO:*");
     lines.push(comprobanteUrl);
 
     return lines.join("\n");

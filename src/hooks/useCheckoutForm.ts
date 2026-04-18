@@ -24,7 +24,7 @@ export interface UseCheckoutFormReturn {
   deliveryAddress: string;
   setDeliveryAddress: React.Dispatch<React.SetStateAction<string>>;
   summaryExpanded: boolean;
-  setSummaryExpanded: React.Dispatch<React.SetStateAction<boolean>>;
+  onToggleSummary: () => void;
   envasesExpanded: boolean;
   setEnvasesExpanded: React.Dispatch<React.SetStateAction<boolean>>;
   customerFieldsVisible: boolean;
@@ -60,6 +60,24 @@ export function useCheckoutForm({
   const [gpsCoords, setGpsCoords] = useState<GpsCoords | null>(null);
   const lookupTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const surchargesRef = useRef<SurchargeResult | null>(null);
+
+  // ✅ M2: Expand by default if first time
+  useEffect(() => {
+    const seen = localStorage.getItem("portillos_checkout_summary_seen");
+    if (!seen) {
+      setSummaryExpanded(true);
+    }
+  }, []);
+
+  // ✅ M2: Save "seen" flag when collapsing
+  const toggleSummary = useCallback(() => {
+    setSummaryExpanded((prev) => {
+      if (prev === true) {
+        localStorage.setItem("portillos_checkout_summary_seen", "true");
+      }
+      return !prev;
+    });
+  }, []);
 
   function validatePhone(value: string): string | null {
     if (!/^(0414|0424|0412|0416|0426)\d{7}$/.test(value)) {
@@ -122,16 +140,28 @@ export function useCheckoutForm({
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!orderMode) return;
-    const err = validatePhone(phone);
-    if (err) {
+    
+    const phoneErr = validatePhone(phone);
+    if (phoneErr) {
       document.getElementById('phone-input')?.focus();
       return;
     }
+
+    if (!name.trim()) {
+      document.getElementById('name-input')?.focus();
+      return;
+    }
+
+    if (!cedula.trim()) {
+      document.getElementById('cedula-input')?.focus();
+      return;
+    }
+
     onSubmit(
       phone,
       paymentMethod,
-      name.trim() || undefined,
-      cedula.trim() || undefined,
+      name.trim(),
+      cedula.trim(),
       orderMode,
       deliveryAddress.trim() || undefined,
       surchargesRef.current ?? undefined,
@@ -154,7 +184,7 @@ export function useCheckoutForm({
     deliveryAddress,
     setDeliveryAddress,
     summaryExpanded,
-    setSummaryExpanded,
+    onToggleSummary: toggleSummary,
     envasesExpanded,
     setEnvasesExpanded,
     customerFieldsVisible,

@@ -87,67 +87,67 @@ export function ReferenceEntry({
   };
 
   return (
-    <div className="px-4 pb-8">
+    <div className="px-4 pb-8 bg-bg-app min-h-screen">
       {/* Back button */}
       <button
         onClick={() => setShowLeaveDialog(true)}
-        className="mt-4 flex items-center gap-1 text-sm text-text-muted"
+        className="mt-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-section text-[13px] font-bold text-text-main border border-border/50 active:scale-95 transition-all"
       >
         <ArrowLeft size={16} />
         Volver
       </button>
 
       {/* Hero amount */}
-      <div className="mt-6 text-center">
-        <p className="text-xs text-text-muted">Transfiere</p>
-        <p className="mt-2 text-[36px] font-extrabold text-primary">
+      <div className="pt-8 pb-6 text-center animate-in fade-in slide-in-from-top-4 duration-500">
+        <p className="text-[11px] font-display font-bold tracking-[0.1em] text-text-muted uppercase mb-1">Monto de la transferencia</p>
+        <p className="text-[42px] font-display font-black text-text-main leading-tight">
           {formatBs(totalBsCents)}
         </p>
       </div>
 
       {/* Bank details */}
-      <div className="mt-6 rounded-card border border-border bg-white p-4 shadow-card">
+      <div className="mt-2 rounded-2xl border border-border bg-bg-card p-5 shadow-sm">
         {bankDetails.transferAccountNumber ? (
           <>
-            <p className="mb-3 text-sm font-semibold text-text-main">
-              Datos para Transferencia
+            <p className="mb-4 text-[11px] font-display font-bold tracking-[0.08em] text-text-muted uppercase">
+              🏦 Datos para Transferencia
             </p>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
                 <div>
-                  <p className="text-xs text-text-muted">Banco</p>
-                  <p className="text-sm font-semibold text-text-main">
+                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Banco</p>
+                  <p className="text-[14px] font-bold text-text-main">
                     {bankDetails.transferBankName || bankDetails.bankName}
                   </p>
                 </div>
                 <CopyButton value={bankDetails.transferBankName || bankDetails.bankName} />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
                 <div>
-                  <p className="text-xs text-text-muted">Número de Cuenta</p>
-                  <p className="text-sm font-semibold text-text-main">
+                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Número de Cuenta</p>
+                  <p className="text-[14px] font-bold text-text-main tracking-wide">
                     {bankDetails.transferAccountNumber}
                   </p>
                 </div>
                 <CopyButton value={bankDetails.transferAccountNumber!} />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
                 <div>
-                  <p className="text-xs text-text-muted">Titular de la cuenta</p>
-                  <p className="text-sm font-semibold text-text-main">
+                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Titular</p>
+                  <p className="text-[14px] font-bold text-text-main">
                     {bankDetails.transferAccountName}
                   </p>
                 </div>
                 <CopyButton value={bankDetails.transferAccountName!} />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between py-1">
                 <div>
-                  <p className="text-xs text-text-muted">RIF / Cédula</p>
-                  <p className="text-sm font-semibold text-text-main">
+                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">RIF / Cédula</p>
+                  <p className="text-[14px] font-bold text-text-main tracking-wide">
                     {bankDetails.transferAccountRif}
                   </p>
                 </div>
@@ -157,57 +157,61 @@ export function ReferenceEntry({
           </>
         ) : (
           <>
-            <p className="mb-3 text-sm font-semibold text-text-main">
-              Datos para Pago Móvil
+            <p className="mb-4 text-[11px] font-display font-bold tracking-[0.08em] text-text-muted uppercase">
+              💳 Datos para Pago Móvil
             </p>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
                 <div>
-                  <p className="text-xs text-text-muted">Banco</p>
-                  <p className="text-sm font-semibold text-text-main">
-                    {bankDetails.bankName} ({bankDetails.bankCode})
+                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Banco</p>
+                  <p className="text-[14px] font-bold text-text-main">
+                    {bankDetails.bankName} <span className="text-text-muted/70 font-medium">({bankDetails.bankCode})</span>
                   </p>
                 </div>
                 <CopyButton value={`${bankDetails.bankName} (${bankDetails.bankCode})`} />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
                 <div>
-                  <p className="text-xs text-text-muted">Teléfono</p>
-                  <p className="text-sm font-semibold text-text-main">
+                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Teléfono</p>
+                  <p className="text-[14px] font-bold text-text-main tracking-wide">
                     {bankDetails.accountPhone}
                   </p>
                 </div>
                 <CopyButton value={bankDetails.accountPhone} />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between py-1">
                 <div>
-                  <p className="text-xs text-text-muted">RIF / Cédula</p>
-                  <p className="text-sm font-semibold text-text-main">
+                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">RIF / Cédula</p>
+                  <p className="text-[14px] font-bold text-text-main tracking-wide">
                     {bankDetails.accountRif}
                   </p>
                 </div>
                 <CopyButton value={bankDetails.accountRif} />
               </div>
             </div>
+
+            {/* Copy all for Pago Móvil */}
+            {!bankDetails.transferAccountNumber && (
+              <div className="mt-5 border-t border-border pt-2">
+                <CopyAllButton
+                  bankName={bankDetails.bankName!}
+                  bankCode={bankDetails.bankCode!}
+                  phone={bankDetails.accountPhone!}
+                  rifOrCedula={bankDetails.accountRif!}
+                  amountBsCents={totalBsCents}
+                />
+              </div>
+            )}
           </>
         )}
       </div>
 
-      {/* Copy all for Pago Móvil (only show if not transfer) */}
-      {!bankDetails.transferAccountNumber && (
-        <CopyAllButton
-          bankName={bankDetails.bankName!}
-          bankCode={bankDetails.bankCode!}
-          phone={bankDetails.accountPhone!}
-          rifOrCedula={bankDetails.accountRif!}
-          amountBsCents={totalBsCents}
-        />
-      )}
-      <div className="mt-6 rounded-card border border-border bg-white p-4 shadow-card">
-        <p className="mb-3 text-sm font-semibold text-text-main">
+
+      <div className="mt-6 rounded-2xl border border-border bg-bg-card p-6 shadow-sm">
+        <p className="mb-4 text-[11px] font-display font-bold tracking-[0.08em] text-text-muted uppercase">
           Ingresa la referencia del pago
         </p>
         <input
@@ -219,17 +223,19 @@ export function ReferenceEntry({
             setVerifyError(null);
           }}
           placeholder="Ej: 01234567"
-          className={`w-full rounded-input border px-4 py-3 text-sm outline-none transition-colors ${verifyError ? "border-error" : "border-border focus:border-primary"
+          className={`w-full rounded-xl border px-4 py-4 text-[15px] font-bold outline-none transition-all placeholder:font-medium placeholder:text-text-muted/40 ${verifyError ? "border-error bg-error/5" : "border-border bg-surface-section focus:border-primary focus:bg-primary/5"
             }`}
           disabled={isVerifying}
         />
         {verifyError && (
-          <p className="mt-2 text-xs text-error">{verifyError}</p>
+          <p className="mt-2 text-[12px] font-bold text-error flex items-center gap-1">
+            <span className="text-[14px]">⚠️</span> {verifyError}
+          </p>
         )}
         <button
           onClick={handleVerify}
           disabled={isVerifying || reference.trim().length < 8}
-          className="mt-3 w-full rounded-input bg-primary py-3 text-sm font-semibold text-white disabled:opacity-60"
+          className="mt-4 w-full rounded-xl bg-primary py-4 text-[15px] font-display font-bold text-white shadow-lg shadow-primary/20 disabled:opacity-60 transition-all active:scale-[0.98]"
         >
           {isVerifying ? (
             <span className="flex items-center justify-center gap-2">
@@ -243,62 +249,65 @@ export function ReferenceEntry({
       </div>
 
       {/* Items summary */}
-      <div className="mt-4 rounded-card border border-border bg-white p-4 shadow-card">
-        <p className="mb-2 text-sm font-semibold text-text-main">Resumen</p>
-        {items.map((item, idx) => (
-          <div key={idx} className="border-b border-border py-2 last:border-b-0">
-            <p className="text-sm text-text-main">
-              {item.quantity}× {item.name}
-            </p>
-            <p className="text-sm font-semibold text-price-green">
-              {formatBs(item.itemTotalBsCents)}
-            </p>
-          </div>
-        ))}
+      <div className="mt-4 rounded-2xl border border-border bg-bg-card p-6 shadow-sm">
+        <p className="mb-4 text-[11px] font-display font-bold tracking-[0.08em] text-text-muted uppercase">📦 Resumen del pedido</p>
+        <div className="space-y-1">
+          {items.map((item, idx) => (
+            <div key={idx} className="flex justify-between items-center py-2 border-b border-border/30 last:border-b-0">
+              <span className="text-[14px] font-medium text-text-main">
+                {item.quantity}× {item.name}
+              </span>
+              <span className="text-[14px] font-bold text-text-main">
+                {formatBs(item.itemTotalBsCents)}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Expiration countdown */}
       {secondsLeft > 0 && (
-        <div className={`mt-4 flex items-center justify-center gap-1.5 text-sm ${secondsLeft < 300 ? "text-amber font-semibold" : "text-text-muted"
+        <div className={`mt-8 flex items-center justify-center gap-2 text-[13px] py-3 px-4 rounded-xl border ${
+          secondsLeft < 300 
+            ? "bg-warning/5 border-warning/20 text-warning font-bold animate-pulse" 
+            : "bg-surface-section border-border text-text-muted font-medium"
           }`}>
-          <Clock size={14} />
+          <Clock size={16} />
           {secondsLeft < 300
-            ? `¡Apresúrate! ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`
-            : `Expira en ${Math.floor(secondsLeft / 60)} min`}
+            ? `¡Tu orden expira pronto! ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`
+            : `Esta orden expira en ${Math.floor(secondsLeft / 60)} minutos`}
         </div>
       )}
 
       {/* Leave confirmation dialog */}
       {showLeaveDialog && (
         <div
-          className="fixed inset-0 z-[200] flex items-end justify-center p-4"
-          style={{ background: "rgba(28,20,16,0.5)" }}
+          className="fixed inset-0 z-[200] flex items-end justify-center p-4 bg-black/40 backdrop-blur-[2px]"
           onClick={() => setShowLeaveDialog(false)}
         >
           <div
-            className="flex w-full max-w-sm flex-col gap-4 rounded-modal bg-white p-6"
+            className="flex w-full max-w-sm flex-col gap-5 rounded-[28px] bg-bg-card p-7 shadow-2xl animate-in slide-in-from-bottom-8 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex flex-col gap-1 text-center">
-              <p className="text-[15px] font-semibold text-text-main">
-                ¿Salir del pago?
+            <div className="flex flex-col gap-2 text-center">
+              <p className="text-[18px] font-display font-black text-text-main">
+                ¿Seguro que deseas salir?
               </p>
-              <p className="text-[13px] text-text-muted">
+              <p className="text-[14px] text-text-muted leading-relaxed">
                 Tu pedido seguirá activo por{" "}
-                {Math.ceil(secondsLeft / 60)} min si ya realizaste la
-                transferencia.
+                <b className="text-text-main">{Math.ceil(secondsLeft / 60)} min</b>. No pierdas tu reserva si ya transferiste.
               </p>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <button
                 onClick={() => setShowLeaveDialog(false)}
-                className="flex h-[48px] items-center justify-center rounded-input bg-primary text-[15px] font-semibold text-white"
+                className="flex h-[56px] items-center justify-center rounded-xl bg-primary text-[15px] font-display font-bold text-white shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
               >
                 Continuar con el pago
               </button>
               <button
                 onClick={() => router.push("/")}
-                className="flex h-[48px] items-center justify-center rounded-input border border-border text-[15px] font-semibold text-text-main"
+                className="flex h-[56px] items-center justify-center rounded-xl bg-surface-section border border-border text-[15px] font-display font-bold text-text-main transition-all active:scale-[0.98]"
               >
                 Volver al menú
               </button>

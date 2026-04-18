@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ClipboardCopy, Check } from "lucide-react";
+import { ClipboardCopy, Check, ArrowRight } from "lucide-react";
 import { buildPagoMovilClipboard } from "@/lib/clipboard-pago-movil";
 
 interface CopyAllButtonProps {
@@ -29,8 +29,7 @@ export function CopyAllButton({
             rifOrCedula,
             amountBsCents,
         });
-        // navigator.clipboard requires a secure context (HTTPS / localhost).
-        // On mobile over HTTP it will be undefined — fall back to execCommand.
+        
         if (navigator.clipboard?.writeText) {
             await navigator.clipboard.writeText(text);
         } else {
@@ -44,28 +43,37 @@ export function CopyAllButton({
             document.body.removeChild(ta);
         }
         setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
+        setTimeout(() => setCopied(false), 3000); // ✅ M2: 3 seconds
     };
 
     return (
         <button
             onClick={handleCopyAll}
-            className={`mt-3 flex w-full items-center justify-center gap-2 rounded-input py-3 text-sm font-semibold transition-all ${copied
-                ? "bg-success/10 text-success border border-success/30"
-                : "bg-primary/10 text-primary border border-primary/20 active:scale-[0.98]"
-                }`}
+            className={`relative mt-4 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-[14px] font-display font-black transition-all shadow-md group overflow-hidden ${
+                copied
+                    ? "bg-success text-white shadow-success/20"
+                    : "bg-primary text-white active:scale-[0.98] shadow-primary/20"
+            }`}
         >
-            {copied ? (
-                <>
-                    <Check className="h-4 w-4" />
-                    ¡Copiado! — Pega en tu app de banco
-                </>
-            ) : (
-                <>
-                    <ClipboardCopy className="h-4 w-4" />
-                    Copiar todo para Pago Móvil
-                </>
+            {/* Signature Gradient Overlay */}
+            {!copied && (
+                <div className="absolute inset-0 bg-primary-gradient opacity-100 pointer-events-none" />
             )}
+
+            <span className="relative z-10 flex items-center justify-center gap-2.5">
+                {copied ? (
+                    <>
+                        <Check className="h-5 w-5 animate-in zoom-in" strokeWidth={3} />
+                        <span>¡Copiado! Abre tu app bancaria</span>
+                        <ArrowRight className="h-4 w-4 animate-in slide-in-from-left-2" />
+                    </>
+                ) : (
+                    <>
+                        <ClipboardCopy className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                        Copiar todo para Pago Móvil
+                    </>
+                )}
+            </span>
         </button>
     );
 }
