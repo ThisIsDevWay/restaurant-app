@@ -70,7 +70,7 @@ export function SettingsForm({ initialData, templates = [] }: SettingsFormProps)
           </TabsList>
 
           <TabsContent value="design">
-            <SettingsDesignTab form={form} updateField={updateField} />
+            <SettingsDesignTab form={form} updateField={updateField} errors={errors} />
           </TabsContent>
 
           <TabsContent value="general">

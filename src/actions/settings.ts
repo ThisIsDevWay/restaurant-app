@@ -98,9 +98,11 @@ export const fetchCheckoutSettings = async () => {
     restaurantName: s?.restaurantName ?? "G&M",
     whatsappNumber: s?.whatsappNumber ?? "",
     bankName: s?.bankName ?? "",
+    bankCode: s?.bankCode ?? "",
     accountPhone: s?.accountPhone ?? "",
     accountRif: s?.accountRif ?? "",
     activePaymentProvider: s?.activePaymentProvider ?? "whatsapp_manual",
+    orderExpirationMinutes: s?.orderExpirationMinutes ?? 30,
   };
 }
 
@@ -128,6 +130,33 @@ export const uploadLogoAction = adminActionClient
       };
     } catch {
       return { success: false as const, error: "Error al subir logo" };
+    }
+  });
+
+export const uploadHeroImageAction = adminActionClient
+  .schema(v.object({ fileName: v.string() }))
+  .action(async ({ parsedInput: { fileName } }) => {
+    const ext = fileName.split(".").pop() ?? "jpg";
+    const path = `branding/hero-${Date.now()}.${ext}`;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from("menu")
+        .createSignedUploadUrl(path);
+
+      if (error || !data) {
+        return { success: false as const, error: "Error al generar URL de subida" };
+      }
+
+      const { data: publicData } = supabase.storage.from("menu").getPublicUrl(path);
+
+      return {
+        success: true as const,
+        signedUrl: data.signedUrl,
+        publicUrl: publicData.publicUrl,
+      };
+    } catch {
+      return { success: false as const, error: "Error al subir imagen" };
     }
   });
 

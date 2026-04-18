@@ -44,6 +44,9 @@ export interface SettingsFormData {
   whatsappMicroserviceUrl: string;
   instagramUrl: string;
   logoUrl: string;
+  coverImageUrl: string;
+  branchName: string;
+  scheduleText: string;
   orderModeOnSiteEnabled: boolean;
   orderModeTakeAwayEnabled: boolean;
   orderModeDeliveryEnabled: boolean;

@@ -1,13 +1,12 @@
 "use client";
 
-import { TrendingUp, AlertTriangle, Settings } from "lucide-react";
+import { TrendingUp, AlertTriangle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { SettingsFormData, FormErrors } from "./SettingsForm.types";
-import { RestaurantLogoUpload } from "@/components/admin/settings/RestaurantLogoUpload";
 
 interface SettingsGeneralTabProps {
   form: SettingsFormData;
@@ -18,48 +17,7 @@ interface SettingsGeneralTabProps {
 export function SettingsGeneralTab({ form, updateField, errors = {} }: SettingsGeneralTabProps) {
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-300">
-      <Card className="p-6 border-none shadow-sm bg-white rounded-2xl">
-        <h3 className="text-lg font-bold text-text-main mb-6 flex items-center gap-2">
-          <Settings className="h-5 w-5 text-primary" />
-          Información del Restaurante
-        </h3>
-        <RestaurantLogoUpload
-          logoUrl={form.logoUrl}
-          onLogoChange={(url) => updateField("logoUrl", url)}
-        />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="restaurantName" className={cn(errors.restaurantName && "text-error")}>Nombre del Restaurante</Label>
-            <Input
-              id="restaurantName"
-              value={form.restaurantName}
-              onChange={(e) => updateField("restaurantName", e.target.value)}
-              placeholder="Ej. G&M Restaurante"
-              className={cn(
-                "rounded-xl border-border/60 focus-visible:ring-primary/20",
-                errors.restaurantName && "border-error focus-visible:ring-error/20"
-              )}
-            />
-            {errors.restaurantName && (
-              <p className="text-xs text-error font-medium">{errors.restaurantName}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="instagramUrl">Instagram URL / Usuario</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">@</span>
-              <Input
-                id="instagramUrl"
-                value={form.instagramUrl.replace(/^@/, "").replace(/https:\/\/instagram.com\//, "")}
-                onChange={(e) => updateField("instagramUrl", e.target.value)}
-                placeholder="usuario"
-                className="pl-7 rounded-xl border-border/60 focus-visible:ring-primary/20"
-              />
-            </div>
-          </div>
-        </div>
-      </Card>
-
+      {/* Divisas y Tasa de Cambio */}
       <Card className="p-6 border-none shadow-sm bg-white rounded-2xl">
         <h3 className="text-lg font-bold text-text-main mb-6 flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-primary" />

@@ -1,17 +1,105 @@
 import { Label } from "@/components/ui/label";
 import { RadioGroup } from "@/components/ui/radio-group";
-import { ListFilter, PanelsTopLeft, LayoutGrid } from "lucide-react";
+import { ListFilter, PanelsTopLeft, LayoutGrid, Image as LucideImage, MapPin, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { SettingsFormData } from "./SettingsForm.types";
+import { Input } from "@/components/ui/input";
+import type { SettingsFormData, FormErrors } from "./SettingsForm.types";
+import { HeroImageUpload } from "@/components/admin/settings/HeroImageUpload";
+import { RestaurantLogoUpload } from "@/components/admin/settings/RestaurantLogoUpload";
 
 interface SettingsDesignTabProps {
     form: SettingsFormData;
+    errors?: FormErrors;
     updateField: <K extends keyof SettingsFormData>(key: K, value: SettingsFormData[K]) => void;
 }
 
-export function SettingsDesignTab({ form, updateField }: SettingsDesignTabProps) {
+export function SettingsDesignTab({ form, updateField, errors = {} }: SettingsDesignTabProps) {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+            <div className="bg-white rounded-2xl p-6 md:p-8 shadow-card border border-border">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-text-main mb-1">
+                    <LucideImage className="h-5 w-5 text-primary" />
+                    Información y Cabecera del Menú
+                </h2>
+                <p className="text-text-muted text-sm mb-6">
+                    Configura la identidad de tu restaurante, enlaces sociales y el banner principal (Hero) del menú público.
+                </p>
+
+                <div className="mb-8 pb-8 border-b border-border/50">
+                    <div className="mb-6">
+                        <RestaurantLogoUpload
+                            logoUrl={form.logoUrl}
+                            onLogoChange={(url) => updateField("logoUrl", url)}
+                        />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="restaurantName" className={cn(errors.restaurantName && "text-error")}>Nombre del Restaurante</Label>
+                            <Input
+                                id="restaurantName"
+                                value={form.restaurantName}
+                                onChange={(e) => updateField("restaurantName", e.target.value)}
+                                placeholder="Ej. G&M Restaurante"
+                                className={cn(
+                                    "rounded-xl border-border/60 focus-visible:ring-primary/20",
+                                    errors.restaurantName && "border-error focus-visible:ring-error/20"
+                                )}
+                            />
+                            {errors.restaurantName && (
+                                <p className="text-xs text-error font-medium">{errors.restaurantName}</p>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="instagramUrl">Instagram URL / Usuario</Label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">@</span>
+                                <Input
+                                    id="instagramUrl"
+                                    value={form.instagramUrl.replace(/^@/, "").replace(/https:\/\/instagram.com\//, "")}
+                                    onChange={(e) => updateField("instagramUrl", e.target.value)}
+                                    placeholder="usuario"
+                                    className="pl-7 rounded-xl border-border/60 focus-visible:ring-primary/20"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <HeroImageUpload
+                    coverImageUrl={form.coverImageUrl}
+                    onImageChange={(url) => updateField("coverImageUrl", url)}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="branchName" className="flex items-center gap-1.5">
+                            <MapPin className="h-4 w-4 text-text-muted" />
+                            Sucursal / Ubicación
+                        </Label>
+                        <Input
+                            id="branchName"
+                            value={form.branchName}
+                            onChange={(e) => updateField("branchName", e.target.value)}
+                            placeholder="Ej. Sucursal Centro"
+                            className="rounded-xl border-border/60 focus-visible:ring-primary/20"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="scheduleText" className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4 text-text-muted" />
+                            Horario
+                        </Label>
+                        <Input
+                            id="scheduleText"
+                            value={form.scheduleText}
+                            onChange={(e) => updateField("scheduleText", e.target.value)}
+                            placeholder="Ej. 11:00 am - 11:00 pm"
+                            className="rounded-xl border-border/60 focus-visible:ring-primary/20"
+                        />
+                    </div>
+                </div>
+            </div>
+
             <div className="bg-white rounded-2xl p-6 md:p-8 shadow-card border border-border">
                 <div>
                     <h2 className="text-xl font-bold flex items-center gap-2 text-text-main mb-1">

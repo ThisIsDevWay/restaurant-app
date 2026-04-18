@@ -31,7 +31,7 @@ export function SettingsMessagingTab({ form, updateField, templates }: SettingsM
               placeholder="Ej. 584141234567"
               className="rounded-xl h-10"
             />
-            <p className="text-xs text-text-muted italic">Incluye el código de país sin el símbolo +</p>
+            <p className="text-xs text-text-muted italic">Incluye el código de país sin el símbolo + (ejemplo 584141234567)</p>
           </div>
           <div className="space-y-2">
             <Label className="font-bold">URL Microservicio Baileys</Label>
