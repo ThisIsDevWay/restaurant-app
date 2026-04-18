@@ -24,7 +24,7 @@ export function OptionGroupSection({
           className="border-b border-border px-4 py-3"
         >
           <div className="mb-2 flex items-center gap-2">
-            <h3 className="text-[14px] font-semibold text-text-main">
+            <h3 className="font-display text-[14px] font-semibold text-text-main">
               {group.name}
             </h3>
             <span
@@ -49,7 +49,7 @@ export function OptionGroupSection({
                   <div
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${selectedRadio[group.id] === option.id
                       ? "border-primary bg-primary"
-                      : "border-gray-400"
+                      : "border-input"
                       }`}
                   >
                     {selectedRadio[group.id] === option.id && (

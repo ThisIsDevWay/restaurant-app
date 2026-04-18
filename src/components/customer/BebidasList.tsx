@@ -23,7 +23,7 @@ export function BebidasList({
 
   return (
     <div className="border-b border-border px-4 py-3">
-      <h3 className="mb-1 text-[14px] font-semibold text-text-main">
+      <h3 className="font-display mb-1 text-[14px] font-semibold text-text-main">
         Bebidas del día
       </h3>
       <p className="mb-2 text-[11px] text-text-muted">
@@ -36,7 +36,7 @@ export function BebidasList({
           return (
             <div
               key={bebida.id}
-              className="flex items-center justify-between rounded-lg px-1 py-2"
+              className="flex items-center justify-between rounded-lg px-1 py-1.5 transition-colors active:bg-surface-section"
             >
               {/* Left: Name + price */}
               <div className="flex flex-col">

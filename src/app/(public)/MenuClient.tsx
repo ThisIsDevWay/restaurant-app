@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { MenuGrid } from "@/components/public/menu/MenuGrid";
-import { CategoryFilter } from "@/components/public/menu/CategoryFilter";
+import { MenuHeader } from "@/components/public/menu/MenuHeader";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItemWithComponents as MenuItem } from "@/types/menu.types";
 
 interface Category {
   id: string;
   name: string;
+  emoji?: string;
   allowAlone: boolean;
   isSimple: boolean;
 }
@@ -40,6 +41,18 @@ interface MenuClientProps {
   dailyBebidas: SimpleItem[];
   maxQuantityPerItem?: number;
   menuLayout?: "modern" | "classic";
+  coverImageUrl?: string | null;
+  logoUrl?: string | null;
+  restaurantName?: string;
+  branchName?: string | null;
+  scheduleText?: string | null;
+  instagramUrl?: string | null;
+  showRate?: boolean;
+  rateData?: {
+    rate: number;
+    fetchedAt: string | Date;
+    currency?: string;
+  } | null;
 }
 
 export function MenuClient({
@@ -53,6 +66,14 @@ export function MenuClient({
   dailyBebidas,
   maxQuantityPerItem = 10,
   menuLayout = "modern",
+  coverImageUrl = null,
+  logoUrl = null,
+  restaurantName = "G&M",
+  branchName = null,
+  scheduleText = null,
+  instagramUrl = null,
+  showRate = false,
+  rateData = null,
 }: MenuClientProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const recalculateBsPrices = useCartStore((s) => s.recalculateBsPrices);
@@ -75,11 +96,19 @@ export function MenuClient({
 
   return (
     <>
-      <div className="sticky top-[52px] z-20 bg-bg-app shadow-card">
-        <CategoryFilter
+      <div className="z-20 bg-bg-app shadow-card mb-4 lg:mb-6">
+        <MenuHeader
+          coverImageUrl={coverImageUrl}
+          logoUrl={logoUrl}
+          restaurantName={restaurantName}
+          branchName={branchName}
+          scheduleText={scheduleText}
           categories={categories}
-          activeCategory={activeCategory}
-          onSelect={setActiveCategory}
+          activeCategoryId={activeCategory}
+          onCategoryChange={setActiveCategory}
+          instagramUrl={instagramUrl}
+          showRate={showRate}
+          rateData={rateData}
         />
       </div>
       <MenuGrid

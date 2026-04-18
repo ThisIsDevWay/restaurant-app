@@ -105,21 +105,21 @@ export function ItemDetailModalClassic({
     return (
         <div className="fixed inset-0 z-50">
             <div
-                className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${modal.closing ? "opacity-0" : "opacity-100"
+                className={`absolute inset-0 bg-text-main/60 backdrop-blur-sm transition-opacity duration-200 ${modal.closing ? "opacity-0" : "opacity-100"
                     }`}
                 onClick={modal.handleClose}
             />
 
             <div
                 ref={modal.dialogRef}
-                className={`absolute bottom-0 left-0 right-0 flex max-h-[90vh] flex-col rounded-t-[24px] bg-white shadow-modal overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${modal.closing ? "translate-y-full" : "translate-y-0"
+                className={`absolute bottom-0 left-0 right-0 flex max-h-[90vh] flex-col rounded-t-[24px] bg-bg-card shadow-modal overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${modal.closing ? "translate-y-full" : "translate-y-0"
                     }`}
             >
                 <div className="flex-1 overflow-y-auto pb-4">
                     {/* Close button - absolute floating over image */}
                     <button
                         onClick={modal.handleClose}
-                        className="absolute right-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-text-main shadow-md backdrop-blur-md transition-colors active:bg-gray-100"
+                        className="absolute right-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-bg-card/90 text-text-main shadow-md backdrop-blur-md transition-colors active:bg-surface-section"
                         aria-label="Cerrar"
                     >
                         <X className="h-5 w-5" />
@@ -139,7 +139,7 @@ export function ItemDetailModalClassic({
                             />
                         </div>
                     ) : (
-                        <div className="relative w-full aspect-[4/3] sm:aspect-video bg-gray-50 flex items-center justify-center border-b border-border">
+                        <div className="relative w-full aspect-[4/3] sm:aspect-video bg-bg-image flex items-center justify-center border-b border-border">
                             <span className="text-6xl opacity-40">🍽️</span>
                         </div>
                     )}
@@ -147,7 +147,7 @@ export function ItemDetailModalClassic({
                     {/* Dish Information */}
                     <div className="px-5 pt-5 pb-2">
                         <h2
-                            className="font-black leading-tight text-text-main"
+                            className="font-display font-black leading-tight text-text-main"
                             style={{ fontSize: "clamp(1.4rem, 6vw, 1.7rem)" }}
                         >
                             {item.name}

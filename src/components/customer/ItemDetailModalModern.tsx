@@ -108,7 +108,7 @@ export function ItemDetailModalModern({
   return (
     <div className="fixed inset-0 z-50">
       <div
-        className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ${modal.closing ? "opacity-0" : "opacity-100"
+        className={`absolute inset-0 bg-text-main/50 transition-opacity duration-200 ${modal.closing ? "opacity-0" : "opacity-100"
           }`}
         onClick={modal.handleClose}
       />
@@ -122,11 +122,11 @@ export function ItemDetailModalModern({
           {/* Spacer to push white card down. Allows image overlay. */}
           <div className="h-36 w-full shrink-0" />
 
-          <div className="relative flex min-h-[calc(100%-7rem)] w-full flex-col rounded-t-[32px] bg-white px-4 pb-4 pt-4 shadow-modal">
+          <div className="relative flex min-h-[calc(100%-7rem)] w-full flex-col rounded-t-[32px] bg-bg-card px-4 pb-4 pt-4 shadow-modal">
             {/* Close button */}
             <button
               onClick={modal.handleClose}
-              className="absolute right-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-text-main shadow-md transition-all active:scale-95 active:bg-gray-100"
+              className="absolute right-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-bg-card/95 text-text-main shadow-md transition-all active:scale-95 active:bg-surface-section"
               aria-label="Cerrar"
             >
               <X className="h-5 w-5 stroke-[2.5]" />
@@ -150,7 +150,7 @@ export function ItemDetailModalModern({
                 />
               </div>
             ) : (
-              <div className="absolute -top-16 left-1/2 z-20 flex h-32 w-32 -translate-x-1/2 items-center justify-center rounded-[24px] border border-gray-100 bg-gray-50 shadow-md">
+              <div className="absolute -top-16 left-1/2 z-20 flex h-32 w-32 -translate-x-1/2 items-center justify-center rounded-[24px] border border-border bg-bg-image shadow-md">
                 <span className="text-4xl">🍽️</span>
               </div>
             )}
@@ -158,7 +158,7 @@ export function ItemDetailModalModern({
             {/* Title & Description & Price centered layout */}
             <div className="mt-[95px] flex flex-col items-center text-center">
               {/* Title */}
-              <h2 className="mt-3 text-[22px] font-bold leading-tight text-text-main">
+              <h2 className="mt-3 font-display text-[22px] font-bold leading-tight text-text-main">
                 {item.name}
               </h2>
 
@@ -171,10 +171,10 @@ export function ItemDetailModalModern({
 
               {/* Price */}
               <div className="mt-3">
-                <p className="text-xl font-extrabold leading-none text-price-green">
+                <p className="text-xl font-extrabold leading-none text-text-main">
                   {formatBs(itemBaseBsCents)}
                 </p>
-                <p className="mt-1 text-[13px] font-medium leading-none text-text-muted">
+                <p className="mt-1 text-[13px] font-medium leading-none text-text-muted/80">
                   {formatRef(item.priceUsdCents)}
                 </p>
               </div>

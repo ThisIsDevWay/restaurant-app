@@ -25,7 +25,7 @@ export function ModalFooter({
   totalBsCents,
 }: ModalFooterProps) {
   return (
-    <div className="shrink-0 border-t border-border bg-white px-4 py-3">
+    <div className="shrink-0 border-t border-border bg-bg-card px-4 py-3 shadow-[0_-4px_16px_rgba(37,26,7,0.04)]">
       <div className="mb-3 flex flex-col items-center justify-center gap-1.5">
         <div className="flex items-center justify-center gap-4">
           <button

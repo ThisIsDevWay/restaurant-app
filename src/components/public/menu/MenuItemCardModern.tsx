@@ -132,7 +132,7 @@ export function MenuItemCardModern({
           </h3>
 
           {description && (
-            <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-text-muted">
+            <p className="mt-1 line-clamp-3 text-[12px] leading-snug text-text-muted">
               {description}
             </p>
           )}
@@ -140,7 +140,7 @@ export function MenuItemCardModern({
 
         <div className="mt-2 flex items-end justify-between">
           <div className="flex flex-col gap-0.5">
-            <span className="text-[11px] font-bold text-text-main/80 leading-none">Bs.</span>
+            <span className="text-[12px] font-semibold text-text-main/80 leading-none">Bs.</span>
             <div className="flex items-center gap-2">
               <span
                 className="font-extrabold leading-tight text-text-main tracking-tight"

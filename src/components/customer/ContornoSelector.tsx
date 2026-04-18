@@ -30,7 +30,7 @@ export function ContornoSelector({
 
   return (
     <div className="border-b border-border px-4 py-3">
-      <h3 className="mb-1 text-[14px] font-semibold text-text-main">
+      <h3 className="font-display mb-1 text-[14px] font-semibold text-text-main">
         Contornos
       </h3>
       <p className="mb-2 text-[11px] text-text-muted">
@@ -101,16 +101,16 @@ export function ContornoSelector({
               </div>
 
               {isExpanded && (
-                <div className="ml-6 mt-1 space-y-0.5 rounded-xl border border-border/50 bg-bg-app/50 p-2 animate-in">
+                <div className="ml-6 mt-1 space-y-0.5 rounded-xl border border-border/60 bg-surface-section/60 p-2 animate-in">
                   {/* Original option */}
                   <button
                     onClick={() => onSelectSubstitute(contorno.id, null)}
-                    className="flex w-full items-center gap-3 rounded-input px-2 py-2 text-left active:bg-white"
+                    className="flex w-full items-center gap-3 rounded-input px-2 py-2 text-left active:bg-bg-card"
                   >
                     <div
                       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${!substitution
                         ? "border-primary bg-primary"
-                        : "border-gray-400"
+                        : "border-input"
                         }`}
                     >
                       {!substitution && (
@@ -137,12 +137,12 @@ export function ContornoSelector({
                       <button
                         key={sub.id}
                         onClick={() => onSelectSubstitute(contorno.id, sub.id)}
-                        className="flex w-full items-center gap-3 rounded-input px-2 py-2 text-left active:bg-white"
+                        className="flex w-full items-center gap-3 rounded-input px-2 py-2 text-left active:bg-bg-card"
                       >
                         <div
                           className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${substitution === sub.id
                             ? "border-primary bg-primary"
-                            : "border-gray-400"
+                            : "border-input"
                             }`}
                         >
                           {substitution === sub.id && (
