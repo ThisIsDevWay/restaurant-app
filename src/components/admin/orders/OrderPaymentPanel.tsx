@@ -1,12 +1,26 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { formatBs } from "@/lib/money";
-import { maskPhone, formatOrderDate, formatRate, cn } from "@/lib/utils";
+"use client";
+
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { formatOrderDate, formatRate } from "@/lib/utils";
 import { formatProvider } from "@/lib/payments/format-provider";
 import { OrderModeChip } from "./OrderModeChip";
-import { Phone, CreditCard, Hash, Calendar, Globe } from "lucide-react";
+import {
+  Phone,
+  CreditCard,
+  MapPin,
+  ExternalLink,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  TrendingUp,
+  ZoomIn,
+  X,
+} from "lucide-react";
 
+/* ─────────────────────────────────────────────
+   TYPES
+───────────────────────────────────────────── */
 type PaymentLog = {
   id: string;
   providerId: string;
@@ -24,8 +38,158 @@ type OrderData = {
   paymentReference: string | null;
   rateSnapshotBsPerUsd: string;
   orderMode: string;
+  deliveryAddress?: string | null;
+  gpsCoords?: { lat: number; lng: number; accuracy: number } | null;
+  comprobanteUrl?: string | null;
 };
 
+/* ─────────────────────────────────────────────
+   OUTCOME BADGE
+───────────────────────────────────────────── */
+function OutcomeBadge({ outcome }: { outcome: PaymentLog["outcome"] }) {
+  const config = {
+    confirmed: {
+      icon: CheckCircle2,
+      label: "Confirmado",
+      bg: "bg-emerald-50",
+      text: "text-emerald-700",
+      dot: "bg-emerald-500",
+    },
+    manual: {
+      icon: AlertCircle,
+      label: "Manual",
+      bg: "bg-amber-50",
+      text: "text-amber-700",
+      dot: "bg-amber-400",
+    },
+    rejected: {
+      icon: XCircle,
+      label: "Rechazado",
+      bg: "bg-red-50",
+      text: "text-red-600",
+      dot: "bg-red-500",
+    },
+  }[outcome];
+
+  const Icon = config.icon;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase",
+        config.bg,
+        config.text
+      )}
+    >
+      <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", config.dot)} />
+      <Icon className="w-3 h-3" />
+      {config.label}
+    </span>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   COMPROBANTE LIGHTBOX
+───────────────────────────────────────────── */
+function ComprobanteLightbox({
+  url,
+  onClose,
+}: {
+  url: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-w-2xl w-full max-h-[90vh] rounded-2xl overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt="Comprobante de pago"
+          className="w-full h-full object-contain bg-white"
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   DATA ROW
+───────────────────────────────────────────── */
+function DataRow({
+  label,
+  value,
+  accent,
+  mono,
+}: {
+  label: string;
+  value: React.ReactNode;
+  accent?: boolean;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 py-2.5 border-b border-[#fff2e2] last:border-0">
+      <dt className="text-[11px] font-medium text-[#9e8e7e] shrink-0 mt-0.5 uppercase tracking-wide">
+        {label}
+      </dt>
+      <dd
+        className={cn(
+          "text-right",
+          accent
+            ? "text-[#bb0005] font-bold text-sm font-mono"
+            : mono
+            ? "text-xs font-mono font-semibold text-[#251a07]"
+            : "text-sm font-semibold text-[#251a07]"
+        )}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   SECTION LABEL
+───────────────────────────────────────────── */
+function SectionLabel({
+  children,
+  icon: Icon,
+}: {
+  children: React.ReactNode;
+  icon?: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      {Icon && (
+        <span className="w-5 h-5 rounded-md bg-[#bb0005]/10 flex items-center justify-center shrink-0">
+          <Icon className="w-2.5 h-2.5 text-[#bb0005]" />
+        </span>
+      )}
+      <span
+        className="text-[10px] font-black uppercase tracking-[0.15em] text-[#bb0005]"
+        style={{ fontFamily: "'Epilogue', sans-serif" }}
+      >
+        {children}
+      </span>
+      <span className="flex-1 h-px bg-gradient-to-r from-[#bb0005]/20 to-transparent" />
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────────── */
 export function OrderPaymentPanel({
   order,
   latestLog,
@@ -33,115 +197,236 @@ export function OrderPaymentPanel({
   order: OrderData;
   latestLog: PaymentLog | null;
 }) {
-  return (
-    <Card className="ring-1 ring-border shadow-sm rounded-2xl overflow-hidden sticky top-4">
-      <CardContent className="p-0">
-        {/* Header Section - Order Mode */}
-        <div className="bg-slate-50/50 p-5 border-b border-border">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-3">
-            Tipo de Entrega
-          </h3>
-          <OrderModeChip mode={order.orderMode} className="py-1 px-3 text-xs" />
-        </div>
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
-        <div className="p-5 space-y-6">
-          {/* Client Section */}
-          <section className="space-y-3">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-text-muted">
-              <Phone className="h-3 w-3" />
-              <span>Cliente</span>
-            </div>
-            <div className="flex items-center justify-between bg-muted/30 p-3 rounded-xl border border-border/50">
-              <span className="text-sm font-mono font-bold text-text-main">
+  const mapsUrl = order.gpsCoords
+    ? `https://maps.google.com/?q=${order.gpsCoords.lat},${order.gpsCoords.lng}`
+    : null;
+
+  return (
+    <>
+      {/* ── LIGHTBOX ── */}
+      {lightboxOpen && order.comprobanteUrl && (
+        <ComprobanteLightbox
+          url={order.comprobanteUrl}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+
+      {/*
+       * CARD CONTAINER
+       * Heritage Editorial: no border lines, depth through tonal layering.
+       * Surface sits on surface-container-low via ambient shadow only.
+       */}
+      <div
+        className="sticky top-4 rounded-2xl overflow-hidden"
+        style={{
+          background: "#ffffff",
+          boxShadow:
+            "0 8px 32px rgba(37,26,7,0.06), 0 2px 8px rgba(37,26,7,0.04)",
+        }}
+      >
+
+        {/* ── HERO HEADER: Heritage Red ── */}
+        <div
+          className="relative px-5 py-5 overflow-hidden"
+          style={{
+            background: "linear-gradient(160deg, #bb0005 0%, #e2231a 100%)",
+          }}
+        >
+          {/* Decorative grain texture */}
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+            }}
+          />
+
+          {/* Decorative circle */}
+          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/5" />
+          <div className="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-black/10" />
+
+          <div className="relative z-10">
+            {/* Mode chip */}
+            <OrderModeChip
+              mode={order.orderMode}
+              className="py-1 px-3 text-[10px] font-bold bg-white/20 text-white border-white/30 backdrop-blur-sm mb-3"
+            />
+
+            {/* Phone number — hero typography */}
+            <p
+              className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-0.5"
+              style={{ fontFamily: "'Epilogue', sans-serif" }}
+            >
+              Cliente
+            </p>
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="text-white font-black tracking-tight leading-none"
+                style={{
+                  fontFamily: "'Epilogue', sans-serif",
+                  fontSize: "clamp(1.1rem, 3vw, 1.35rem)",
+                }}
+              >
                 {order.customerPhone}
               </span>
               <a
                 href={`tel:${order.customerPhone}`}
-                className="text-[10px] bg-white border border-border px-2 py-1 rounded-md font-bold hover:bg-slate-50 transition-colors"
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-[10px] font-bold tracking-wider uppercase transition-all hover:scale-105 active:scale-95 backdrop-blur-sm border border-white/20"
               >
+                <Phone className="w-3 h-3" />
                 Llamar
               </a>
             </div>
-          </section>
+          </div>
+        </div>
 
-          <Separator className="opacity-50" />
+        {/* ── GPS + ADDRESS STRIP ── */}
+        {(mapsUrl || order.deliveryAddress) && (
+          <div
+            className="px-5 py-4 space-y-3"
+            style={{ background: "#fff8f3" }}
+          >
+            {mapsUrl && (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#bb0005] transition-all duration-300 hover:shadow-md active:scale-[0.98]"
+                style={{
+                  boxShadow: "0 1px 4px rgba(37,26,7,0.06)",
+                }}
+              >
+                <span className="w-7 h-7 rounded-lg bg-[#bb0005]/10 group-hover:bg-white/20 flex items-center justify-center transition-colors shrink-0">
+                  <MapPin className="w-3.5 h-3.5 text-[#bb0005] group-hover:text-white transition-colors" />
+                </span>
+                <span className="flex-1 text-xs font-bold text-[#251a07] group-hover:text-white transition-colors">
+                  Ver ubicación GPS
+                </span>
+                <ExternalLink className="w-3 h-3 text-[#9e8e7e] group-hover:text-white/70 transition-colors" />
+              </a>
+            )}
 
-          {/* Payment Section */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-text-muted">
-              <CreditCard className="h-3 w-3" />
-              <span>Información de Pago</span>
-            </div>
-
-            <dl className="space-y-3">
-              <div className="flex items-center justify-between">
-                <dt className="text-xs text-text-muted flex items-center gap-1.5">
-                  Método
-                </dt>
-                <dd className="text-sm font-bold text-text-main">
-                  {formatProvider(order.paymentProvider)}
-                </dd>
+            {order.deliveryAddress && (
+              <div className="px-3.5 py-3 rounded-xl bg-white"
+                style={{ boxShadow: "0 1px 4px rgba(37,26,7,0.06)" }}
+              >
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#9e8e7e] mb-1.5"
+                  style={{ fontFamily: "'Epilogue', sans-serif" }}>
+                  Dirección de entrega
+                </p>
+                <p className="text-xs text-[#251a07] leading-relaxed font-medium">
+                  {order.deliveryAddress}
+                </p>
               </div>
+            )}
+          </div>
+        )}
 
-              {order.paymentReference && (
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs text-text-muted flex items-center gap-1.5">
-                    Referencia
-                  </dt>
-                  <dd className="text-sm font-mono font-bold text-primary">
-                    {order.paymentReference}
-                  </dd>
-                </div>
-              )}
+        {/* ── COMPROBANTE ── */}
+        {order.comprobanteUrl && (
+          <div
+            className="px-5 pb-4"
+            style={{ background: mapsUrl || order.deliveryAddress ? "#fff8f3" : "#fff8f3" }}
+          >
+            <SectionLabel>Comprobante de Pago</SectionLabel>
+            <button
+              onClick={() => setLightboxOpen(true)}
+              className="group relative w-full rounded-2xl overflow-hidden cursor-zoom-in transition-all duration-300 hover:shadow-lg active:scale-[0.98]"
+              style={{
+                aspectRatio: "16/9",
+                boxShadow: "0 2px 12px rgba(37,26,7,0.1)",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={order.comprobanteUrl}
+                alt="Comprobante de pago"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/90 backdrop-blur-sm text-[11px] font-black uppercase tracking-wider text-[#251a07] shadow-lg"
+                  style={{ fontFamily: "'Epilogue', sans-serif" }}>
+                  <ZoomIn className="w-3.5 h-3.5" />
+                  Ampliar
+                </span>
+              </div>
+            </button>
+          </div>
+        )}
 
-              {latestLog && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs text-text-muted">Estado Red</dt>
-                    <dd>
-                      <Badge
-                        className={cn(
-                          "rounded-lg px-2 py-0 border-none font-bold text-[10px] uppercase",
-                          latestLog.outcome === "confirmed"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : latestLog.outcome === "manual"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-red-100 text-red-700"
-                        )}
-                      >
-                        {latestLog.outcome === "confirmed"
-                          ? "Confirmado"
-                          : latestLog.outcome === "manual"
-                            ? "Manual"
-                            : "Rechazado"}
-                      </Badge>
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-xs text-text-muted">Confirmado en</dt>
-                    <dd className="text-[11px] font-medium text-text-main">
+        {/* ── PAYMENT INFO ── */}
+        <div className="px-5 pt-5 pb-4" style={{ background: "#ffffff" }}>
+          <SectionLabel icon={CreditCard}>Información de Pago</SectionLabel>
+
+          <dl className="divide-y-0">
+            <DataRow
+              label="Método"
+              value={formatProvider(order.paymentProvider)}
+            />
+            {order.paymentReference && (
+              <DataRow
+                label="Referencia"
+                value={order.paymentReference}
+                accent
+                mono
+              />
+            )}
+            {latestLog && (
+              <>
+                <DataRow
+                  label="Estado red"
+                  value={<OutcomeBadge outcome={latestLog.outcome} />}
+                />
+                <DataRow
+                  label="Verificado"
+                  value={
+                    <span className="text-[11px] text-[#9e8e7e]">
                       {formatOrderDate(latestLog.createdAt)}
-                    </dd>
-                  </div>
-                </>
-              )}
-            </dl>
-          </section>
+                    </span>
+                  }
+                />
+              </>
+            )}
+          </dl>
+        </div>
 
-          {/* Exchange Rate Section */}
-          {order.rateSnapshotBsPerUsd && (
-            <div className="bg-slate-50 rounded-xl p-3 border border-border/50 flex items-center justify-between mt-2">
-              <div className="flex items-center gap-2 text-xs text-text-muted">
-                <Globe className="h-3 w-3" />
-                <span className="font-medium">Tasa BCV</span>
-              </div>
-              <span className="text-xs font-bold text-text-main">
-                Bs. {formatRate(order.rateSnapshotBsPerUsd)}
+        {/* ── EXCHANGE RATE FOOTER ── */}
+        {order.rateSnapshotBsPerUsd && (
+          <div
+            className="mx-4 mb-4 px-4 py-3 rounded-xl flex items-center justify-between"
+            style={{
+              background: "linear-gradient(135deg, #fff2e2 0%, #fff8f3 100%)",
+            }}
+          >
+            <div className="flex items-center gap-2.5">
+              <span
+                className="w-6 h-6 rounded-lg flex items-center justify-center"
+                style={{ background: "#bb0005" }}
+              >
+                <TrendingUp className="w-3 h-3 text-white" />
+              </span>
+              <span
+                className="text-[10px] font-black uppercase tracking-widest text-[#9e8e7e]"
+                style={{ fontFamily: "'Epilogue', sans-serif" }}
+              >
+                Tasa BCV
               </span>
             </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            <span
+              className="text-sm font-black text-[#251a07]"
+              style={{ fontFamily: "'Epilogue', sans-serif" }}
+            >
+              Bs.{" "}
+              <span className="text-[#bb0005]">
+                {formatRate(order.rateSnapshotBsPerUsd)}
+              </span>
+            </span>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

@@ -91,7 +91,7 @@ export function OrderItemsTable({
                           {item.name}
                         </div>
                         <div className="text-xs font-medium text-text-muted mt-0.5 flex items-center gap-1.5 opacity-80">
-                          {formatBs(item.priceBsCents)} / {formatRef(item.priceUsdCents)} c/u
+                          {formatBs(item.priceBsCents)} / {formatRef(item.priceUsdCents)}
                         </div>
                       </div>
                     </div>
