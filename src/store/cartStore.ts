@@ -137,7 +137,7 @@ function computeItemUsdCents(
     (sum, r) => sum + r.priceUsdCents,
     0,
   );
-  return (item.baseUsdCents + fixedContornosUsd + substitutionsUsd + removalsUsd) * quantity + adicionalesUsd + bebidasUsd;
+  return (item.baseUsdCents + fixedContornosUsd + substitutionsUsd - removalsUsd) * quantity + adicionalesUsd + bebidasUsd;
 }
 
 export const useCartStore = create<CartState>()(

@@ -55,7 +55,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                 (c) => c.id === removal.componentId && c.removable
             );
             if (validContorno) {
-                removalAdjustmentUsdCents -= validContorno.priceUsdCents;
+                removalAdjustmentUsdCents += validContorno.priceUsdCents;
                 validatedRemovals.push({
                     isRemoval: true as const,
                     componentId: validContorno.id,

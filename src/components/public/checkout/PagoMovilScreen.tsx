@@ -92,56 +92,36 @@ export function PagoMovilScreen({
 
     return (
         <div className="flex flex-col h-full bg-[#FAF5F2]">
-            {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center gap-4 bg-[#FAF5F2]/80 backdrop-blur-xl px-6 py-5 border-b border-[#7B2D2D]/10">
-                <button
-                    type="button"
-                    onClick={onVolver}
-                    className="w-10 h-10 rounded-full bg-white border border-border/40 flex items-center justify-center cursor-pointer active:scale-90 transition-all shadow-sm"
-                    aria-label="Volver"
-                >
-                    <ChevronLeft className="w-5 h-5 text-[#251a07]" strokeWidth={2.5} />
-                </button>
-                <h1 className="text-[22px] font-display font-black text-[#251a07] tracking-tight">
-                    Pago Móvil
-                </h1>
-            </div>
-
-            <div className="px-5 pb-52 pt-6 max-w-md mx-auto w-full">
+        <div className="px-5 pb-52 pt-10 max-w-md mx-auto w-full">
                 {finalizado ? (
-                    <div className="bg-white rounded-[32px] p-8 text-center shadow-xl border border-[#7B2D2D]/5 animate-in fade-in zoom-in duration-500">
-                        <div className="w-20 h-20 bg-[#2A7A4A]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Check className="w-10 h-10 text-[#2A7A4A]" strokeWidth={3} />
+                    <div className="flex flex-col items-center justify-center py-12 animate-in fade-in zoom-in duration-700">
+                        <div className="w-24 h-24 bg-[#2A7A4A]/10 rounded-full flex items-center justify-center mb-8">
+                            <Check className="w-12 h-12 text-[#2A7A4A]" strokeWidth={3} />
                         </div>
-                        <h2 className="text-[24px] font-display font-black text-[#251a07] mb-3">
-                            ¡Pedido Notificado!
+                        
+                        <h2 className="text-[28px] font-display font-black text-[#251a07] mb-4 text-center leading-tight">
+                            ¡Orden Notificada!
                         </h2>
-                        <p className="text-[14px] text-text-muted font-medium leading-relaxed mb-8">
-                            Tu comprobante ha sido procesado. Estamos abriendo WhatsApp para que finalices el envío.
+                        
+                        <p className="text-[15px] text-text-muted font-medium leading-relaxed mb-12 text-center max-w-[280px]">
+                            Tu comprobante fue procesado con éxito. Ahora abre WhatsApp para finalizar el envío de tu pedido.
                         </p>
 
-                        <div className="space-y-4">
+                        <div className="w-full space-y-4">
                             <button
                                 onClick={() => window.open(finalLink, "_blank", "noopener,noreferrer")}
-                                className="w-full h-16 bg-[#25D366] text-white rounded-[22px] text-[15px] font-display font-black shadow-lg shadow-green-500/20 active:scale-[0.97] transition-all flex items-center justify-center gap-3"
+                                className="w-full h-18 bg-[#25D366] text-white rounded-[24px] text-[16px] font-display font-black shadow-xl shadow-green-500/20 active:scale-[0.97] transition-all flex items-center justify-center gap-3"
                             >
                                 <ExternalLink className="w-5 h-5" />
-                                Reintentar WhatsApp
+                                Abrir WhatsApp
                             </button>
                             
                             <button
-                                onClick={() => setFinalizado(false)}
-                                className="w-full h-14 bg-white border-2 border-[#7B2D2D]/10 text-[#7B2D2D] rounded-[22px] text-[14px] font-display font-black active:bg-surface-section transition-all flex items-center justify-center gap-2"
-                            >
-                                Ver datos de pago nuevamente
-                            </button>
-
-                            <button
                                 onClick={handleConfirmarSalida}
-                                className="w-full h-14 bg-[#FAF5F2] text-[#251a07]/60 rounded-[22px] text-[13px] font-black active:scale-[0.97] transition-all flex items-center justify-center gap-2 mt-4"
+                                className="w-full h-12 text-[#251a07]/50 rounded-xl text-[13px] font-display font-black active:opacity-70 transition-all flex items-center justify-center gap-2"
                             >
                                 <Home className="w-4 h-4" />
-                                Finalizar y salir al menú
+                                Volver al menú
                             </button>
                         </div>
                     </div>
@@ -242,11 +222,11 @@ export function PagoMovilScreen({
             </div>
 
             {/* ✅ Sticky Footer */}
-            <div className="fixed bottom-0 left-0 right-0 z-40">
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-xl border-t border-[#7B2D2D]/10" />
-                
-                <div className="relative max-w-md mx-auto px-6 pt-5 pb-10">
-                    {!finalizado && (
+            {!finalizado && (
+                <div className="fixed bottom-0 left-0 right-0 z-40">
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-xl border-t border-[#7B2D2D]/10" />
+                    
+                    <div className="relative max-w-md mx-auto px-6 pt-5 pb-10">
                         <div className="flex items-center justify-between px-2 mb-6">
                             <Step number={1} label="Pagar" active={!comprobante} completed={!!comprobante} />
                             <div className={cn("h-[2px] flex-1 mx-4 rounded-full transition-all duration-700", comprobante ? 'bg-[#2A7A4A]' : 'bg-border/30')} />
@@ -254,33 +234,7 @@ export function PagoMovilScreen({
                             <div className={cn("h-[2px] flex-1 mx-4 rounded-full transition-all duration-700", isReady ? 'bg-[#2A7A4A]' : 'bg-border/30')} />
                             <Step number={3} label="Listo" active={isReady} completed={finalizado} />
                         </div>
-                    )}
 
-                    {finalizado ? (
-                        <div className="flex flex-col gap-5 animate-in slide-in-from-bottom-6 duration-700">
-                            <div className="text-center mb-2">
-                                <div className="w-16 h-16 bg-[#2A7A4A]/10 text-[#2A7A4A] rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Check className="w-8 h-8" strokeWidth={4} />
-                                </div>
-                                <h3 className="text-[20px] font-display font-black text-[#251a07]">¡Orden enviada!</h3>
-                                <p className="text-[13px] text-text-muted font-bold mt-1 opacity-70">Estamos abriendo WhatsApp por ti...</p>
-                            </div>
-                            <div className="flex gap-4">
-                                <button
-                                    onClick={() => window.open(finalLink, "_blank", "noopener,noreferrer")}
-                                    className="flex-1 h-14 bg-[#25D366] text-white font-display font-black rounded-2xl flex justify-center items-center gap-3 active:scale-95 transition-all shadow-lg"
-                                >
-                                    <ExternalLink className="w-5 h-5" strokeWidth={2.5} /> Abrir WhatsApp
-                                </button>
-                                <button
-                                    onClick={handleCopyLink}
-                                    className="h-14 w-14 bg-white text-[#251a07] font-black rounded-2xl flex justify-center items-center border border-border/60 shadow-sm"
-                                >
-                                    {copiedLink ? <Check className="w-5 h-5 text-[#2A7A4A]" strokeWidth={3} /> : <LinkIcon className="w-5 h-5" />}
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
                         <button
                             onClick={handleFinalizar}
                             disabled={!isReady || comprobante?.isUploading}
@@ -310,9 +264,9 @@ export function PagoMovilScreen({
                                 )}
                             </span>
                         </button>
-                    )}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
