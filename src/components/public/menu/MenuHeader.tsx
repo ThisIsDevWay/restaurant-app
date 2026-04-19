@@ -132,10 +132,10 @@ export function MenuHeader({
             >
                 {/* Background with Ken Burns effect */}
                 {coverImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                         src={coverImageUrl}
                         alt={restaurantName}
-                        // eslint-disable-next-line @next/next/no-img-element
                         className="mh-ken-burns"
                         style={{
                             position: "absolute",

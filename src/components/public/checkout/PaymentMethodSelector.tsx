@@ -223,7 +223,7 @@ export function PaymentMethodSelector({
             <div className="grid gap-4">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-display font-black text-text-muted uppercase tracking-widest px-1">
-                  Nombre completo
+                  Nombre y Apellido
                 </label>
                 <input
                   id="name-input"

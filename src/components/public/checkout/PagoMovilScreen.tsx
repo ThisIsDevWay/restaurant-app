@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Copy, Check, Loader2, Link as LinkIcon, ExternalLink, User } from "lucide-react";
+import { ChevronLeft, Copy, Check, Loader2, Link as LinkIcon, ExternalLink, User, Home } from "lucide-react";
 import type { GpsCoords } from "./CheckoutForm.types";
 import { useComprobanteUpload } from "@/hooks/useComprobanteUpload";
 import { ComprobanteUpload } from "./ComprobanteUpload";
@@ -25,7 +25,7 @@ interface PagoMovilScreenProps {
     serverPrefilledMessage: string;
     serverWaLink: string;
     gpsCoords: GpsCoords | null;
-    orderExpirationMinutes?: number;
+    deliveryAddress: string;
     onVolver: () => void;
 }
 
@@ -37,16 +37,22 @@ export function PagoMovilScreen({
     serverPrefilledMessage,
     serverWaLink,
     gpsCoords,
-    orderExpirationMinutes,
+    deliveryAddress,
     onVolver,
 }: PagoMovilScreenProps) {
     const router = useRouter();
     const clearCart = useCartStore((s) => s.clearCart);
 
+    // ✅ Forzar scroll al inicio cuando se monta la pantalla de pago
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     const { comprobante, isReady, fileInputRef, isDragging, handleFileSelect, handleDrop, handleDragOver, handleDragLeave, retryUpload, clearComprobante } = useComprobanteUpload({ orderId });
 
     const [finalizado, setFinalizado] = useState(false);
     const [copiedLink, setCopiedLink] = useState(false);
+    const [montoCopiado, setMontoCopiado] = useState(false);
 
     // Derived final link (if ready)
     let finalLink = "";
@@ -55,6 +61,7 @@ export function PagoMovilScreen({
             serverMessage: serverPrefilledMessage,
             comprobanteUrl: comprobante.uploadedUrl,
             gpsCoords,
+            deliveryAddress,
         });
         finalLink = buildFinalWaLink(serverWaLink, finalMessage);
     }
@@ -62,13 +69,18 @@ export function PagoMovilScreen({
     const handleFinalizar = () => {
         if (!isReady || !finalLink) return;
 
+        // Intentar abrir WhatsApp
         window.open(finalLink, "_blank", "noopener,noreferrer");
+        
+        // Cambiar a estado finalizado para mostrar confirmación y opción de reintento
         setFinalizado(true);
+        
+        // NO vaciamos el carrito ni redirigimos automáticamente
+    };
 
-        setTimeout(() => {
-            clearCart();
-            router.push("/");
-        }, 2000);
+    const handleConfirmarSalida = () => {
+        clearCart();
+        router.push("/");
     };
 
     const handleCopyLink = () => {
@@ -96,36 +108,90 @@ export function PagoMovilScreen({
             </div>
 
             <div className="px-5 pb-52 pt-6 max-w-md mx-auto w-full">
-                {/* ✅ Context Banner */}
-                {orderExpirationMinutes && (
-                    <div className="mb-8 bg-amber-50 border border-amber-200/50 rounded-[22px] p-5 flex items-start gap-4 animate-in fade-in slide-in-from-top-2 shadow-sm">
-                        <span className="text-[20px] mt-0.5">⏱</span>
-                        <p className="text-[13px] text-amber-900 font-bold leading-snug">
-                            Tu orden está reservada. El monto se recalcula en <span className="underline decoration-amber-500/30 underline-offset-4">{orderExpirationMinutes} min</span> si cambia la tasa BCV.
+                {finalizado ? (
+                    <div className="bg-white rounded-[32px] p-8 text-center shadow-xl border border-[#7B2D2D]/5 animate-in fade-in zoom-in duration-500">
+                        <div className="w-20 h-20 bg-[#2A7A4A]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Check className="w-10 h-10 text-[#2A7A4A]" strokeWidth={3} />
+                        </div>
+                        <h2 className="text-[24px] font-display font-black text-[#251a07] mb-3">
+                            ¡Pedido Notificado!
+                        </h2>
+                        <p className="text-[14px] text-text-muted font-medium leading-relaxed mb-8">
+                            Tu comprobante ha sido procesado. Estamos abriendo WhatsApp para que finalices el envío.
                         </p>
-                    </div>
-                )}
 
-                {/* Card Datos */}
+                        <div className="space-y-4">
+                            <button
+                                onClick={() => window.open(finalLink, "_blank", "noopener,noreferrer")}
+                                className="w-full h-16 bg-[#25D366] text-white rounded-[22px] text-[15px] font-display font-black shadow-lg shadow-green-500/20 active:scale-[0.97] transition-all flex items-center justify-center gap-3"
+                            >
+                                <ExternalLink className="w-5 h-5" />
+                                Reintentar WhatsApp
+                            </button>
+                            
+                            <button
+                                onClick={() => setFinalizado(false)}
+                                className="w-full h-14 bg-white border-2 border-[#7B2D2D]/10 text-[#7B2D2D] rounded-[22px] text-[14px] font-display font-black active:bg-surface-section transition-all flex items-center justify-center gap-2"
+                            >
+                                Ver datos de pago nuevamente
+                            </button>
+
+                            <button
+                                onClick={handleConfirmarSalida}
+                                className="w-full h-14 bg-[#FAF5F2] text-[#251a07]/60 rounded-[22px] text-[13px] font-black active:scale-[0.97] transition-all flex items-center justify-center gap-2 mt-4"
+                            >
+                                <Home className="w-4 h-4" />
+                                Finalizar y salir al menú
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* Card Datos */}
                 <div className="bg-white rounded-[32px] overflow-hidden mb-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#7B2D2D]/5">
                     <div className="bg-[#FAF5F2]/50 px-6 py-5 border-b border-border/30">
                         <h2 className="text-[11px] font-display font-black tracking-[0.2em] text-text-muted uppercase flex items-center gap-2.5">
                             <span className="w-2 h-2 rounded-full bg-[#7B2D2D]" />
-                            Datos del Comercio
+                            Datos de Pago Móvil
                         </h2>
                     </div>
 
                     <div className="p-7 space-y-8">
-                        {/* ✅ Monto Hero - POSTER STYLE - Fluid Typography */}
-                        <div className="text-center mb-4">
-                            <div className="text-[10px] sm:text-[11px] font-display font-black tracking-[0.15em] text-text-muted uppercase mb-3 opacity-60">
-                                Total a transferir
+                        {/* ✅ Monto Hero - COPIABLE */}
+                        <div 
+                            className="text-center mb-4 cursor-pointer group relative"
+                            onClick={() => {
+                                const rawAmount = (totalBsCents / 100).toFixed(2).replace('.', ',');
+                                navigator.clipboard.writeText(rawAmount);
+                                setMontoCopiado(true);
+                                setTimeout(() => setMontoCopiado(false), 2000);
+                            }}
+                        >
+                            <div className="flex justify-center mb-3">
+                                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#7B2D2D]/5 rounded-full border border-[#7B2D2D]/10">
+                                    <Copy className="w-3 h-3 text-[#7B2D2D]" />
+                                    <span className="text-[10px] font-display font-black tracking-[0.1em] text-[#7B2D2D] uppercase">
+                                        Toca para copiar monto
+                                    </span>
+                                </div>
                             </div>
-                            <div className="text-[clamp(32px,10vw,42px)] font-display font-black tracking-tighter text-[#7B2D2D] leading-none mb-4 break-words">
-                                {formatBs(totalBsCents)}
+                            
+                            <div className="relative inline-block px-4">
+                                <div className="text-[clamp(32px,10vw,42px)] font-display font-black tracking-tighter text-[#7B2D2D] leading-none mb-4 break-words transition-transform group-active:scale-95 flex items-center justify-center gap-2">
+                                    {formatBs(totalBsCents)}
+                                </div>
+                                {montoCopiado && (
+                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#2A7A4A] text-white text-[10px] font-black px-3 py-1.5 rounded-full animate-in fade-in zoom-in slide-in-from-bottom-2 shadow-lg z-10 flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                        ¡Monto Copiado!
+                                    </div>
+                                )}
                             </div>
-                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FAF5F2] rounded-full text-[12px] sm:text-[13px] font-black text-[#251a07]/60 shadow-inner">
-                                <span className="opacity-40 tracking-wider text-[10px] font-black">REF</span> {formatRef(totalUsdCents)}
+
+                            <div className="flex justify-center">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FAF5F2] rounded-full text-[12px] sm:text-[13px] font-black text-[#251a07]/60 shadow-inner">
+                                    <span className="opacity-40 tracking-wider text-[10px] font-black">REF</span> {formatRef(totalUsdCents)}
+                                </div>
                             </div>
                         </div>
 
@@ -171,6 +237,8 @@ export function PagoMovilScreen({
                     <span className="text-[20px] shrink-0 opacity-80 mt-[-2px]">✍️</span>
                     <span>El restaurante verificará el pago antes de procesar tu pedido. Asegúrate de que la captura sea legible para evitar retrasos.</span>
                 </div>
+                    </>
+                )}
             </div>
 
             {/* ✅ Sticky Footer */}
@@ -202,7 +270,7 @@ export function PagoMovilScreen({
                                     onClick={() => window.open(finalLink, "_blank", "noopener,noreferrer")}
                                     className="flex-1 h-14 bg-[#25D366] text-white font-display font-black rounded-2xl flex justify-center items-center gap-3 active:scale-95 transition-all shadow-lg"
                                 >
-                                    <ExternalLink className="w-5 h-5" strokeWidth={2.5} /> WhatsApp
+                                    <ExternalLink className="w-5 h-5" strokeWidth={2.5} /> Abrir WhatsApp
                                 </button>
                                 <button
                                     onClick={handleCopyLink}
@@ -297,7 +365,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
                 )}>
                     {value}
                 </span>
-                <div className={cn("shrink-0 transition-colors", copied ? 'text-[#2A7A4A]' : 'text-[#251a07]/10')}>
+                <div className={cn("shrink-0 transition-colors", copied ? 'text-[#2A7A4A]' : 'text-[#7B2D2D]/50 group-hover:text-[#7B2D2D]')}>
                     {copied ? <Check className="w-4 h-4" strokeWidth={3} /> : <Copy className="w-4 h-4" />}
                 </div>
             </div>

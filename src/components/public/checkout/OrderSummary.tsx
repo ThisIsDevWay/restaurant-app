@@ -93,7 +93,7 @@ export function OrderSummary({
                     {item.quantity}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[14px] font-display font-black text-text-main leading-tight truncate">
+                    <div className="text-[14px] font-display font-black text-text-main leading-tight break-words">
                       {item.name}
                     </div>
                     <div className="text-[11px] font-bold text-text-muted/60 mt-1 uppercase tracking-wider">
@@ -249,11 +249,11 @@ export function OrderSummary({
             <div className="space-y-1.5 pt-3 border-t border-border/20">
               <div className="flex justify-between text-[11px] font-bold text-text-muted uppercase tracking-wider">
                 <span>Base imponible</span>
-                <span>{formatBs(Math.round(grandTotalBsCents / 1.16))}</span>
+                <span>{formatBs(Math.round(totalBsCents / 1.16))}</span>
               </div>
               <div className="flex justify-between text-[11px] font-bold text-text-muted uppercase tracking-wider">
                 <span>IVA incluido (16%)</span>
-                <span>{formatBs(grandTotalBsCents - Math.round(grandTotalBsCents / 1.16))}</span>
+                <span>{formatBs(totalBsCents - Math.round(totalBsCents / 1.16))}</span>
               </div>
             </div>
 

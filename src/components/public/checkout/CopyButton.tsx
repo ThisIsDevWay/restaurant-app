@@ -42,7 +42,7 @@ export function CopyButton({ value, successDurationMs = 2000, className }: CopyB
         <button
             type="button"
             onClick={handleCopy}
-            className={`flex h-9 w-9 items-center justify-center rounded-input transition-colors ${copied ? "bg-success/10 text-success" : "bg-bg-image text-text-muted"
+            className={`flex h-9 w-9 items-center justify-center rounded-input transition-colors ${copied ? "bg-success/10 text-success" : "bg-[#7B2D2D]/5 text-[#7B2D2D]/60 hover:text-[#7B2D2D] hover:bg-[#7B2D2D]/10"
                 } ${className ?? ""}`}
             aria-label="Copiar"
         >
