@@ -336,7 +336,7 @@ export function OrderPaymentPanel({
               onClick={() => setLightboxOpen(true)}
               className="group relative w-full rounded-2xl overflow-hidden cursor-zoom-in transition-all duration-300 hover:shadow-lg active:scale-[0.98]"
               style={{
-                aspectRatio: "16/9",
+                background: "#f5f0ea",
                 boxShadow: "0 2px 12px rgba(37,26,7,0.1)",
               }}
             >
@@ -344,10 +344,11 @@ export function OrderPaymentPanel({
               <img
                 src={order.comprobanteUrl}
                 alt="Comprobante de pago"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-auto block object-contain transition-transform duration-500 group-hover:scale-[1.02]"
+                style={{ maxHeight: "70vh" }}
               />
               {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/90 backdrop-blur-sm text-[11px] font-black uppercase tracking-wider text-[#251a07] shadow-lg"
                   style={{ fontFamily: "'Epilogue', sans-serif" }}>
