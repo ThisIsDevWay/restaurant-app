@@ -100,25 +100,27 @@ function ComprobanteLightbox({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-end p-4 bg-black/40"
       onClick={onClose}
     >
       <div
-        className="relative max-w-2xl w-full max-h-[90vh] rounded-2xl overflow-hidden shadow-2xl"
+        className="relative h-[92vh] max-w-xl w-full rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.3)] bg-white animate-in slide-in-from-right duration-500 ease-out"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors"
+          className="absolute top-5 right-5 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition-all active:scale-90"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={url}
-          alt="Comprobante de pago"
-          className="w-full h-full object-contain bg-white"
-        />
+        <div className="w-full h-full p-8 flex items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt="Comprobante de pago"
+            className="block w-auto h-auto max-w-full max-h-full object-contain"
+          />
+        </div>
       </div>
     </div>
   );
