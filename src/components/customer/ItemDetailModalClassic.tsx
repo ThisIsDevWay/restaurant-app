@@ -79,7 +79,7 @@ export function ItemDetailModalClassic({
             emoji,
             fixedContornos: cart.cartFixedContornos,
             contornoSubstitutions: cart.cartContornoSubstitutions,
-            selectedAdicionales: cart.cartAdicionales,
+            selectedAdicionales: [...cart.cartAdicionales, ...cart.cartRadioOptions],
             selectedBebidas: cart.cartBebidas,
             removedComponents: [],
             categoryAllowAlone: item.categoryAllowAlone,

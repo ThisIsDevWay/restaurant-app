@@ -39,6 +39,7 @@ interface UseCartCalculationReturn {
   cartContornoSubstitutions: ContornoSubstitution[];
   cartAdicionales: CartItemResult[];
   cartBebidas: CartItemResult[];
+  cartRadioOptions: CartItemResult[];
   totalUsdCents: number;
   totalBsCents: number;
   extrasCount: number;
@@ -156,6 +157,24 @@ export function useCartCalculation({
     }
     return result;
   }, [selectedBebidaQtys, dailyBebidas, item.bebidas, currentRateBsPerUsd]);
+ 
+  const cartRadioOptions = useMemo<CartItemResult[]>(() => {
+    const result: CartItemResult[] = [];
+    for (const [groupId, optionId] of Object.entries(selectedRadio)) {
+      const group = item.optionGroups.find((g) => g.id === groupId);
+      const option = group?.options.find((o) => o.id === optionId);
+      if (option && option.isAvailable) {
+        result.push({
+          id: option.id,
+          name: option.name,
+          priceUsdCents: option.priceUsdCents,
+          priceBsCents: Math.round(option.priceUsdCents * currentRateBsPerUsd),
+          quantity: 1,
+        });
+      }
+    }
+    return result;
+  }, [selectedRadio, item.optionGroups, currentRateBsPerUsd]);
 
   const substitutionUsdCents = useMemo(
     () => cartContornoSubstitutions.reduce((sum, s) => sum + s.priceUsdCents, 0),
@@ -171,10 +190,15 @@ export function useCartCalculation({
     () => cartBebidas.reduce((sum, b) => sum + b.priceUsdCents * b.quantity, 0),
     [cartBebidas],
   );
+ 
+  const radioUsdCents = useMemo(
+    () => cartRadioOptions.reduce((sum, r) => sum + r.priceUsdCents, 0),
+    [cartRadioOptions],
+  );
 
   const extrasCount = cartAdicionales.reduce((sum, a) => sum + a.quantity, 0) + cartContornoSubstitutions.length + cartBebidas.reduce((sum, b) => sum + b.quantity, 0);
 
-  const totalUsdCents = (item.priceUsdCents + substitutionUsdCents + additionalUsdCents + bebidasUsdCents) * quantity;
+  const totalUsdCents = (item.priceUsdCents + substitutionUsdCents + radioUsdCents) * quantity + additionalUsdCents + bebidasUsdCents;
   const totalBsCents = Math.round(totalUsdCents * currentRateBsPerUsd);
 
   return {
@@ -182,6 +206,7 @@ export function useCartCalculation({
     cartContornoSubstitutions,
     cartAdicionales,
     cartBebidas,
+    cartRadioOptions,
     totalUsdCents,
     totalBsCents,
     extrasCount,

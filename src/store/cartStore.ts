@@ -94,7 +94,7 @@ function computeItemTotal(
     (sum, r) => sum + Math.round(r.priceUsdCents * (item.baseBsCents / Math.max(item.baseUsdCents, 1))),
     0,
   );
-  return (item.baseBsCents + fixedContornosBs + substitutionsBs + adicionalesBs + bebidasBs - removalsBs) * quantity;
+  return (item.baseBsCents + fixedContornosBs + substitutionsBs - removalsBs) * quantity + adicionalesBs + bebidasBs;
 }
 
 /** Deterministic key for cart deduplication — order-insensitive */
@@ -121,6 +121,7 @@ function generateUUID() {
 
 function computeItemUsdCents(
   item: Omit<CartItem, "quantity" | "itemTotalBsCents">,
+  quantity: number,
 ): number {
   const fixedContornosUsd = (item.fixedContornos ?? []).reduce((sum, c) => sum + c.priceUsdCents, 0);
   const substitutionsUsd = (item.contornoSubstitutions ?? []).reduce((sum, s) => sum + s.priceUsdCents, 0);
@@ -136,7 +137,7 @@ function computeItemUsdCents(
     (sum, r) => sum + r.priceUsdCents,
     0,
   );
-  return item.baseUsdCents + fixedContornosUsd + substitutionsUsd + adicionalesUsd + bebidasUsd + removalsUsd;
+  return (item.baseUsdCents + fixedContornosUsd + substitutionsUsd + removalsUsd) * quantity + adicionalesUsd + bebidasUsd;
 }
 
 export const useCartStore = create<CartState>()(
@@ -279,14 +280,14 @@ export const useCartStore = create<CartState>()(
 
       totalUsdCents: () =>
         get().items.reduce(
-          (sum, i) => sum + computeItemUsdCents(i) * i.quantity,
+          (sum, i) => sum + computeItemUsdCents(i, i.quantity),
           0,
         ),
 
       totalBsCentsFromRate: (rateBsPerUsd: number) =>
         usdCentsToBsCents(
           get().items.reduce(
-            (sum, i) => sum + computeItemUsdCents(i) * i.quantity,
+            (sum, i) => sum + computeItemUsdCents(i, i.quantity),
             0,
           ),
           rateBsPerUsd,

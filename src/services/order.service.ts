@@ -41,7 +41,8 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
             throw new Error(`"${menuItem.name}" ya no está disponible.`);
         }
 
-        let optionPriceUsdCents = 0;
+        let perUnitOptionsUsdCents = 0;
+        let totalOptionsUsdCents = 0;
         const fixedContornos = [];
         const selectedAdicionales = [];
         const selectedBebidas = [];
@@ -70,7 +71,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                 (c) => c.id === fc.id && c.isAvailable,
             );
             if (validContorno) {
-                optionPriceUsdCents += validContorno.priceUsdCents;
+                perUnitOptionsUsdCents += validContorno.priceUsdCents;
                 fixedContornos.push({
                     id: validContorno.id,
                     name: validContorno.name,
@@ -87,7 +88,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
             const dailyAdicional = dailyAdicionalMap.get(ad.id);
             if (dailyAdicional && dailyAdicional.isAvailable) {
                 const qty = ad.quantity ?? 1;
-                optionPriceUsdCents += dailyAdicional.priceUsdCents * qty;
+                totalOptionsUsdCents += dailyAdicional.priceUsdCents * qty;
                 selectedAdicionales.push({
                     id: dailyAdicional.id,
                     name: dailyAdicional.name,
@@ -106,7 +107,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                 );
                 if (validAdicional) {
                     const qty = ad.quantity ?? 1;
-                    optionPriceUsdCents += validAdicional.priceUsdCents * qty;
+                    totalOptionsUsdCents += validAdicional.priceUsdCents * qty;
                     selectedAdicionales.push({
                         id: validAdicional.id,
                         name: validAdicional.name,
@@ -126,7 +127,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                 );
                 if (validContorno) {
                     const qty = ad.quantity ?? 1;
-                    optionPriceUsdCents += validContorno.priceUsdCents * qty;
+                    perUnitOptionsUsdCents += validContorno.priceUsdCents * qty;
                     selectedAdicionales.push({
                         id: validContorno.id,
                         name: validContorno.name,
@@ -144,7 +145,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                 const globalContorno = globalContornoMap.get(ad.id);
                 if (globalContorno && globalContorno.isAvailable) {
                     const qty = ad.quantity ?? 1;
-                    optionPriceUsdCents += globalContorno.priceUsdCents * qty;
+                    perUnitOptionsUsdCents += globalContorno.priceUsdCents * qty;
                     selectedAdicionales.push({
                         id: globalContorno.id,
                         name: globalContorno.name,
@@ -163,7 +164,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                     for (const opt of group.options) {
                         if (opt.id === ad.id && opt.isAvailable) {
                             const qty = ad.quantity ?? 1;
-                            optionPriceUsdCents += opt.priceUsdCents * qty;
+                            perUnitOptionsUsdCents += opt.priceUsdCents * qty;
                             selectedAdicionales.push({
                                 id: opt.id,
                                 name: opt.name,
@@ -194,7 +195,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                 const dailyBebida = dailyBebidaMap.get(beb.id);
                 if (dailyBebida && dailyBebida.isAvailable) {
                     const qty = beb.quantity ?? 1;
-                    optionPriceUsdCents += dailyBebida.priceUsdCents * qty;
+                    totalOptionsUsdCents += dailyBebida.priceUsdCents * qty;
                     selectedBebidas.push({
                         id: dailyBebida.id,
                         name: dailyBebida.name,
@@ -211,7 +212,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                     );
                     if (validBebida) {
                         const qty = beb.quantity ?? 1;
-                        optionPriceUsdCents += validBebida.priceUsdCents * qty;
+                        totalOptionsUsdCents += validBebida.priceUsdCents * qty;
                         selectedBebidas.push({
                             id: validBebida.id,
                             name: validBebida.name,
@@ -230,16 +231,12 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
         }
 
         const itemUsdCents =
-            (menuItem.priceUsdCents + optionPriceUsdCents + removalAdjustmentUsdCents) *
-            clientItem.quantity;
+            (menuItem.priceUsdCents + perUnitOptionsUsdCents - removalAdjustmentUsdCents) *
+            clientItem.quantity + totalOptionsUsdCents;
         subtotalUsdCents += itemUsdCents;
 
         const itemBaseBsCents = usdCentsToBsCents(menuItem.priceUsdCents, rate);
-        const itemTotalBsCents =
-            usdCentsToBsCents(
-                menuItem.priceUsdCents + optionPriceUsdCents + removalAdjustmentUsdCents,
-                rate,
-            ) * clientItem.quantity;
+        const itemTotalBsCents = usdCentsToBsCents(itemUsdCents, rate);
 
         snapshotItems.push({
             id: menuItem.id,
