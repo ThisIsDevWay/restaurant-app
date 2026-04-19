@@ -1,29 +1,94 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { X, Info } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { X, Info, ShoppingBag, WifiOff, ChevronDown, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { CartItem } from "./CartItem";
 import { formatBs, formatRef } from "@/lib/money";
 import { useRouter } from "next/navigation";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
-export function Cart() {
-  const items = useCartStore((s) => s.items);
-  const mounted = useCartStore((s) => s.mounted);
-  const setMounted = useCartStore((s) => s.setMounted);
-  const updateQuantity = useCartStore((s) => s.updateQuantity);
-  const removeItem = useCartStore((s) => s.removeItem);
-  const totalBsCents = useCartStore((s) => s.totalBsCents());
-  const totalUsdCents = useCartStore((s) => s.totalUsdCents());
-  const isDrawerOpen = useCartStore((s) => s.isDrawerOpen);
-  const openDrawer = useCartStore((s) => s.openDrawer);
-  const closeDrawer = useCartStore((s) => s.closeDrawer);
-  const router = useRouter();
-  const isOnline = useOnlineStatus();
-  const [taxOpen, setTaxOpen] = useState(false);
-  const [hasHydrated, setHasHydrated] = useState(false);
+/* ─────────────────────────────────────────────
+   DESIGN TOKENS
+───────────────────────────────────────────── */
+const T = {
+  primary:     "#bb0005",
+  primaryDeep: "#e2231a",
+  ink:         "#251a07",
+  cream:       "#fff8f3",
+  creamLow:    "#fff2e2",
+  muted:       "#9e8e7e",
+  surface:     "#ffffff",
+  fontDisplay: "'Epilogue', sans-serif",
+  fontBody:    "'Plus Jakarta Sans', sans-serif",
+} as const;
 
+/* ─────────────────────────────────────────────
+   PILL BADGE
+───────────────────────────────────────────── */
+function ItemBadge({ count }: { count: number }) {
+  return (
+    <span style={{
+      display:       "inline-flex",
+      alignItems:    "center",
+      justifyContent:"center",
+      minWidth:      20,
+      height:        20,
+      padding:       "0 6px",
+      borderRadius:  99,
+      background:    T.primary,
+      color:         "#fff",
+      fontFamily:    T.fontDisplay,
+      fontSize:      10,
+      fontWeight:    900,
+      letterSpacing: "0.03em",
+      lineHeight:    1,
+    }}>
+      {count}
+    </span>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   TAX BREAKDOWN ROW
+───────────────────────────────────────────── */
+function TaxRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{
+      display:        "flex",
+      justifyContent: "space-between",
+      alignItems:     "center",
+      padding:        "4px 0",
+    }}>
+      <span style={{ fontSize: 11, color: T.muted, fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: 11, color: T.muted, fontWeight: 600, fontFamily: T.fontDisplay }}>{value}</span>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────────── */
+export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number }) {
+  const items          = useCartStore((s) => s.items);
+  const mounted        = useCartStore((s) => s.mounted);
+  const setMounted     = useCartStore((s) => s.setMounted);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const removeItem     = useCartStore((s) => s.removeItem);
+  const totalBsCents   = useCartStore((s) => s.totalBsCents());
+  const totalUsdCents  = useCartStore((s) => s.totalUsdCents());
+  const isDrawerOpen   = useCartStore((s) => s.isDrawerOpen);
+  const openDrawer     = useCartStore((s) => s.openDrawer);
+  const closeDrawer    = useCartStore((s) => s.closeDrawer);
+
+  const router      = useRouter();
+  const isOnline    = useOnlineStatus();
+  const [taxOpen, setTaxOpen]       = useState(false);
+  const [hasHydrated, setHasHydrated] = useState(false);
+  const [barVisible, setBarVisible]  = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  /* hydration */
   useEffect(() => {
     const unsub = useCartStore.persist.onFinishHydration(() => setHasHydrated(true));
     if (useCartStore.persist.hasHydrated()) setHasHydrated(true);
@@ -31,159 +96,447 @@ export function Cart() {
     return unsub;
   }, [setMounted]);
 
+  /* slide-in animation for bottom bar */
+  useEffect(() => {
+    if (hasHydrated && mounted && items.length > 0) {
+      const t = setTimeout(() => setBarVisible(true), 60);
+      return () => clearTimeout(t);
+    } else {
+      setBarVisible(false);
+    }
+  }, [hasHydrated, mounted, items.length]);
+
   if (!hasHydrated || !mounted || items.length === 0) return null;
 
-  const itemCount = items.reduce((s, i) => s + i.quantity, 0);
+  const itemCount     = items.reduce((s, i) => s + i.quantity, 0);
   const baseImponible = Math.round(totalBsCents / 1.16);
-  const ivaBs = totalBsCents - baseImponible;
+  const ivaBs         = totalBsCents - baseImponible;
 
   return (
     <>
-      {/* Bottom bar trigger */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-white px-4 py-3 shadow-elevated">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-2">
-              <p className="text-[15px] font-extrabold text-text-main">
+      {/* ────────────────────────────────────────
+          BOTTOM BAR
+      ──────────────────────────────────────── */}
+      <div style={{
+        position:  "fixed",
+        bottom:    0, left: 0, right: 0,
+        zIndex:    40,
+        padding:   "10px 16px 16px",
+        /* Glass + cream warmth */
+        background: "rgba(255,248,243,0.92)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderTop: "1px solid rgba(187,0,5,0.08)",
+        boxShadow: "0 -4px 24px rgba(37,26,7,0.07)",
+        transform: barVisible ? "translateY(0)" : "translateY(100%)",
+        transition: "transform 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+      }}>
+        {/* Drag handle visual hint */}
+        <div style={{
+          width: 36, height: 3, borderRadius: 99,
+          background: "rgba(37,26,7,0.12)",
+          margin: "0 auto 10px",
+        }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* Price block */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
+              <span style={{
+                fontFamily:    T.fontDisplay,
+                fontSize:      17,
+                fontWeight:    900,
+                color:         T.ink,
+                letterSpacing: "-0.02em",
+                lineHeight:    1,
+              }}>
                 {formatBs(totalBsCents)}
-              </p>
-              <p className="text-[11px] font-semibold text-primary/70">
+              </span>
+              <span style={{
+                fontSize:   11,
+                fontWeight: 600,
+                color:      T.muted,
+                background: T.creamLow,
+                padding:    "1px 7px",
+                borderRadius: 6,
+              }}>
                 {formatRef(totalUsdCents)}
-              </p>
+              </span>
             </div>
-            <p className="text-[11px] text-text-muted">
-              {itemCount} {itemCount === 1 ? "item" : "items"}
+            <p style={{
+              fontSize: "clamp(10px, 2.8vw, 11px)", color: T.muted, marginTop: 2,
+              fontWeight: 500,
+            }}>
+              {itemCount} {itemCount === 1 ? "ítem" : "ítems"}
             </p>
           </div>
+
+          {/* CTA button */}
           <button
             onClick={() => isOnline && openDrawer()}
             disabled={!isOnline}
-            title={!isOnline ? "Necesitas conexión para hacer un pedido" : undefined}
-            className={`rounded-input bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors active:bg-primary-hover ${!isOnline ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+            aria-label={!isOnline ? "Necesitas conexión para hacer un pedido" : "Ver pedido"}
+            style={{
+              display:        "inline-flex",
+              alignItems:     "center",
+              gap:            8,
+              padding:        "0 20px",
+              height:         46,
+              borderRadius:   13,
+              border:         "none",
+              cursor:         isOnline ? "pointer" : "not-allowed",
+              opacity:        isOnline ? 1 : 0.5,
+              background:     `linear-gradient(135deg, ${T.primary} 0%, ${T.primaryDeep} 100%)`,
+              color:          "#fff",
+              fontFamily:     T.fontDisplay,
+              fontSize:       12,
+              fontWeight:     900,
+              letterSpacing:  "0.07em",
+              textTransform:  "uppercase",
+              boxShadow:      isOnline ? "0 4px 16px rgba(187,0,5,0.35)" : "none",
+              transition:     "transform 0.15s, box-shadow 0.15s",
+              position:       "relative",
+              overflow:       "hidden",
+            }}
+            onMouseEnter={(e) => { if (isOnline) (e.currentTarget as HTMLElement).style.transform = "scale(1.04)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
+            onMouseDown={(e)  => { if (isOnline) (e.currentTarget as HTMLElement).style.transform = "scale(0.97)"; }}
+            onMouseUp={(e)    => { if (isOnline) (e.currentTarget as HTMLElement).style.transform = "scale(1.04)"; }}
           >
-            Ver pedido →
+            {!isOnline
+              ? <><WifiOff style={{ width: 14, height: 14 }} />Sin conexión</>
+              : <><ShoppingBag style={{ width: 14, height: 14 }} />Ver pedido</>
+            }
           </button>
         </div>
       </div>
 
-      {/* Drawer — always in DOM for animation */}
+      {/* ────────────────────────────────────────
+          DRAWER SHELL
+      ──────────────────────────────────────── */}
       <div
-        className={`fixed inset-0 z-50 ${isDrawerOpen ? "" : "pointer-events-none"}`}
+        style={{
+          position:       "fixed",
+          inset:          0,
+          zIndex:         50,
+          pointerEvents:  isDrawerOpen ? "auto" : "none",
+        }}
         inert={!isDrawerOpen}
       >
         {/* Overlay */}
         <div
-          className={`absolute inset-0 pointer-events-auto bg-black/40 transition-opacity duration-200 ${isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
-          onClick={() => closeDrawer()}
+          onClick={closeDrawer}
+          style={{
+            position:   "absolute",
+            inset:      0,
+            background: "rgba(37,26,7,0.5)",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
+            opacity:    isDrawerOpen ? 1 : 0,
+            transition: "opacity 0.25s ease",
+            pointerEvents: isDrawerOpen ? "auto" : "none",
+          }}
         />
 
-        {/* Drawer panel */}
+        {/* Drawer panel
+          * isolation: "isolate" creates a new stacking context, preventing
+          * any position:fixed sibling (e.g. user avatar FAB, chat widget)
+          * from bleeding visually inside the drawer's painted area.
+          * overflow: "hidden" clips shimmer/gradient children correctly.
+          */}
         <div
-          className={`absolute bottom-0 left-0 right-0 pointer-events-auto max-h-[85vh] flex flex-col rounded-t-[20px] bg-white shadow-modal transition-transform duration-200 ease-out ${isDrawerOpen ? "translate-y-0" : "translate-y-full"
-            }`}
           onClick={(e) => e.stopPropagation()}
+          style={{
+            position:   "absolute",
+            bottom:     0, left: 0, right: 0,
+            maxHeight:  "88vh",
+            display:    "flex",
+            flexDirection: "column",
+            borderRadius: "22px 22px 0 0",
+            background: T.surface,
+            boxShadow:  "0 -12px 48px rgba(37,26,7,0.14), 0 -2px 8px rgba(37,26,7,0.06)",
+            transform:  isDrawerOpen ? "translateY(0)" : "translateY(100%)",
+            transition: "transform 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+            overflow:   "hidden",
+            /* ↓ KEY FIX: new stacking context — no external fixed element
+               (user avatar, Intercom widget, etc.) can paint inside this box */
+            isolation:  "isolate",
+            zIndex:     1,
+          }}
         >
-          {/* ── Header ── */}
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-[15px] font-semibold text-text-main">Mi pedido</h2>
-              <span className="text-xs text-text-muted bg-bg-app rounded-full px-2 py-0.5">
-                {itemCount} {itemCount === 1 ? "ítem" : "ítems"}
-              </span>
+          {/* ── DRAWER HEADER ── */}
+          <div style={{
+            background:   T.cream,
+            borderBottom: `1px solid ${T.creamLow}`,
+            flexShrink:   0,
+          }}>
+            {/* Drag pill */}
+            <div style={{
+              width: 40, height: 4, borderRadius: 99,
+              background: "rgba(37,26,7,0.1)",
+              margin: "10px auto 0",
+            }} />
+
+            <div style={{
+              display:        "flex",
+              alignItems:     "center",
+              justifyContent: "space-between",
+              padding:        "12px 16px 14px",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {/* Heritage title */}
+                <h2 style={{
+                  fontFamily:    T.fontDisplay,
+                  fontSize:      "clamp(16px, 4.5vw, 18px)",
+                  fontWeight:    900,
+                  color:         T.ink,
+                  letterSpacing: "-0.02em",
+                  lineHeight:    1,
+                }}>
+                  Mi pedido
+                </h2>
+                <ItemBadge count={itemCount} />
+              </div>
+
+              {/* Close */}
+              <button
+                onClick={closeDrawer}
+                aria-label="Cerrar"
+                style={{
+                  width: 32, height: 32,
+                  borderRadius: 10,
+                  border: "none",
+                  cursor: "pointer",
+                  background: T.creamLow,
+                  color: T.muted,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "background .15s, transform .15s",
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#ffe4e4"; (e.currentTarget as HTMLElement).style.color = T.primary; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = T.creamLow; (e.currentTarget as HTMLElement).style.color = T.muted; }}
+              >
+                <X style={{ width: 15, height: 15 }} />
+              </button>
             </div>
-            <button
-              onClick={() => closeDrawer()}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-bg-app text-text-muted"
-              aria-label="Cerrar"
-            >
-              <X className="h-4 w-4" />
-            </button>
           </div>
 
-          {/* ── Scrollable items ── */}
-          <div className="flex-1 overflow-y-auto px-2 py-2">
-            <div className="flex flex-col gap-1.5">
-              {items.map((item, index) => (
-                <CartItem
-                  key={`${item.id}-${(item.fixedContornos ?? []).map((c) => c.id).join(",")}-${(item.contornoSubstitutions ?? []).map((s) => s.substituteId).join(",")}-${(item.selectedAdicionales ?? []).map((a) => a.id).join(",")}-${(item.selectedBebidas ?? []).map((b) => b.id).join(",")}-${index}`}
-                  item={item}
-                  index={index}
-                  onUpdateQuantity={updateQuantity}
-                  onRemove={removeItem}
-                />
-              ))}
-            </div>
+          {/* ── SCROLLABLE ITEMS ── */}
+          <div
+            ref={scrollRef}
+            style={{
+              flex:       1,
+              overflowY:  "auto",
+              padding:    "10px 12px",
+              display:    "flex",
+              flexDirection: "column",
+              gap:        8,
+              /* Custom scrollbar */
+              scrollbarWidth: "thin",
+              scrollbarColor: `${T.creamLow} transparent`,
+            }}
+          >
+            {items.map((item, index) => (
+              <CartItem
+                key={`${item.id}-${(item.fixedContornos ?? []).map((c) => c.id).join(",")}-${(item.contornoSubstitutions ?? []).map((s) => s.substituteId).join(",")}-${(item.selectedAdicionales ?? []).map((a) => a.id).join(",")}-${(item.selectedBebidas ?? []).map((b) => b.id).join(",")}-${index}`}
+                item={item}
+                index={index}
+                maxQuantityPerItem={maxQuantityPerItem}
+                onUpdateQuantity={updateQuantity}
+                onRemove={removeItem}
+              />
+            ))}
           </div>
 
-          {/* ── Totals + CTA (sticky bottom) ── */}
-          <div className="border-t border-border bg-white px-3 pt-2 pb-4">
+          {/* ── STICKY FOOTER ── */}
+          <div style={{
+            borderTop:  `1px solid ${T.creamLow}`,
+            background: T.surface,
+            padding:    "12px 16px 20px",
+            flexShrink: 0,
+          }}>
             {/* Tax toggle */}
             <button
               onClick={() => setTaxOpen((p) => !p)}
-              className="flex w-full items-center justify-between py-[7px] text-left"
+              style={{
+                display:    "flex",
+                width:      "100%",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding:    "7px 0",
+                background: "transparent",
+                border:     "none",
+                cursor:     "pointer",
+              }}
             >
-              <span className="flex items-center gap-1.5 text-xs text-text-muted">
-                <Info className="h-3.5 w-3.5 opacity-50" />
+              <span style={{
+                display:    "flex",
+                alignItems: "center",
+                gap:        6,
+                fontSize:   11,
+                color:      T.muted,
+                fontWeight: 600,
+              }}>
+                <Info style={{ width: 13, height: 13, opacity: 0.6 }} />
                 Desglose fiscal (IVA 16%)
-                <span className={`inline-block text-[10px] text-text-muted transition-transform duration-200 ${taxOpen ? "rotate-180" : ""}`}>
-                  ▾
-                </span>
+                <ChevronDown style={{
+                  width: 12, height: 12, opacity: 0.6,
+                  transform: taxOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s",
+                }} />
               </span>
-              <span className="text-xs text-text-muted">{formatBs(ivaBs)}</span>
+              <span style={{ fontSize: 11, color: T.muted, fontWeight: 600, fontFamily: T.fontDisplay }}>
+                {formatBs(ivaBs)}
+              </span>
             </button>
 
+            {/* Tax breakdown */}
             {taxOpen && (
-              <div className="pb-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                <div className="flex justify-between text-[11px] text-text-muted py-[3px]">
-                  <span>Base imponible</span>
-                  <span>{formatBs(baseImponible)}</span>
-                </div>
-                <div className="flex justify-between text-[11px] text-text-muted py-[3px]">
-                  <span>IVA (16%)</span>
-                  <span>{formatBs(ivaBs)}</span>
-                </div>
+              <div style={{
+                borderRadius: 10,
+                background:   T.cream,
+                padding:      "8px 12px",
+                marginBottom: 12,   /* ↑ more breathing before total row */
+                animation:    "tax-in 0.15s ease",
+              }}>
+                <TaxRow label="Base imponible" value={formatBs(baseImponible)} />
+                <TaxRow label="IVA (16%)"      value={formatBs(ivaBs)} />
               </div>
             )}
 
             {/* Total row */}
-            <div className="flex items-baseline justify-between pt-2.5 mt-1 border-t border-black/[0.09]">
-              <span className="text-sm font-semibold text-text-main">Total a pagar</span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-[11px] text-text-muted bg-bg-app rounded px-1.5 py-0.5 border border-black/[0.06]">
+            <div style={{
+              display:        "flex",
+              alignItems:     "center",
+              justifyContent: "space-between",
+              paddingTop:     11,
+              marginTop:      3,
+              borderTop:      `1.5px solid ${T.creamLow}`,
+            }}>
+              <span style={{
+                fontFamily:    T.fontDisplay,
+                fontSize:      "clamp(10px, 3vw, 12px)",
+                fontWeight:    800,
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                color:         T.muted,
+              }}>
+                Total a pagar
+              </span>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <span style={{
+                  fontSize:     11,
+                  fontWeight:   600,
+                  color:        T.muted,
+                  background:   T.creamLow,
+                  padding:      "2px 8px",
+                  borderRadius: 6,
+                  fontFamily:   T.fontDisplay,
+                }}>
                   {formatRef(totalUsdCents)}
                 </span>
-                <span className="text-lg font-bold text-text-main">
+                <span style={{
+                  fontFamily:    T.fontDisplay,
+                  fontSize:      "clamp(22px, 6vw, 30px)",
+                  fontWeight:    900,
+                  color:         T.ink,
+                  letterSpacing: "-0.03em",
+                  lineHeight:    1,
+                }}>
                   {formatBs(totalBsCents)}
                 </span>
               </div>
             </div>
 
-            {/* Info note (conditional) */}
+            {/* Multi-quantity hint */}
             {items.some((item) => item.quantity > 1) && (
-              <div className="flex items-start gap-1.5 mt-2 text-[11px] text-text-muted leading-snug">
-                <Info className="h-3 w-3 shrink-0 mt-0.5 opacity-50" />
-                Para contornos o extras distintos por plato, agrégalos uno a uno.
+              <div style={{
+                display:    "flex",
+                alignItems: "flex-start",
+                gap:        6,
+                marginTop:  10,
+                padding:    "8px 10px",
+                borderRadius: 10,
+                background: T.cream,
+                border:     `1px solid ${T.creamLow}`,
+              }}>
+                <Info style={{ width: 12, height: 12, color: T.muted, opacity: 0.7, marginTop: 1, flexShrink: 0 }} />
+                <p style={{ fontSize: 11, color: T.muted, lineHeight: 1.5, fontWeight: 500 }}>
+                  Para contornos o extras distintos por plato, agrégalos uno a uno.
+                </p>
               </div>
             )}
 
-            {/* CTA */}
+            {/* Checkout CTA */}
             <button
-              onClick={() => {
-                closeDrawer();
-                router.push("/checkout");
+              onClick={() => { closeDrawer(); router.push("/checkout"); }}
+              style={{
+                marginTop:      14,
+                display:        "flex",
+                width:          "100%",
+                alignItems:     "center",
+                justifyContent: "center",
+                gap:            10,
+                height:         52,
+                borderRadius:   14,
+                border:         "none",
+                cursor:         "pointer",
+                background:     `linear-gradient(150deg, ${T.primary} 0%, ${T.primaryDeep} 100%)`,
+                color:          "#fff",
+                fontFamily:     T.fontDisplay,
+                fontSize:       "clamp(12px, 3.5vw, 14px)",
+                fontWeight:     900,
+                letterSpacing:  "0.08em",
+                textTransform:  "uppercase",
+                boxShadow:      "0 6px 20px rgba(187,0,5,0.32)",
+                position:       "relative",
+                overflow:       "hidden",
+                transition:     "transform 0.15s, box-shadow 0.15s",
               }}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-[10px] bg-primary py-3.5 text-sm font-semibold text-white transition-opacity active:opacity-90"
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.02)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 28px rgba(187,0,5,0.4)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(187,0,5,0.32)"; }}
+              onMouseDown={(e)  => { (e.currentTarget as HTMLElement).style.transform = "scale(0.98)"; }}
+              onMouseUp={(e)    => { (e.currentTarget as HTMLElement).style.transform = "scale(1.02)"; }}
             >
-              Confirmar pedido
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" />
-              </svg>
+              {/* Shimmer */}
+              <span aria-hidden style={{
+                position:   "absolute",
+                inset:      0,
+                background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%)",
+                backgroundSize: "200% 100%",
+                animation:  "shimmer-cta 2.5s infinite",
+                borderRadius: "inherit",
+              }} />
+              <span style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 10 }}>
+                Confirmar pedido
+                <span style={{
+                  display:        "flex",
+                  alignItems:     "center",
+                  justifyContent: "center",
+                  width:          24,
+                  height:         24,
+                  borderRadius:   7,
+                  background:     "rgba(255,255,255,0.2)",
+                }}>
+                  <ArrowRight style={{ width: 13, height: 13 }} />
+                </span>
+              </span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* Keyframes */}
+      <style>{`
+        @keyframes shimmer-cta {
+          0%   { background-position: -200% 0; }
+          100% { background-position:  200% 0; }
+        }
+        @keyframes tax-in {
+          from { opacity: 0; transform: translateY(-4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </>
   );
 }

@@ -94,7 +94,7 @@ export default async function MenuPage() {
         </Suspense>
 
         {/* Cart bottom bar + drawer */}
-        <Cart />
+        <Cart maxQuantityPerItem={maxQuantityPerItem} />
       </div>
     );
   } catch (error) {
