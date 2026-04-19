@@ -276,7 +276,7 @@ export function MenuHeader({
                             style={{
                                 fontFamily: "Georgia, serif",
                                 fontStyle: "italic",
-                                fontSize: 32,
+                                fontSize: "clamp(24px, 8vw, 36px)",
                                 color: "#FFFFFF",
                                 textShadow:
                                     "0 2px 24px rgba(0,0,0,0.65), 0 0 8px rgba(0,0,0,0.45), 2px 2px 0 #D91F26",
@@ -297,7 +297,7 @@ export function MenuHeader({
                                 padding: "6px 16px",
                                 borderRadius: 20,
                                 color: "rgba(255,255,255,0.88)",
-                                fontSize: 11,
+                                fontSize: "clamp(9px, 2.8vw, 11px)",
                                 fontWeight: 500,
                                 letterSpacing: "0.02em",
                             }}
@@ -484,7 +484,7 @@ export function MenuHeader({
                   position: relative;
                   border-radius: 999px;
                   padding: 9px 18px;
-                  font-size: 13px;
+                  font-size: clamp(12px, 3.2vw, 14px);
                   font-weight: 500;
                   white-space: nowrap;
                   flex-shrink: 0;

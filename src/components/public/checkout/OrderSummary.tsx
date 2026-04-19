@@ -93,7 +93,7 @@ export function OrderSummary({
                     {item.quantity}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[14px] font-display font-black text-text-main leading-tight break-words">
+                    <div className="text-[clamp(13px,3.8vw,15px)] font-display font-black text-text-main leading-tight break-words">
                       {item.name}
                     </div>
                     <div className="text-[11px] font-bold text-text-muted/60 mt-1 uppercase tracking-wider">
@@ -102,7 +102,7 @@ export function OrderSummary({
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="text-[14px] font-display font-black text-text-main">
+                  <div className="text-[clamp(13px,3.8vw,15px)] font-display font-black text-text-main">
                     {formatBs(item.itemTotalBsCents)}
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export function OrderSummary({
                     <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Adicionales</div>
                     {item.selectedAdicionales.map((adicional) => (
                       <div key={adicional.id} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
-                        <span className="text-[12px] text-[#5A3A3A]">{(adicional.quantity ?? 1) > 1 ? `${adicional.quantity}× ` : ""}{adicional.name}</span>
+                        <span className="text-[12px] text-[#5A3A3A]">{adicional.quantity ?? 1}× {adicional.name}</span>
                         <span className="text-[12px] font-medium text-[#7B2D2D]">
                           {adicional.priceBsCents > 0 ? `+ ${formatBs(adicional.priceBsCents * (adicional.quantity ?? 1))}` : "incluido"}
                         </span>
@@ -168,7 +168,7 @@ export function OrderSummary({
                     <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Bebidas</div>
                     {(item.selectedBebidas ?? []).map((bebida) => (
                       <div key={bebida.id} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
-                        <span className="text-[12px] text-[#5A3A3A]">{(bebida.quantity ?? 1) > 1 ? `${bebida.quantity}× ` : ""}{bebida.name}</span>
+                        <span className="text-[12px] text-[#5A3A3A]">{bebida.quantity ?? 1}× {bebida.name}</span>
                         <span className="text-[12px] font-medium text-[#7B2D2D]">
                           {bebida.priceBsCents > 0 ? `+ ${formatBs(bebida.priceBsCents * (bebida.quantity ?? 1))}` : "incluido"}
                         </span>
@@ -261,7 +261,7 @@ export function OrderSummary({
             <div className="pt-3 border-t-2 border-dashed border-border/60 flex justify-between items-baseline">
               <span className="text-[13px] font-display font-black text-text-main uppercase tracking-widest">Total pedido</span>
               <div className="text-right">
-                <div className="text-[clamp(18px,5vw,20px)] font-display font-black text-[#7B2D2D] leading-none">
+                <div className="text-[clamp(18px,6vw,24px)] font-display font-black text-[#7B2D2D] leading-none">
                   {formatBs(grandTotalBsCents)}
                 </div>
                 <div className="text-[clamp(10px,2.5vw,12px)] font-bold text-text-muted mt-1">
