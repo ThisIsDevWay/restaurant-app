@@ -264,11 +264,9 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                       {order.itemsSnapshot.map((item, idx) => (
                         <div key={idx}>
                           <p className="text-base font-bold text-text-main">
-                            {item.quantity > 1 && (
-                              <span className="inline-flex items-center justify-center h-6 w-6 rounded-lg bg-amber/10 text-amber text-sm font-black mr-1.5">
-                                {item.quantity}
-                              </span>
-                            )}
+                            <span className="inline-flex items-center justify-center h-6 w-6 rounded-lg bg-amber/10 text-amber text-sm font-black mr-1.5">
+                              {item.quantity}
+                            </span>
                             {item.name}
                           </p>
                           {/* Contornos — Option C: resolved final state */}
@@ -366,7 +364,7 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                                   key={adIdx}
                                   className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-sm font-bold text-primary border border-primary/20"
                                 >
-                                  + {(ad.quantity ?? 1) > 1 ? `${ad.quantity}× ` : ""}{ad.name}
+                                  + {ad.quantity ?? 1}× {ad.name}
                                 </span>
                               ))}
                             </div>
@@ -379,7 +377,7 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                                   key={`beb-${bIdx}`}
                                   className="inline-flex items-center rounded-lg bg-info/10 px-2 py-1 text-sm font-bold text-info border border-info/20"
                                 >
-                                  🍹 {(b.quantity ?? 1) > 1 ? `${b.quantity}× ` : ""}{b.name}
+                                  🍹 {b.quantity ?? 1}× {b.name}
                                 </span>
                               ))}
                             </div>
@@ -451,11 +449,9 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                       {order.itemsSnapshot.map((item, idx) => (
                         <div key={idx}>
                           <p className="text-base font-bold text-text-main">
-                            {item.quantity > 1 && (
                               <span className="inline-flex items-center justify-center h-6 w-6 rounded-lg bg-info/10 text-info text-sm font-black mr-1.5">
                                 {item.quantity}
                               </span>
-                            )}
                             {item.name}
                           </p>
                           {/* Contornos — Option C: resolved final state */}
@@ -548,7 +544,7 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                                   key={adIdx}
                                   className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-sm font-bold text-primary border border-primary/20"
                                 >
-                                  + {(ad.quantity ?? 1) > 1 ? `${ad.quantity}× ` : ""}{ad.name}
+                                  + {ad.quantity ?? 1}× {ad.name}
                                 </span>
                               ))}
                             </div>
@@ -561,7 +557,7 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                                   key={`beb-${bIdx}`}
                                   className="inline-flex items-center rounded-lg bg-info/10 px-2 py-1 text-sm font-bold text-info border border-info/20"
                                 >
-                                  🍹 {(b.quantity ?? 1) > 1 ? `${b.quantity}× ` : ""}{b.name}
+                                  🍹 {b.quantity ?? 1}× {b.name}
                                 </span>
                               ))}
                             </div>

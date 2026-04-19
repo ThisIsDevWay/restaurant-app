@@ -90,7 +90,7 @@ export function formatItemsDetailed(
         for (const a of pureAdicionales) {
           const qty = a.quantity ?? 1;
           const priceStr = a.priceBsCents > 0 ? `+ ${formatPrice(a.priceBsCents * qty)}` : "incluido";
-          const prefix = qty > 1 ? `${qty}× ` : "";
+          const prefix = `${qty}× `;
           lines.push(`  ${prefix}${a.name} · ${priceStr}`);
         }
       }
@@ -101,7 +101,7 @@ export function formatItemsDetailed(
         for (const b of item.selectedBebidas) {
           const qty = b.quantity ?? 1;
           const priceStr = b.priceBsCents > 0 ? `+ ${formatPrice(b.priceBsCents * qty)}` : "incluido";
-          const prefix = qty > 1 ? `${qty}× ` : "";
+          const prefix = `${qty}× `;
           lines.push(`  ${prefix}${b.name} · ${priceStr}`);
         }
       }

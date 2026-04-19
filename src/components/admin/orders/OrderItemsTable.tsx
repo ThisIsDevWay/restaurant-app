@@ -148,7 +148,7 @@ export function OrderItemsTable({
                           {pureAdicionales.map((ad, adIdx) => (
                             <div key={`ad-${adIdx}`} className="flex justify-between items-center pl-3 border-l-2 border-emerald-500/20 py-0.5">
                               <span className="text-sm text-text-main font-medium">
-                                {ad.quantity && ad.quantity > 1 ? `${ad.quantity}× ` : ""}{ad.name}
+                                {ad.quantity ?? 1}× {ad.name}
                               </span>
                               <span className="text-sm font-bold text-emerald-600">
                                 {ad.priceBsCents > 0 ? `+ ${formatBs(ad.priceBsCents * (ad.quantity ?? 1))}` : "Gratis"}
@@ -170,7 +170,7 @@ export function OrderItemsTable({
                           {item.selectedBebidas.map((b, bIdx) => (
                             <div key={`beb-${bIdx}`} className="flex justify-between items-center pl-3 border-l-2 border-blue-500/20 py-0.5">
                               <span className="text-sm text-text-main font-medium">
-                                {b.quantity && b.quantity > 1 ? `${b.quantity}× ` : ""}{b.name}
+                                {b.quantity ?? 1}× {b.name}
                               </span>
                               <span className="text-sm font-bold text-blue-600">
                                 {b.priceBsCents > 0 ? `+ ${formatBs(b.priceBsCents * (b.quantity ?? 1))}` : "Incluida"}

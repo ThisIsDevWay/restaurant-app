@@ -154,11 +154,11 @@ export async function buildOrderMessage(
     }
     // Adicionales (incluye sustituciones)
     for (const a of item.selectedAdicionales) {
-      totalUsdCents += a.priceUsdCents * (a.quantity ?? 1) * item.quantity;
+      totalUsdCents += a.priceUsdCents * (a.quantity ?? 1);
     }
     // Bebidas
     for (const b of item.selectedBebidas ?? []) {
-      totalUsdCents += b.priceUsdCents * (b.quantity ?? 1) * item.quantity;
+      totalUsdCents += b.priceUsdCents * (b.quantity ?? 1);
     }
     // Removidos (descuento, priceUsdCents es negativo)
     for (const r of item.removedComponents ?? []) {
