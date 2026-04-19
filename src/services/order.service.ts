@@ -321,8 +321,10 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
     });
 
     // Grand totals = subtotal + surcharges
+    // IMPORTANT: Sum rounded BS components to match client logic and avoid 1-cent rounding mismatches
     const grandTotalUsdCents = subtotalUsdCents + serverSurcharges.totalSurchargeUsdCents;
-    const grandTotalBsCents = usdCentsToBsCents(grandTotalUsdCents, rate);
+    const surchargeBsCents = usdCentsToBsCents(serverSurcharges.totalSurchargeUsdCents, rate);
+    const grandTotalBsCents = subtotalBsCents + surchargeBsCents;
 
     // 3. Create order with atomic capacity check
     const expiresAt = new Date(Date.now() + settings.orderExpirationMinutes * 60 * 1000);
@@ -343,6 +345,7 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
         paymentProvider: provider.id,
         orderMode: input.orderMode ?? null,
         deliveryAddress: input.deliveryAddress ?? null,
+        gpsCoords: input.gpsCoords ?? null,
         exchangeRateId: settings.currentRateId!,
         rateSnapshotBsPerUsd: rate.toString(),
         expiresAt,

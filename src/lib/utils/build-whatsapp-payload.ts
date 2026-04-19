@@ -7,11 +7,13 @@ interface AppendParams {
     comprobanteUrl: string;
     /** Coordenadas GPS si el usuario las otorgó (solo para delivery) */
     gpsCoords: GpsCoords | null;
+    /** Dirección textual para reforzar el GPS */
+    deliveryAddress?: string;
 }
 
 /**
  * Toma el prefilledMessage del servidor y le anexa:
- * 1. Link de Google Maps (si hay GPS)
+ * 1. Link de Google Maps (si hay GPS) + Dirección de texto
  * 2. URL del comprobante de pago
  *
  * Respeta el sistema de templates del servidor (commit d4db5f5).
@@ -21,13 +23,18 @@ export function appendComprobanteToMessage({
     serverMessage,
     comprobanteUrl,
     gpsCoords,
+    deliveryAddress,
 }: AppendParams): string {
     const lines: string[] = [serverMessage];
 
-    // Añadir link de Maps solo si hay GPS (el servidor ya incluyó la dirección de texto)
+    // Añadir info de entrega solo si hay GPS
     if (gpsCoords) {
         const mapsUrl = `https://maps.google.com/?q=${gpsCoords.lat.toFixed(6)},${gpsCoords.lng.toFixed(6)}`;
         lines.push("");
+        lines.push("🛵 *DATOS DE ENTREGA:*");
+        if (deliveryAddress) {
+            lines.push(`🏠 *Dirección:* ${deliveryAddress}`);
+        }
         lines.push(`📍 *Ubicación GPS:* ${mapsUrl}`);
         lines.push(`_(precisión: ±${Math.round(gpsCoords.accuracy)}m)_`);
     }

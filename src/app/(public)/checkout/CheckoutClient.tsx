@@ -32,7 +32,6 @@ type CheckoutState =
     orderMode: string;
     deliveryAddress: string;
     gpsCoords: GpsCoords | null;
-    orderExpirationMinutes?: number;
   }
   | { type: "waiting_auto"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: BankDetails }
   | { type: "success"; orderId: string; totalBsCents: number }
@@ -180,7 +179,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
     try {
       const token = checkoutToken ?? ensureCheckoutToken();
       const actionResult = await processCheckoutAction({
-        input: { phone, paymentMethod, name, cedula, orderMode, deliveryAddress, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })), clientSurcharges, checkoutToken: token },
+        input: { phone, paymentMethod, name, cedula, orderMode, deliveryAddress, gpsCoords, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })), clientSurcharges, checkoutToken: token },
         items: checkoutItems,
       });
 
@@ -222,7 +221,6 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
             orderMode: orderMode ?? "on_site",
             deliveryAddress: deliveryAddress ?? "",
             gpsCoords: gpsCoords ?? null,
-            orderExpirationMinutes: settings.orderExpirationMinutes,
           });
           setIsSubmitting(false);
           return;
@@ -375,7 +373,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
           serverPrefilledMessage={state.serverPrefilledMessage}
           serverWaLink={state.serverWaLink}
           gpsCoords={state.gpsCoords}
-          orderExpirationMinutes={state.orderExpirationMinutes}
+          deliveryAddress={state.deliveryAddress}
           onVolver={() => setState({ type: "form" })}
         />
       )}

@@ -95,6 +95,8 @@ export const processCheckoutAction = actionClient
               }
               : undefined,
             baseUrl: settings.whatsappMicroserviceUrl,
+            deliveryAddress: order.deliveryAddress,
+            gpsCoords: order.gpsCoords,
           });
         } catch (err) {
           logger.error("WhatsApp Error", { error: String(err) });
@@ -115,5 +117,29 @@ export const processCheckoutAction = actionClient
       } as CheckoutResult;
     }
   });
+export const registerComprobanteAction = actionClient
+  .schema(v.object({
+    orderId: v.pipe(v.string(), v.uuid()),
+    uploadedUrl: v.pipe(v.string(), v.url())
+  }))
+  .action(async ({ parsedInput }) => {
+    const { orderId, uploadedUrl } = parsedInput;
+    try {
+      const { db } = await import("@/db");
+      const { orders } = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
 
+      await db
+        .update(orders)
+        .set({
+          paymentMetadata: { uploadedUrl },
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, orderId));
 
+      return { success: true };
+    } catch (error: any) {
+      logger.error("[registerComprobanteAction] Error", { error: error.message });
+      return { success: false, error: "Error al registrar comprobante" };
+    }
+  });

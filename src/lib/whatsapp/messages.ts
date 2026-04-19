@@ -26,6 +26,8 @@ interface TemplateVariables {
   deliveryFee?: string;
   orderRef?: string;
   metodoPago?: string;
+  direccion?: string;
+  ubicacionGps?: string;
 }
 
 function renderTemplate(body: string, vars: TemplateVariables): string {
@@ -50,6 +52,12 @@ function renderTemplate(body: string, vars: TemplateVariables): string {
   }
   if (vars.metodoPago !== undefined) {
     rendered = rendered.replace(/\{metodoPago\}/g, vars.metodoPago);
+  }
+  if (vars.direccion !== undefined) {
+    rendered = rendered.replace(/\{direccion\}/g, vars.direccion);
+  }
+  if (vars.ubicacionGps !== undefined) {
+    rendered = rendered.replace(/\{ubicacionGps\}/g, vars.ubicacionGps);
   }
 
   return rendered;
@@ -83,6 +91,8 @@ export interface OrderMessageContext {
   estimatedMinutes?: number;
   baseUrl?: string;
   restaurantName?: string;
+  deliveryAddress?: string | null;
+  gpsCoords?: { lat: number; lng: number; accuracy?: number } | null;
 }
 
 // ─── Order mode labels ────────────────────────────────────────────────────────
@@ -184,6 +194,10 @@ export async function buildOrderMessage(
     orderRef: ctx.orderId ? ctx.orderId.slice(0, 8).toUpperCase() : undefined,
     metodoPago: ctx.paymentMethod
       ? PAYMENT_METHOD_LABELS[ctx.paymentMethod] ?? ctx.paymentMethod
+      : undefined,
+    direccion: ctx.deliveryAddress || undefined,
+    ubicacionGps: ctx.gpsCoords
+      ? `https://maps.google.com/?q=${ctx.gpsCoords.lat.toFixed(6)},${ctx.gpsCoords.lng.toFixed(6)}`
       : undefined,
   };
 

@@ -110,5 +110,10 @@ export const orders = pgTable("orders", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  gpsCoords: jsonb("gps_coords").$type<{ lat: number; lng: number; accuracy: number } | null>(),
   checkoutToken: text("checkout_token").unique(),
+  paymentMetadata: jsonb("payment_metadata").$type<{
+    uploadedUrl?: string;
+    [key: string]: any;
+  }>(),
 });

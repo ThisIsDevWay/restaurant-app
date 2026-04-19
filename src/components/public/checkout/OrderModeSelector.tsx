@@ -57,6 +57,7 @@ export function OrderModeSelector({
 }: OrderModeSelectorProps) {
   const [isGeolocating, setIsGeolocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const [usedGps, setUsedGps] = useState(false);
   const addressRef = useRef<HTMLDivElement>(null);
 
   const handleGetLocation = useCallback(() => {
@@ -66,19 +67,38 @@ export function OrderModeSelector({
     }
     setIsGeolocating(true);
     setGeoError(null);
+    setUsedGps(false);
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const coords: GpsCoords = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
         };
         onSetGpsCoords(coords);
-        onSetDeliveryAddress(
-          `GPS: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)} (±${Math.round(coords.accuracy)}m)`
-        );
-        setIsGeolocating(false);
+        
+        try {
+          const { reverseGeocodeAction } = await import("@/actions/geocoding");
+          const result = await reverseGeocodeAction(coords.lat, coords.lng);
+          
+          if (result.success && result.address) {
+            onSetDeliveryAddress(result.address);
+            setUsedGps(true);
+          } else {
+            // Mostrar error para debug en mobile
+            onSetDeliveryAddress(
+              `Error: ${result.error || "No se encontró dirección"}. GPS: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`
+            );
+          }
+        } catch (err) {
+          console.error("Geocoding failed:", err);
+          onSetDeliveryAddress(
+            `GPS: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)} (±${Math.round(coords.accuracy)}m)`
+          );
+        } finally {
+          setIsGeolocating(false);
+        }
       },
       (err) => {
         setIsGeolocating(false);
@@ -203,6 +223,15 @@ export function OrderModeSelector({
             {geoError && (
               <div className="text-[11px] text-[#7B2D2D] font-bold px-1 bg-[#7B2D2D]/5 p-2 rounded-lg border border-[#7B2D2D]/10 animate-in shake">
                 ⚠️ {geoError}
+              </div>
+            )}
+
+            {usedGps && (
+              <div className="bg-amber-100 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center gap-2.5 animate-in slide-in-from-top-2">
+                <span className="text-[14px]">✍️</span>
+                <p className="text-[11px] font-black text-amber-900 uppercase tracking-tight">
+                  Completa o corrige tu dirección
+                </p>
               </div>
             )}
 

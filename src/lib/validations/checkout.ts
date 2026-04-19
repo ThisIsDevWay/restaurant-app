@@ -23,6 +23,7 @@ export const checkoutSchema = v.object({
   paymentMethod: v.picklist(["pago_movil", "transfer"]),
   orderMode: v.optional(v.picklist(["on_site", "take_away", "delivery"])),
   deliveryAddress: v.optional(v.pipe(v.string(), v.maxLength(200))),
+  gpsCoords: v.optional(v.object({ lat: v.number(), lng: v.number(), accuracy: v.number() })),
   items: v.pipe(
     v.array(
       v.object({
