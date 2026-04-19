@@ -1,7 +1,7 @@
 import * as v from "valibot";
 
 // Client-supplied surcharges — validated structurally but server recalculates
-const clientSurchargesSchema = v.optional(v.object({
+const clientSurchargesSchema = v.nullish(v.object({
   plateCount: v.pipe(v.number(), v.integer(), v.minValue(0)),
   adicionalCount: v.pipe(v.number(), v.integer(), v.minValue(0)),
   bebidaCount: v.pipe(v.number(), v.integer(), v.minValue(0)),
@@ -18,12 +18,12 @@ export const checkoutSchema = v.object({
       "Numero de telefono venezolano invalido",
     ),
   ),
-  name: v.optional(v.pipe(v.string(), v.maxLength(50))),
-  cedula: v.optional(v.pipe(v.string(), v.maxLength(20))),
+  name: v.nullish(v.pipe(v.string(), v.maxLength(50))),
+  cedula: v.nullish(v.pipe(v.string(), v.maxLength(20))),
   paymentMethod: v.picklist(["pago_movil", "transfer"]),
-  orderMode: v.optional(v.picklist(["on_site", "take_away", "delivery"])),
-  deliveryAddress: v.optional(v.pipe(v.string(), v.maxLength(200))),
-  gpsCoords: v.optional(v.object({ lat: v.number(), lng: v.number(), accuracy: v.number() })),
+  orderMode: v.nullish(v.picklist(["on_site", "take_away", "delivery"])),
+  deliveryAddress: v.nullish(v.pipe(v.string(), v.maxLength(200))),
+  gpsCoords: v.nullish(v.object({ lat: v.number(), lng: v.number(), accuracy: v.number() })),
   items: v.pipe(
     v.array(
       v.object({
@@ -34,7 +34,7 @@ export const checkoutSchema = v.object({
     v.minLength(1, "Debe agregar al menos un item"),
   ),
   checkoutToken: v.pipe(v.string(), v.uuid()),
-  clientSurcharges: clientSurchargesSchema,
+  clientSurcharges: v.nullish(clientSurchargesSchema),
 });
 
 export type CheckoutInput = v.InferOutput<typeof checkoutSchema>;
