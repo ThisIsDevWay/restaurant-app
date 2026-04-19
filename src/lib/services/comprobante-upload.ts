@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
+import { optimizeImage } from "@/lib/utils/image-optimization";
 
 // ⚠️ Cliente PÚBLICO — usa ANON KEY, no SERVICE_ROLE_KEY
 // La policy del bucket debe permitir INSERT para rol 'anon'
@@ -26,14 +27,6 @@ export type UploadResult =
 
 /**
  * Valida y sube un comprobante de pago al bucket de Supabase Storage.
- * Retorna la URL pública permanente o un error con mensaje en español.
- *
- * SETUP REQUERIDO en Supabase Dashboard (una sola vez):
- *   1. Storage → New bucket → Name: "comprobantes" → Public: true
- *   2. Policy INSERT para anon:
- *      CREATE POLICY "anon_insert_comprobantes"
- *      ON storage.objects FOR INSERT TO anon
- *      WITH CHECK (bucket_id = 'comprobantes');
  */
 export async function uploadComprobante(
     file: File,
@@ -48,13 +41,27 @@ export async function uploadComprobante(
         return { success: false, error: `El archivo pesa ${mb} MB. Máximo: 5 MB.` };
     }
 
-    // ── Path único: orders/{orderId}/{timestamp}.{ext} ──────────────
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-    const path = `orders/${orderId}/${Date.now()}.${ext}`;
+    // ── Optimización ────────────────────────────────────────────────
+    let fileToUpload = file;
+    try {
+        fileToUpload = await optimizeImage(file, {
+            maxWidth: 1200,
+            quality: 0.7,
+            format: "image/webp",
+        });
+    } catch (err) {
+        console.warn("[comprobante-upload] Falló optimización, subiendo original", err);
+    }
+
+    // ── Path único: orders/{orderId}/{timestamp}.webp ──────────────
+    const path = `orders/${orderId}/${Date.now()}.webp`;
 
     const { error } = await supabasePublic.storage
         .from(BUCKET)
-        .upload(path, file, { contentType: file.type, upsert: false });
+        .upload(path, fileToUpload, { 
+            contentType: "image/webp", 
+            upsert: false 
+        });
 
     if (error) {
         console.error("[comprobante-upload]", error.message);

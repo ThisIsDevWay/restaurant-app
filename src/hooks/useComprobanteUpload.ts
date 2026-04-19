@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { uploadComprobante } from "@/lib/services/comprobante-upload";
+import { registerComprobanteAction } from "@/actions/checkout";
 import type { ComprobanteData } from "@/components/public/checkout/CheckoutForm.types";
 
 interface Params {
@@ -56,15 +57,36 @@ export function useComprobanteUpload({ orderId }: Params): UseComprobanteUploadR
             uploadError: null,
         });
 
-        const result = await uploadComprobante(file, orderId);
+        try {
+            // Optimizar imagen: Max 1200px (comprobantes necesitan legibilidad), WebP, calidad 80%
+            const { optimizeImage } = await import("@/lib/utils/image-optimization");
+            const optimizedFile = await optimizeImage(file, {
+                maxWidth: 1200,
+                maxHeight: 1200,
+                quality: 0.8,
+            });
 
-        setComprobante((prev) => {
-            if (!prev) return null;
+            const result = await uploadComprobante(optimizedFile, orderId);
+
             if (result.success) {
-                return { ...prev, uploadedUrl: result.publicUrl, isUploading: false };
+                // 1. Registrar la URL real en la base de datos de la orden
+                await registerComprobanteAction({ 
+                    orderId, 
+                    uploadedUrl: result.publicUrl 
+                });
+
+                setComprobante((prev) => {
+                    if (!prev) return null;
+                    // 2. Usar el link ofuscado para la interfaz y WhatsApp
+                    const obfuscatedUrl = `${window.location.origin}/api/view-comprobante/${orderId}`;
+                    return { ...prev, uploadedUrl: obfuscatedUrl, isUploading: false };
+                });
+            } else {
+                setComprobante((prev) => prev ? { ...prev, isUploading: false, uploadError: result.error } : null);
             }
-            return { ...prev, isUploading: false, uploadError: result.error };
-        });
+        } catch (err) {
+            setComprobante((prev) => prev ? { ...prev, isUploading: false, uploadError: "Error al procesar imagen" } : null);
+        }
     }, [orderId]);
 
     const handleFileSelect = useCallback(async (e: File | React.ChangeEvent<HTMLInputElement>) => {
@@ -96,14 +118,32 @@ export function useComprobanteUpload({ orderId }: Params): UseComprobanteUploadR
         const file = lastFileRef.current;
         if (!file) return;
         setComprobante((prev) => prev ? { ...prev, isUploading: true, uploadError: null } : null);
-        const result = await uploadComprobante(file, orderId);
-        setComprobante((prev) => {
-            if (!prev) return null;
+        
+        try {
+            const { optimizeImage } = await import("@/lib/utils/image-optimization");
+            const optimizedFile = await optimizeImage(file, {
+                maxWidth: 1200,
+                maxHeight: 1200,
+                quality: 0.8,
+            });
+
+            const result = await uploadComprobante(optimizedFile, orderId);
+            
             if (result.success) {
-                return { ...prev, uploadedUrl: result.publicUrl, isUploading: false };
+                // Registrar URL real
+                await registerComprobanteAction({ orderId, uploadedUrl: result.publicUrl });
+
+                setComprobante((prev) => {
+                    if (!prev) return null;
+                    const obfuscatedUrl = `${window.location.origin}/api/view-comprobante/${orderId}`;
+                    return { ...prev, uploadedUrl: obfuscatedUrl, isUploading: false };
+                });
+            } else {
+                setComprobante((prev) => prev ? { ...prev, isUploading: false, uploadError: result.error } : null);
             }
-            return { ...prev, isUploading: false, uploadError: result.error };
-        });
+        } catch (err) {
+            setComprobante((prev) => prev ? { ...prev, isUploading: false, uploadError: "Error al procesar imagen" } : null);
+        }
     }, [orderId]);
 
     const clearComprobante = useCallback(() => {

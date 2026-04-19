@@ -141,7 +141,8 @@ export function ComprobanteUpload({
                 {/* State 3: Content (Preview) */}
                 {comprobante && (
                     <div className="relative w-full h-full flex items-center justify-center animate-in zoom-in-95 duration-500 group/preview">
-                        {(comprobante.previewUrl) && (
+                        {comprobante.previewUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img
                                 src={comprobante.previewUrl}
                                 alt="Comprobante"
