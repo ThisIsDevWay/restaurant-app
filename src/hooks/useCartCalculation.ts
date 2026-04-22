@@ -196,7 +196,7 @@ export function useCartCalculation({
     [cartRadioOptions],
   );
 
-  const extrasCount = cartAdicionales.reduce((sum, a) => sum + a.quantity, 0) + cartContornoSubstitutions.length + cartBebidas.reduce((sum, b) => sum + b.quantity, 0);
+  const extrasCount = cartAdicionales.reduce((sum, a) => sum + a.quantity, 0) + cartBebidas.reduce((sum, b) => sum + b.quantity, 0);
 
   const totalUsdCents = (item.priceUsdCents + substitutionUsdCents + radioUsdCents) * quantity + additionalUsdCents + bebidasUsdCents;
   const totalBsCents = Math.round(totalUsdCents * currentRateBsPerUsd);
