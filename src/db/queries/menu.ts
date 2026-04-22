@@ -15,6 +15,9 @@ export interface MenuWithGroups {
   id: string;
   name: string;
   description: string | null;
+  includedNote?: string | null;
+  hideAdicionales?: boolean;
+  hideBebidas?: boolean;
   priceUsdCents: number;
   costUsdCents: number | null;
   costUpdatedAt: Date | null;
@@ -41,6 +44,9 @@ export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
         id: menuItems.id,
         name: menuItems.name,
         description: menuItems.description,
+        includedNote: menuItems.includedNote,
+        hideAdicionales: menuItems.hideAdicionales,
+        hideBebidas: menuItems.hideBebidas,
         priceUsdCents: menuItems.priceUsdCents,
         costUsdCents: menuItems.costUsdCents,
         costUpdatedAt: menuItems.costUpdatedAt,
@@ -127,6 +133,7 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
         id: menuItems.id,
         name: menuItems.name,
         description: menuItems.description,
+        includedNote: menuItems.includedNote,
         priceUsdCents: menuItems.priceUsdCents,
         costUsdCents: menuItems.costUsdCents,
         costUpdatedAt: menuItems.costUpdatedAt,

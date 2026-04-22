@@ -25,6 +25,9 @@ export const menuItems = pgTable(
     sortOrder: integer("sort_order").notNull().default(0),
     costUsdCents: integer("cost_usd_cents"),
     costUpdatedAt: timestamp("cost_updated_at", { withTimezone: true }),
+    includedNote: text("included_note"),
+    hideAdicionales: boolean("hide_adicionales").notNull().default(false),
+    hideBebidas: boolean("hide_bebidas").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

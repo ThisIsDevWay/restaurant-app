@@ -56,6 +56,9 @@ export interface MenuItemWithComponents {
   id: string;
   name: string;
   description: string | null;
+  includedNote?: string | null;
+  hideAdicionales?: boolean;
+  hideBebidas?: boolean;
   priceUsdCents: number;
   categoryId: string;
   categoryName: string;

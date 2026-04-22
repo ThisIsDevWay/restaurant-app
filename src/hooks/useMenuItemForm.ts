@@ -12,16 +12,16 @@ import {
   generateUploadUrlAction,
   getPublicUrlAction,
 } from "@/actions/menu";
-import { saveMenuItemAdicionalesAction } from "@/actions/adicionales";
-import { saveMenuItemContornosAction } from "@/actions/contornos";
-import { saveMenuItemBebidasAction } from "@/actions/bebidas";
-import type { ContornoSelection, MenuItemFormProps } from "@/components/admin/menu/MenuItemForm.types";
+import type { MenuItemFormProps } from "@/components/admin/menu/MenuItemForm.types";
 
 const menuItemFormSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, "Nombre requerido"), v.maxLength(100, "Máximo 100 caracteres")),
   description: v.optional(
     v.pipe(v.string(), v.maxLength(300, "Máximo 300 caracteres")),
   ),
+  includedNote: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(200, "Máximo 200 caracteres")))),
+  hideAdicionales: v.boolean(),
+  hideBebidas: v.boolean(),
   categoryId: v.pipe(v.string(), v.uuid("Selecciona una categoría")),
   priceUsdDollars: v.pipe(
     v.string(),
@@ -49,9 +49,6 @@ export interface UseMenuItemFormParams {
   categories: MenuItemFormProps["categories"];
   initialData: MenuItemFormProps["initialData"];
   exchangeRate: number;
-  initialSelectedAdicionalIds: string[];
-  initialSelectedContornos: ContornoSelection[];
-  initialSelectedBebidaIds: string[];
 }
 
 export interface UseMenuItemFormReturn {
@@ -66,19 +63,10 @@ export interface UseMenuItemFormReturn {
   error: string | null;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
   previewUrl: string | null;
-  selectedAdicionalIds: string[];
-  setSelectedAdicionalIds: React.Dispatch<React.SetStateAction<string[]>>;
-  selectedContornos: ContornoSelection[];
-  setSelectedContornos: React.Dispatch<React.SetStateAction<ContornoSelection[]>>;
-  selectedBebidaIds: string[];
-  setSelectedBebidaIds: React.Dispatch<React.SetStateAction<string[]>>;
   handleRemoveImage: () => void;
   showDeleteConfirm: boolean;
   setShowDeleteConfirm: React.Dispatch<React.SetStateAction<boolean>>;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
-  toggleContorno: (contorno: { id: string; name: string }) => void;
-  toggleContornoRemovable: (id: string) => void;
-  toggleSubstituteContorno: (contornoId: string, subId: string) => void;
   onDelete: () => Promise<void>;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement> | File) => Promise<void>;
   onFormSubmit: (data: FormValues) => Promise<void>;
@@ -88,9 +76,6 @@ export function useMenuItemForm({
   categories,
   initialData,
   exchangeRate,
-  initialSelectedAdicionalIds,
-  initialSelectedContornos,
-  initialSelectedBebidaIds,
 }: UseMenuItemFormParams): UseMenuItemFormReturn {
   const router = useRouter();
   const isEdit = !!initialData;
@@ -99,9 +84,6 @@ export function useMenuItemForm({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.imageUrl ?? null);
-  const [selectedAdicionalIds, setSelectedAdicionalIds] = useState<string[]>(initialSelectedAdicionalIds);
-  const [selectedContornos, setSelectedContornos] = useState<ContornoSelection[]>(initialSelectedContornos);
-  const [selectedBebidaIds, setSelectedBebidaIds] = useState<string[]>(initialSelectedBebidaIds);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -116,6 +98,9 @@ export function useMenuItemForm({
     defaultValues: {
       name: initialData?.name ?? "",
       description: initialData?.description ?? "",
+      includedNote: initialData?.includedNote ?? "",
+      hideAdicionales: initialData?.hideAdicionales ?? false,
+      hideBebidas: initialData?.hideBebidas ?? false,
       categoryId: initialData?.categoryId ?? "",
       priceUsdDollars: initialData ? String((initialData.priceUsdCents / 100).toFixed(2)) : "",
       costUsdDollars: initialData?.costUsdCents ? String((initialData.costUsdCents / 100).toFixed(2)) : "",
@@ -124,34 +109,7 @@ export function useMenuItemForm({
     },
   });
 
-  function toggleContorno(contorno: { id: string; name: string }) {
-    setSelectedContornos((prev) => {
-      const exists = prev.find((c) => c.id === contorno.id);
-      if (exists) return prev.filter((c) => c.id !== contorno.id);
-      return [...prev, { id: contorno.id, name: contorno.name, removable: false, substituteContornoIds: [] }];
-    });
-  }
 
-  function toggleContornoRemovable(id: string) {
-    setSelectedContornos((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, removable: !c.removable, substituteContornoIds: [] } : c)),
-    );
-  }
-
-  function toggleSubstituteContorno(contornoId: string, subId: string) {
-    setSelectedContornos((prev) =>
-      prev.map((c) => {
-        if (c.id !== contornoId) return c;
-        const already = c.substituteContornoIds.includes(subId);
-        return {
-          ...c,
-          substituteContornoIds: already
-            ? c.substituteContornoIds.filter((id) => id !== subId)
-            : [...c.substituteContornoIds, subId],
-        };
-      }),
-    );
-  }
 
   async function onDelete() {
     if (!initialData) return;
@@ -239,7 +197,10 @@ export function useMenuItemForm({
       if (isEdit) {
         const updateResult = await updateMenuItemAction({
           id: initialData.id,
-          data: { ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "" },
+          data: { ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "",
+            hideAdicionales: data.hideAdicionales ?? false,
+            hideBebidas: data.hideBebidas ?? false,
+          },
         });
         if (updateResult?.serverError) throw new Error(updateResult.serverError);
         if (updateResult?.validationErrors) throw new Error("Error de validación al actualizar");
@@ -247,6 +208,8 @@ export function useMenuItemForm({
       } else {
         const createResult = await createMenuItemAction({
           ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "",
+          hideAdicionales: data.hideAdicionales ?? false,
+          hideBebidas: data.hideBebidas ?? false,
         });
         if (createResult?.serverError) throw new Error(createResult.serverError);
         if (createResult?.validationErrors) throw new Error("Error de validación al crear");
@@ -254,21 +217,7 @@ export function useMenuItemForm({
         itemId = createResult.data.item.id;
       }
 
-      const adicResult = await saveMenuItemAdicionalesAction({ menuItemId: itemId, adicionalIds: selectedAdicionalIds });
-      if (adicResult?.serverError) throw new Error(adicResult.serverError);
 
-      const bebResult = await saveMenuItemBebidasAction({ menuItemId: itemId, bebidaItemIds: selectedBebidaIds });
-      if (bebResult?.serverError) throw new Error(bebResult.serverError);
-
-      const contResult = await saveMenuItemContornosAction({
-        menuItemId: itemId,
-        items: selectedContornos.map((c) => ({
-          contornoId: c.id,
-          removable: c.removable,
-          substituteContornoIds: c.substituteContornoIds,
-        })),
-      });
-      if (contResult?.serverError) throw new Error(contResult.serverError);
 
       router.push("/admin/catalogo");
       router.refresh();
@@ -291,18 +240,9 @@ export function useMenuItemForm({
     error,
     setError,
     previewUrl,
-    selectedAdicionalIds,
-    setSelectedAdicionalIds,
-    selectedContornos,
-    setSelectedContornos,
-    selectedBebidaIds,
-    setSelectedBebidaIds,
     showDeleteConfirm,
     setShowDeleteConfirm,
     fileInputRef,
-    toggleContorno,
-    toggleContornoRemovable,
-    toggleSubstituteContorno,
     onDelete,
     handleImageUpload,
     handleRemoveImage,

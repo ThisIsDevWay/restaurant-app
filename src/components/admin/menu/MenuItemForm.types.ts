@@ -13,6 +13,9 @@ export interface MenuItemFormProps {
     id: string;
     name: string;
     description?: string | null;
+    includedNote?: string | null;
+    hideAdicionales?: boolean;
+    hideBebidas?: boolean;
     categoryId: string;
     priceUsdCents: number;
     costUsdCents?: number | null;
@@ -22,12 +25,4 @@ export interface MenuItemFormProps {
     isAvailable: boolean;
   };
   exchangeRate: number;
-  allAdicionales: { id: string; name: string; priceUsdCents: number; isAvailable: boolean }[];
-  initialSelectedAdicionalIds?: string[];
-  allContornos: { id: string; name: string; priceUsdCents: number; isAvailable: boolean }[];
-  initialSelectedContornos?: ContornoSelection[];
-  allBebidas?: { id: string; name: string; priceUsdCents: number; isAvailable: boolean }[];
-  initialSelectedBebidaIds?: string[];
-  adicionalesEnabled?: boolean;
-  bebidasEnabled?: boolean;
 }
