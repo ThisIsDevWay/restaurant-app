@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { CheckCircle2 } from "lucide-react";
 import { formatRef } from "@/lib/money";
 import type { CatalogItem } from "@/app/(admin)/admin/menu-del-dia/DailyMenu.types";
 
@@ -15,37 +14,75 @@ export function CatalogItemRow({ item, isOn, onToggle }: CatalogItemRowProps) {
   return (
     <button
       onClick={() => onToggle(item.id)}
-      className={`group flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all border outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${isOn
-        ? "bg-primary/[0.03] border-primary/30 shadow-sm hover:border-primary/50"
-        : "bg-white border-transparent hover:border-border hover:shadow-sm"
-        }`}
+      style={{
+        display: "flex", width: "100%", alignItems: "center", gap: 10,
+        padding: "9px 12px",
+        background: isOn ? "#fff" : "#fff8f3",
+        border: `1.5px solid ${isOn ? "#bb0005" : "#ede0d8"}`,
+        borderRadius: 12,
+        cursor: "pointer", textAlign: "left",
+        transition: "all 0.13s ease",
+        outline: "none",
+      }}
+      onMouseEnter={(e) => {
+        if (!isOn) (e.currentTarget as HTMLButtonElement).style.borderColor = "#d4a99f";
+      }}
+      onMouseLeave={(e) => {
+        if (!isOn) (e.currentTarget as HTMLButtonElement).style.borderColor = "#ede0d8";
+      }}
     >
-      <div
-        className={`h-5 w-5 rounded-md flex-shrink-0 flex items-center justify-center transition-all shadow-sm ${isOn
-          ? "bg-primary border-primary text-white"
-          : "bg-white border border-border group-hover:border-primary/40 text-transparent"
-          }`}
-      >
-        <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={3} />
+      {/* Checkbox */}
+      <div style={{
+        width: 18, height: 18, borderRadius: 6, flexShrink: 0,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: isOn ? "#bb0005" : "#fff",
+        border: `2px solid ${isOn ? "#bb0005" : "#d4c5bc"}`,
+        transition: "all 0.13s ease",
+      }}>
+        {isOn && (
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+            <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
       </div>
 
+      {/* Image */}
       {item.imageUrl ? (
         <Image
           src={item.imageUrl}
           alt={item.name}
-          width={40}
-          height={40}
-          className="h-10 w-10 rounded-lg object-cover flex-shrink-0 ring-1 ring-border/50"
+          width={36}
+          height={36}
+          style={{
+            width: 36, height: 36, borderRadius: 8,
+            objectFit: "cover", flexShrink: 0,
+            border: "1px solid #f0e6df",
+          }}
         />
       ) : (
-        <div className="h-10 w-10 rounded-lg bg-bg-app flex-shrink-0 ring-1 ring-border/50" />
+        <div style={{
+          width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+          background: "#fff2e2", border: "1px solid #f0e6df",
+        }} />
       )}
 
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium truncate transition-colors ${isOn ? "text-primary" : "text-text-main"}`}>
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontSize: 13, fontWeight: 600,
+          color: isOn ? "#bb0005" : "#251a07",
+          margin: 0, overflow: "hidden",
+          textOverflow: "ellipsis", whiteSpace: "nowrap",
+          transition: "color 0.13s ease",
+        }}>
           {item.name}
         </p>
-        <p className="text-xs font-semibold text-price-green mt-0.5">
+        <p style={{
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontSize: 11, fontWeight: 600,
+          color: "#1a7a45", margin: "2px 0 0",
+        }}>
           {formatRef(item.priceUsdCents)}
         </p>
       </div>

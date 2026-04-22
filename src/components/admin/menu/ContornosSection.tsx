@@ -1,6 +1,5 @@
 "use client";
 
-import { Switch } from "@/components/ui/switch";
 import { formatRef } from "@/lib/money";
 import type { ContornoSelection } from "./MenuItemForm.types";
 
@@ -20,87 +19,191 @@ export function ContornosSection({
   onToggleSubstitute,
 }: ContornosSectionProps) {
   return (
-    <section className="pt-16 border-t border-gray-200 space-y-8">
-      <header className="flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Contornos</h2>
-          <p className="text-xs text-gray-500 mt-1">Configura los acompañamientos y sus opciones de sustitución.</p>
+    <>
+      <style>{`
+        .cs-card {
+          background: #fff8f3;
+          border: 1.5px solid #ede0d8;
+          border-radius: 14px;
+          padding: 14px 16px;
+          cursor: pointer;
+          transition: border-color 0.15s ease, background 0.15s ease;
+          user-select: none;
+        }
+        .cs-card:hover { border-color: #d4a99f; }
+        .cs-card-active {
+          background: #fff;
+          border-color: #bb0005 !important;
+        }
+
+        .cs-radio {
+          width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+          border: 2px solid #d4a99f;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.15s ease; margin-top: 1px;
+        }
+        .cs-radio-active {
+          border-color: #bb0005;
+          background: #bb0005;
+        }
+        .cs-radio-dot {
+          width: 6px; height: 6px; border-radius: 50%; background: #fff;
+        }
+
+        .cs-name {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 13.5px; font-weight: 600;
+          color: #251a07; line-height: 1.3;
+        }
+        .cs-price {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 11.5px; font-weight: 500;
+          color: #9c8c78; margin-top: 2px;
+        }
+
+        .cs-expand {
+          margin-top: 14px; padding-top: 14px;
+          border-top: 1px solid #f0e6df;
+        }
+
+        .cs-micro-label {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 10px; font-weight: 700;
+          letter-spacing: 0.08em; text-transform: uppercase;
+          color: #9c8c78;
+        }
+
+        .cs-toggle-track {
+          width: 34px; height: 19px; border-radius: 100px;
+          transition: background 0.2s ease; flex-shrink: 0;
+          position: relative; cursor: pointer;
+        }
+        .cs-toggle-thumb {
+          position: absolute; top: 2.5px;
+          width: 14px; height: 14px; border-radius: 50%;
+          background: #fff;
+          transition: left 0.18s ease;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+        }
+
+        .cs-sub-pill {
+          padding: 4px 10px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 11px; font-weight: 600;
+          border-radius: 100px;
+          border: 1px solid #ede0d8;
+          background: #fff8f3;
+          color: #5f5e5e;
+          cursor: pointer;
+          transition: all 0.13s ease;
+          white-space: nowrap;
+        }
+        .cs-sub-pill:hover { border-color: #bb0005; color: #bb0005; }
+        .cs-sub-pill-active {
+          background: #bb0005 !important;
+          border-color: #bb0005 !important;
+          color: #fff !important;
+        }
+      `}</style>
+
+      <div>
+        <div style={{ marginBottom: 16 }}>
+          <p style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: 13, fontWeight: 600, color: "#5f5e5e",
+          }}>
+            Contornos
+          </p>
+          <p style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: 12, color: "#9c8c78", marginTop: 2,
+          }}>
+            Selecciona los acompañamientos disponibles para este plato
+          </p>
         </div>
-      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {allContornos.map((contorno) => {
-          const selected = selectedContornos.find((c) => c.id === contorno.id);
-          const isSelected = !!selected;
-          return (
-            <div
-              key={contorno.id}
-              className={`p-4 rounded-lg border-2 transition-all duration-200 ${isSelected
-                ? "border-primary bg-primary/5 shadow-sm"
-                : "border-gray-200 hover:border-gray-300 bg-white"
-                }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => onToggle(contorno)}
-                  className="flex-1 text-left flex items-start gap-3"
-                >
-                  <div className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? "border-primary bg-primary" : "border-gray-300 bg-white"
-                    }`}>
-                    {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
-                  </div>
-                  <div className="min-w-0">
-                    <p className={`text-sm font-semibold ${isSelected ? "text-primary" : "text-gray-700"}`}>
-                      {contorno.name}
-                    </p>
-                    <p className="text-[10px] text-gray-500 mt-0.5">{formatRef(contorno.priceUsdCents)}</p>
-                  </div>
-                </button>
-                <div className={`h-1.5 w-1.5 rounded-full mt-1.5 shadow-sm ${contorno.isAvailable ? "bg-green-500" : "bg-red-400"}`} />
-              </div>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+          gap: 10,
+        }}>
+          {allContornos.map((contorno) => {
+            const selected = selectedContornos.find((c) => c.id === contorno.id);
+            const isSelected = !!selected;
 
-              {isSelected && (
-                <div className="mt-4 pt-4 border-t border-gray-200 space-y-4 animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase text-gray-400">Intercambiable</span>
-                    <Switch
-                      checked={selected.removable}
-                      onCheckedChange={() => onToggleRemovable(contorno.id)}
-                    />
+            return (
+              <div
+                key={contorno.id}
+                className={`cs-card ${isSelected ? "cs-card-active" : ""}`}
+                onClick={() => onToggle(contorno)}
+              >
+                {/* Top row */}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  <div className={`cs-radio ${isSelected ? "cs-radio-active" : ""}`}>
+                    {isSelected && <div className="cs-radio-dot" />}
                   </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p className="cs-name">{contorno.name}</p>
+                    <p className="cs-price">{formatRef(contorno.priceUsdCents)}</p>
+                  </div>
+                  {/* Availability dot */}
+                  <div style={{
+                    width: 7, height: 7, borderRadius: "50%", flexShrink: 0, marginTop: 4,
+                    background: contorno.isAvailable ? "#1a7a45" : "#b00020",
+                  }} />
+                </div>
 
-                  {selected.removable && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] uppercase text-gray-400 font-bold">Sustitutos</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {allContornos
-                          .filter((c) => c.id !== contorno.id)
-                          .map((sub) => {
-                            const isSubValue = selected.substituteContornoIds.includes(sub.id);
-                            return (
-                              <button
-                                key={sub.id}
-                                type="button"
-                                onClick={() => onToggleSubstitute(contorno.id, sub.id)}
-                                className={`px-2 py-1 text-[10px] rounded border transition-colors ${isSubValue
-                                  ? "bg-primary border-primary text-white"
-                                  : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-                                  }`}
-                              >
-                                {sub.name}
-                              </button>
-                            );
-                          })}
+                {/* Expanded options */}
+                {isSelected && (
+                  <div
+                    className="cs-expand"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Intercambiable toggle */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span className="cs-micro-label">Intercambiable</span>
+                      <div
+                        className="cs-toggle-track"
+                        style={{ background: selected.removable ? "#bb0005" : "#d4c5bc" }}
+                        onClick={() => onToggleRemovable(contorno.id)}
+                      >
+                        <div
+                          className="cs-toggle-thumb"
+                          style={{ left: selected.removable ? 17 : 2 }}
+                        />
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+
+                    {/* Substitutes */}
+                    {selected.removable && (
+                      <div style={{ marginTop: 12 }}>
+                        <p className="cs-micro-label" style={{ marginBottom: 8 }}>Sustitutos</p>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {allContornos
+                            .filter((c) => c.id !== contorno.id)
+                            .map((sub) => {
+                              const isSubSelected = selected.substituteContornoIds.includes(sub.id);
+                              return (
+                                <button
+                                  key={sub.id}
+                                  type="button"
+                                  className={`cs-sub-pill ${isSubSelected ? "cs-sub-pill-active" : ""}`}
+                                  onClick={() => onToggleSubstitute(contorno.id, sub.id)}
+                                >
+                                  {sub.name}
+                                </button>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </section>
+    </>
   );
 }

@@ -1,14 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo } from "react";
-import {
-  UtensilsCrossed,
-  Search,
-  CheckCircle2,
-  Copy,
-} from "lucide-react";
-import { formatRef } from "@/lib/money";
+import { UtensilsCrossed, Search, Copy } from "lucide-react";
 import { DateNavigator } from "@/components/shared/DateNavigator";
 import { CatalogItemRow } from "./CatalogItemRow";
 import { ActiveItemRow } from "./ActiveItemRow";
@@ -90,216 +83,362 @@ export function DailyMenuPlatosTab({
   }, [filteredItems, activePill]);
 
   return (
-    <div className="grid grid-cols-[1fr_1.6fr] gap-4 min-h-[520px]">
-      {/* LEFT COLUMN: Active Items */}
-      <div className="flex flex-col rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
-        <div className="px-4 py-3 border-b border-border flex-shrink-0 bg-bg-app/40">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-text-main">Activos hoy</span>
-            {dateBadge && (
-              <span className="text-[10px] font-medium bg-success/10 text-success px-2 py-0.5 rounded-full">
-                {dateBadge}
-              </span>
+    <>
+      <style>{`
+        .dmpt-col {
+          display: flex; flex-direction: column;
+          background: #fff;
+          border: 1px solid #f0e6df;
+          border-radius: 20px;
+          overflow: hidden;
+          min-height: 0;
+        }
+        .dmpt-col-header {
+          padding: 14px 18px 12px;
+          border-bottom: 1px solid #f0e6df;
+          flex-shrink: 0;
+          background: #fff8f3;
+        }
+        .dmpt-col-title {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 13px; font-weight: 700; color: #251a07;
+          margin: 0;
+        }
+        .dmpt-col-sub {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 11.5px; color: #9c8c78;
+          margin: 3px 0 0;
+        }
+
+        .dmpt-cat-header {
+          display: flex; align-items: center; gap: 8px;
+          padding: 7px 14px;
+          background: rgba(255,248,243,0.95);
+          border-top: 1px solid #f0e6df;
+          border-bottom: 1px solid #f0e6df;
+          position: sticky; top: 0; z-index: 10;
+          backdrop-filter: blur(8px);
+        }
+        .dmpt-cat-name {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 10px; font-weight: 800;
+          color: #9c8c78; text-transform: uppercase; letter-spacing: 0.08em;
+          flex: 1;
+        }
+        .dmpt-cat-count {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 10px; font-weight: 700;
+          padding: 1px 7px; border-radius: 100px;
+        }
+        .dmpt-cat-action {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 10.5px; font-weight: 700;
+          padding: 3px 9px; border-radius: 100px;
+          background: transparent; border: none; cursor: pointer;
+          transition: all 0.13s ease;
+        }
+
+        .dmpt-search {
+          position: relative;
+          margin-bottom: 10px;
+        }
+        .dmpt-search-icon {
+          position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+          color: #9c8c78; pointer-events: none;
+        }
+        .dmpt-search-input {
+          width: 100%; height: 38px;
+          padding: 0 12px 0 36px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 13px; font-weight: 500; color: #251a07;
+          background: #fff; border: 1.5px solid #ede0d8;
+          border-radius: 10px; outline: none;
+          transition: border-color 0.15s ease;
+        }
+        .dmpt-search-input::placeholder { color: #c4b09a; font-weight: 400; }
+        .dmpt-search-input:focus { border-color: #bb0005; }
+
+        .dmpt-pill {
+          padding: 5px 12px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 11.5px; font-weight: 600;
+          border-radius: 100px;
+          border: 1.5px solid transparent;
+          cursor: pointer; flex-shrink: 0;
+          transition: all 0.13s ease; white-space: nowrap;
+        }
+        .dmpt-pill-active { background: #bb0005; color: #fff; border-color: #bb0005; }
+        .dmpt-pill-inactive { background: #fff; color: #5f5e5e; border-color: #ede0d8; }
+        .dmpt-pill-inactive:hover { border-color: #bb0005; color: #bb0005; }
+
+        .dmpt-copy-widget {
+          padding: 12px 16px;
+          border-top: 1px solid #f0e6df;
+          background: #fff8f3;
+          flex-shrink: 0;
+        }
+        .dmpt-copy-label {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 11px; font-weight: 700; color: #9c8c78;
+          letter-spacing: 0.04em; text-transform: uppercase;
+          display: flex; align-items: center; gap: 5px;
+          margin-bottom: 8px;
+        }
+        .dmpt-copy-row { display: flex; gap: 8px; }
+        .dmpt-date-input {
+          flex: 2; min-width: 0; height: 34px;
+          padding: 0 10px;
+          font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px;
+          color: #251a07; background: #fff;
+          border: 1.5px solid #ede0d8; border-radius: 9px; outline: none;
+          transition: border-color 0.15s ease;
+        }
+        .dmpt-date-input:focus { border-color: #bb0005; }
+        .dmpt-copy-btn {
+          flex: 1; height: 34px;
+          font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700;
+          color: #251a07; background: #fff;
+          border: 1.5px solid #ede0d8; border-radius: 9px; cursor: pointer;
+          transition: all 0.13s ease;
+        }
+        .dmpt-copy-btn:not(:disabled):hover { border-color: #bb0005; color: #bb0005; }
+        .dmpt-copy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .dmpt-empty {
+          display: flex; flex-direction: column; align-items: center;
+          justify-content: center; text-align: center;
+          padding: 40px 20px; gap: 10px;
+        }
+      `}</style>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: 14, minHeight: 520 }}>
+
+        {/* LEFT: Active items */}
+        <div className="dmpt-col">
+          <div className="dmpt-col-header">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <p className="dmpt-col-title">Activos hoy</p>
+              {dateBadge && (
+                <span style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontSize: 10, fontWeight: 700,
+                  background: "#eaf7f0", color: "#1a7a45",
+                  padding: "2px 8px", borderRadius: 100,
+                }}>
+                  {dateBadge}
+                </span>
+              )}
+            </div>
+            <p className="dmpt-col-sub">
+              {dailyItemIds.length > 0
+                ? `${dailyItemIds.length} plato${dailyItemIds.length !== 1 ? "s" : ""} seleccionado${dailyItemIds.length !== 1 ? "s" : ""}`
+                : "Ningún plato seleccionado"}
+            </p>
+          </div>
+
+          <DateNavigator
+            dateLabel={dateBadge ? `${dateLabel} (${dateBadge})` : dateLabel}
+            onPrev={() => handleShiftDay(-1)}
+            onNext={() => handleShiftDay(1)}
+          />
+
+          <div style={{ flex: 1, overflowY: "auto", background: "#fff8f3" }}>
+            {selectedItems.length === 0 ? (
+              <div className="dmpt-empty">
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background: "#fff2e2", border: "1px solid #f0e6df",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <UtensilsCrossed size={20} color="#c4b09a" />
+                </div>
+                <p style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontSize: 12, color: "#9c8c78", margin: 0,
+                  maxWidth: 160, lineHeight: 1.5,
+                }}>
+                  Selecciona platos del catálogo para agregarlos a hoy.
+                </p>
+              </div>
+            ) : (
+              categories.map((cat) => {
+                const items = selectedItems.filter((i) => i.categoryName === cat);
+                if (!items.length) return null;
+                return (
+                  <div key={cat}>
+                    <div className="dmpt-cat-header">
+                      <span className="dmpt-cat-name">{cat}</span>
+                      <span className="dmpt-cat-count" style={{
+                        background: "#fff2e2", color: "#9c8c78",
+                      }}>
+                        {items.length}
+                      </span>
+                      <button
+                        className="dmpt-cat-action"
+                        style={{ color: "#b00020" }}
+                        onClick={() => handleToggleCategory(cat, true)}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "#fdeaec")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      >
+                        Quitar todos
+                      </button>
+                    </div>
+                    <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
+                      {items.map((item) => {
+                        const currentContornos = itemContornoSelections[item.id] || [];
+                        const availableDailyContornos = allContornos.filter((c) => dailyContornoIds.includes(c.id));
+                        return (
+                          <ActiveItemRow
+                            key={item.id}
+                            item={item}
+                            currentContornos={currentContornos}
+                            availableDailyContornos={availableDailyContornos}
+                            expandedItemId={expandedItemId}
+                            onToggleExpanded={onToggleExpanded}
+                            onToggleContorno={(contornoId, name) => handleToggleContorno(item.id, contornoId, name)}
+                            onUpdateContornoSettings={(contornoId, updates) => handleUpdateContornoSettings(item.id, contornoId, updates)}
+                            onRemove={handleToggle}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
-          <p className="text-xs text-text-muted mt-0.5">
-            {dailyItemIds.length > 0
-              ? `${dailyItemIds.length} plato${dailyItemIds.length !== 1 ? "s" : ""} seleccionado${dailyItemIds.length !== 1 ? "s" : ""}`
-              : "Ningún plato seleccionado"}
-          </p>
+
+          {/* Copy widget */}
+          <div className="dmpt-copy-widget">
+            <p className="dmpt-copy-label">
+              <Copy size={11} />
+              Copiar menú desde
+            </p>
+            <div className="dmpt-copy-row">
+              <input
+                type="date"
+                value={copyDate}
+                onChange={(e) => onCopyDateChange(e.target.value)}
+                className="dmpt-date-input"
+              />
+              <button
+                className="dmpt-copy-btn"
+                onClick={handleCopyFrom}
+                disabled={!copyDate || copying}
+              >
+                {copying ? "Copiando..." : "Copiar"}
+              </button>
+            </div>
+          </div>
         </div>
 
-        <DateNavigator
-          dateLabel={dateBadge ? `${dateLabel} (${dateBadge})` : dateLabel}
-          onPrev={() => handleShiftDay(-1)}
-          onNext={() => handleShiftDay(1)}
-        />
-
-        <div className="flex-1 overflow-y-auto bg-white/50">
-          {selectedItems.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center py-8 text-center px-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-bg-app/60 mb-3 ring-1 ring-border shadow-sm">
-                <UtensilsCrossed className="h-6 w-6 text-text-muted/50" />
-              </div>
-              <p className="text-xs text-text-muted leading-relaxed max-w-[150px]">
-                Selecciona platos del catálogo para agregarlos a hoy.
-              </p>
+        {/* RIGHT: Catalog */}
+        <div className="dmpt-col">
+          <div className="dmpt-col-header" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div className="dmpt-search">
+              <Search size={15} className="dmpt-search-icon" />
+              <input
+                value={search}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="Buscar plato en el catálogo..."
+                className="dmpt-search-input"
+              />
             </div>
-          ) : (
-            categories.map((cat) => {
-              const items = selectedItems.filter((i) => i.categoryName === cat);
-              if (!items.length) return null;
-              return (
-                <div key={cat} className="mb-2">
-                  <div className="flex items-center gap-2 px-4 py-2 bg-bg-app border-y border-border sticky top-0 z-10 backdrop-blur-sm bg-bg-app/90">
-                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider flex-1">
-                      {cat}
-                    </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md border bg-white shadow-sm text-text-main border-border/60">
-                      {items.length}
-                    </span>
-                    <button
-                      onClick={() => handleToggleCategory(cat, true)}
-                      className="text-[10px] px-2 py-0.5 rounded-md text-error hover:bg-error/10 hover:text-error transition-colors font-medium"
-                    >
-                      Quitar todos
-                    </button>
-                  </div>
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
+              {["Todos", ...categories].map((cat) => {
+                const isActive = activePill === cat;
+                const selCount = cat === "Todos"
+                  ? dailyItemIds.length
+                  : allItems.filter((i) => i.categoryName === cat && dailyItemIds.includes(i.id)).length;
+                return (
+                  <button
+                    key={cat}
+                    className={`dmpt-pill ${isActive ? "dmpt-pill-active" : "dmpt-pill-inactive"}`}
+                    onClick={() => onPillChange(cat)}
+                  >
+                    {cat}
+                    {selCount > 0 && (
+                      <span style={{
+                        marginLeft: 5, fontSize: 10, fontWeight: 800,
+                        opacity: isActive ? 0.75 : 0.65,
+                      }}>
+                        {selCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                  <div className="px-3 py-2 space-y-2">
-                    {items.map((item) => {
-                      const currentContornos = itemContornoSelections[item.id] || [];
-                      const availableDailyContornos = allContornos.filter(c => dailyContornoIds.includes(c.id));
-
-                      return (
-                        <ActiveItemRow
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {filteredItems.length === 0 ? (
+              <div className="dmpt-empty">
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background: "#fff2e2", border: "1px solid #f0e6df",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Search size={20} color="#c4b09a" />
+                </div>
+                <p style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontSize: 13, fontWeight: 600, color: "#251a07", margin: 0,
+                }}>
+                  Sin resultados
+                </p>
+                <p style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontSize: 12, color: "#9c8c78", margin: 0,
+                }}>
+                  No encontramos &ldquo;{search}&rdquo;
+                </p>
+              </div>
+            ) : (
+              visibleCategories.map((cat) => {
+                const items = filteredItems.filter((i) => i.categoryName === cat);
+                if (!items.length) return null;
+                const selInCat = items.filter((i) => dailyItemIds.includes(i.id)).length;
+                const allOn = selInCat === items.length;
+                return (
+                  <div key={cat}>
+                    <div className="dmpt-cat-header">
+                      <span className="dmpt-cat-name">{cat}</span>
+                      <span className="dmpt-cat-count" style={{
+                        background: selInCat > 0 ? "#fdeaec" : "#f0e6df",
+                        color: selInCat > 0 ? "#bb0005" : "#9c8c78",
+                      }}>
+                        {selInCat}/{items.length}
+                      </span>
+                      <button
+                        className="dmpt-cat-action"
+                        style={{ color: allOn ? "#b00020" : "#bb0005" }}
+                        onClick={() => handleToggleCategory(cat)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = allOn ? "#fdeaec" : "#fff8f3";
+                        }}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      >
+                        {allOn ? "Quitar todos" : "Seleccionar todos"}
+                      </button>
+                    </div>
+                    <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 5 }}>
+                      {items.map((item) => (
+                        <CatalogItemRow
                           key={item.id}
                           item={item}
-                          currentContornos={currentContornos}
-                          availableDailyContornos={availableDailyContornos}
-                          expandedItemId={expandedItemId}
-                          onToggleExpanded={onToggleExpanded}
-                          onToggleContorno={(contornoId, name) => handleToggleContorno(item.id, contornoId, name)}
-                          onUpdateContornoSettings={(contornoId, updates) => handleUpdateContornoSettings(item.id, contornoId, updates)}
-                          onRemove={handleToggle}
+                          isOn={dailyItemIds.includes(item.id)}
+                          onToggle={handleToggle}
                         />
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Copy From Widget */}
-        <div className="px-4 py-3 border-t border-border bg-bg-app/40 flex flex-col gap-2 flex-shrink-0">
-          <span className="text-xs font-medium text-text-muted flex items-center gap-1.5">
-            <Copy className="h-3.5 w-3.5" /> Copiar menú desde:
-          </span>
-          <div className="flex gap-2">
-            <input
-              type="date"
-              value={copyDate}
-              onChange={(e) => onCopyDateChange(e.target.value)}
-              className="flex-[2] min-w-0 rounded-xl border border-border bg-white px-3 py-1.5 text-xs text-text-main outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all shadow-sm"
-            />
-            <button
-              onClick={handleCopyFrom}
-              disabled={!copyDate || copying}
-              className="flex-1 text-xs px-3 py-1.5 rounded-xl border border-border bg-white font-medium text-text-main shadow-sm hover:bg-bg-app transition-all disabled:opacity-50 disabled:hover:bg-white"
-            >
-              {copying ? "Copiando..." : "Copiar"}
-            </button>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
-
-      {/* RIGHT COLUMN: Full Catalog */}
-      <div className="flex flex-col rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
-        <div className="px-4 py-3 border-b flex-shrink-0 space-y-3 bg-bg-app/40">
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-            <input
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Buscar plato en el catálogo..."
-              className="w-full rounded-xl border border-border bg-white pl-10 pr-4 py-2 text-sm text-text-main outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 shadow-sm transition-all"
-            />
-          </div>
-
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {["Todos", ...categories].map((cat) => {
-              const isSelectedCat = activePill === cat;
-              const selCount =
-                cat === "Todos"
-                  ? dailyItemIds.length
-                  : allItems.filter(
-                    (i) => i.categoryName === cat && dailyItemIds.includes(i.id)
-                  ).length;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => onPillChange(cat)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 border shadow-sm ${isSelectedCat
-                    ? "bg-primary border-primary text-white shadow-primary/20"
-                    : "bg-white border-border text-text-muted hover:border-text-muted/30"
-                    }`}
-                >
-                  {cat}
-                  {selCount > 0 && (
-                    <span
-                      className={`text-[10px] rounded-full px-1.5 py-0.5 leading-none transition-colors ${isSelectedCat
-                        ? "bg-white/20 text-white"
-                        : "bg-primary/10 text-primary"
-                        }`}
-                    >
-                      {selCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-bg-app/60 mb-3 ring-1 ring-border shadow-sm">
-                <Search className="h-6 w-6 text-text-muted/50" />
-              </div>
-              <p className="text-sm font-medium text-text-main mb-1">Sin resultados</p>
-              <p className="text-xs text-text-muted">No encontramos &quot;{search}&quot;</p>
-            </div>
-          ) : (
-            visibleCategories.map((cat) => {
-              const items = filteredItems.filter((i) => i.categoryName === cat);
-              if (!items.length) return null;
-              const selInCat = items.filter((i) => dailyItemIds.includes(i.id)).length;
-              const allOn = selInCat === items.length;
-
-              return (
-                <div key={cat} className="mb-2">
-                  <div className="flex items-center gap-3 px-4 py-2.5 bg-bg-app border-y border-border sticky top-0 z-10 backdrop-blur-sm bg-bg-app/90">
-                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider flex-1">
-                      {cat}
-                    </span>
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-md border font-semibold ${selInCat > 0
-                        ? "bg-primary/10 text-primary border-primary/20"
-                        : "bg-white text-text-muted border-border shadow-sm"
-                        }`}
-                    >
-                      {selInCat}/{items.length}
-                    </span>
-                    <button
-                      onClick={() => handleToggleCategory(cat)}
-                      className={`text-[10px] px-2.5 py-1 rounded-lg border font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 ${allOn
-                        ? "bg-white border-border text-text-main hover:bg-error/5 hover:text-error hover:border-error/20"
-                        : "bg-white border-border text-text-main hover:border-primary/30 hover:text-primary"
-                        }`}
-                    >
-                      {allOn ? "Quitar todos" : "Seleccionar todos"}
-                    </button>
-                  </div>
-
-                  <div className="px-3 py-2 space-y-1.5">
-                    {items.map((item) => (
-                      <CatalogItemRow
-                        key={item.id}
-                        item={item}
-                        isOn={dailyItemIds.includes(item.id)}
-                        onToggle={handleToggle}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
