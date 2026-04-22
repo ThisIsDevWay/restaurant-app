@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MenuItemCard } from "./MenuItemCard";
 import { ItemDetailModal } from "@/components/customer/ItemDetailModal";
 import { useCartStore } from "@/store/cartStore";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -79,6 +80,7 @@ export function MenuGrid({
       setDrinkWarningItem({ payload, categoryName });
     } else {
       addItem(payload);
+      toast.success(`${payload.name} añadido al carrito`);
       if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
     }
   };
@@ -86,6 +88,7 @@ export function MenuGrid({
   const confirmAddDrink = () => {
     if (drinkWarningItem) {
       addItem(drinkWarningItem.payload);
+      toast.success(`${drinkWarningItem.payload.name} añadido al carrito`);
       if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
       setDrinkWarningItem(null);
     }
@@ -100,12 +103,16 @@ export function MenuGrid({
       {sortedItems.map((item, index) => {
         const hasContornos = item.contornos.some((c) => c.isAvailable);
         const hasRequiredOptions = item.optionGroups.some((g) => g.required);
-        const hasDailyAdicionales = adicionalesEnabled && dailyAdicionales.length > 0;
-        const hasDailyBebidas = bebidasEnabled && dailyBebidas.length > 0;
+        const effectiveHasDailyAdicionales = adicionalesEnabled && !item.hideAdicionales && dailyAdicionales.length > 0;
+        const effectiveHasDailyBebidas = bebidasEnabled && !item.hideBebidas && dailyBebidas.length > 0;
 
+        // Si la categoría es "Simple" (Rápido), no forzamos el modal por adicionales/bebidas del día
+        // Esto permite que bebidas/contornos se agreguen con 1-click como configuró el admin
         const needsDetailModal =
-          !item.categoryIsSimple &&
-          (hasContornos || hasRequiredOptions || hasDailyAdicionales || hasDailyBebidas);
+          !item.categoryIsSimple ||
+          hasContornos ||
+          hasRequiredOptions ||
+          (item.categoryIsSimple ? false : (effectiveHasDailyAdicionales || effectiveHasDailyBebidas));
         const priceBsCents = rate
           ? Math.round(item.priceUsdCents * rate)
           : 0;
@@ -116,6 +123,7 @@ export function MenuGrid({
             id={item.id}
             name={item.name}
             description={item.description}
+            includedNote={item.includedNote ?? null}
             priceUsdCents={item.priceUsdCents}
             priceBsCents={priceBsCents}
             categoryName={item.categoryName}

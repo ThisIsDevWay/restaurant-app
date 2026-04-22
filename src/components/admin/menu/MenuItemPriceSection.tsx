@@ -24,7 +24,10 @@ export function MenuItemPriceSection({
   exchangeRate,
 }: MenuItemPriceSectionProps) {
   const currentPriceStr = watch("priceUsdDollars");
-  const currentPriceBs = parseFloat(currentPriceStr) * exchangeRate * 100 || 0;
+  const isPriceEmpty = !currentPriceStr || currentPriceStr.trim() === "";
+  const isFree = !isPriceEmpty && parseFloat(currentPriceStr) === 0;
+
+  const currentPriceBs = parseFloat(currentPriceStr || "0") * exchangeRate * 100 || 0;
   const currentCostStr = watch("costUsdDollars") ?? "";
   const currentCostCents = currentCostStr ? Math.round(parseFloat(currentCostStr) * 100) : 0;
   const currentPriceCents = Math.round(parseFloat(currentPriceStr || "0") * 100);
@@ -66,7 +69,7 @@ export function MenuItemPriceSection({
                   <span className="text-[10px] font-medium text-gray-500 uppercase">Item sin costo</span>
                   <Switch
                     size="sm"
-                    checked={parseFloat(currentPriceStr || "0") === 0}
+                    checked={isFree}
                     onCheckedChange={(checked) => {
                       setValue("priceUsdDollars", checked ? "0" : "1.00");
                     }}
@@ -79,15 +82,14 @@ export function MenuItemPriceSection({
                   {...register("priceUsdDollars")}
                   type="number"
                   step="0.01"
-                  disabled={parseFloat(currentPriceStr || "0") === 0}
-                  className="bg-transparent text-2xl font-medium w-full focus:outline-none disabled:text-green-600 disabled:opacity-100"
+                  className={`bg-transparent text-2xl font-medium w-full focus:outline-none ${isFree ? 'text-green-600' : ''}`}
                 />
               </div>
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase text-gray-400">Referencia Bs.</label>
-              <p className={`text-2xl font-light mt-1 ${currentPriceCents === 0 ? "text-green-600 font-medium" : "text-gray-500"}`}>
-                {currentPriceCents === 0 ? "ITEM SIN COSTO" : (currentPriceBs > 0 ? formatBs(currentPriceBs).replace("Bs.", "").trim() : "0.00")}
+              <p className={`text-2xl mt-1 ${isFree ? "text-green-600 font-medium" : "text-gray-500 font-light"}`}>
+                {isFree ? "ITEM SIN COSTO" : (currentPriceBs > 0 ? formatBs(currentPriceBs).replace("Bs.", "").trim() : "0.00")}
               </p>
             </div>
           </div>

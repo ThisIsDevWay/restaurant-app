@@ -8,7 +8,6 @@ import { MenuClient } from "./MenuClient";
 import { Cart } from "@/components/public/cart/Cart";
 import { ActiveOrdersBanner } from "@/components/public/ActiveOrdersBanner";
 import Link from "next/link";
-import { Instagram } from "lucide-react";
 
 export const revalidate = 30;
 
@@ -29,11 +28,6 @@ export default async function MenuPage() {
     const items = dailyMenuData?.items ?? [];
     const dailyAdicionales = dailyMenuData?.dailyAdicionales ?? [];
     const dailyBebidas = dailyMenuData?.dailyBebidas ?? [];
-
-    // Cortocircuito estructural: si no hay items, mostramos estado vacío de inmediato
-    if (items.length === 0) {
-      return <EmptyMenu appSettings={null} />;
-    }
 
     // Ola 2: data complementaria con fallback individual para resiliencia
     const [rateData, allContornos, appSettings] = await Promise.all([
@@ -118,25 +112,5 @@ export default async function MenuPage() {
       </div>
     );
   }
-}
-
-function EmptyMenu({ appSettings }: { appSettings: any }) {
-  return (
-    <div className="min-h-screen bg-bg-app">
-      <div className="flex flex-col items-center justify-center py-32 text-center px-4">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/5">
-          <span className="text-4xl">🍽️</span>
-        </div>
-        <h2 className="text-xl font-bold text-text-main mb-2">
-          Menú no disponible
-        </h2>
-        <p className="text-sm text-text-muted max-w-xs">
-          El menú del día aún no ha sido configurado. Vuelve más tarde para
-          ver las opciones disponibles.
-        </p>
-      </div>
-      <Cart />
-    </div>
-  );
 }
 

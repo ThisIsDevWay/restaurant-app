@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
+import { toast } from "sonner";
 
 const CATEGORY_EMOJI: Record<string, string> = {
     pollos: "🍗",
@@ -17,6 +18,7 @@ export interface MenuItemCardClassicProps {
     id: string;
     name: string;
     description: string | null;
+    includedNote?: string | null;
     priceUsdCents: number;
     priceBsCents: number;
     categoryName: string;
@@ -34,6 +36,7 @@ export function MenuItemCardClassic({
     id,
     name,
     description,
+    includedNote,
     priceUsdCents,
     priceBsCents,
     categoryName,
@@ -71,12 +74,14 @@ export function MenuItemCardClassic({
             categoryAllowAlone,
             categoryIsSimple,
             categoryName,
+            includedNote: includedNote ?? null,
         };
 
         if (onAddSimpleItem) {
             onAddSimpleItem(payload, categoryName);
         } else {
             addItem(payload);
+            toast.success(`${name} añadido al carrito`);
             if (typeof navigator !== "undefined" && navigator.vibrate) {
                 navigator.vibrate(30);
             }
@@ -138,6 +143,14 @@ export function MenuItemCardClassic({
                         <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-text-muted">
                             {description}
                         </p>
+                    )}
+                    {includedNote && (
+                        <div className="mt-1.5 flex justify-center">
+                            <p className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                                <span>✓</span>
+                                Incluye: {includedNote}
+                            </p>
+                        </div>
                     )}
                 </div>
 

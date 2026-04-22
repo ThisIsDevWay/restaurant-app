@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import Image from "next/image";
+import { toast } from "sonner";
 import { formatBs, formatRef } from "@/lib/money";
 import { useCartStore } from "@/store/cartStore";
 import { useItemDetailModal } from "@/hooks/useItemDetailModal";
@@ -85,11 +86,14 @@ export function ItemDetailModalClassic({
             categoryAllowAlone: item.categoryAllowAlone,
             categoryIsSimple: item.categoryIsSimple,
             categoryName: item.categoryName,
+            includedNote: item.includedNote ?? null,
         };
 
         for (let i = 0; i < modal.quantity; i++) {
             addItem(payload);
         }
+
+        toast.success(`${item.name} añadido al carrito`);
 
         if (typeof navigator !== "undefined" && navigator.vibrate) {
             navigator.vibrate(30);
@@ -125,14 +129,17 @@ export function ItemDetailModalClassic({
                         <X className="h-5 w-5" />
                     </button>
 
-                    {/* Top Image Banner */}
+                    {/* Top Image Banner (Responsive height + Contain to prevent cutting) */}
                     {item.imageUrl ? (
-                        <div className="relative w-full aspect-[4/3] bg-bg-image sm:aspect-video">
+                        <div 
+                            className="relative w-full bg-bg-image flex items-center justify-center border-b border-border/50"
+                            style={{ height: "clamp(200px, 35vh, 280px)" }}
+                        >
                             <Image
                                 src={item.imageUrl}
                                 alt={item.name}
                                 fill
-                                className="object-cover"
+                                className="object-cover transition-transform duration-500 hover:scale-[1.02]"
                                 sizes="100vw"
                                 quality={85}
                                 priority
@@ -177,6 +184,17 @@ export function ItemDetailModalClassic({
 
                     <div className="mx-5 my-2 border-t border-border" />
 
+                    {/* Incluye (fixed inclusions) */}
+                    {item.includedNote && (
+                        <div className="mx-5 mb-3 flex flex-col items-center text-center gap-1 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2.5">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-emerald-600 text-[13px] font-bold shrink-0">✓</span>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Incluye</p>
+                            </div>
+                            <p className="text-[13px] text-emerald-800 font-medium leading-snug">{item.includedNote}</p>
+                        </div>
+                    )}
+
                     {/* Contornos */}
                     <ContornoSelector
                         fixedContornos={modal.fixedContornos}
@@ -200,8 +218,8 @@ export function ItemDetailModalClassic({
                         currentRateBsPerUsd={currentRateBsPerUsd}
                     />
 
-                    {/* Adicionales del día */}
-                    {adicionalesEnabled && (
+                    {/* Adicionales del día (Ocultar si es categoría Rápida o si el plato ya es un adicional) */}
+                    {adicionalesEnabled && !item.hideAdicionales && !item.categoryIsSimple && !item.categoryName.toLowerCase().includes("adicional") && !item.categoryName.toLowerCase().includes("contorno") && (
                         <AdicionalesList
                             dailyAdicionales={dailyAdicionales}
                             quantities={modal.adicionalQuantities}
@@ -212,8 +230,8 @@ export function ItemDetailModalClassic({
                         />
                     )}
 
-                    {/* Bebidas del día */}
-                    {bebidasEnabled && (
+                    {/* Bebidas del día (Ocultar si es categoría Rápida o si el plato ya es una bebida) */}
+                    {bebidasEnabled && !item.hideBebidas && !item.categoryIsSimple && !item.categoryName.toLowerCase().includes("bebida") && (
                         <BebidasList
                             dailyBebidas={dailyBebidas}
                             quantities={modal.bebidaQuantities}

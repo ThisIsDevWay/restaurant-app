@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Plus } from "lucide-react";
 import { formatBs, formatRef } from "@/lib/money";
 import { useCartStore } from "@/store/cartStore";
+import { toast } from "sonner";
 
 const CATEGORY_EMOJI: Record<string, string> = {
   pollos: "🍗",
@@ -18,6 +19,7 @@ interface MenuItemCardProps {
   id: string;
   name: string;
   description: string | null;
+  includedNote?: string | null;
   priceUsdCents: number;
   priceBsCents: number;
   categoryName: string;
@@ -35,6 +37,7 @@ export function MenuItemCardModern({
   id,
   name,
   description,
+  includedNote,
   priceUsdCents,
   priceBsCents,
   categoryName,
@@ -72,12 +75,14 @@ export function MenuItemCardModern({
       categoryAllowAlone,
       categoryIsSimple,
       categoryName,
+      includedNote: includedNote ?? null,
     };
 
     if (onAddSimpleItem) {
       onAddSimpleItem(payload, categoryName);
     } else {
       addItem(payload);
+      toast.success(`${name} añadido al carrito`);
       if (typeof navigator !== "undefined" && navigator.vibrate) {
         navigator.vibrate(30);
       }
@@ -92,22 +97,25 @@ export function MenuItemCardModern({
         !isAvailable && "cursor-default opacity-80",
       )}
     >
-      {/* Left: Image (Universal CSS Trick) */}
-      <div className="relative w-[38%] shrink-0 bg-bg-image p-1.5 flex items-center justify-center">
+      {/* Left: Image (Clamped width + Aspect Square) */}
+      <div 
+        className="relative flex shrink-0 items-center justify-center p-1.5"
+        style={{ width: "clamp(115px, 38%, 150px)" }}
+      >
         {imageUrl ? (
-          <div className="relative w-full h-full">
+          <div className="relative aspect-square w-full">
             <Image
               src={imageUrl}
               alt={name}
               fill
-              className="object-cover drop-shadow-sm rounded-[10px]"
-              sizes="(max-width: 640px) 38vw, 180px"
+              className="object-cover rounded-[10px] drop-shadow-sm transition-transform duration-500 hover:scale-105"
+              sizes="(max-width: 640px) 38vw, 150px"
               quality={75}
               priority={priority}
             />
           </div>
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-4xl">
+          <div className="flex aspect-square w-full items-center justify-center text-4xl bg-bg-image rounded-[10px]">
             {emoji}
           </div>
         )}
@@ -135,6 +143,14 @@ export function MenuItemCardModern({
             <p className="mt-1 line-clamp-3 text-[12px] leading-snug text-text-muted">
               {description}
             </p>
+          )}
+          {includedNote && (
+            <div className="mt-1.5 flex justify-center">
+              <p className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                <span>✓</span>
+                Incluye: {includedNote}
+              </p>
+            </div>
           )}
         </div>
 

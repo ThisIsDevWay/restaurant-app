@@ -111,17 +111,32 @@ export function MenuClient({
           rateData={rateData}
         />
       </div>
-      <MenuGrid
-        items={filteredItems}
-        rate={rate}
-        allContornos={allContornos}
-        adicionalesEnabled={adicionalesEnabled}
-        bebidasEnabled={bebidasEnabled}
-        dailyAdicionales={dailyAdicionales}
-        dailyBebidas={dailyBebidas}
-        maxQuantityPerItem={maxQuantityPerItem}
-        menuLayout={menuLayout}
-      />
+      {items.length > 0 ? (
+        <MenuGrid
+          items={filteredItems}
+          rate={rate}
+          allContornos={allContornos}
+          adicionalesEnabled={adicionalesEnabled}
+          bebidasEnabled={bebidasEnabled}
+          dailyAdicionales={dailyAdicionales}
+          dailyBebidas={dailyBebidas}
+          maxQuantityPerItem={maxQuantityPerItem}
+          menuLayout={menuLayout}
+        />
+      ) : (
+        <div className="flex flex-col items-center justify-center py-24 text-center px-4 animate-in fade-in zoom-in-95 duration-500">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#7B2D2D]/5">
+            <span className="text-4xl">🍽️</span>
+          </div>
+          <h2 className="text-xl font-bold text-[#251a07] mb-2 font-display">
+            Menú no disponible
+          </h2>
+          <p className="text-[13px] text-[#251a07]/60 max-w-xs leading-relaxed font-medium">
+            El menú del día aún no ha sido configurado. Vuelve más tarde para
+            ver las opciones disponibles.
+          </p>
+        </div>
+      )}
     </>
   );
 }
