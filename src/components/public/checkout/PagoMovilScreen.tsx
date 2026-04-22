@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { ChevronLeft, Copy, Check, Loader2, Link as LinkIcon, ExternalLink, User, Home } from "lucide-react";
 import type { GpsCoords } from "./CheckoutForm.types";
 import { useComprobanteUpload } from "@/hooks/useComprobanteUpload";
 import { ComprobanteUpload } from "./ComprobanteUpload";
 import { appendComprobanteToMessage, buildFinalWaLink } from "@/lib/utils/build-whatsapp-payload";
 import { formatBs, formatRef } from "@/lib/money";
-import { useCartStore } from "@/store/cartStore";
 import { CopyAllButton } from "./CopyAllButton";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +25,7 @@ interface PagoMovilScreenProps {
     gpsCoords: GpsCoords | null;
     deliveryAddress: string;
     onVolver: () => void;
+    onCleanup: () => void;
 }
 
 export function PagoMovilScreen({
@@ -39,9 +38,8 @@ export function PagoMovilScreen({
     gpsCoords,
     deliveryAddress,
     onVolver,
+    onCleanup,
 }: PagoMovilScreenProps) {
-    const router = useRouter();
-    const clearCart = useCartStore((s) => s.clearCart);
 
     // ✅ Forzar scroll al inicio cuando se monta la pantalla de pago
     useEffect(() => {
@@ -75,12 +73,12 @@ export function PagoMovilScreen({
         // Cambiar a estado finalizado para mostrar confirmación y opción de reintento
         setFinalizado(true);
         
-        // NO vaciamos el carrito ni redirigimos automáticamente
+        // Limpiar carrito + sessionStorage para que un próximo checkout no restaure datos viejos
+        onCleanup();
     };
 
     const handleConfirmarSalida = () => {
-        clearCart();
-        router.push("/");
+        window.location.href = "/";
     };
 
     const handleCopyLink = () => {

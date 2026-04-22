@@ -110,6 +110,17 @@ export function OrderSummary({
 
               {/* Components List */}
               <div className="ml-8 space-y-3">
+                {/* Incluye (fixed inclusions) */}
+                {item.includedNote && (
+                  <>
+                    <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-emerald-600 mt-1.5 mb-[2px]">Incluye</div>
+                    <div className="flex items-center pl-2 border-l-[1.5px] border-emerald-200 gap-1.5">
+                      <span className="text-emerald-600 text-[11px] font-bold">✓</span>
+                      <span className="text-[12px] text-emerald-700 font-medium">{item.includedNote}</span>
+                    </div>
+                  </>
+                )}
+
                 {/* Contornos Section */}
                 {((item.fixedContornos ?? []).length > 0 || (item.contornoSubstitutions ?? []).length > 0) && (
                   <>

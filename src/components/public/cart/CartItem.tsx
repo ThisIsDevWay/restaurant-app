@@ -360,9 +360,10 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
   const adicionales    = item.selectedAdicionales   ?? [];
   const bebidas        = item.selectedBebidas       ?? [];
   const removals       = item.removedComponents     ?? [];
+  const includedNote   = item.includedNote          ?? null;
 
   const hasContornos      = fixedContornos.length > 0 || substitutions.length > 0;
-  const hasCustomizations = hasContornos || adicionales.length > 0 || bebidas.length > 0 || removals.length > 0;
+  const hasCustomizations = hasContornos || adicionales.length > 0 || bebidas.length > 0 || removals.length > 0 || !!includedNote;
   const lineUsdCents      = computeItemUsdCents(item); // quantity already applied inside
 
   function handleDecrement() {
@@ -455,6 +456,19 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
             borderTop:     `1px solid ${T.creamLow}`,
             background:    T.surface,
           }}>
+            {/* Included note (fixed, non-interactive) */}
+            {includedNote && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                <CatLabel>Incluye</CatLabel>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  <Pill variant="default">
+                    <span style={{ color: "#16a34a", fontWeight: 700 }}>✓</span>
+                    {includedNote}
+                  </Pill>
+                </div>
+              </div>
+            )}
+
             {hasContornos && (
               <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
                 <CatLabel>Contornos</CatLabel>

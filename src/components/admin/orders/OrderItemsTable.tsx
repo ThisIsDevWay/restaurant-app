@@ -74,6 +74,7 @@ export function OrderItemsTable({
             );
             const hasModifiers =
               hasContornos ||
+              !!item.includedNote ||
               (item.removedComponents && item.removedComponents.length > 0) ||
               pureAdicionales.length > 0 ||
               (item.selectedBebidas && item.selectedBebidas.length > 0);
@@ -105,6 +106,19 @@ export function OrderItemsTable({
 
                 {hasModifiers && (
                   <div className="mt-4 ml-11 space-y-3">
+                    {/* Incluye (fixed inclusions) */}
+                    {item.includedNote && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-emerald-500 text-sm font-black">✓</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Incluye</span>
+                        </div>
+                        <div className="pl-3 border-l-2 border-emerald-400/40 py-0.5">
+                          <span className="text-sm text-emerald-700 font-medium">{item.includedNote}</span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Contornos */}
                     {hasContornos && (
                       <div className="space-y-1.5">

@@ -4,6 +4,7 @@ export interface SnapshotItem {
   priceUsdCents: number;
   priceBsCents: number;
   quantity: number;
+  includedNote?: string | null;
   fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
   selectedAdicionales: Array<{
     id: string;
@@ -54,6 +55,11 @@ export function formatItemsDetailed(
           : `*${item.name}*`;
       lines.push(header);
       lines.push(`Base · ${basePrice}`);
+
+      // --- Incluye (fixed inclusions) ---
+      if (item.includedNote) {
+        lines.push(`✅ Incluye: ${item.includedNote}`);
+      }
 
       // --- Contornos ---
       const hasFixedContornos = item.fixedContornos.length > 0;

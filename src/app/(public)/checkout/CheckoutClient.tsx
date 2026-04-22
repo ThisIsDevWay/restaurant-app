@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { processCheckoutAction, type CheckoutResult } from "@/actions/checkout";
@@ -37,6 +37,47 @@ type CheckoutState =
   | { type: "success"; orderId: string; totalBsCents: number }
   | { type: "error"; message: string };
 
+/* ── sessionStorage persistence ── */
+const CHECKOUT_STORAGE_KEY = "gm_checkout_state";
+const CHECKOUT_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+interface PersistedCheckout {
+  state: CheckoutState;
+  savedAt: number;
+}
+
+function persistCheckout(checkoutState: CheckoutState) {
+  try {
+    const payload: PersistedCheckout = { state: checkoutState, savedAt: Date.now() };
+    sessionStorage.setItem(CHECKOUT_STORAGE_KEY, JSON.stringify(payload));
+  } catch { /* quota exceeded or SSR — ignore */ }
+}
+
+function restoreCheckout(): CheckoutState | null {
+  try {
+    const raw = sessionStorage.getItem(CHECKOUT_STORAGE_KEY);
+    if (!raw) return null;
+    const { state, savedAt } = JSON.parse(raw) as PersistedCheckout;
+    // Expire stale sessions
+    if (Date.now() - savedAt > CHECKOUT_TTL_MS) {
+      sessionStorage.removeItem(CHECKOUT_STORAGE_KEY);
+      return null;
+    }
+    // Only restore post-order states (not form/success/error)
+    if (state.type === "form" || state.type === "success" || state.type === "error") {
+      sessionStorage.removeItem(CHECKOUT_STORAGE_KEY);
+      return null;
+    }
+    return state;
+  } catch {
+    return null;
+  }
+}
+
+function clearPersistedCheckout() {
+  try { sessionStorage.removeItem(CHECKOUT_STORAGE_KEY); } catch { /* ignore */ }
+}
+
 interface CheckoutSettings {
   rate: number | null;
   orderModeOnSiteEnabled: boolean;
@@ -72,9 +113,34 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
   const ensureCheckoutToken = useCartStore((s) => s.ensureCheckoutToken);
   const clearCheckoutToken = useCartStore((s) => s.clearCheckoutToken);
   const router = useRouter();
-  const [state, setState] = useState<CheckoutState>({ type: "form" });
+  const [state, setStateRaw] = useState<CheckoutState>({ type: "form" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Wrapper: persist post-order states to sessionStorage
+  const setState = useCallback((next: CheckoutState) => {
+    setStateRaw(next);
+    if (next.type === "form" || next.type === "success" || next.type === "error") {
+      clearPersistedCheckout();
+    } else {
+      persistCheckout(next);
+    }
+  }, []);
+
+  // Clears persistence + cart WITHOUT transitioning state (for PagoMovil's "Orden Notificada" screen)
+  const handleCleanup = useCallback(() => {
+    clearPersistedCheckout();
+    clearCart();
+    clearCheckoutToken();
+  }, [clearCart, clearCheckoutToken]);
+
+  // Restore persisted state on mount
+  useEffect(() => {
+    const restored = restoreCheckout();
+    if (restored) {
+      setStateRaw(restored);
+    }
+  }, []);
 
   const [totalBsCents, setTotalBsCents] = useState(() =>
     initialSettings.rate ? totalBsCentsFromRate(initialSettings.rate) : cartTotalBsCents
@@ -294,9 +360,11 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
         ? state.totalBsCents
         : totalBsCents;
     setState({ type: "success", orderId, totalBsCents: bs });
+    clearPersistedCheckout();
     clearCart();
     clearCheckoutToken();
   };
+
 
   const handleError = (message: string) => {
     setError(message);
@@ -375,6 +443,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
           gpsCoords={state.gpsCoords}
           deliveryAddress={state.deliveryAddress}
           onVolver={() => setState({ type: "form" })}
+          onCleanup={handleCleanup}
         />
       )}
 

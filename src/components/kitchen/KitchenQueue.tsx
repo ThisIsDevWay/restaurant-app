@@ -19,6 +19,7 @@ interface KitchenOrder {
   itemsSnapshot: Array<{
     id: string;
     name: string;
+    includedNote?: string | null;
     selectedContorno: { id: string; name: string } | null;
     fixedContornos?: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
     selectedAdicionales: Array<{
@@ -269,6 +270,14 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                             </span>
                             {item.name}
                           </p>
+                          {/* Incluye (fixed inclusions) */}
+                          {item.includedNote && (
+                            <div className="ml-8 mt-1">
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                                ✓ {item.includedNote}
+                              </span>
+                            </div>
+                          )}
                           {/* Contornos — Option C: resolved final state */}
                           {(() => {
                             const substitutions = item.selectedAdicionales?.filter(a => a.substitutesComponentId) ?? [];
@@ -454,6 +463,14 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                               </span>
                             {item.name}
                           </p>
+                          {/* Incluye (fixed inclusions) */}
+                          {item.includedNote && (
+                            <div className="ml-8 mt-1">
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                                ✓ {item.includedNote}
+                              </span>
+                            </div>
+                          )}
                           {/* Contornos — Option C: resolved final state */}
                           {(() => {
                             const substitutions = item.selectedAdicionales?.filter(a => a.substitutesComponentId) ?? [];

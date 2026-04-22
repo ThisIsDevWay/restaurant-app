@@ -50,14 +50,20 @@ export function appendComprobanteToMessage({
 
 /**
  * Extrae el número de WhatsApp del waLink del servidor y construye
- * un nuevo wa.me link con el mensaje final (que incluye el comprobante).
+ * un link directo a api.whatsapp.com/send con el mensaje final.
+ *
+ * Usamos api.whatsapp.com/send en lugar de wa.me para evitar el
+ * redirect 302 que algunos browsers móviles truncan con URLs largas.
  *
  * El servidor ya sanitizó el número (e.g. "https://wa.me/584141234567?text=...").
  * Solo necesitamos extraer el número y re-encodear el nuevo mensaje.
  */
 export function buildFinalWaLink(serverWaLink: string, finalMessage: string): string {
-    // Extraer número del link del servidor: "https://wa.me/584141234567?text=..."
-    const match = serverWaLink.match(/wa\.me\/(\d+)/);
-    const number = match?.[1] ?? "";
-    return `https://wa.me/${number}?text=${encodeURIComponent(finalMessage)}`;
+    // Extraer número del link del servidor — soporta ambos formatos:
+    // "https://wa.me/584141234567?text=..."
+    // "https://api.whatsapp.com/send?phone=584141234567&text=..."
+    const waMatch = serverWaLink.match(/wa\.me\/(\d+)/);
+    const apiMatch = serverWaLink.match(/phone=(\d+)/);
+    const number = waMatch?.[1] ?? apiMatch?.[1] ?? "";
+    return `https://api.whatsapp.com/send?phone=${number}&text=${encodeURIComponent(finalMessage)}`;
 }
