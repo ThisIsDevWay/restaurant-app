@@ -287,7 +287,7 @@ export function ItemDetailModalModern({
                     <p className="text-[10px] font-black uppercase tracking-[0.15em] text-emerald-800/80">Incluye</p>
                   </div>
                   <p className="text-[14px] text-emerald-900 font-medium leading-relaxed italic">
-                    "{item.includedNote}"
+                    &quot;{item.includedNote}&quot;
                   </p>
                 </div>
               )}
