@@ -13,12 +13,13 @@ const eslintConfig = [
   ...compat.extends("next/core-web-vitals"),
   {
     rules: {
-      // These rules are from the React Compiler (react-hooks v7+).
-      // Disable until the codebase is migrated to the React Compiler.
       "react-hooks/purity": "off",
       "react-hooks/refs": "off",
       "react-hooks/set-state-in-effect": "off",
     },
+  },
+  {
+    ignores: [".next/*", "node_modules/*", "public/*"],
   },
 ];
 
