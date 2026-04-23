@@ -2,6 +2,7 @@ import { QueryProvider } from "@/providers/QueryProvider";
 import { Sidebar } from "@/components/admin/layout/Sidebar";
 import { AdminHeader } from "@/components/admin/layout/AdminHeader";
 import { requireAdmin } from "@/lib/auth";
+import { QuickAvailabilityPanel } from "@/components/admin/availability/QuickAvailabilityPanel";
 import { getSettings } from "@/db/queries/settings";
 
 export default async function AdminLayout({
@@ -22,6 +23,7 @@ export default async function AdminLayout({
             {children}
           </main>
         </div>
+        <QuickAvailabilityPanel />
       </div>
     </QueryProvider>
   );

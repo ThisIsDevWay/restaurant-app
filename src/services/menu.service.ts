@@ -9,7 +9,7 @@ export async function generateDailyMenuSnapshot(date: string) {
             id: menuItems.id,
             name: menuItems.name,
             priceUsdCents: menuItems.priceUsdCents,
-            isAvailable: menuItems.isAvailable,
+            isAvailable: dailyAdicionales.isAvailable,
         })
         .from(dailyAdicionales)
         .innerJoin(menuItems, eq(dailyAdicionales.adicionalItemId, menuItems.id))
@@ -21,7 +21,7 @@ export async function generateDailyMenuSnapshot(date: string) {
             id: menuItems.id,
             name: menuItems.name,
             priceUsdCents: menuItems.priceUsdCents,
-            isAvailable: menuItems.isAvailable,
+            isAvailable: dailyBebidas.isAvailable,
         })
         .from(dailyBebidas)
         .innerJoin(menuItems, eq(dailyBebidas.bebidaItemId, menuItems.id))
@@ -37,7 +37,7 @@ export async function generateDailyMenuSnapshot(date: string) {
             id: menuItems.id,
             name: menuItems.name,
             priceUsdCents: menuItems.priceUsdCents,
-            isAvailable: menuItems.isAvailable,
+            isAvailable: dailyContornos.isAvailable,
         })
         .from(dailyContornos)
         .innerJoin(menuItems, eq(dailyContornos.contornoItemId, menuItems.id))

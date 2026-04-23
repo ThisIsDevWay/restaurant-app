@@ -37,7 +37,7 @@ export async function getDailyMenuItemsForDate(dateStr: string) {
       itemHideBebidas: menuItems.hideBebidas,
       itemPriceUsdCents: menuItems.priceUsdCents,
       itemCategoryId: menuItems.categoryId,
-      itemIsAvailable: menuItems.isAvailable,
+      itemIsAvailable: dailyMenuItems.isAvailable,
       itemImageUrl: menuItems.imageUrl,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
@@ -68,7 +68,7 @@ export async function getDailyBebidasAsMenuItemsForDate(dateStr: string) {
       itemDescription: menuItems.description,
       itemPriceUsdCents: menuItems.priceUsdCents,
       itemCategoryId: menuItems.categoryId,
-      itemIsAvailable: menuItems.isAvailable,
+      itemIsAvailable: dailyBebidas.isAvailable,
       itemImageUrl: menuItems.imageUrl,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
@@ -99,7 +99,7 @@ export async function getDailyAdicionalesAsMenuItemsForDate(dateStr: string) {
       itemDescription: menuItems.description,
       itemPriceUsdCents: menuItems.priceUsdCents,
       itemCategoryId: menuItems.categoryId,
-      itemIsAvailable: menuItems.isAvailable,
+      itemIsAvailable: dailyAdicionales.isAvailable,
       itemImageUrl: menuItems.imageUrl,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
@@ -130,7 +130,7 @@ export async function getDailyContornosAsMenuItemsForDate(dateStr: string) {
       itemDescription: menuItems.description,
       itemPriceUsdCents: menuItems.priceUsdCents,
       itemCategoryId: menuItems.categoryId,
-      itemIsAvailable: menuItems.isAvailable,
+      itemIsAvailable: dailyContornos.isAvailable,
       itemImageUrl: menuItems.imageUrl,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
@@ -268,7 +268,7 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
       id: menuItems.id,
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
-      isAvailable: menuItems.isAvailable,
+      isAvailable: dailyAdicionales.isAvailable,
       sortOrder: dailyAdicionales.sortOrder,
     })
     .from(dailyAdicionales)
@@ -281,7 +281,7 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
       id: menuItems.id,
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
-      isAvailable: menuItems.isAvailable,
+      isAvailable: dailyBebidas.isAvailable,
       sortOrder: dailyBebidas.sortOrder,
     })
     .from(dailyBebidas)
@@ -294,7 +294,7 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
       id: menuItems.id,
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
-      isAvailable: menuItems.isAvailable,
+      isAvailable: dailyContornos.isAvailable,
       sortOrder: dailyContornos.sortOrder,
     })
     .from(dailyContornos)
