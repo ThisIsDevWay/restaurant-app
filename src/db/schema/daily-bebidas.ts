@@ -4,6 +4,7 @@ import {
   date,
   integer,
   timestamp,
+  boolean,
   primaryKey,
 } from "drizzle-orm/pg-core";
 import { menuItems } from "./menu";
@@ -19,6 +20,8 @@ export const dailyBebidas = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    isAvailable: boolean("is_available").notNull().default(true),
+    soldOutAt: timestamp("sold_out_at", { withTimezone: true }),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.date, t.bebidaItemId] }),

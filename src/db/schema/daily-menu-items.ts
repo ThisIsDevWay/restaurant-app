@@ -4,6 +4,7 @@ import {
   integer,
   date,
   timestamp,
+  boolean,
   unique,
 } from "drizzle-orm/pg-core";
 import { menuItems } from "./menu";
@@ -20,6 +21,8 @@ export const dailyMenuItems = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    isAvailable: boolean("is_available").notNull().default(true),
+    soldOutAt: timestamp("sold_out_at", { withTimezone: true }),
   },
   (t) => [unique().on(t.menuItemId, t.date)],
 );
