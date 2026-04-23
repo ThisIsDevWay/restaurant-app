@@ -39,7 +39,7 @@ export function SettingsDesignTab({ form, updateField, errors = {} }: SettingsDe
                                 id="restaurantName"
                                 value={form.restaurantName}
                                 onChange={(e) => updateField("restaurantName", e.target.value)}
-                                placeholder="Ej. G&M Restaurante"
+                                placeholder="Ej. G&M "
                                 className={cn(
                                     "rounded-xl border-border/60 focus-visible:ring-primary/20",
                                     errors.restaurantName && "border-error focus-visible:ring-error/20"
