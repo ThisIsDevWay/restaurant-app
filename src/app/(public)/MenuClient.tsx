@@ -5,6 +5,9 @@ import { MenuGrid } from "@/components/public/menu/MenuGrid";
 import { MenuHeader } from "@/components/public/menu/MenuHeader";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItemWithComponents as MenuItem } from "@/types/menu.types";
+import { useMenuAvailability } from "@/hooks/useMenuAvailability";
+import { toast } from "sonner";
+import { useCallback } from "react";
 
 interface Category {
   id: string;
@@ -76,6 +79,9 @@ export function MenuClient({
   rateData = null,
 }: MenuClientProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [availabilityMap, setAvailabilityMap] = useState<Map<string, boolean>>(new Map());
+  const cartItems = useCartStore((s) => s.items);
+  const removeItem = useCartStore((s) => s.removeItem);
   const recalculateBsPrices = useCartStore((s) => s.recalculateBsPrices);
   const syncWithMenu = useCartStore((s) => s.syncWithMenu);
 
@@ -89,6 +95,23 @@ export function MenuClient({
       recalculateBsPrices(rate);
     }
   }, [rate, recalculateBsPrices]);
+
+  const handleAvailabilityChange = useCallback((map: Map<string, boolean>) => {
+    setAvailabilityMap(map);
+    
+    // Check if any item in cart became unavailable
+    cartItems.forEach((cartItem, index) => {
+      if (map.has(cartItem.id) && map.get(cartItem.id) === false) {
+        removeItem(index);
+        toast.error(`"${cartItem.name}" se agotó y fue removido de tu pedido.`, {
+          duration: 5000,
+          id: `sold-out-${cartItem.id}`, // Avoid multiple toasts for same item
+        });
+      }
+    });
+  }, [cartItems, removeItem]);
+
+  useMenuAvailability(handleAvailabilityChange);
 
   const filteredItems = activeCategory
     ? items.filter((i) => i.categoryId === activeCategory)
@@ -122,6 +145,7 @@ export function MenuClient({
           dailyBebidas={dailyBebidas}
           maxQuantityPerItem={maxQuantityPerItem}
           menuLayout={menuLayout}
+          availabilityMap={availabilityMap}
         />
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-center px-4 animate-in fade-in zoom-in-95 duration-500">

@@ -1,6 +1,8 @@
 import { updateOrderStatus as updateOrderStatusDb, createOrder as createOrderDb } from "@/db/queries/orders";
 import { upsertCustomer } from "@/db/queries/customers";
-import { orders } from "@/db/schema";
+import { dailyMenuItems, orders } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db";
 
 type OrderStatus = NonNullable<typeof orders.$inferSelect["status"]>;
 import { CheckoutItem } from "@/lib/types/checkout";
@@ -39,6 +41,25 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
         }
         if (!menuItem.isAvailable) {
             throw new Error(`"${menuItem.name}" ya no está disponible.`);
+        }
+
+        // 🚨 CRITICAL: Verify daily item availability
+        const [dailyEntry] = await db
+            .select({ isAvailable: dailyMenuItems.isAvailable })
+            .from(dailyMenuItems)
+            .where(
+                and(
+                    eq(dailyMenuItems.menuItemId, clientItem.id),
+                    eq(dailyMenuItems.date, date)
+                )
+            )
+            .limit(1);
+
+        if (!dailyEntry) {
+            throw new Error(`"${menuItem.name}" no está configurado para el menú de hoy.`);
+        }
+        if (!dailyEntry.isAvailable) {
+            throw new Error(`"${menuItem.name}" se agotó. Por favor actualiza tu pedido.`);
         }
 
         let perUnitOptionsUsdCents = 0;

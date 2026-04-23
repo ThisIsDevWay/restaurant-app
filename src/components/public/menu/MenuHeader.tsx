@@ -122,14 +122,17 @@ export function MenuHeader({
 
     return (
         <div
-            className="max-w-md mx-auto"
+            className="w-full bg-bg-card shadow-card overflow-hidden"
             style={{ animation: "mh-fade-in 700ms ease-out both" }}
         >
             {/* ── Hero ────────────────────────────────────────────────────────── */}
-            <div
-                className="relative overflow-hidden"
-                style={{ height: 240 }}
-            >
+            {/*
+              Mobile:  h-[240px]
+              Tablet:  h-[300px]
+              Desktop: h-[360px]
+              XL:      h-[420px]
+            */}
+            <div className="relative w-full overflow-hidden h-[240px] md:h-[300px] lg:h-[360px] xl:h-[420px]">
                 {/* Background with Ken Burns effect */}
                 {coverImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -146,7 +149,6 @@ export function MenuHeader({
                         }}
                     />
                 ) : (
-                    /* Textured dark fallback */
                     <div
                         style={{
                             position: "absolute",
@@ -159,7 +161,7 @@ export function MenuHeader({
                     />
                 )}
 
-                {/* Cinematic multi-layer overlay — deeper, richer */}
+                {/* Cinematic multi-layer overlay */}
                 <div
                     style={{
                         position: "absolute",
@@ -171,7 +173,7 @@ export function MenuHeader({
                     }}
                 />
 
-                {/* Subtle color grading — warm film look */}
+                {/* Warm film look */}
                 <div
                     className="pointer-events-none absolute inset-0"
                     style={{
@@ -191,56 +193,58 @@ export function MenuHeader({
                 />
 
                 {/* ── Top Bar ──────────────────────────────────────────────────── */}
-                <div className="absolute top-0 left-0 w-full z-10 flex items-center justify-between px-4 pt-4 pb-2">
-                    {/* Left: Instagram & Pedidos */}
-                    <div className="flex items-center gap-2">
-                        {instagramUrl && (() => {
-                            const url = instagramUrl;
-                            const formattedUrl = url.startsWith("http")
-                                ? url
-                                : `https://instagram.com/${url.replace(/^@/, "")}`;
+                <div className="absolute top-0 left-0 w-full z-10 flex justify-center px-4 pt-4 pb-2 lg:px-8 lg:pt-5">
+                    <div className="w-full max-w-7xl flex items-center justify-between">
+                        {/* Left: Instagram & Pedidos */}
+                        <div className="flex items-center gap-2 lg:gap-3">
+                            {instagramUrl && (() => {
+                                const url = instagramUrl;
+                                const formattedUrl = url.startsWith("http")
+                                    ? url
+                                    : `https://instagram.com/${url.replace(/^@/, "")}`;
 
-                            return (
-                                <a
-                                    href={formattedUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="mh-glass-btn flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full text-white/90"
-                                    aria-label="Instagram"
-                                >
-                                    <Instagram className="h-[15px] w-[15px]" />
-                                </a>
-                            );
-                        })()}
-                        <Link
-                            href="/mis-pedidos"
-                            className="mh-glass-btn flex h-[36px] items-center gap-1.5 rounded-full px-3.5 text-[12px] font-medium text-white/90 whitespace-nowrap tracking-wide"
-                        >
-                            Pedidos
-                        </Link>
-                    </div>
+                                return (
+                                    <a
+                                        href={formattedUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="mh-glass-btn flex h-[36px] w-[36px] lg:h-[40px] lg:w-[40px] shrink-0 items-center justify-center rounded-full text-white/90"
+                                        aria-label="Instagram"
+                                    >
+                                        <Instagram className="h-[15px] w-[15px] lg:h-[17px] lg:w-[17px]" />
+                                    </a>
+                                );
+                            })()}
+                            <Link
+                                href="/mis-pedidos"
+                                className="mh-glass-btn flex h-[36px] lg:h-[40px] items-center gap-1.5 rounded-full px-3.5 lg:px-5 text-[12px] lg:text-[13px] font-medium text-white/90 whitespace-nowrap tracking-wide"
+                            >
+                                Pedidos
+                            </Link>
+                        </div>
 
-                    {/* Right: Rate and Cart */}
-                    <div className="flex items-center gap-2">
-                        {showRate && rateData && (
-                            <div className="mh-glass-btn flex h-[36px] items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-white/90 whitespace-nowrap shrink-0">
-                                <span
-                                    title={isStale ? "Tasa del día anterior" : undefined}
-                                    className={`h-[6px] w-[6px] rounded-full shrink-0 ${isStale ? "bg-amber-400" : "bg-emerald-400 mh-pulse"}`}
-                                />
-                                <span className="text-white/55 text-[10px] font-semibold tracking-widest uppercase">BCV</span>
-                                <span className="font-bold text-white tracking-tight">
-                                    {rateData.rate.toLocaleString("es-VE", {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
-                                </span>
-                            </div>
-                        )}
-                        <HeaderCartButton
-                            className="mh-glass-btn flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full !p-0"
-                            iconClassName="text-white/90 h-[16px] w-[16px]"
-                        />
+                        {/* Right: Rate and Cart */}
+                        <div className="flex items-center gap-2 lg:gap-3">
+                            {showRate && rateData && (
+                                <div className="mh-glass-btn flex h-[36px] lg:h-[40px] items-center gap-1.5 rounded-full px-3 lg:px-4 text-[12px] lg:text-[13px] font-medium text-white/90 whitespace-nowrap shrink-0">
+                                    <span
+                                        title={isStale ? "Tasa del día anterior" : undefined}
+                                        className={`h-[6px] w-[6px] rounded-full shrink-0 ${isStale ? "bg-amber-400" : "bg-emerald-400 mh-pulse"}`}
+                                    />
+                                    <span className="text-white/55 text-[10px] lg:text-[11px] font-semibold tracking-widest uppercase">BCV</span>
+                                    <span className="font-bold text-white tracking-tight">
+                                        {rateData.rate.toLocaleString("es-VE", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        })}
+                                    </span>
+                                </div>
+                            )}
+                            <HeaderCartButton
+                                className="mh-glass-btn flex h-[36px] w-[36px] lg:h-[40px] lg:w-[40px] shrink-0 items-center justify-center rounded-full !p-0"
+                                iconClassName="text-white/90 h-[16px] w-[16px] lg:h-[18px] lg:w-[18px]"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -252,7 +256,7 @@ export function MenuHeader({
 
                 {/* ── Center Content ──────────────────────────────────────────── */}
                 <div
-                    className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-end pb-4"
+                    className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-end pb-4 lg:pb-6"
                     style={{
                         top: 44,
                         animation: "mh-logo-in 700ms 180ms cubic-bezier(0.16,1,0.3,1) both",
@@ -264,9 +268,8 @@ export function MenuHeader({
                         <img
                             src={logoUrl}
                             alt={restaurantName}
+                            className="h-auto w-auto max-h-[85px] md:max-h-[120px] lg:max-h-[160px] xl:max-h-[200px] object-contain transition-all duration-500"
                             style={{
-                                maxHeight: 90,
-                                objectFit: "contain",
                                 filter:
                                     "drop-shadow(0 2px 24px rgba(0,0,0,0.65)) drop-shadow(0 0 8px rgba(0,0,0,0.45))",
                             }}
@@ -276,7 +279,7 @@ export function MenuHeader({
                             style={{
                                 fontFamily: "Georgia, serif",
                                 fontStyle: "italic",
-                                fontSize: "clamp(24px, 8vw, 36px)",
+                                fontSize: "clamp(24px, 8vw, 42px)",
                                 color: "#FFFFFF",
                                 textShadow:
                                     "0 2px 24px rgba(0,0,0,0.65), 0 0 8px rgba(0,0,0,0.45), 2px 2px 0 #D91F26",
@@ -291,13 +294,13 @@ export function MenuHeader({
                     {/* Metadata row */}
                     {hasMetadata && (
                         <div
-                            className="mh-meta-chip mt-3 flex items-center justify-center flex-wrap"
+                            className="mh-meta-chip mt-3 lg:mt-4 flex items-center justify-center flex-wrap"
                             style={{
                                 gap: 10,
                                 padding: "6px 16px",
                                 borderRadius: 20,
                                 color: "rgba(255,255,255,0.88)",
-                                fontSize: "clamp(9px, 2.8vw, 11px)",
+                                fontSize: "clamp(9px, 2.8vw, 12px)",
                                 fontWeight: 500,
                                 letterSpacing: "0.02em",
                             }}
@@ -331,6 +334,13 @@ export function MenuHeader({
                             )}
                         </div>
                     )}
+
+                    {/* ── Desktop category count — editorial detail ─────────────── */}
+                    {categories.length > 0 && (
+                        <p className="hidden lg:block mt-3 text-white/40 text-[11px] font-medium tracking-[0.15em] uppercase">
+                            {categories.length} categorías
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -341,36 +351,38 @@ export function MenuHeader({
                     animation: "mh-pills-in 500ms 320ms cubic-bezier(0.16,1,0.3,1) both",
                 }}
             >
-                {/* Scrollable row */}
-                <div
-                    ref={scrollRef}
-                    className="flex"
-                    style={{
-                        overflowX: "auto",
-                        scrollbarWidth: "none",
-                        WebkitOverflowScrolling: "touch",
-                        padding: "12px 16px",
-                        gap: 8,
-                    } as React.CSSProperties}
-                >
-                    {/* "Todos" pill */}
-                    <PillButton
-                        active={activeCategoryId === null}
-                        onClick={() => onCategoryChange(null)}
+                {/* Scrollable row — centered for desktop */}
+                <div className="w-full flex justify-center">
+                    <div
+                        ref={scrollRef}
+                        className="flex w-full max-w-7xl"
+                        style={{
+                            overflowX: "auto",
+                            scrollbarWidth: "none",
+                            WebkitOverflowScrolling: "touch",
+                            padding: "12px 16px",
+                            gap: 8,
+                        } as React.CSSProperties}
                     >
-                        Todos
-                    </PillButton>
-
-                    {categories.map((cat) => (
+                        {/* "Todos" pill */}
                         <PillButton
-                            key={cat.id}
-                            active={activeCategoryId === cat.id}
-                            onClick={() => onCategoryChange(cat.id)}
+                            active={activeCategoryId === null}
+                            onClick={() => onCategoryChange(null)}
                         >
-                            {cat.emoji ? `${cat.emoji} ` : ""}
-                            {cat.name}
+                            Todos
                         </PillButton>
-                    ))}
+
+                        {categories.map((cat) => (
+                            <PillButton
+                                key={cat.id}
+                                active={activeCategoryId === cat.id}
+                                onClick={() => onCategoryChange(cat.id)}
+                            >
+                                {cat.emoji ? `${cat.emoji} ` : ""}
+                                {cat.name}
+                            </PillButton>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Right-side scroll-fade indicator */}
@@ -378,7 +390,7 @@ export function MenuHeader({
                     <div
                         className="pointer-events-none absolute right-0 top-0 h-full"
                         style={{
-                            width: 48,
+                            width: 64,
                             background:
                                 "linear-gradient(to right, transparent, #FFFFFF 85%)",
                         }}
@@ -495,6 +507,16 @@ export function MenuHeader({
                   letter-spacing: 0.01em;
                   -webkit-tap-highlight-color: transparent;
                 }
+
+                /* Desktop pill sizing — more spacious */
+                @media (min-width: 1024px) {
+                  .mh-pill {
+                    padding: 10px 22px;
+                    font-size: 14px;
+                    letter-spacing: 0.015em;
+                  }
+                }
+
                 .mh-pill[data-active="false"] {
                   background: rgba(240,237,232,0.75);
                   color: #595550;

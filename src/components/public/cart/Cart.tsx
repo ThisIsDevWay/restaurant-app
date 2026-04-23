@@ -117,22 +117,20 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
       {/* ────────────────────────────────────────
           BOTTOM BAR
       ──────────────────────────────────────── */}
-      <div style={{
-        position:  "fixed",
-        bottom:    0, left: 0, right: 0,
-        zIndex:    40,
-        padding:   "10px 16px 16px",
+      <div className={`fixed z-40 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+        bottom-0 left-0 right-0 p-[10px_16px_16px] rounded-none
+        lg:bottom-6 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:w-[420px] lg:rounded-2xl lg:p-[12px_16px] lg:border lg:border-primary/10
+        ${barVisible ? 'translate-y-0 lg:translate-y-0' : 'translate-y-full lg:translate-y-[150%]'}
+      `} style={{
         /* Glass + cream warmth */
         background: "rgba(255,248,243,0.92)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderTop: "1px solid rgba(187,0,5,0.08)",
-        boxShadow: "0 -4px 24px rgba(37,26,7,0.07)",
-        transform: barVisible ? "translateY(0)" : "translateY(100%)",
-        transition: "transform 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+        boxShadow: "0 -4px 24px rgba(37,26,7,0.07), 0 12px 32px rgba(187,0,5,0.08)",
       }}>
         {/* Drag handle visual hint */}
-        <div style={{
+        <div className="lg:hidden" style={{
           width: 36, height: 3, borderRadius: 99,
           background: "rgba(37,26,7,0.12)",
           margin: "0 auto 10px",
@@ -246,23 +244,11 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
           */}
         <div
           onClick={(e) => e.stopPropagation()}
-          style={{
-            position:   "absolute",
-            bottom:     0, left: 0, right: 0,
-            maxHeight:  "88vh",
-            display:    "flex",
-            flexDirection: "column",
-            borderRadius: "22px 22px 0 0",
-            background: T.surface,
-            boxShadow:  "0 -12px 48px rgba(37,26,7,0.14), 0 -2px 8px rgba(37,26,7,0.06)",
-            transform:  isDrawerOpen ? "translateY(0)" : "translateY(100%)",
-            transition: "transform 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-            overflow:   "hidden",
-            /* ↓ KEY FIX: new stacking context — no external fixed element
-               (user avatar, Intercom widget, etc.) can paint inside this box */
-            isolation:  "isolate",
-            zIndex:     1,
-          }}
+          className={`absolute flex flex-col overflow-hidden isolate z-10 bg-white transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_-12px_48px_rgba(37,26,7,0.14),0_-2px_8px_rgba(37,26,7,0.06)]
+            bottom-0 left-0 right-0 max-h-[88vh] rounded-t-[22px]
+            md:top-0 md:bottom-0 md:right-0 md:left-auto md:w-[420px] md:max-h-none md:rounded-l-[22px] md:rounded-tr-none md:border-l md:border-border/40
+            ${isDrawerOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}
+          `}
         >
           {/* ── DRAWER HEADER ── */}
           <div style={{
@@ -271,7 +257,7 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
             flexShrink:   0,
           }}>
             {/* Drag pill */}
-            <div style={{
+            <div className="md:hidden" style={{
               width: 40, height: 4, borderRadius: 99,
               background: "rgba(37,26,7,0.1)",
               margin: "10px auto 0",

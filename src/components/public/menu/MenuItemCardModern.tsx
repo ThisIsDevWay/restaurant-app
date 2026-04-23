@@ -121,9 +121,9 @@ export function MenuItemCardModern({
         )}
 
         {!isAvailable && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-            <span className="rounded-full bg-error px-2.5 py-0.5 text-[10px] font-semibold text-white">
-              No disponible
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+            <span className="rounded-full bg-error px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white shadow-lg ring-1 ring-white/20">
+              Agotado
             </span>
           </div>
         )}

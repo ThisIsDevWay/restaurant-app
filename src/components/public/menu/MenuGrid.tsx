@@ -40,6 +40,7 @@ interface MenuGridProps {
   dailyBebidas: SimpleItem[];
   maxQuantityPerItem?: number;
   menuLayout?: "modern" | "classic";
+  availabilityMap?: Map<string, boolean>;
 }
 
 export function MenuGrid({
@@ -52,6 +53,7 @@ export function MenuGrid({
   dailyBebidas,
   maxQuantityPerItem = 10,
   menuLayout = "modern",
+  availabilityMap = new Map(),
 }: MenuGridProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [drinkWarningItem, setDrinkWarningItem] = useState<{ payload: any; categoryName: string } | null>(null);
@@ -59,17 +61,45 @@ export function MenuGrid({
   const cartItems = useCartStore((s) => s.items);
   const addItem = useCartStore((s) => s.addItem);
 
-  const availableItems = items.filter((i) => i.isAvailable);
-  const unavailableItems = items.filter((i) => !i.isAvailable);
+  // Mapear items con disponibilidad en tiempo real
+  const mappedItems = items.map(item => ({
+    ...item,
+    isAvailable: availabilityMap.has(item.id) ? availabilityMap.get(item.id)! : item.isAvailable,
+    adicionales: item.adicionales.map(a => ({
+      ...a,
+      isAvailable: availabilityMap.has(a.id) ? availabilityMap.get(a.id)! : a.isAvailable
+    })),
+    bebidas: item.bebidas.map(b => ({
+      ...b,
+      isAvailable: availabilityMap.has(b.id) ? availabilityMap.get(b.id)! : b.isAvailable
+    })),
+    contornos: item.contornos.map(c => ({
+      ...c,
+      isAvailable: availabilityMap.has(c.id) ? availabilityMap.get(c.id)! : c.isAvailable
+    }))
+  }));
+
+  // Mapear componentes diarios
+  const mappedDailyAdicionales = dailyAdicionales.map(a => ({
+    ...a,
+    isAvailable: availabilityMap.has(a.id) ? availabilityMap.get(a.id)! : a.isAvailable
+  }));
+
+  const mappedDailyBebidas = dailyBebidas.map(b => ({
+    ...b,
+    isAvailable: availabilityMap.has(b.id) ? availabilityMap.get(b.id)! : b.isAvailable
+  }));
+
+  const availableItems = mappedItems.filter((i) => i.isAvailable);
+  const unavailableItems = mappedItems.filter((i) => !i.isAvailable);
   const sortedItems = [...availableItems, ...unavailableItems];
 
   const selectedItem = selectedItemId
-    ? items.find((i) => i.id === selectedItemId) ?? null
+    ? mappedItems.find((i) => i.id === selectedItemId) ?? null
     : null;
 
   const handleAddSimpleItem = (payload: any, categoryName: string) => {
     const isDrink = categoryName.toLowerCase().includes("bebida");
-    // Check if the cart already has a dish with a drink
     const hasDrinkInCart = cartItems.some(
       (i) =>
         (i.selectedBebidas && i.selectedBebidas.length > 0) ||
@@ -94,28 +124,56 @@ export function MenuGrid({
     }
   };
 
-  const gridClasses = menuLayout === "classic"
-    ? "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4" // Adding responsive stops for better scaling on desktop
-    : "flex flex-col gap-3";
+  /*
+    ── Grid layout strategy ─────────────────────────────────────────────────────
+
+    MODERN layout (tall cards, rich imagery):
+      Mobile:  1 col
+      Tablet:  2 col  (md)
+      Desktop: 2 col  (lg)  — intentionally kept at 2 to preserve card height
+      XL:      3 col  (xl)  — opens up at wide screens
+      2XL:     4 col  (2xl) — large monitors
+
+    CLASSIC layout (compact grid):
+      Mobile:  2 col
+      Tablet:  3 col  (md)
+      Desktop: 4 col  (lg)
+      XL:      5 col  (xl)
+      2XL:     6 col  (2xl)
+  */
+  const gridClasses =
+    menuLayout === "classic"
+      ? "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
+      : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4 lg:gap-5 xl:gap-6";
 
   return (
-    <div className={`${gridClasses} px-4 pb-4`}>
+    <div
+      className={`
+        w-full max-w-7xl mx-auto
+        ${gridClasses}
+        px-4 pb-4
+        md:px-6 md:pt-4
+        lg:px-8 lg:pt-5 lg:pb-8
+        xl:px-10
+      `}
+    >
       {sortedItems.map((item, index) => {
         const hasContornos = item.contornos.some((c) => c.isAvailable);
         const hasRequiredOptions = item.optionGroups.some((g) => g.required);
-        const effectiveHasDailyAdicionales = adicionalesEnabled && !item.hideAdicionales && dailyAdicionales.length > 0;
-        const effectiveHasDailyBebidas = bebidasEnabled && !item.hideBebidas && dailyBebidas.length > 0;
+        const effectiveHasDailyAdicionales =
+          adicionalesEnabled && !item.hideAdicionales && mappedDailyAdicionales.length > 0;
+        const effectiveHasDailyBebidas =
+          bebidasEnabled && !item.hideBebidas && mappedDailyBebidas.length > 0;
 
-        // Si la categoría es "Simple" (Rápido), no forzamos el modal por adicionales/bebidas del día
-        // Esto permite que bebidas/contornos se agreguen con 1-click como configuró el admin
         const needsDetailModal =
           !item.categoryIsSimple ||
           hasContornos ||
           hasRequiredOptions ||
-          (item.categoryIsSimple ? false : (effectiveHasDailyAdicionales || effectiveHasDailyBebidas));
-        const priceBsCents = rate
-          ? Math.round(item.priceUsdCents * rate)
-          : 0;
+          (item.categoryIsSimple
+            ? false
+            : effectiveHasDailyAdicionales || effectiveHasDailyBebidas);
+
+        const priceBsCents = rate ? Math.round(item.priceUsdCents * rate) : 0;
 
         return (
           <MenuItemCard
@@ -149,8 +207,8 @@ export function MenuGrid({
           allContornos={allContornos}
           adicionalesEnabled={adicionalesEnabled}
           bebidasEnabled={bebidasEnabled}
-          dailyAdicionales={dailyAdicionales}
-          dailyBebidas={dailyBebidas}
+          dailyAdicionales={mappedDailyAdicionales}
+          dailyBebidas={mappedDailyBebidas}
           maxQuantityPerItem={maxQuantityPerItem}
           menuLayout={menuLayout}
         />

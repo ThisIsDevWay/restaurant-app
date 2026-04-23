@@ -96,7 +96,7 @@ export function ContornoSelector({
                   onClick={() => onToggleExpand(contorno.id)}
                   className="rounded-[6px] border border-primary/30 px-2 py-0.5 text-[11px] font-semibold text-primary transition-colors active:bg-primary/10"
                 >
-                  {isExpanded ? "Cerrar" : "Elegir opción"}
+                  {isExpanded ? "Cerrar" : "Elegir otra opción"}
                 </button>
               </div>
 

@@ -109,8 +109,8 @@ export function MenuItemCardClassic({
                         priority={priority}
                     />
                     {!isAvailable && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                            <span className="rounded-full bg-error px-2.5 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+                            <span className="rounded-full bg-error px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white shadow-lg ring-1 ring-white/20">
                                 Agotado
                             </span>
                         </div>
@@ -120,8 +120,8 @@ export function MenuItemCardClassic({
                 <div className="relative w-full aspect-[4/3] bg-gray-50 flex items-center justify-center border-b border-border/50">
                     <span className="text-5xl">{emoji}</span>
                     {!isAvailable && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                            <span className="rounded-full bg-error px-2.5 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+                            <span className="rounded-full bg-error px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white shadow-lg ring-1 ring-white/20">
                                 Agotado
                             </span>
                         </div>
