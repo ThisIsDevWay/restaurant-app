@@ -135,17 +135,17 @@ export function MenuHeader({
             <div className="relative w-full overflow-hidden h-[240px] md:h-[300px] lg:h-[360px] xl:h-[420px]">
                 {/* Background with Ken Burns effect */}
                 {coverImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={coverImageUrl}
-                        alt={restaurantName}
+                    <div
                         className="mh-ken-burns"
                         style={{
                             position: "absolute",
-                            inset: "-8%",
-                            width: "116%",
-                            height: "116%",
-                            objectFit: "cover",
+                            inset: 0,
+                            width: "100%",
+                            height: "100%",
+                            backgroundImage: `url(${coverImageUrl})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center center",
+                            backgroundRepeat: "no-repeat",
                         }}
                     />
                 ) : (
@@ -413,9 +413,10 @@ export function MenuHeader({
                   to   { opacity: 1; transform: translateY(0); }
                 }
                 @keyframes mh-ken-burns {
-                  0%   { transform: scale(1.0) translate(0, 0); }
-                  50%  { transform: scale(1.09) translate(-1.5%, -0.8%); }
-                  100% { transform: scale(1.0) translate(0, 0); }
+                   0%   { transform: scale(1.1) translate(0%,    0%); }
+                   33%  { transform: scale(1.14) translate(-1%,  -0.5%); }
+                   66%  { transform: scale(1.12) translate(0.8%,  0.4%); }
+                   100% { transform: scale(1.1) translate(0%,    0%); }
                 }
                 @keyframes mh-shimmer {
                   0%   { opacity: 0; transform: translateX(-100%); }
@@ -430,6 +431,7 @@ export function MenuHeader({
                 .mh-ken-burns {
                   animation: mh-ken-burns 28s ease-in-out infinite;
                   will-change: transform;
+                  transform-origin: center center;
                 }
 
                 /* Shimmer accent line */

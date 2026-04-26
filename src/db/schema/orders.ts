@@ -65,7 +65,17 @@ export const orders = pgTable("orders", {
     .default("pending"),
   paymentMethod: text("payment_method")
     .notNull()
-    .$type<"pago_movil" | "transfer" | "whatsapp" | "cash" | "pos">(),
+    .$type<
+      | "pago_movil"
+      | "transfer"
+      | "whatsapp"
+      | "cash"
+      | "cash_usd"
+      | "cash_bs"
+      | "pos"
+      | "zelle"
+      | "binance"
+    >(),
   paymentProvider: text("payment_provider")
     .notNull()
     .$type<
@@ -79,6 +89,8 @@ export const orders = pgTable("orders", {
   orderMode: text("order_mode")
     .$type<"on_site" | "take_away" | "delivery">(),
   deliveryAddress: text("delivery_address"),
+  tableNumber: text("table_number"),
+  customerName: text("customer_name"),
   // Surcharges — packaging + delivery fees calculados al momento del checkout
   packagingUsdCents: integer("packaging_usd_cents").notNull().default(0),
   deliveryUsdCents: integer("delivery_usd_cents").notNull().default(0),

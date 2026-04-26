@@ -48,7 +48,7 @@ const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id as string;
-        const allowedRoles = ["admin", "kitchen", "user"];
+        const allowedRoles = ["admin", "kitchen", "waiter", "user"];
         token.role = allowedRoles.includes(user.role as string)
           ? (user.role as string)
           : "user";
@@ -95,6 +95,15 @@ export const requireKitchenOrAdmin = async () => {
   const session = await auth();
   if (!session?.user?.role) redirect("/login");
   if (!["admin", "kitchen"].includes(session.user.role)) {
+    redirect("/login");
+  }
+  return session;
+};
+
+export const requireWaiterOrAdmin = async () => {
+  const session = await auth();
+  if (!session?.user?.role) redirect("/login");
+  if (!["admin", "waiter"].includes(session.user.role)) {
     redirect("/login");
   }
   return session;

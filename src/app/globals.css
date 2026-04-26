@@ -39,6 +39,10 @@
   --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-display: "Epilogue", system-ui, sans-serif;
 
+  /* Popover & UI */
+  --color-popover: #ffffff;
+  --color-popover-foreground: #251a07;
+
   /* Ambient Shadows (on_surface #251a07 @ 5% / 12% / 16%) */
   --shadow-card: 0 2px 8px rgba(37, 26, 7, 0.05);
   --shadow-modal: 0 8px 32px rgba(37, 26, 7, 0.12);

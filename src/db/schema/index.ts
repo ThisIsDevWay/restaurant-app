@@ -14,3 +14,6 @@ export { dailyMenuItems } from "./daily-menu-items";
 export { dailyAdicionales } from "./daily-adicionales";
 export { dailyBebidas } from "./daily-bebidas";
 export { dailyContornos } from "./daily-contornos";
+export { printJobs } from "./print-jobs";
+export { restaurantTables } from "./restaurant-tables";
+export { floorFixtures } from "./floor-fixtures";

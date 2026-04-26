@@ -37,11 +37,25 @@ export const saveSettingsAction = adminActionClient
       await updateSettingsDb(updatePayload);
       revalidatePath("/");
       revalidatePath("/admin/settings");
+      revalidatePath("/admin/tables");
       return { success: true } as ActionResult;
     } catch (error) {
       logger.error("Save settings error", { error });
       Sentry.captureException(error);
       return { success: false, error: "Error al guardar configuración" };
+    }
+  });
+
+export const updateTablesZoomAction = adminActionClient
+  .schema(v.object({ zoom: v.pipe(v.number(), v.integer(), v.minValue(10), v.maxValue(200)) }))
+  .action(async ({ parsedInput: { zoom } }) => {
+    try {
+      await updateSettingsDb({ tablesDefaultZoom: zoom });
+      revalidatePath("/admin/tables");
+      return { success: true };
+    } catch (error) {
+      logger.error("Update zoom error", { error });
+      return { success: false, error: "Error al guardar zoom" };
     }
   });
 

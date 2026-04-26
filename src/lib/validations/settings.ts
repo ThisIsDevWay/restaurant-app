@@ -51,6 +51,7 @@ export const settingsSchema = v.object({
   paymentTransferEnabled: v.optional(v.boolean()),
   menuLayout: v.optional(v.picklist(["modern", "classic"])),
   menuItemSortMode: v.optional(v.picklist(["custom", "price_asc", "price_desc"])),
+  tablesDefaultZoom: v.optional(v.pipe(v.number(), v.integer(), v.minValue(10), v.maxValue(200))),
 });
 
 export type SettingsInput = v.InferOutput<typeof settingsSchema>;

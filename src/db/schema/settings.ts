@@ -66,6 +66,9 @@ export const settings = pgTable("settings", {
   paymentTransferEnabled: boolean("payment_transfer_enabled").notNull().default(true),
   menuLayout: text("menu_layout").notNull().default("modern"),
   menuItemSortMode: text("menu_item_sort_mode").notNull().default("custom"),
+  tablesGridCols: integer("tables_grid_cols").notNull().default(20),
+  tablesGridRows: integer("tables_grid_rows").notNull().default(14),
+  tablesDefaultZoom: integer("tables_default_zoom").notNull().default(90), // in percentage (e.g. 60 for 0.6)
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
