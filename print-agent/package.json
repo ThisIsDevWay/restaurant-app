@@ -1,0 +1,13 @@
+{
+  "name": "gm-app-print-agent",
+  "version": "1.0.0",
+  "description": "Local print agent for GM App",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "dotenv": "^16.4.7"
+  }
+}
