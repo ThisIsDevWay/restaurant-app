@@ -4,18 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import {
-  ChefHat,
   LayoutDashboard,
+  ShoppingBag,
+  CalendarDays,
+  BookOpen,
   Tags,
+  HandPlatter,
+  ChefHat,
   Settings,
+  Table2,
   LogOut,
   X,
-  ShoppingBag,
   PlusCircle,
   User,
   Menu,
-  BookOpen,
-  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -31,10 +33,11 @@ const navItems = [
   { href: "/admin/orders", label: "Órdenes", icon: ShoppingBag },
   { href: "/admin/menu-del-dia", label: "Menú del Día", icon: CalendarDays },
   { href: "/admin/catalogo", label: "Catálogo", icon: BookOpen },
-
   { href: "/admin/categories", label: "Categorías", icon: Tags },
-  { href: "/admin/settings", label: "Configuración", icon: Settings },
+  { href: "/admin/tables", label: "Mesas", icon: Table2 },
+  { href: "/waiter", label: "Toma de Pedido", icon: HandPlatter },
   { href: "/kitchen", label: "Cocina", icon: ChefHat },
+  { href: "/admin/settings", label: "Configuración", icon: Settings },
 ];
 
 /* ── Desktop: icon-only 64px sidebar ────────────────────────── */
