@@ -63,7 +63,7 @@ export function useCheckoutForm({
 
   // ✅ M2: Expand by default if first time
   useEffect(() => {
-    const seen = localStorage.getItem("portillos_checkout_summary_seen");
+    const seen = localStorage.getItem("checkout_summary_seen");
     if (!seen) {
       setSummaryExpanded(true);
     }
@@ -73,7 +73,7 @@ export function useCheckoutForm({
   const toggleSummary = useCallback(() => {
     setSummaryExpanded((prev) => {
       if (prev === true) {
-        localStorage.setItem("portillos_checkout_summary_seen", "true");
+        localStorage.setItem("checkout_summary_seen", "true");
       }
       return !prev;
     });

@@ -44,7 +44,8 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
         }
 
         // 🚨 CRITICAL: Verify daily item availability
-        const [dailyEntry] = await db
+        // Check dishes (dailyMenuItems)
+        const [dishEntry] = await db
             .select({ isAvailable: dailyMenuItems.isAvailable })
             .from(dailyMenuItems)
             .where(
@@ -54,6 +55,13 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                 )
             )
             .limit(1);
+
+        // Fallback to pools (adicionales, bebidas, contornos)
+        const poolEntry = dailyAdicionalMap.get(clientItem.id) 
+            || dailyBebidaMap.get(clientItem.id) 
+            || globalContornoMap.get(clientItem.id);
+
+        const dailyEntry = dishEntry || (poolEntry ? { isAvailable: poolEntry.isAvailable } : null);
 
         if (!dailyEntry) {
             throw new Error(`"${menuItem.name}" no está configurado para el menú de hoy.`);

@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, ChefHat, Timer, Flame, CheckCircle2, AlertCircle, MapPin, Store, Package } from "lucide-react";
+import { Clock, ChefHat, Timer, Flame, CheckCircle2, AlertCircle, MapPin, Store, Package, Printer } from "lucide-react";
+import { reprintOrderAction } from "@/actions/print";
+import { toast } from "sonner";
 import { obfuscatePhone } from "@/lib/utils";
 import { updateOrderStatusAction } from "@/actions/orders";
 
@@ -45,6 +47,7 @@ interface KitchenOrder {
   paymentMethod: string;
   orderMode?: "on_site" | "take_away" | "delivery" | null;
   deliveryAddress?: string | null;
+  tableNumber?: string | null;
   subtotalBsCents: number;
   createdAt: string;
 }
@@ -124,6 +127,15 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
   const pendingOrders = orders.filter((o) => o.status === "paid");
   const cookingOrders = orders.filter((o) => o.status === "kitchen");
   const readyOrders = orders.filter((o) => o.status === "delivered");
+
+  const handleReprint = async (orderId: string) => {
+    const result = await reprintOrderAction({ orderId });
+    if (result?.data?.success) {
+      toast.success("Impresión enviada");
+    } else {
+      toast.error("Error al enviar impresión");
+    }
+  };
 
   const timeStr = currentTime.toLocaleTimeString("es-VE", {
     hour: "2-digit",
@@ -243,6 +255,11 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                             {modeLabel.label}
                           </span>
                         )}
+                        {order.tableNumber && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 text-xs font-black">
+                            MESA {order.tableNumber}
+                          </span>
+                        )}
                         {isNew && (
                           <span className="rounded-full bg-amber px-2 py-0.5 text-[10px] font-bold text-white animate-bounce">
                             ¡NUEVO!
@@ -254,9 +271,18 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 text-sm font-semibold text-amber">
-                        <Timer className="h-4 w-4" />
-                        {timeSince(order.createdAt)}
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleReprint(order.id)}
+                          className="p-2 rounded-lg bg-text-muted/5 text-text-muted hover:bg-primary/10 hover:text-primary transition-colors"
+                          title="Re-imprimir ticket"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </button>
+                        <div className="flex items-center gap-1.5 text-sm font-semibold text-amber">
+                          <Timer className="h-4 w-4" />
+                          {timeSince(order.createdAt)}
+                        </div>
                       </div>
                     </div>
 
@@ -446,10 +472,24 @@ export function KitchenQueue({ restaurantName, logoUrl }: { restaurantName: stri
                             {modeLabel.label}
                           </span>
                         )}
+                        {order.tableNumber && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 text-xs font-black">
+                            MESA {order.tableNumber}
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1.5 text-sm font-semibold text-info">
-                        <Timer className="h-4 w-4" />
-                        {timeSince(order.createdAt)}
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleReprint(order.id)}
+                          className="p-2 rounded-lg bg-text-muted/5 text-text-muted hover:bg-info/10 hover:text-info transition-colors"
+                          title="Re-imprimir ticket"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </button>
+                        <div className="flex items-center gap-1.5 text-sm font-semibold text-info">
+                          <Timer className="h-4 w-4" />
+                          {timeSince(order.createdAt)}
+                        </div>
                       </div>
                     </div>
 

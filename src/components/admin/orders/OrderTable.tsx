@@ -143,6 +143,11 @@ export function OrderTable({
                     #{order.orderNumber ?? order.id.slice(0, 6)}
                   </span>
                   <OrderModeChip mode={order.orderMode ?? "delivery"} />
+                  {order.tableNumber && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold text-[10px] tracking-tight border border-amber-200">
+                      MESA {order.tableNumber}
+                    </span>
+                  )}
                 </div>
               </TableCell>
 

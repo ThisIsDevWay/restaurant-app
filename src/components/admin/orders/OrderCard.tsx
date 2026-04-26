@@ -24,6 +24,7 @@ export interface OrderListItem {
   paymentProvider?: string;
   itemsSnapshot: unknown;
   orderMode: string | null;
+  tableNumber?: string | null;
 }
 
 export function OrderCard({ order }: { order: OrderListItem }) {
@@ -58,6 +59,11 @@ export function OrderCard({ order }: { order: OrderListItem }) {
             #{order.orderNumber ?? order.id.slice(0, 8)}
           </span>
           <OrderModeChip mode={orderMode} className="py-1 px-2 text-[10px]" />
+          {order.tableNumber && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold text-[10px] tracking-tight border border-amber-200">
+              MESA {order.tableNumber}
+            </span>
+          )}
         </div>
         <OrderStatusBadge status={order.status} />
       </div>

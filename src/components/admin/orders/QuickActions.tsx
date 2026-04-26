@@ -28,8 +28,11 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
+  Printer,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { reprintOrderAction } from "@/actions/print";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   ACTION_MAP,
@@ -172,6 +175,16 @@ export function QuickActions({
     }
   }
 
+  const handleReprint = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const result = await reprintOrderAction({ orderId });
+    if (result?.data?.success) {
+      toast.success("Impresión enviada");
+    } else {
+      toast.error("Error al enviar impresión");
+    }
+  };
+
   const dialog = (
     <ReferenceDialog
       open={refDialogOpen}
@@ -193,6 +206,13 @@ export function QuickActions({
     return (
       <div className="flex items-center gap-1">
         <EyeBtn size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/admin/orders/${orderId}`); }} />
+        <button
+          onClick={handleReprint}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted/50 hover:text-primary hover:bg-primary/10 transition-colors"
+          title="Imprimir ticket"
+        >
+          <Printer className="h-3.5 w-3.5" />
+        </button>
         <ActionBtn
           size="sm"
           destructive={primary.variant === "destructive"}
@@ -211,6 +231,13 @@ export function QuickActions({
   return (
     <div className="flex items-center justify-end gap-1">
       <EyeBtn onClick={() => router.push(`/admin/orders/${orderId}`)} />
+      <button
+        onClick={handleReprint}
+        className="flex h-8 w-7 items-center justify-center rounded-md text-text-muted/50 hover:text-primary hover:bg-primary/10 transition-colors"
+        title="Imprimir ticket"
+      >
+        <Printer className="h-4 w-4" />
+      </button>
 
       {primary && (
         <ActionBtn
