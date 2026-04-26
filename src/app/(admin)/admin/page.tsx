@@ -69,7 +69,14 @@ export default async function AdminDashboard() {
     hourCounts.set(hour, (hourCounts.get(hour) ?? 0) + 1);
   }
   const peakHourEntry = [...hourCounts.entries()].sort((a, b) => b[1] - a[1])[0];
-  const peakHour = peakHourEntry ? `${peakHourEntry[0].toString().padStart(2, "0")}:00` : null;
+  
+  let peakHour = null;
+  if (peakHourEntry) {
+    const hour24 = peakHourEntry[0];
+    const period = hour24 >= 12 ? 'p.m.' : 'a.m.';
+    const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+    peakHour = `${hour12}:00 ${period}`;
+  }
 
   // Profitability data
   const [weightedMargin, profitability, staleItems] = await Promise.all([
@@ -210,14 +217,14 @@ export default async function AdminDashboard() {
       <Card className="ring-1 ring-border">
         <CardHeader className="border-b border-border">
           <div className="flex items-center justify-between">
-            <CardTitle>Ventas de la semana</CardTitle>
+            <CardTitle>Ventas de hoy por hora</CardTitle>
             <Badge variant="secondary" className="text-xs">
-              Últimos 7 días
+              Día en curso
             </Badge>
           </div>
         </CardHeader>
         <CardContent className="pt-4">
-          <OrdersChart />
+          <OrdersChart todayOrders={todayOrdersRaw} />
         </CardContent>
       </Card>
 
@@ -225,7 +232,7 @@ export default async function AdminDashboard() {
       <Card className="ring-1 ring-border">
         <CardHeader className="border-b border-border">
           <div className="flex items-center justify-between">
-            <CardTitle>Últimas órdenes</CardTitle>
+            <CardTitle>Últimas órdenes de hoy</CardTitle>
             <Badge variant="outline" className="text-xs">
               {recentOrders.length} recientes
             </Badge>
@@ -262,10 +269,11 @@ export default async function AdminDashboard() {
                     </span>
                     <OrderStatusBadge status={order.status as any} />
                     <span className="text-xs text-text-muted hidden sm:block">
-                      {new Date(order.createdAt).toLocaleTimeString("es-VE", {
-                        hour: "2-digit",
+                      {new Date(order.createdAt).toLocaleTimeString("en-US", {
+                        hour: "numeric",
                         minute: "2-digit",
-                      })}
+                        hour12: true,
+                      }).toLowerCase().replace('am', 'a.m.').replace('pm', 'p.m.')}
                     </span>
                   </div>
                 </Link>

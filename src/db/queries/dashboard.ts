@@ -26,6 +26,10 @@ export async function getDashboardStats() {
 }
 
 export async function getRecentOrders(limit = 10) {
+    const today = todayCaracas();
+    const startOfDayVET = new Date(`${today}T00:00:00-04:00`);
+    const endOfDayVET = new Date(`${today}T23:59:59-04:00`);
+
     return db
         .select({
             id: orders.id,
@@ -35,6 +39,12 @@ export async function getRecentOrders(limit = 10) {
             createdAt: orders.createdAt,
         })
         .from(orders)
+        .where(
+            and(
+                gte(orders.createdAt, startOfDayVET),
+                lte(orders.createdAt, endOfDayVET),
+            ),
+        )
         .orderBy(desc(orders.createdAt))
         .limit(limit);
 }
@@ -45,7 +55,11 @@ export async function getTodayOrdersRaw() {
     const endOfDayVET = new Date(`${today}T23:59:59-04:00`);
 
     return db
-        .select({ itemsSnapshot: orders.itemsSnapshot, createdAt: orders.createdAt })
+        .select({ 
+            itemsSnapshot: orders.itemsSnapshot, 
+            createdAt: orders.createdAt,
+            subtotalBsCents: orders.subtotalBsCents 
+        })
         .from(orders)
         .where(
             and(
