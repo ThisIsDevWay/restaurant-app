@@ -80,6 +80,12 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
   const isDrawerOpen = useCartStore((s) => s.isDrawerOpen);
   const openDrawer = useCartStore((s) => s.openDrawer);
   const closeDrawer = useCartStore((s) => s.closeDrawer);
+  const setEditingIndex = useCartStore((s) => s.setEditingIndex);
+
+  const handleEdit = (index: number) => {
+    setEditingIndex(index);
+    closeDrawer();
+  };
 
   const router = useRouter();
   const isOnline = useOnlineStatus();
@@ -330,6 +336,7 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
                 maxQuantityPerItem={maxQuantityPerItem}
                 onUpdateQuantity={updateQuantity}
                 onRemove={removeItem}
+                onEdit={handleEdit}
               />
             ))}
           </div>

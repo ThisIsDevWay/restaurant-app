@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MenuItemCard } from "./MenuItemCard";
 import { ItemDetailModal } from "@/components/customer/ItemDetailModal";
 import { useCartStore } from "@/store/cartStore";
@@ -60,6 +60,25 @@ export function MenuGrid({
 
   const cartItems = useCartStore((s) => s.items);
   const addItem = useCartStore((s) => s.addItem);
+  const editingIndex = useCartStore((s) => s.editingIndex);
+  const setEditingIndex = useCartStore((s) => s.setEditingIndex);
+
+  // Handle editing from cart
+  useEffect(() => {
+    if (editingIndex !== null && cartItems[editingIndex]) {
+      const cartItem = cartItems[editingIndex];
+      // Find the menu item by ID
+      const menuItem = items.find((i) => i.id === cartItem.id);
+      if (menuItem) {
+        setSelectedItemId(menuItem.id);
+      }
+    }
+  }, [editingIndex, cartItems, items]);
+
+  const handleCloseModal = () => {
+    setSelectedItemId(null);
+    setEditingIndex(null);
+  };
 
   // Mapear items con disponibilidad en tiempo real
   const mappedItems = items.map(item => ({
@@ -202,7 +221,7 @@ export function MenuGrid({
         <ItemDetailModal
           item={selectedItem}
           isOpen={!!selectedItem}
-          onClose={() => setSelectedItemId(null)}
+          onClose={handleCloseModal}
           currentRateBsPerUsd={rate}
           allContornos={allContornos}
           adicionalesEnabled={adicionalesEnabled}
@@ -211,6 +230,8 @@ export function MenuGrid({
           dailyBebidas={mappedDailyBebidas}
           maxQuantityPerItem={maxQuantityPerItem}
           menuLayout={menuLayout}
+          initialData={editingIndex !== null ? cartItems[editingIndex] : null}
+          editingIndex={editingIndex}
         />
       )}
 

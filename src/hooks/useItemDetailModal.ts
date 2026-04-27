@@ -16,6 +16,7 @@ export interface UseItemDetailModalParams {
   dailyAdicionales: SimpleItem[];
   dailyBebidas: SimpleItem[];
   maxQuantityPerItem?: number;
+  initialData?: any | null; // using any to avoid import cycles if needed, but it's CartItem
 }
 
 export interface UseItemDetailModalReturn {
@@ -49,6 +50,7 @@ export function useItemDetailModal({
   dailyAdicionales,
   dailyBebidas,
   maxQuantityPerItem = 10,
+  initialData,
 }: UseItemDetailModalParams): UseItemDetailModalReturn {
   const [substitutionMap, setSubstitutionMap] = useState<Record<string, string | null>>({});
   const [expandedContornos, setExpandedContornos] = useState<Set<string>>(new Set());
@@ -70,15 +72,55 @@ export function useItemDetailModal({
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setSubstitutionMap({});
-      setExpandedContornos(new Set());
-      setSelectedRadio({});
-      setAdicionalQuantities({});
-      setBebidaQuantities({});
-      setQuantity(1);
+      if (initialData) {
+        // Pre-fill from initialData
+        const subs: Record<string, string | null> = {};
+        initialData.contornoSubstitutions?.forEach((s: any) => {
+          subs[s.originalId] = s.substituteId;
+        });
+        setSubstitutionMap(subs);
+
+        const adQtys: Record<string, number> = {};
+        const radio: Record<string, string> = {};
+        
+        // Split selectedAdicionales into real adicionales and radio options
+        // Radio options are ones that belong to an optionGroup
+        initialData.selectedAdicionales?.forEach((a: any) => {
+          // How do we know if it's a radio? 
+          // We can check if it matches any option in the item's groups
+          let foundInGroup = false;
+          item.optionGroups?.forEach(group => {
+            if (group.options.some(opt => opt.id === a.id)) {
+              radio[group.id] = a.id;
+              foundInGroup = true;
+            }
+          });
+          if (!foundInGroup) {
+            adQtys[a.id] = a.quantity || 1;
+          }
+        });
+        setAdicionalQuantities(adQtys);
+        setSelectedRadio(radio);
+
+        const bebQtys: Record<string, number> = {};
+        initialData.selectedBebidas?.forEach((b: any) => {
+          bebQtys[b.id] = b.quantity || 1;
+        });
+        setBebidaQuantities(bebQtys);
+
+        setQuantity(initialData.quantity || 1);
+      } else {
+        // Standard reset
+        setSubstitutionMap({});
+        setExpandedContornos(new Set());
+        setSelectedRadio({});
+        setAdicionalQuantities({});
+        setBebidaQuantities({});
+        setQuantity(1);
+      }
       setClosing(false);
     }
-  }, [isOpen]);
+  }, [isOpen, initialData, item.optionGroups]);
 
   const handleClose = useCallback(() => {
     setClosing(true);

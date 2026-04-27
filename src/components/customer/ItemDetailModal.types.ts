@@ -14,8 +14,8 @@ export type {
   SimpleComponent as Bebida,
   ContornoComponent as Contorno,
   SimpleComponent as GlobalContorno,
-  MenuItemWithComponents as MenuItem,
-};
+} from "@/types/menu.types";
+import { CartItem } from "@/store/cartStore";
 
 export interface SimpleItem {
   id: string;
@@ -36,4 +36,6 @@ export interface ItemDetailModalProps {
   dailyAdicionales: SimpleItem[];
   dailyBebidas: SimpleItem[];
   maxQuantityPerItem?: number;
+  initialData?: CartItem | null;
+  editingIndex?: number | null;
 }

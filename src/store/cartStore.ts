@@ -65,8 +65,10 @@ interface CartState {
     item: Omit<CartItem, "quantity" | "itemTotalBsCents">,
   ) => void;
   removeItem: (index: number) => void;
+  updateItem: (index: number, item: Omit<CartItem, "quantity" | "itemTotalBsCents"> & { quantity?: number; itemTotalBsCents?: number }) => void;
   updateQuantity: (index: number, quantity: number) => void;
   clearCart: () => void;
+  setItems: (items: CartItem[]) => void;
   ensureCheckoutToken: () => string;
   clearCheckoutToken: () => void;
   recalculateBsPrices: (rateBsPerUsd: number) => void;
@@ -75,6 +77,8 @@ interface CartState {
   totalUsdCents: () => number;
   totalBsCentsFromRate: (rateBsPerUsd: number) => number;
   itemCount: () => number;
+  editingIndex: number | null;
+  setEditingIndex: (index: number | null) => void;
 }
 
 function computeItemTotal(
@@ -150,10 +154,12 @@ export const useCartStore = create<CartState>()(
       checkoutToken: null,
       mounted: false,
       isDrawerOpen: false,
+      editingIndex: null,
       setMounted: () => set({ mounted: true }),
       openDrawer: () => set({ isDrawerOpen: true }),
       closeDrawer: () => set({ isDrawerOpen: false }),
       toggleDrawer: () => set({ isDrawerOpen: !get().isDrawerOpen }),
+      setEditingIndex: (index: number | null) => set({ editingIndex: index }),
 
       addItem: (item) => {
         const existingIndex = get().items.findIndex(
@@ -179,8 +185,20 @@ export const useCartStore = create<CartState>()(
         }
       },
 
-      removeItem: (index) => {
+      removeItem: (index: number) => {
         set({ items: get().items.filter((_, i) => i !== index) });
+      },
+      updateItem: (index: number, itemData) => {
+        const items = [...get().items];
+        if (index < 0 || index >= items.length) return;
+        const currentItem = items[index];
+        const newQuantity = itemData.quantity ?? currentItem.quantity;
+        items[index] = {
+          ...itemData,
+          quantity: newQuantity,
+          itemTotalBsCents: computeItemTotal(itemData, newQuantity),
+        };
+        set({ items });
       },
 
       updateQuantity: (index, quantity) => {
@@ -202,6 +220,7 @@ export const useCartStore = create<CartState>()(
         set({ items: [] });
         get().clearCheckoutToken();
       },
+      setItems: (items) => set({ items }),
 
       ensureCheckoutToken: () => {
         const current = get().checkoutToken;

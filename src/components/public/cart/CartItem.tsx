@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Minus, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { Minus, Plus, Trash2, AlertTriangle, Pencil } from "lucide-react";
 import { formatBs, formatRef } from "@/lib/money";
 import { type CartItem as CartItemType } from "@/store/cartStore";
 
@@ -350,9 +350,10 @@ interface CartItemProps {
   maxQuantityPerItem?: number;
   onUpdateQuantity: (index: number, qty: number) => void;
   onRemove: (index: number) => void;
+  onEdit: (index: number) => void;
 }
 
-export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantity, onRemove }: CartItemProps) {
+export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantity, onRemove, onEdit }: CartItemProps) {
   const [pendingRemove, setPendingRemove] = useState(false);
 
   const fixedContornos = item.fixedContornos       ?? [];
@@ -440,6 +441,9 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
               onDecrement={handleDecrement}
               onIncrement={() => onUpdateQuantity(index, Math.min(item.quantity + 1, maxQuantityPerItem))}
             />
+            <IconBtn onClick={() => onEdit(index)} label="Editar">
+              <Pencil style={{ width: 12, height: 12 }} />
+            </IconBtn>
             <IconBtn onClick={() => onRemove(index)} label="Eliminar" danger>
               <Trash2 style={{ width: 12, height: 12 }} />
             </IconBtn>

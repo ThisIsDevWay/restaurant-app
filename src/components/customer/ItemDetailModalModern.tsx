@@ -27,12 +27,15 @@ export function ItemDetailModalModern({
   dailyAdicionales,
   dailyBebidas,
   maxQuantityPerItem = 10,
+  initialData = null,
+  editingIndex = null,
 }: ItemDetailModalProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
+  const updateItem = useCartStore((s) => s.updateItem);
 
   const modal = useItemDetailModal({
-    item, isOpen, onClose, allContornos, dailyAdicionales, dailyBebidas, maxQuantityPerItem,
+    item, isOpen, onClose, allContornos, dailyAdicionales, dailyBebidas, maxQuantityPerItem, initialData,
   });
 
   const cart = useCartCalculation({
@@ -49,7 +52,7 @@ export function ItemDetailModalModern({
     currentRateBsPerUsd,
   });
 
-  function handleAdd() {
+  function handleSave() {
     if (!cart.allRequiredSatisfied) return;
     const CATEGORY_EMOJI: Record<string, string> = {
       pollos: "🍗", carnes: "🥩", pastas: "🍝", mariscos: "🍤",
@@ -72,8 +75,17 @@ export function ItemDetailModalModern({
       categoryName: item.categoryName,
       includedNote: item.includedNote ?? null,
     };
-    for (let i = 0; i < modal.quantity; i++) addItem(payload);
-    toast.success(`${item.name} añadido al carrito`);
+
+    if (editingIndex !== null && editingIndex !== undefined) {
+      // Editing existing item - include updated quantity from modal
+      updateItem(editingIndex, { ...payload, quantity: modal.quantity });
+      toast.success(`${item.name} actualizado`);
+    } else {
+      // Adding new item
+      for (let i = 0; i < modal.quantity; i++) addItem(payload);
+      toast.success(`${item.name} añadido al pedido`);
+    }
+
     if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
     modal.handleClose();
   }
@@ -349,7 +361,7 @@ export function ItemDetailModalModern({
             quantity={modal.quantity}
             maxQuantityPerItem={maxQuantityPerItem}
             onQuantityChange={modal.setQuantity}
-            onAdd={handleAdd}
+            onAdd={handleSave}
             allRequiredSatisfied={cart.allRequiredSatisfied}
             unsatisfiedGroupName={cart.unsatisfiedGroup?.name}
             extrasCount={cart.extrasCount}
