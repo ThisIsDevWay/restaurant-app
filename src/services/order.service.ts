@@ -379,7 +379,7 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
         grandTotalBsCents,
         surchargesSnapshot,
         status: provider.id === "whatsapp_manual" ? "whatsapp" : "pending",
-        paymentMethod: input.paymentMethod,
+        paymentMethod: input.paymentMethod === "transfer" ? "Transf." : input.paymentMethod,
         paymentProvider: provider.id,
         orderMode: input.orderMode ?? null,
         deliveryAddress: input.deliveryAddress ?? null,
