@@ -53,7 +53,7 @@ const AVAILABLE_VARIABLES = [
   { key: "{tiempoEstimado}", label: "Tiempo est.", sample: "25 min" },
   // Financial
   { key: "{total}", label: "Total Bs.", sample: "Bs. 15.340,58" },
-  { key: "{baseImponible}", label: "Base imponible", sample: "Bs. 13.224,64" },
+  { key: "{baseImponible}", label: "BASE IMP.", sample: "Bs. 13.224,64" },
   { key: "{iva}", label: "IVA (16%)", sample: "Bs. 2.115,94" },
   { key: "{ref}", label: "Ref $", sample: "REF 32,36" },
   { key: "{metodoPago}", label: "Método de Pago", sample: "💰 Pago Móvil" },

@@ -253,6 +253,24 @@ export function OrderItemsTable({
               )}
             </div>
           )}
+
+          {/* Fiscal breakdown for Admin */}
+          <div className="space-y-1.5 pt-3 border-t border-dashed border-border/60">
+            <div className="flex justify-between text-[11px] font-bold text-text-muted uppercase tracking-wider">
+              <span>BASE IMP.</span>
+              <div className="flex gap-2">
+                <span>{formatBs(Math.round(displayTotalBs / 1.16))}</span>
+                <span className="opacity-40">({(displayTotalUsd / 1.16 / 100).toFixed(2).replace(".", ",")})</span>
+              </div>
+            </div>
+            <div className="flex justify-between text-[11px] font-bold text-text-muted uppercase tracking-wider">
+              <span>IVA (16%)</span>
+              <div className="flex gap-2">
+                <span>{formatBs(displayTotalBs - Math.round(displayTotalBs / 1.16))}</span>
+                <span className="opacity-40">({((displayTotalUsd - displayTotalUsd / 1.16) / 100).toFixed(2).replace(".", ",")})</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="pt-4 border-t border-border/80 flex items-center justify-between">

@@ -12,15 +12,15 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
    DESIGN TOKENS
 ───────────────────────────────────────────── */
 const T = {
-  primary:     "#bb0005",
+  primary: "#bb0005",
   primaryDeep: "#e2231a",
-  ink:         "#251a07",
-  cream:       "#fff8f3",
-  creamLow:    "#fff2e2",
-  muted:       "#9e8e7e",
-  surface:     "#ffffff",
+  ink: "#251a07",
+  cream: "#fff8f3",
+  creamLow: "#fff2e2",
+  muted: "#9e8e7e",
+  surface: "#ffffff",
   fontDisplay: "'Epilogue', sans-serif",
-  fontBody:    "'Plus Jakarta Sans', sans-serif",
+  fontBody: "'Plus Jakarta Sans', sans-serif",
 } as const;
 
 /* ─────────────────────────────────────────────
@@ -29,20 +29,20 @@ const T = {
 function ItemBadge({ count }: { count: number }) {
   return (
     <span style={{
-      display:       "inline-flex",
-      alignItems:    "center",
-      justifyContent:"center",
-      minWidth:      20,
-      height:        20,
-      padding:       "0 6px",
-      borderRadius:  99,
-      background:    T.primary,
-      color:         "#fff",
-      fontFamily:    T.fontDisplay,
-      fontSize:      10,
-      fontWeight:    900,
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minWidth: 20,
+      height: 20,
+      padding: "0 6px",
+      borderRadius: 99,
+      background: T.primary,
+      color: "#fff",
+      fontFamily: T.fontDisplay,
+      fontSize: 10,
+      fontWeight: 900,
       letterSpacing: "0.03em",
-      lineHeight:    1,
+      lineHeight: 1,
     }}>
       {count}
     </span>
@@ -55,10 +55,10 @@ function ItemBadge({ count }: { count: number }) {
 function TaxRow({ label, value }: { label: string; value: string }) {
   return (
     <div style={{
-      display:        "flex",
+      display: "flex",
       justifyContent: "space-between",
-      alignItems:     "center",
-      padding:        "4px 0",
+      alignItems: "center",
+      padding: "4px 0",
     }}>
       <span style={{ fontSize: 11, color: T.muted, fontWeight: 500 }}>{label}</span>
       <span style={{ fontSize: 11, color: T.muted, fontWeight: 600, fontFamily: T.fontDisplay }}>{value}</span>
@@ -70,22 +70,22 @@ function TaxRow({ label, value }: { label: string; value: string }) {
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number }) {
-  const items          = useCartStore((s) => s.items);
-  const mounted        = useCartStore((s) => s.mounted);
-  const setMounted     = useCartStore((s) => s.setMounted);
+  const items = useCartStore((s) => s.items);
+  const mounted = useCartStore((s) => s.mounted);
+  const setMounted = useCartStore((s) => s.setMounted);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
-  const removeItem     = useCartStore((s) => s.removeItem);
-  const totalBsCents   = useCartStore((s) => s.totalBsCents());
-  const totalUsdCents  = useCartStore((s) => s.totalUsdCents());
-  const isDrawerOpen   = useCartStore((s) => s.isDrawerOpen);
-  const openDrawer     = useCartStore((s) => s.openDrawer);
-  const closeDrawer    = useCartStore((s) => s.closeDrawer);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const totalBsCents = useCartStore((s) => s.totalBsCents());
+  const totalUsdCents = useCartStore((s) => s.totalUsdCents());
+  const isDrawerOpen = useCartStore((s) => s.isDrawerOpen);
+  const openDrawer = useCartStore((s) => s.openDrawer);
+  const closeDrawer = useCartStore((s) => s.closeDrawer);
 
-  const router      = useRouter();
-  const isOnline    = useOnlineStatus();
-  const [taxOpen, setTaxOpen]       = useState(false);
+  const router = useRouter();
+  const isOnline = useOnlineStatus();
+  const [taxOpen, setTaxOpen] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
-  const [barVisible, setBarVisible]  = useState(false);
+  const [barVisible, setBarVisible] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   /* hydration */
@@ -108,9 +108,9 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
 
   if (!hasHydrated || !mounted || items.length === 0) return null;
 
-  const itemCount     = items.reduce((s, i) => s + i.quantity, 0);
+  const itemCount = items.reduce((s, i) => s + i.quantity, 0);
   const baseImponible = Math.round(totalBsCents / 1.16);
-  const ivaBs         = totalBsCents - baseImponible;
+  const ivaBs = totalBsCents - baseImponible;
 
   return (
     <>
@@ -122,13 +122,13 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
         lg:bottom-6 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:w-[420px] lg:rounded-2xl lg:p-[12px_16px] lg:border lg:border-primary/10
         ${barVisible ? 'translate-y-0 lg:translate-y-0' : 'translate-y-full lg:translate-y-[150%]'}
       `} style={{
-        /* Glass + cream warmth */
-        background: "rgba(255,248,243,0.92)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderTop: "1px solid rgba(187,0,5,0.08)",
-        boxShadow: "0 -4px 24px rgba(37,26,7,0.07), 0 12px 32px rgba(187,0,5,0.08)",
-      }}>
+          /* Glass + cream warmth */
+          background: "rgba(255,248,243,0.92)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderTop: "1px solid rgba(187,0,5,0.08)",
+          boxShadow: "0 -4px 24px rgba(37,26,7,0.07), 0 12px 32px rgba(187,0,5,0.08)",
+        }}>
         {/* Drag handle visual hint */}
         <div className="lg:hidden" style={{
           width: 36, height: 3, borderRadius: 99,
@@ -141,21 +141,21 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
               <span style={{
-                fontFamily:    T.fontDisplay,
-                fontSize:      17,
-                fontWeight:    900,
-                color:         T.ink,
+                fontFamily: T.fontDisplay,
+                fontSize: 17,
+                fontWeight: 900,
+                color: T.ink,
                 letterSpacing: "-0.02em",
-                lineHeight:    1,
+                lineHeight: 1,
               }}>
                 {formatBs(totalBsCents)}
               </span>
               <span style={{
-                fontSize:   11,
+                fontSize: 11,
                 fontWeight: 600,
-                color:      T.muted,
+                color: T.muted,
                 background: T.creamLow,
-                padding:    "1px 7px",
+                padding: "1px 7px",
                 borderRadius: 6,
               }}>
                 {formatRef(totalUsdCents)}
@@ -175,31 +175,31 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
             disabled={!isOnline}
             aria-label={!isOnline ? "Necesitas conexión para hacer un pedido" : "Ver pedido"}
             style={{
-              display:        "inline-flex",
-              alignItems:     "center",
-              gap:            8,
-              padding:        "0 20px",
-              height:         46,
-              borderRadius:   13,
-              border:         "none",
-              cursor:         isOnline ? "pointer" : "not-allowed",
-              opacity:        isOnline ? 1 : 0.5,
-              background:     `linear-gradient(135deg, ${T.primary} 0%, ${T.primaryDeep} 100%)`,
-              color:          "#fff",
-              fontFamily:     T.fontDisplay,
-              fontSize:       12,
-              fontWeight:     900,
-              letterSpacing:  "0.07em",
-              textTransform:  "uppercase",
-              boxShadow:      isOnline ? "0 4px 16px rgba(187,0,5,0.35)" : "none",
-              transition:     "transform 0.15s, box-shadow 0.15s",
-              position:       "relative",
-              overflow:       "hidden",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "0 20px",
+              height: 46,
+              borderRadius: 13,
+              border: "none",
+              cursor: isOnline ? "pointer" : "not-allowed",
+              opacity: isOnline ? 1 : 0.5,
+              background: `linear-gradient(135deg, ${T.primary} 0%, ${T.primaryDeep} 100%)`,
+              color: "#fff",
+              fontFamily: T.fontDisplay,
+              fontSize: 12,
+              fontWeight: 900,
+              letterSpacing: "0.07em",
+              textTransform: "uppercase",
+              boxShadow: isOnline ? "0 4px 16px rgba(187,0,5,0.35)" : "none",
+              transition: "transform 0.15s, box-shadow 0.15s",
+              position: "relative",
+              overflow: "hidden",
             }}
             onMouseEnter={(e) => { if (isOnline) (e.currentTarget as HTMLElement).style.transform = "scale(1.04)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
-            onMouseDown={(e)  => { if (isOnline) (e.currentTarget as HTMLElement).style.transform = "scale(0.97)"; }}
-            onMouseUp={(e)    => { if (isOnline) (e.currentTarget as HTMLElement).style.transform = "scale(1.04)"; }}
+            onMouseDown={(e) => { if (isOnline) (e.currentTarget as HTMLElement).style.transform = "scale(0.97)"; }}
+            onMouseUp={(e) => { if (isOnline) (e.currentTarget as HTMLElement).style.transform = "scale(1.04)"; }}
           >
             {!isOnline
               ? <><WifiOff style={{ width: 14, height: 14 }} />Sin conexión</>
@@ -214,10 +214,10 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
       ──────────────────────────────────────── */}
       <div
         style={{
-          position:       "fixed",
-          inset:          0,
-          zIndex:         50,
-          pointerEvents:  isDrawerOpen ? "auto" : "none",
+          position: "fixed",
+          inset: 0,
+          zIndex: 50,
+          pointerEvents: isDrawerOpen ? "auto" : "none",
         }}
         inert={!isDrawerOpen}
       >
@@ -225,12 +225,12 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
         <div
           onClick={closeDrawer}
           style={{
-            position:   "absolute",
-            inset:      0,
+            position: "absolute",
+            inset: 0,
             background: "rgba(37,26,7,0.5)",
             backdropFilter: "blur(4px)",
             WebkitBackdropFilter: "blur(4px)",
-            opacity:    isDrawerOpen ? 1 : 0,
+            opacity: isDrawerOpen ? 1 : 0,
             transition: "opacity 0.25s ease",
             pointerEvents: isDrawerOpen ? "auto" : "none",
           }}
@@ -252,9 +252,9 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
         >
           {/* ── DRAWER HEADER ── */}
           <div style={{
-            background:   T.cream,
+            background: T.cream,
             borderBottom: `1px solid ${T.creamLow}`,
-            flexShrink:   0,
+            flexShrink: 0,
           }}>
             {/* Drag pill */}
             <div className="md:hidden" style={{
@@ -264,20 +264,20 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
             }} />
 
             <div style={{
-              display:        "flex",
-              alignItems:     "center",
+              display: "flex",
+              alignItems: "center",
               justifyContent: "space-between",
-              padding:        "12px 16px 14px",
+              padding: "12px 16px 14px",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {/* Heritage title */}
                 <h2 style={{
-                  fontFamily:    T.fontDisplay,
-                  fontSize:      "clamp(16px, 4.5vw, 18px)",
-                  fontWeight:    900,
-                  color:         T.ink,
+                  fontFamily: T.fontDisplay,
+                  fontSize: "clamp(16px, 4.5vw, 18px)",
+                  fontWeight: 900,
+                  color: T.ink,
                   letterSpacing: "-0.02em",
-                  lineHeight:    1,
+                  lineHeight: 1,
                 }}>
                   Mi pedido
                 </h2>
@@ -311,12 +311,12 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
           <div
             ref={scrollRef}
             style={{
-              flex:       1,
-              overflowY:  "auto",
-              padding:    "10px 12px",
-              display:    "flex",
+              flex: 1,
+              overflowY: "auto",
+              padding: "10px 12px",
+              display: "flex",
               flexDirection: "column",
-              gap:        8,
+              gap: 8,
               /* Custom scrollbar */
               scrollbarWidth: "thin",
               scrollbarColor: `${T.creamLow} transparent`,
@@ -336,31 +336,31 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
 
           {/* ── STICKY FOOTER ── */}
           <div style={{
-            borderTop:  `1px solid ${T.creamLow}`,
+            borderTop: `1px solid ${T.creamLow}`,
             background: T.surface,
-            padding:    "12px 16px 20px",
+            padding: "12px 16px 20px",
             flexShrink: 0,
           }}>
             {/* Tax toggle */}
             <button
               onClick={() => setTaxOpen((p) => !p)}
               style={{
-                display:    "flex",
-                width:      "100%",
+                display: "flex",
+                width: "100%",
                 alignItems: "center",
                 justifyContent: "space-between",
-                padding:    "7px 0",
+                padding: "7px 0",
                 background: "transparent",
-                border:     "none",
-                cursor:     "pointer",
+                border: "none",
+                cursor: "pointer",
               }}
             >
               <span style={{
-                display:    "flex",
+                display: "flex",
                 alignItems: "center",
-                gap:        6,
-                fontSize:   11,
-                color:      T.muted,
+                gap: 6,
+                fontSize: 11,
+                color: T.muted,
                 fontWeight: 600,
               }}>
                 <Info style={{ width: 13, height: 13, opacity: 0.6 }} />
@@ -380,54 +380,54 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
             {taxOpen && (
               <div style={{
                 borderRadius: 10,
-                background:   T.cream,
-                padding:      "8px 12px",
+                background: T.cream,
+                padding: "8px 12px",
                 marginBottom: 12,   /* ↑ more breathing before total row */
-                animation:    "tax-in 0.15s ease",
+                animation: "tax-in 0.15s ease",
               }}>
-                <TaxRow label="Base imponible" value={formatBs(baseImponible)} />
-                <TaxRow label="IVA (16%)"      value={formatBs(ivaBs)} />
+                <TaxRow label="BASE IMP." value={formatBs(baseImponible)} />
+                <TaxRow label="IVA (16%)" value={formatBs(ivaBs)} />
               </div>
             )}
 
             {/* Total row */}
             <div style={{
-              display:        "flex",
-              alignItems:     "center",
+              display: "flex",
+              alignItems: "center",
               justifyContent: "space-between",
-              paddingTop:     11,
-              marginTop:      3,
-              borderTop:      `1.5px solid ${T.creamLow}`,
+              paddingTop: 11,
+              marginTop: 3,
+              borderTop: `1.5px solid ${T.creamLow}`,
             }}>
               <span style={{
-                fontFamily:    T.fontDisplay,
-                fontSize:      "clamp(10px, 3vw, 12px)",
-                fontWeight:    800,
+                fontFamily: T.fontDisplay,
+                fontSize: "clamp(10px, 3vw, 12px)",
+                fontWeight: 800,
                 textTransform: "uppercase",
                 letterSpacing: "0.1em",
-                color:         T.muted,
+                color: T.muted,
               }}>
                 Total a pagar
               </span>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                 <span style={{
-                  fontSize:     11,
-                  fontWeight:   600,
-                  color:        T.muted,
-                  background:   T.creamLow,
-                  padding:      "2px 8px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: T.muted,
+                  background: T.creamLow,
+                  padding: "2px 8px",
                   borderRadius: 6,
-                  fontFamily:   T.fontDisplay,
+                  fontFamily: T.fontDisplay,
                 }}>
                   {formatRef(totalUsdCents)}
                 </span>
                 <span style={{
-                  fontFamily:    T.fontDisplay,
-                  fontSize:      "clamp(22px, 6vw, 30px)",
-                  fontWeight:    900,
-                  color:         T.ink,
+                  fontFamily: T.fontDisplay,
+                  fontSize: "clamp(22px, 6vw, 30px)",
+                  fontWeight: 900,
+                  color: T.ink,
                   letterSpacing: "-0.03em",
-                  lineHeight:    1,
+                  lineHeight: 1,
                 }}>
                   {formatBs(totalBsCents)}
                 </span>
@@ -437,14 +437,14 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
             {/* Multi-quantity hint */}
             {items.some((item) => item.quantity > 1) && (
               <div style={{
-                display:    "flex",
+                display: "flex",
                 alignItems: "flex-start",
-                gap:        6,
-                marginTop:  10,
-                padding:    "8px 10px",
+                gap: 6,
+                marginTop: 10,
+                padding: "8px 10px",
                 borderRadius: 10,
                 background: T.cream,
-                border:     `1px solid ${T.creamLow}`,
+                border: `1px solid ${T.creamLow}`,
               }}>
                 <Info style={{ width: 12, height: 12, color: T.muted, opacity: 0.7, marginTop: 1, flexShrink: 0 }} />
                 <p style={{ fontSize: 11, color: T.muted, lineHeight: 1.5, fontWeight: 500 }}>
@@ -457,52 +457,52 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
             <button
               onClick={() => { closeDrawer(); router.push("/checkout"); }}
               style={{
-                marginTop:      14,
-                display:        "flex",
-                width:          "100%",
-                alignItems:     "center",
+                marginTop: 14,
+                display: "flex",
+                width: "100%",
+                alignItems: "center",
                 justifyContent: "center",
-                gap:            10,
-                height:         52,
-                borderRadius:   14,
-                border:         "none",
-                cursor:         "pointer",
-                background:     `linear-gradient(150deg, ${T.primary} 0%, ${T.primaryDeep} 100%)`,
-                color:          "#fff",
-                fontFamily:     T.fontDisplay,
-                fontSize:       "clamp(12px, 3.5vw, 14px)",
-                fontWeight:     900,
-                letterSpacing:  "0.08em",
-                textTransform:  "uppercase",
-                boxShadow:      "0 6px 20px rgba(187,0,5,0.32)",
-                position:       "relative",
-                overflow:       "hidden",
-                transition:     "transform 0.15s, box-shadow 0.15s",
+                gap: 10,
+                height: 52,
+                borderRadius: 14,
+                border: "none",
+                cursor: "pointer",
+                background: `linear-gradient(150deg, ${T.primary} 0%, ${T.primaryDeep} 100%)`,
+                color: "#fff",
+                fontFamily: T.fontDisplay,
+                fontSize: "clamp(12px, 3.5vw, 14px)",
+                fontWeight: 900,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                boxShadow: "0 6px 20px rgba(187,0,5,0.32)",
+                position: "relative",
+                overflow: "hidden",
+                transition: "transform 0.15s, box-shadow 0.15s",
               }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.02)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 28px rgba(187,0,5,0.4)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(187,0,5,0.32)"; }}
-              onMouseDown={(e)  => { (e.currentTarget as HTMLElement).style.transform = "scale(0.98)"; }}
-              onMouseUp={(e)    => { (e.currentTarget as HTMLElement).style.transform = "scale(1.02)"; }}
+              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(0.98)"; }}
+              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.02)"; }}
             >
               {/* Shimmer */}
               <span aria-hidden style={{
-                position:   "absolute",
-                inset:      0,
+                position: "absolute",
+                inset: 0,
                 background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%)",
                 backgroundSize: "200% 100%",
-                animation:  "shimmer-cta 2.5s infinite",
+                animation: "shimmer-cta 2.5s infinite",
                 borderRadius: "inherit",
               }} />
               <span style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 10 }}>
                 Confirmar pedido
                 <span style={{
-                  display:        "flex",
-                  alignItems:     "center",
+                  display: "flex",
+                  alignItems: "center",
                   justifyContent: "center",
-                  width:          24,
-                  height:         24,
-                  borderRadius:   7,
-                  background:     "rgba(255,255,255,0.2)",
+                  width: 24,
+                  height: 24,
+                  borderRadius: 7,
+                  background: "rgba(255,255,255,0.2)",
                 }}>
                   <ArrowRight style={{ width: 13, height: 13 }} />
                 </span>

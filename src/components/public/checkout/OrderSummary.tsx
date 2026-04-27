@@ -259,12 +259,18 @@ export function OrderSummary({
             {/* Tax Breakdown (MVP Rule) */}
             <div className="space-y-1.5 pt-3 border-t border-border/20">
               <div className="flex justify-between text-[11px] font-bold text-text-muted uppercase tracking-wider">
-                <span>Base imponible</span>
-                <span>{formatBs(Math.round(totalBsCents / 1.16))}</span>
+                <span>BASE IMP.</span>
+                <div className="flex gap-2">
+                  <span>{formatBs(Math.round(totalBsCents / 1.16))}</span>
+                  <span className="opacity-40">({(totalUsdCents / 1.16 / 100).toFixed(2).replace(".", ",")})</span>
+                </div>
               </div>
               <div className="flex justify-between text-[11px] font-bold text-text-muted uppercase tracking-wider">
-                <span>IVA incluido (16%)</span>
-                <span>{formatBs(totalBsCents - Math.round(totalBsCents / 1.16))}</span>
+                <span>IVA (16%)</span>
+                <div className="flex gap-2">
+                  <span>{formatBs(totalBsCents - Math.round(totalBsCents / 1.16))}</span>
+                  <span className="opacity-40">({((totalUsdCents - totalUsdCents / 1.16) / 100).toFixed(2).replace(".", ",")})</span>
+                </div>
               </div>
             </div>
 

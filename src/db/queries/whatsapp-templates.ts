@@ -50,7 +50,7 @@ export async function seedDefaultTemplates() {
         "{items}",
         "{packagingFee}",
         "",
-        "🧾 Base imponible: {baseImponible}",
+        "🧾 BASE IMP.: {baseImponible}",
         "📌 IVA (16%): {iva}",
         "💰 *Total: {total}*",
         "💵 Equiv. {ref}",

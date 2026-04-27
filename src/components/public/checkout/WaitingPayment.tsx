@@ -105,6 +105,16 @@ export function WaitingPayment({
         <p className="text-[42px] font-display font-black text-primary leading-tight">
           {formatBs(totalBsCents)}
         </p>
+        <div className="mt-2 flex items-center justify-center gap-4 text-[10px] font-bold text-text-muted uppercase tracking-widest opacity-60">
+          <div className="flex gap-1.5">
+            <span>BASE IMP.</span>
+            <span className="text-text-main">{formatBs(Math.round(totalBsCents / 1.16))}</span>
+          </div>
+          <div className="flex gap-1.5">
+            <span>IVA (16%)</span>
+            <span className="text-text-main">{formatBs(totalBsCents - Math.round(totalBsCents / 1.16))}</span>
+          </div>
+        </div>
         <div className="mt-4 flex items-center justify-center gap-2.5 bg-success/5 border border-success/10 py-2.5 px-4 rounded-full mx-auto w-fit">
           <span className="h-2 w-2 animate-pulse rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
           <span className="text-[11px] font-bold text-success/80 uppercase tracking-wider">

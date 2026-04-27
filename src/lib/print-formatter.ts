@@ -171,9 +171,9 @@ export function generateTicketText(data: PrintData): string {
   const ivaBs = totalBs - baseBs;
   const ivaUsd = totalUsd - baseUsd;
 
-  const subtotalBsStr = formatBs(baseBs).replace("Bs. ", "Bs ");
-  const subtotalRefStr = `(${formatRef(baseUsd)})`;
-  text += justify("SUBTOTAL:", `${subtotalBsStr} ${subtotalRefStr}`) + "\n";
+  const baseBsStr = formatBs(baseBs).replace("Bs. ", "Bs ");
+  const baseRefStr = `(${formatRef(baseUsd)})`;
+  text += justify("BASE IMP.:", `${baseBsStr} ${baseRefStr}`) + "\n";
 
   const ivaBsStr = formatBs(ivaBs).replace("Bs. ", "Bs ");
   const ivaRefStr = `(${formatRef(ivaUsd)})`;
