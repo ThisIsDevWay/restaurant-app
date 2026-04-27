@@ -82,15 +82,15 @@ function Pill({ children, variant = "default" }: { children: React.ReactNode; va
 function CatLabel({ children }: { children: React.ReactNode }) {
   return (
     <span style={{
-      width:         58,
-      flexShrink:    0,
-      fontSize:      9,
-      fontWeight:    900,
+      width: 64,
+      flexShrink: 0,
+      fontSize: 9,
+      fontWeight: 900,
       textTransform: "uppercase",
       letterSpacing: "0.12em",
-      color:         T.muted,
-      fontFamily:    T.fontDisplay,
-      paddingTop:    2,
+      color: T.muted,
+      fontFamily: T.fontDisplay,
+      paddingTop: 4,
     }}>
       {children}
     </span>
@@ -449,10 +449,10 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
         {/* ── CUSTOMIZATIONS ── */}
         {hasCustomizations && (
           <div style={{
-            display:       "flex",
+            display: "flex",
             flexDirection: "column",
-            gap:           7,
-            padding:       "8px 12px 10px",
+            gap: 9,
+            padding: "8px 12px 12px",
             borderTop:     `1px solid ${T.creamLow}`,
             background:    T.surface,
           }}>
