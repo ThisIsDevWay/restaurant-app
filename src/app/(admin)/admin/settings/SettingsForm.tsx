@@ -15,7 +15,8 @@ import { SettingsOperationTab } from "./SettingsOperationTab";
 import { SettingsPaymentsTab } from "./SettingsPaymentsTab";
 import { SettingsMessagingTab } from "./SettingsMessagingTab";
 import { SettingsDesignTab } from "./SettingsDesignTab";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { Button } from "@/components/ui/button";
+import { Loader2, Save, RotateCcw } from "lucide-react";
 import type { SettingsFormProps } from "./SettingsForm.types";
 
 export function SettingsForm({ initialData, templates = [] }: SettingsFormProps) {
@@ -31,8 +32,49 @@ export function SettingsForm({ initialData, templates = [] }: SettingsFormProps)
   } = useSettingsForm({ initialData });
 
   return (
-    <div className="relative pb-24">
+    <div className="relative">
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 bg-surface-section/50 p-4 rounded-2xl border border-border/40">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Settings className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-text-main leading-none mb-1">Editor de Configuración</p>
+              <p className="text-[11px] text-text-muted font-medium">Gestiona el comportamiento global</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => window.location.reload()}
+              className="h-10 px-4 rounded-xl border-border/60 font-bold hover:bg-muted text-xs transition-all active:scale-95"
+              disabled={isSaving}
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-2" />
+              Descartar
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="px-6 h-10 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all font-bold text-xs active:scale-95"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Guardar Cambios
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
         {message && (
           <div className={cn(
             "rounded-xl p-4 text-sm font-semibold animate-in fade-in slide-in-from-top-2 mb-6",
@@ -95,9 +137,6 @@ export function SettingsForm({ initialData, templates = [] }: SettingsFormProps)
             <SettingsMessagingTab form={form} updateField={updateField} templates={templates} />
           </TabsContent>
         </Tabs>
-
-        <div className="h-32" />
-        <SettingsSaveBar isSaving={isSaving} onDiscard={() => window.location.reload()} />
       </form>
     </div>
   );

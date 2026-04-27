@@ -66,6 +66,8 @@ const DEFAULT_FORM: SettingsFormData = {
   paymentTransferEnabled: true,
   menuLayout: "modern",
   menuItemSortMode: "custom",
+  applyIgtf: false,
+  igtfPercentage: "3.00",
 };
 
 export function useSettingsForm({ initialData }: UseSettingsFormParams): UseSettingsFormReturn {

@@ -59,6 +59,8 @@ export interface SettingsFormData {
   paymentTransferEnabled: boolean;
   menuLayout: "modern" | "classic";
   menuItemSortMode: "custom" | "price_asc" | "price_desc";
+  applyIgtf: boolean;
+  igtfPercentage: string;
 }
 
 export type FormErrors = Partial<Record<keyof SettingsFormData, string>>;

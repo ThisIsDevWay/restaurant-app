@@ -347,11 +347,20 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
         deliveryFeeUsdCents: settings.deliveryFeeUsdCents,
     });
 
-    // Grand totals = subtotal + surcharges
+    // Grand totals = subtotal + surcharges + IGTF (if applicable)
     // IMPORTANT: Sum rounded BS components to match client logic and avoid 1-cent rounding mismatches
-    const grandTotalUsdCents = subtotalUsdCents + serverSurcharges.totalSurchargeUsdCents;
-    const surchargeBsCents = usdCentsToBsCents(serverSurcharges.totalSurchargeUsdCents, rate);
-    const grandTotalBsCents = subtotalBsCents + surchargeBsCents;
+    const subtotalWithSurchargesUsdCents = subtotalUsdCents + serverSurcharges.totalSurchargeUsdCents;
+    const subtotalWithSurchargesBsCents = subtotalBsCents + usdCentsToBsCents(serverSurcharges.totalSurchargeUsdCents, rate);
+
+    const applyIgtf = settings.applyIgtf;
+    const igtfPercentage = Number(settings.igtfPercentage) || 3;
+    const isForeignCurrency = ["cash_usd", "zelle", "binance"].includes(input.paymentMethod);
+
+    const igtfUsdCents = (applyIgtf && isForeignCurrency) ? Math.round(subtotalWithSurchargesUsdCents * (igtfPercentage / 100)) : 0;
+    const igtfBsCents = Math.round(igtfUsdCents * rate);
+
+    const grandTotalUsdCents = subtotalWithSurchargesUsdCents + igtfUsdCents;
+    const grandTotalBsCents = subtotalWithSurchargesBsCents + igtfBsCents;
 
     // 3. Create order with atomic capacity check
     const expiresAt = new Date(Date.now() + settings.orderExpirationMinutes * 60 * 1000);
@@ -364,6 +373,8 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
         subtotalBsCents,
         packagingUsdCents: serverSurcharges.packagingUsdCents,
         deliveryUsdCents: serverSurcharges.deliveryUsdCents,
+        igtfUsdCents,
+        igtfBsCents,
         grandTotalUsdCents,
         grandTotalBsCents,
         surchargesSnapshot,

@@ -4,6 +4,7 @@ import { getAllContornos } from "@/db/queries/contornos";
 import { getActiveRate, getSettings } from "@/db/queries/settings";
 import { getAllTables } from "@/db/queries/restaurant-tables";
 import { getAllFixtures } from "@/db/queries/floor-fixtures";
+import { getKitchenOrdersSimple } from "@/db/queries/orders";
 import { WaiterOrderClient } from "@/components/waiter/WaiterOrderClient";
 
 export default async function WaiterPage({
@@ -13,7 +14,7 @@ export default async function WaiterPage({
 }) {
   const { table: prefilledTable } = await searchParams;
   
-  const [dailyMenuData, categories, rateData, allContornos, settings, tables, fixtures] = await Promise.all([
+  const [dailyMenuData, categories, rateData, allContornos, settings, tables, fixtures, activeOrders] = await Promise.all([
     getDailyMenuWithOptionsAndComponents().catch(() => ({ items: [], dailyAdicionales: [], dailyBebidas: [] })),
     getCategories().catch(() => []),
     getActiveRate().catch(() => null),
@@ -21,6 +22,7 @@ export default async function WaiterPage({
     getSettings().catch(() => null),
     getAllTables().catch(() => []),
     getAllFixtures().catch(() => []),
+    getKitchenOrdersSimple().catch(() => []),
   ]);
 
   return (
@@ -35,6 +37,7 @@ export default async function WaiterPage({
       prefilledTable={prefilledTable}
       tables={tables}
       fixtures={fixtures}
+      activeOrders={activeOrders}
     />
   );
 }

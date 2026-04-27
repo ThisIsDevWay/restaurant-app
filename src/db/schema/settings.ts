@@ -69,6 +69,8 @@ export const settings = pgTable("settings", {
   tablesGridCols: integer("tables_grid_cols").notNull().default(20),
   tablesGridRows: integer("tables_grid_rows").notNull().default(14),
   tablesDefaultZoom: integer("tables_default_zoom").notNull().default(90), // in percentage (e.g. 60 for 0.6)
+  applyIgtf: boolean("apply_igtf").notNull().default(false),
+  igtfPercentage: numeric("igtf_percentage", { precision: 5, scale: 2 }).notNull().default("3.00"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

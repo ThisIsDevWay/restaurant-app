@@ -35,6 +35,18 @@ export function SettingsGeneralTab({ form, updateField, errors = {} }: SettingsG
                 onCheckedChange={(v) => updateField("showRateInMenu", v)}
               />
             </div>
+            
+            <div className="flex items-center justify-between p-4 rounded-xl bg-bg-app border border-border/40">
+              <div className="space-y-0.5">
+                <Label className="text-base font-bold flex items-center gap-2">Aplicar IGTF (3%)</Label>
+                <p className="text-xs text-text-muted">Cobrar recargo por pagos en divisa.</p>
+              </div>
+              <Switch
+                checked={form.applyIgtf}
+                onCheckedChange={(v) => updateField("applyIgtf", v)}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label className="font-bold">Moneda de Referencia</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -70,6 +82,24 @@ export function SettingsGeneralTab({ form, updateField, errors = {} }: SettingsG
               <p className="text-[11px] text-amber flex items-center gap-1.5 p-2 bg-amber/5 rounded-lg border border-amber/10">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 Si se deja vacío, se usará la tasa BCV automática.
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-4">
+              <Label htmlFor="igtfPercentage" className="font-bold">Porcentaje IGTF (%)</Label>
+              <Input
+                id="igtfPercentage"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.igtfPercentage}
+                onChange={(e) => updateField("igtfPercentage", e.target.value)}
+                placeholder="Ej. 3.00"
+                className="rounded-xl border-border/60 h-10 text-lg font-mono"
+                disabled={!form.applyIgtf}
+              />
+              <p className="text-[11px] text-text-muted">
+                Por defecto es 3.00. Solo aplica a opciones de pago en divisas.
               </p>
             </div>
           </div>

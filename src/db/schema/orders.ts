@@ -67,14 +67,14 @@ export const orders = pgTable("orders", {
     .notNull()
     .$type<
       | "pago_movil"
-      | "transfer"
       | "whatsapp"
-      | "cash"
-      | "cash_usd"
-      | "cash_bs"
-      | "pos"
-      | "zelle"
-      | "binance"
+      | "Efectivo $"
+      | "Efectivo Bs"
+      | "Pago Móvil"
+      | "Punto / PdV"
+      | "Zelle"
+      | "Transf."
+      | "Binance"
     >(),
   paymentProvider: text("payment_provider")
     .notNull()
@@ -94,6 +94,8 @@ export const orders = pgTable("orders", {
   // Surcharges — packaging + delivery fees calculados al momento del checkout
   packagingUsdCents: integer("packaging_usd_cents").notNull().default(0),
   deliveryUsdCents: integer("delivery_usd_cents").notNull().default(0),
+  igtfUsdCents: integer("igtf_usd_cents").notNull().default(0),
+  igtfBsCents: integer("igtf_bs_cents").notNull().default(0),
   grandTotalUsdCents: integer("grand_total_usd_cents").notNull().default(0),
   grandTotalBsCents: integer("grand_total_bs_cents").notNull().default(0),
   surchargesSnapshot: jsonb("surcharges_snapshot").$type<{

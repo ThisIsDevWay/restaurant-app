@@ -11,7 +11,7 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <div className="max-w-4xl mx-auto pb-32">
+    <div className="max-w-4xl mx-auto">
       <div className="mb-0 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black text-text-main mb- tracking-tight">Configuración</h1>
@@ -70,6 +70,8 @@ export default async function SettingsPage() {
               paymentTransferEnabled: settings.paymentTransferEnabled ?? true,
               menuLayout: (settings.menuLayout ?? "modern") as "modern" | "classic",
               menuItemSortMode: (settings.menuItemSortMode ?? "custom") as "custom" | "price_asc" | "price_desc",
+              applyIgtf: settings.applyIgtf ?? false,
+              igtfPercentage: settings.igtfPercentage ?? "3.00",
             }
             : null
         }

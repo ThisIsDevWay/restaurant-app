@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
-  UtensilsCrossed, ShoppingCart, Plus, Minus, Trash2,
+  UtensilsCrossed, ShoppingCart, Plus, Minus, Trash2, Pencil,
   X, ChevronUp, Banknote, CreditCard, Send,
   CheckCircle2, Table2, Search, ChevronRight, User,
   Smartphone, Landmark, DollarSign, Coins, ArrowLeft, Map,
@@ -11,9 +11,23 @@ import {
   Toilet, UserRound, Leaf, Type, Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useCartStore, type CartItem } from "@/store/cartStore";
 import { ItemDetailModalModern } from "@/components/customer/ItemDetailModalModern";
-import { createWaiterOrderAction } from "@/actions/waiter-order";
+import { createWaiterOrderAction, updateWaiterOrderAction } from "@/actions/waiter-order";
 import { formatBs, formatRef } from "@/lib/money";
 import type { MenuItemWithComponents, SimpleComponent } from "@/types/menu.types";
 import type { SimpleItem } from "@/components/customer/ItemDetailModal.types";
@@ -41,6 +55,7 @@ interface WaiterOrderClientProps {
   prefilledTable?: string;
   tables?: RestaurantTable[];
   fixtures?: FloorFixture[];
+  activeOrders?: any[];
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -58,13 +73,22 @@ function getEmoji(categoryName: string): string {
   return CATEGORY_EMOJI[key] ?? "🍽️";
 }
 
-function needsModal(item: MenuItemWithComponents, dailyAdicionales: SimpleItem[], dailyBebidas: SimpleItem[]): boolean {
+function needsModal(
+  item: MenuItemWithComponents,
+  dailyAdicionales: SimpleItem[],
+  dailyBebidas: SimpleItem[],
+  settings: Record<string, any> | null
+): boolean {
   if (item.categoryIsSimple) return false;
+
+  const globalAdicionales = settings?.adicionalesEnabled !== false;
+  const globalBebidas = settings?.bebidasEnabled !== false;
+
   return (
     item.contornos.some(c => c.isAvailable) ||
     item.optionGroups.length > 0 ||
-    (!item.hideAdicionales && dailyAdicionales.length > 0) ||
-    (!item.hideBebidas && dailyBebidas.length > 0)
+    (globalAdicionales && !item.hideAdicionales && dailyAdicionales.length > 0) ||
+    (globalBebidas && !item.hideBebidas && dailyBebidas.length > 0)
   );
 }
 
@@ -145,7 +169,7 @@ function QtyControl({
   );
 }
 
-function CartLineItem({ item, index }: { item: CartItem; index: number }) {
+function CartLineItem({ item, index, onEdit }: { item: CartItem; index: number; onEdit: () => void }) {
   const updateQuantity = useCartStore(s => s.updateQuantity);
   const removeItem = useCartStore(s => s.removeItem);
 
@@ -167,16 +191,14 @@ function CartLineItem({ item, index }: { item: CartItem; index: number }) {
   return (
     <div className="rounded-xl border border-[var(--color-border-ghost)] bg-[var(--color-bg-app)] overflow-hidden">
       {/* Header: name + qty + remove */}
-      <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <span className="text-lg leading-none shrink-0">{item.emoji}</span>
+      <div className="flex items-center gap-2.5 px-3 py-1.5">
+        <span className="text-base leading-none shrink-0">{item.emoji}</span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-[var(--color-text-main)] leading-tight line-clamp-2">
-            {item.quantity > 1 && (
-              <span className="text-[var(--color-primary)] font-black mr-1">{item.quantity}×</span>
-            )}
+          <p className="text-[13px] font-bold text-[var(--color-text-main)] leading-tight line-clamp-1">
+            <span className="text-[var(--color-primary)] font-black mr-1">{item.quantity}×</span>
             {item.name}
           </p>
-          <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
+          <p className="text-[9px] text-[var(--color-text-muted)] mt-0.5">
             {formatBs(item.baseBsCents)} / ud
           </p>
         </div>
@@ -186,6 +208,13 @@ function CartLineItem({ item, index }: { item: CartItem; index: number }) {
             onDecrement={() => updateQuantity(index, item.quantity - 1)}
             onIncrement={() => updateQuantity(index, item.quantity + 1)}
           />
+          <button
+            onClick={onEdit}
+            className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-slate-100"
+            aria-label="Editar"
+          >
+            <Pencil size={12} />
+          </button>
           <button
             onClick={() => removeItem(index)}
             className="ml-0.5 flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-error)] transition-colors hover:bg-red-50"
@@ -239,7 +268,7 @@ function CartLineItem({ item, index }: { item: CartItem; index: number }) {
               <div className="flex flex-wrap gap-1 flex-1">
                 {adicionales.map(a => (
                   <span key={a.id} className="text-[10px] bg-[var(--color-primary)]/5 px-1.5 py-0.5 rounded font-medium text-[var(--color-text-main)]">
-                    {(a.quantity ?? 1) > 1 && <span className="font-black text-[var(--color-primary)] mr-0.5">{a.quantity}×</span>}
+                    <span className="font-black text-[var(--color-primary)] mr-0.5">{(a.quantity ?? 1)}×</span>
                     {a.name}
                     {a.priceBsCents > 0 && (
                       <span className="ml-1 text-[9px] text-[var(--color-primary)] font-bold">+{formatBs(a.priceBsCents * (a.quantity ?? 1))}</span>
@@ -257,7 +286,7 @@ function CartLineItem({ item, index }: { item: CartItem; index: number }) {
               <div className="flex flex-wrap gap-1 flex-1">
                 {bebidas.map(b => (
                   <span key={b.id} className="text-[10px] bg-[var(--color-text-main)]/5 px-1.5 py-0.5 rounded font-medium text-[var(--color-text-main)]">
-                    {(b.quantity ?? 1) > 1 && <span className="font-black mr-0.5">{b.quantity}×</span>}
+                    <span className="font-black mr-0.5">{(b.quantity ?? 1)}×</span>
                     {b.name}
                     {b.priceBsCents > 0 && (
                       <span className="ml-1 text-[9px] text-[var(--color-text-muted)] font-bold">+{formatBs(b.priceBsCents * (b.quantity ?? 1))}</span>
@@ -298,82 +327,83 @@ function EmptyCart() {
   );
 }
 
+type WaiterPaymentMethod = "Efectivo $" | "Efectivo Bs" | "Pago Móvil" | "Punto / PdV" | "Zelle" | "Transf." | "Binance";
+
 function OrderForm({
   tableNumber, setTableNumber,
   customerName, setCustomerName,
   paymentMethod, setPaymentMethod,
   onSubmit, canSubmit, isSubmitting,
-  totalUsd, totalBs, rate,
+  totalUsd, totalBs, rate, igtfUsd,
   prefilledTable, onOpenTableSelector,
+  isEditing, onCancelEdit,
+  onEditItem,
 }: {
   tableNumber: string;
   setTableNumber: (v: string) => void;
   customerName: string;
   setCustomerName: (v: string) => void;
-  paymentMethod:
-    | "cash"
-    | "cash_usd"
-    | "cash_bs"
-    | "pos"
-    | "pago_movil"
-    | "zelle"
-    | "transfer"
-    | "binance";
-  setPaymentMethod: (v: any) => void;
+  paymentMethod: WaiterPaymentMethod;
+  setPaymentMethod: (v: WaiterPaymentMethod) => void;
   onSubmit: () => void;
   canSubmit: boolean;
   isSubmitting: boolean;
   totalUsd: number;
   totalBs: number;
   rate: number;
+  igtfUsd: number;
   prefilledTable?: string;
   onOpenTableSelector: () => void;
+  isEditing?: boolean;
+  onCancelEdit?: () => void;
+  onEditItem: (index: number) => void;
 }) {
   const methods = [
-    { id: "cash_usd", label: "Efectivo $", icon: <DollarSign size={16} /> },
-    { id: "cash_bs", label: "Efectivo Bs", icon: <Coins size={16} /> },
-    { id: "pago_movil", label: "Pago Móvil", icon: <Smartphone size={16} /> },
-    { id: "pos", label: "Punto / PdV", icon: <CreditCard size={16} /> },
-    { id: "zelle", label: "Zelle", icon: <Banknote size={16} /> },
-    { id: "transfer", label: "Transferencia", icon: <Landmark size={16} /> },
-    { id: "binance", label: "Binance", icon: <Coins size={16} /> },
+    { id: "Efectivo $", label: "Efectivo $", icon: <DollarSign size={16} /> },
+    { id: "Efectivo Bs", label: "Efectivo Bs", icon: <Coins size={16} /> },
+    { id: "Pago Móvil", label: "Pago Móvil", icon: <Smartphone size={16} /> },
+    { id: "Punto / PdV", label: "Punto / PdV", icon: <CreditCard size={16} /> },
+    { id: "Zelle", label: "Zelle", icon: <Banknote size={16} /> },
+    { id: "Transf.", label: "Transf.", icon: <Landmark size={16} /> },
+    { id: "Binance", label: "Binance", icon: <Coins size={16} /> },
   ];
 
   return (
-    <div className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-3">
+    <div className="flex flex-col gap-2 border-t border-[var(--color-border)] pt-2">
       {/* Totals */}
-      <div className="rounded-xl bg-[var(--color-text-main)] px-4 py-3.5 shadow-lg ring-1 ring-white/5">
-        {/* Fiscal breakdown in waiter panel */}
-        <div className="mb-3.5 space-y-1.5 border-b border-white/10 pb-3.5">
-          <div className="flex justify-between text-[10px] font-bold text-white/40 uppercase tracking-widest">
-            <span>BASE IMP.</span>
+      <div className="rounded-xl bg-[var(--color-text-main)] px-4 py-3 shadow-lg ring-1 ring-white/5">
+        {/* Fiscal breakdown in waiter panel - Compact */}
+        <div className="mb-2 space-y-1 border-b border-white/10 pb-2.5">
+          <div className="flex justify-between text-[9px] font-bold text-white/30 uppercase tracking-widest">
+            <span>Subtotal (Base + IVA)</span>
             <div className="flex gap-2">
-              <span>{formatBs(Math.round(totalBs / 1.16))}</span>
-              <span className="text-white/20 font-medium">({((totalUsd / 1.16) / 100).toFixed(2).replace(".", ",")})</span>
+              <span>{formatBs(totalBs - (igtfUsd * rate))}</span>
+              <span className="text-white/20 font-medium">({((totalUsd - igtfUsd) / 100).toFixed(2).replace(".", ",")})</span>
             </div>
           </div>
-          <div className="flex justify-between text-[10px] font-bold text-white/40 uppercase tracking-widest">
-            <span>IVA (16%)</span>
-            <div className="flex gap-2">
-              <span>{formatBs(totalBs - Math.round(totalBs / 1.16))}</span>
-              <span className="text-white/20 font-medium">({((totalUsd - totalUsd / 1.16) / 100).toFixed(2).replace(".", ",")})</span>
+          {igtfUsd > 0 && (
+            <div className="flex justify-between text-[9px] font-bold text-amber-400/60 uppercase tracking-widest">
+              <span>IGTF (3%)</span>
+              <div className="flex gap-2">
+                <span>{formatBs(Math.round(igtfUsd * rate))}</span>
+                <span className="text-amber-400/40 font-medium">({(igtfUsd / 100).toFixed(2).replace(".", ",")})</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        <div className="flex items-end justify-between gap-4">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-1.5">Total del Pedido</span>
-          <div className="flex flex-col items-end">
-            <span className="font-display text-2xl font-black leading-none text-white lg:text-3xl"
-              style={{ fontSize: "clamp(1.5rem, 5vw, 2rem)" }}>
-              {formatBs(totalBs)}
-            </span>
-            <div className="mt-1.5 flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded-lg ring-1 ring-white/10">
-              <span className="text-[9px] font-black text-white/30 uppercase tracking-tighter">Ref</span>
-              <span className="text-sm font-bold text-amber-400 tabular-nums">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20">Total</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded ring-1 ring-white/10">
+              <span className="text-[8px] font-black text-white/20 uppercase tracking-tighter">Ref</span>
+              <span className="text-xs font-bold text-amber-400/90 tabular-nums">
                 {formatRef(totalUsd).replace("REF ", "")}
               </span>
             </div>
+            <span className="font-display text-2xl font-black leading-none text-white lg:text-3xl">
+              {formatBs(totalBs)}
+            </span>
           </div>
         </div>
       </div>
@@ -395,7 +425,7 @@ function OrderForm({
               value={tableNumber}
               onChange={e => setTableNumber(e.target.value)}
               placeholder="Ej: 5"
-              className="w-full rounded-xl border-2 border-[var(--color-border)] bg-white py-2.5 pl-9 pr-10 text-sm text-[var(--color-text-main)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] transition-colors"
+              className="w-full rounded-xl border-2 border-[var(--color-border)] bg-white py-2 pl-9 pr-10 text-sm text-[var(--color-text-main)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] transition-colors"
             />
             <button
               onClick={onOpenTableSelector}
@@ -417,61 +447,69 @@ function OrderForm({
               value={customerName}
               onChange={e => setCustomerName(e.target.value)}
               placeholder="Opcional"
-              className="w-full rounded-xl border-2 border-[var(--color-border)] bg-white py-2.5 pl-9 pr-3 text-sm text-[var(--color-text-main)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] transition-colors"
+              className="w-full rounded-xl border-2 border-[var(--color-border)] bg-white py-2 pl-9 pr-3 text-sm text-[var(--color-text-main)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] transition-colors"
             />
           </div>
         </div>
       </div>
 
       {/* Pago */}
-      <div>
-        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[var(--color-text-main)] opacity-70">
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-main)] opacity-70">
           Método de Pago
         </label>
-        <div className="grid grid-cols-2 gap-2">
-          {methods.map(method => {
-            const active = paymentMethod === method.id;
-            return (
-              <button
-                key={method.id}
-                onClick={() => setPaymentMethod(method.id)}
-                className={`flex items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-xs font-semibold transition-all ${
-                  active
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                    : "border-[var(--color-border)] bg-white text-[var(--color-text-main)] hover:border-[var(--color-primary)]"
-                }`}
+        <Select value={paymentMethod} onValueChange={(val) => val && setPaymentMethod(val as WaiterPaymentMethod)}>
+          <SelectTrigger className="w-full h-10 border-2 border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors rounded-xl">
+            <SelectValue placeholder="Seleccionar método" />
+          </SelectTrigger>
+          <SelectContent className="bg-white rounded-xl shadow-xl border border-[var(--color-border)]">
+            {methods.map((method) => (
+              <SelectItem 
+                key={method.id} 
+                value={method.id}
+                className="text-sm font-medium py-2 px-3 hover:bg-slate-50 cursor-pointer"
               >
-                {method.icon}
-                {method.label}
-              </button>
-            );
-          })}
-        </div>
+                <div className="flex items-center gap-2">
+                  <span className="opacity-70">{method.icon}</span>
+                  {method.label}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Submit */}
       <button
         onClick={onSubmit}
         disabled={!canSubmit}
-        className="flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition-all disabled:opacity-40"
+        className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-all disabled:opacity-40"
         style={{
           background: canSubmit ? "var(--color-success)" : "var(--color-text-muted)",
           color: "white",
-          fontSize: "clamp(0.875rem, 2vw, 1rem)",
         }}
       >
         {isSubmitting ? (
           <>
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-            Enviando...
+            {isEditing ? "Actualizando..." : "Enviando..."}
           </>
         ) : (
           <>
-            <Send size={16} />
-            Enviar a Cocina
+            {isEditing ? <CheckCircle2 size={16} /> : <Send size={16} />}
+            {isEditing ? "Actualizar Pedido" : "Enviar a Cocina"}
           </>
         )}
       </button>
+
+      {isEditing && (
+        <button
+          onClick={onCancelEdit}
+          className="rounded-xl border-2 border-slate-200 py-3 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+        >
+          Cancelar Edición (Nuevo Pedido)
+        </button>
+      )}
     </div>
   );
 }
@@ -483,7 +521,7 @@ function OrderForm({
 export function WaiterOrderClient({
   items, categories, dailyAdicionales, dailyBebidas,
   allContornos, rate, settings, prefilledTable,
-  tables = [], fixtures = [],
+  tables = [], fixtures = [], activeOrders = [],
 }: WaiterOrderClientProps) {
   // ── Cart store ──
   const mounted = useCartStore(s => s.mounted);
@@ -493,6 +531,7 @@ export function WaiterOrderClient({
   const updateQuantity = useCartStore(s => s.updateQuantity);
   const removeItem = useCartStore(s => s.removeItem);
   const clearCart = useCartStore(s => s.clearCart);
+  const setItems = useCartStore(s => s.setItems);
 
   useEffect(() => { setMounted(); }, [setMounted]);
 
@@ -502,20 +541,16 @@ export function WaiterOrderClient({
   const [modalItem, setModalItem] = useState<MenuItemWithComponents | null>(null);
   const [tableNumber, setTableNumber] = useState(prefilledTable ?? "");
   const [customerName, setCustomerName] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<
-    | "cash"
-    | "cash_usd"
-    | "cash_bs"
-    | "pos"
-    | "pago_movil"
-    | "zelle"
-    | "transfer"
-    | "binance"
-  >("cash_usd");
+  const [paymentMethod, setPaymentMethod] = useState<WaiterPaymentMethod>("Punto / PdV");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isTableSelectorOpen, setIsTableSelectorOpen] = useState(false);
+  const [isOrdersSheetOpen, setIsOrdersSheetOpen] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [editingOrderNumber, setEditingOrderNumber] = useState<number | null>(null);
   const [layoutZoom, setLayoutZoom] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingCartItemIndex, setEditingCartItemIndex] = useState<number | null>(null);
+  const [editingCartItemData, setEditingCartItemData] = useState<CartItem | null>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
 
   // Auto-zoom for mobile
@@ -545,7 +580,15 @@ export function WaiterOrderClient({
     ];
     return s + base + extras.reduce((a, b) => a + b, 0);
   }, 0);
-  const totalBsCents = Math.round(totalUsdCents * rate);
+
+  const applyIgtf = Boolean(settings?.applyIgtf);
+  const igtfPercentage = Number(settings?.igtfPercentage) || 3;
+  const isForeignCurrency = paymentMethod === "Efectivo $" || paymentMethod === "Zelle" || paymentMethod === "Binance";
+  
+  const igtfUsdCents = (applyIgtf && isForeignCurrency) ? Math.round(totalUsdCents * (igtfPercentage / 100)) : 0;
+  const grandTotalUsdCents = totalUsdCents + igtfUsdCents;
+  const grandTotalBsCents = Math.round(grandTotalUsdCents * rate);
+
   const canSubmit = count > 0 && tableNumber.trim().length > 0 && !isSubmitting;
 
   const filteredItems = items.filter(item => {
@@ -556,7 +599,7 @@ export function WaiterOrderClient({
 
   // ── Handlers ──
   function handleItemPress(item: MenuItemWithComponents) {
-    if (needsModal(item, dailyAdicionales, dailyBebidas)) {
+    if (needsModal(item, dailyAdicionales, dailyBebidas, settings)) {
       setModalItem(item);
     } else {
       // Quick add
@@ -583,9 +626,79 @@ export function WaiterOrderClient({
         categoryName: item.categoryName,
         includedNote: item.includedNote ?? null,
       });
+      toast.success(`${item.name} añadido`);
       if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(25);
     }
   }
+
+  const handleEditCartItem = (index: number) => {
+    const item = cartItems[index];
+    const menuItem = items.find(i => i.id === item.id);
+    if (!menuItem) return;
+
+    setEditingCartItemIndex(index);
+    setEditingCartItemData(item);
+    setModalItem(menuItem);
+  };
+
+  const handleCloseModal = () => {
+    setModalItem(null);
+    setEditingCartItemIndex(null);
+    setEditingCartItemData(null);
+  };
+
+  const handleEditOrder = useCallback((order: any) => {
+    clearCart();
+    setTableNumber(order.tableNumber || "");
+    setCustomerName(order.customerName || "");
+    const oldToNew: Record<string, string> = {
+      cash_usd: "Efectivo $",
+      cash_bs: "Efectivo Bs",
+      pago_movil: "Pago Móvil",
+      pos: "Punto / PdV",
+      zelle: "Zelle",
+      transfer: "Transf.",
+      binance: "Binance",
+    };
+    const method = oldToNew[order.paymentMethod] || order.paymentMethod;
+    setPaymentMethod(method as WaiterPaymentMethod);
+    setEditingOrderId(order.id);
+    setEditingOrderNumber(order.orderNumber);
+
+    const newItems: CartItem[] = (order.itemsSnapshot as any[]).map(snapItem => {
+      const menuItem = items.find(i => i.id === snapItem.id);
+      return {
+        id: snapItem.id,
+        name: snapItem.name,
+        emoji: menuItem ? getEmoji(menuItem.categoryName) : "🍽️",
+        baseUsdCents: snapItem.priceUsdCents,
+        baseBsCents: snapItem.priceBsCents,
+        fixedContornos: snapItem.fixedContornos || [],
+        contornoSubstitutions: [], // Reconstructed as adicionales in checkout snapshot
+        selectedAdicionales: snapItem.selectedAdicionales || [],
+        selectedBebidas: snapItem.selectedBebidas || [],
+        removedComponents: snapItem.removedComponents || [],
+        quantity: snapItem.quantity,
+        itemTotalBsCents: snapItem.itemTotalBsCents,
+        categoryAllowAlone: menuItem?.categoryAllowAlone ?? true,
+        categoryIsSimple: menuItem?.categoryIsSimple ?? false,
+        categoryName: menuItem?.categoryName ?? "Varios",
+      };
+    });
+
+    setItems(newItems);
+    toast.info(`Editando Pedido #${order.orderNumber}`);
+    setIsSheetOpen(true);
+  }, [clearCart, items, setItems]);
+
+  const handleCancelEdit = () => {
+    clearCart();
+    setEditingOrderId(null);
+    setEditingOrderNumber(null);
+    setTableNumber("");
+    setCustomerName("");
+    toast.success("Edición cancelada");
+  };
 
   async function handleSubmit() {
     if (!canSubmit) return;
@@ -627,21 +740,43 @@ export function WaiterOrderClient({
       };
     });
     try {
-      const result = await createWaiterOrderAction({
-        tableNumber: tableNumber.trim(),
-        customerName: customerName.trim() || undefined,
-        paymentMethod,
-        items: checkoutItems as any,
-      });
-      if (result?.data?.success) {
-        toast.success(`Pedido #${result.data.orderNumber} enviado a cocina (Imprimiendo orden)`);
-        clearCart();
-        setTableNumber("");
-        setCustomerName("");
-        setPaymentMethod("cash_usd");
-        setIsSheetOpen(false);
+      if (editingOrderId) {
+        const result = await updateWaiterOrderAction({
+          id: editingOrderId,
+          tableNumber: tableNumber.trim(),
+          customerName: customerName.trim() || undefined,
+          paymentMethod,
+          items: checkoutItems as any,
+        });
+        if (result?.data?.success) {
+          toast.success(`Pedido #${editingOrderNumber} actualizado correctamente (Imprimiendo ticket)`);
+          clearCart();
+          setTableNumber("");
+          setCustomerName("");
+          setPaymentMethod("Punto / PdV");
+          setEditingOrderId(null);
+          setEditingOrderNumber(null);
+          setIsSheetOpen(false);
+        } else {
+          toast.error(result?.serverError ?? "Error al actualizar el pedido");
+        }
       } else {
-        toast.error(result?.serverError ?? "Error al crear el pedido");
+        const result = await createWaiterOrderAction({
+          tableNumber: tableNumber.trim(),
+          customerName: customerName.trim() || undefined,
+          paymentMethod,
+          items: checkoutItems as any,
+        });
+        if (result?.data?.success) {
+          toast.success(`Pedido #${result.data.orderNumber} enviado a cocina (Imprimiendo ticket) `);
+          clearCart();
+          setTableNumber("");
+          setCustomerName("");
+          setPaymentMethod("Punto / PdV");
+          setIsSheetOpen(false);
+        } else {
+          toast.error(result?.serverError ?? "Error al crear el pedido");
+        }
       }
     } catch {
       toast.error("Error de conexión. Intenta de nuevo.");
@@ -678,10 +813,21 @@ export function WaiterOrderClient({
           <div>
             <p className="text-xs text-[var(--color-text-muted)] leading-none">Mesero</p>
             <p className="text-sm font-bold text-white leading-tight">
-              {(settings?.restaurantName as string) ?? "Tomar Pedido"}
+              {editingOrderNumber ? `Editando #${editingOrderNumber}` : ((settings?.restaurantName as string) ?? "Tomar Pedido")}
             </p>
           </div>
         </div>
+        
+        <div className="flex items-center gap-2">
+          {/* Active Orders Button */}
+          <button
+            onClick={() => setIsOrdersSheetOpen(true)}
+            className="flex h-9 items-center gap-2 rounded-xl bg-white/10 px-3 text-xs font-bold text-white hover:bg-white/20 transition-colors"
+          >
+            <Table2 size={16} />
+            <span className="hidden sm:inline">Órdenes</span>
+          </button>
+
         {/* Mobile cart button */}
         <button
           onClick={() => setIsSheetOpen(true)}
@@ -690,7 +836,7 @@ export function WaiterOrderClient({
           <ShoppingCart size={16} className="text-white" />
           {mounted && count > 0 && (
             <span className="text-sm font-bold text-white">
-              {count} · {formatBs(totalBsCents)}
+              {count} · {formatBs(grandTotalBsCents)}
             </span>
           )}
           {mounted && count === 0 && (
@@ -700,7 +846,8 @@ export function WaiterOrderClient({
             <ChevronUp size={14} className="text-white/70" />
           )}
         </button>
-      </header>
+      </div>
+    </header>
 
       {/* ── Body ── */}
       <div className="flex min-h-0 flex-1">
@@ -779,7 +926,7 @@ export function WaiterOrderClient({
                 }}
               >
                 {filteredItems.map(item => {
-                  const quickAdd = !needsModal(item, dailyAdicionales, dailyBebidas);
+                  const quickAdd = !needsModal(item, dailyAdicionales, dailyBebidas, settings);
                   const inCartQty = cartItems
                     .filter(ci => ci.id === item.id)
                     .reduce((s, ci) => s + ci.quantity, 0);
@@ -905,7 +1052,7 @@ export function WaiterOrderClient({
                   <EmptyCart />
                 ) : (
                   cartItems.map((item, i) => (
-                    <CartLineItem key={`desktop-${item.id}-${i}`} item={item} index={i} />
+                    <CartLineItem key={`desktop-${item.id}-${i}`} item={item} index={i} onEdit={() => handleEditCartItem(i)} />
                   ))
                 )}
               </div>
@@ -921,11 +1068,15 @@ export function WaiterOrderClient({
                   onSubmit={handleSubmit}
                   canSubmit={canSubmit}
                   isSubmitting={isSubmitting}
-                  totalUsd={totalUsdCents}
-                  totalBs={totalBsCents}
+                  totalUsd={grandTotalUsdCents}
+                  totalBs={grandTotalBsCents}
                   rate={rate}
+                  igtfUsd={igtfUsdCents}
                   prefilledTable={prefilledTable}
                   onOpenTableSelector={() => setIsTableSelectorOpen(true)}
+                  isEditing={!!editingOrderId}
+                  onCancelEdit={handleCancelEdit}
+                  onEditItem={handleEditCartItem}
                 />
               </div>
             </div>
@@ -991,7 +1142,7 @@ export function WaiterOrderClient({
                   <EmptyCart />
                 ) : (
                   cartItems.map((item, i) => (
-                    <CartLineItem key={`mobile-${item.id}-${i}`} item={item} index={i} />
+                    <CartLineItem key={`mobile-${item.id}-${i}`} item={item} index={i} onEdit={() => handleEditCartItem(i)} />
                   ))
                 )}
               </div>
@@ -1007,11 +1158,15 @@ export function WaiterOrderClient({
                   onSubmit={handleSubmit}
                   canSubmit={canSubmit}
                   isSubmitting={isSubmitting}
-                  totalUsd={totalUsdCents}
-                  totalBs={totalBsCents}
+                  totalUsd={grandTotalUsdCents}
+                  totalBs={grandTotalBsCents}
                   rate={rate}
+                  igtfUsd={igtfUsdCents}
                   prefilledTable={prefilledTable}
                   onOpenTableSelector={() => setIsTableSelectorOpen(true)}
+                  isEditing={!!editingOrderId}
+                  onCancelEdit={handleCancelEdit}
+                  onEditItem={handleEditCartItem}
                 />
               </div>
             </div>
@@ -1024,15 +1179,25 @@ export function WaiterOrderClient({
         <ItemDetailModalModern
           item={modalItem}
           isOpen={!!modalItem}
-          onClose={() => setModalItem(null)}
+          onClose={handleCloseModal}
           currentRateBsPerUsd={rate}
           allContornos={allContornos}
           dailyAdicionales={dailyAdicionales}
           dailyBebidas={dailyBebidas}
-          adicionalesEnabled={!modalItem.hideAdicionales}
-          bebidasEnabled={!modalItem.hideBebidas}
+          adicionalesEnabled={settings?.adicionalesEnabled !== false}
+          bebidasEnabled={settings?.bebidasEnabled !== false}
+          initialData={editingCartItemData}
+          editingIndex={editingCartItemIndex}
         />
       )}
+
+      {/* ── Active orders sheet ── */}
+      <ActiveOrdersSheet
+        isOpen={isOrdersSheetOpen}
+        onClose={() => setIsOrdersSheetOpen(false)}
+        orders={activeOrders}
+        onSelect={handleEditOrder}
+      />
 
       {/* ── Table Selector Modal ── */}
       {isTableSelectorOpen && (
@@ -1217,5 +1382,65 @@ export function WaiterOrderClient({
         }
       `}</style>
     </div>
+  );
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function ActiveOrdersSheet({ isOpen, onClose, orders, onSelect }: {
+  isOpen: boolean;
+  onClose: () => void;
+  orders: any[];
+  onSelect: (order: any) => void;
+}) {
+  return (
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col bg-slate-50">
+        <SheetHeader className="px-6 py-5 bg-white border-b shrink-0">
+          <SheetTitle className="flex items-center gap-2 text-xl font-display font-black">
+            <Table2 className="text-[var(--color-primary)]" />
+            Órdenes Activas
+          </SheetTitle>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {orders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center opacity-40">
+              <ChefHat size={48} className="mb-3" />
+              <p className="font-bold">No hay órdenes activas</p>
+            </div>
+          ) : (
+            orders.map((order) => (
+              <button
+                key={order.id}
+                onClick={() => onSelect(order)}
+                className="w-full text-left bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:border-[var(--color-primary)] transition-all group"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-lg text-slate-800">#{order.orderNumber}</span>
+                    <Badge variant="outline" className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider">
+                      {order.tableNumber ? `Mesa ${order.tableNumber}` : "S/M"}
+                    </Badge>
+                  </div>
+                  <ChevronRight size={18} className="text-slate-300 group-hover:text-[var(--color-primary)] transition-colors" />
+                </div>
+                
+                <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
+                  <div className="flex items-center gap-1">
+                    <User size={12} />
+                    <span>{order.customerName || "Cliente"}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Banknote size={12} />
+                    <span>{formatBs(order.grandTotalBsCents)}</span>
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

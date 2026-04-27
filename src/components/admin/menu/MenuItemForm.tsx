@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, Trash2, AlertCircle } from "lucide-react";
+import { ChevronLeft, Trash2, AlertCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMenuItemForm } from "@/hooks/useMenuItemForm";
 import { MenuItemImageUpload } from "./MenuItemImageUpload";
@@ -202,6 +202,13 @@ export function MenuItemForm({
           border: 1px solid #f5c5c8;
           border-radius: 100px;
         }
+        .mif-char-counter {
+          display: flex; align-items: center; gap: 6px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 11px; font-weight: 600;
+          margin-top: 6px;
+          transition: color 0.2s ease;
+        }
       `}</style>
 
       <form
@@ -356,7 +363,28 @@ export function MenuItemForm({
                     {...form.register("name")}
                     placeholder="Ej: Pollo Guisado"
                     className="mif-input"
+                    maxLength={50}
                   />
+                  <div
+                    className="mif-char-counter"
+                    style={{
+                      color: (watchedName?.length || 0) > 32
+                        ? "#b00020"
+                        : (watchedName?.length || 0) > 22
+                          ? "#d97706"
+                          : "#9c8c78"
+                    }}
+                  >
+                    <Printer size={12} />
+                    <span>{(watchedName?.length || 0)}/32</span>
+                    <span style={{ fontWeight: 400, fontSize: 10, opacity: 0.8 }}>
+                      {(watchedName?.length || 0) > 32
+                        ? "— Se cortará en el ticket"
+                        : (watchedName?.length || 0) > 22
+                          ? "— Podría cortarse en el ticket"
+                          : "— Ideal para impresión en ticket"}
+                    </span>
+                  </div>
                   {form.errors.name && (
                     <p className="mif-field-error">{form.errors.name.message}</p>
                   )}
