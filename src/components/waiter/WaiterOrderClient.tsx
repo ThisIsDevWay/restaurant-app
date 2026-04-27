@@ -148,35 +148,39 @@ function QtyControl({
 function CartLineItem({ item, index }: { item: CartItem; index: number }) {
   const updateQuantity = useCartStore(s => s.updateQuantity);
   const removeItem = useCartStore(s => s.removeItem);
-  const contornosLabel = [
-    ...item.fixedContornos.map(c => c.name),
-    ...item.contornoSubstitutions.map(s => s.substituteName),
-  ].join(", ");
-  const adicionalesLabel = item.selectedAdicionales
-    .map(a => `+${a.name}${a.quantity > 1 ? ` ×${a.quantity}` : ""}`)
-    .join(", ");
-  const bebidasLabel = (item.selectedBebidas ?? [])
-    .map(b => `+${b.name}${b.quantity > 1 ? ` ×${b.quantity}` : ""}`)
-    .join(", ");
+
+  const fixedContornos = item.fixedContornos ?? [];
+  const substitutions = item.contornoSubstitutions ?? [];
+  const adicionales = item.selectedAdicionales ?? [];
+  const bebidas = item.selectedBebidas ?? [];
+  const removals = item.removedComponents ?? [];
+  const hasDetails = fixedContornos.length > 0 || substitutions.length > 0 || adicionales.length > 0 || bebidas.length > 0 || removals.length > 0;
+
+  // Compute line total in USD cents (mirrors cartStore logic)
+  const fixedUsd = fixedContornos.reduce((s, c) => s + c.priceUsdCents, 0);
+  const subUsd = substitutions.reduce((s, c) => s + c.priceUsdCents, 0);
+  const adUsd = adicionales.reduce((s, a) => s + a.priceUsdCents * (a.quantity ?? 1), 0);
+  const bebUsd = bebidas.reduce((s, b) => s + b.priceUsdCents * (b.quantity ?? 1), 0);
+  const remUsd = removals.reduce((s, r) => s + r.priceUsdCents, 0);
+  const lineUsdCents = (item.baseUsdCents + fixedUsd + subUsd - remUsd) * item.quantity + adUsd + bebUsd;
 
   return (
-    <div className="flex gap-2 border-b border-[var(--color-border-ghost)] py-2.5 last:border-0">
-      <span className="mt-0.5 text-lg leading-none">{item.emoji}</span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-[var(--color-text-main)]">{item.name}</p>
-        {contornosLabel && (
-          <p className="truncate text-[0.67rem] text-[var(--color-text-muted)]">{contornosLabel}</p>
-        )}
-        {adicionalesLabel && (
-          <p className="truncate text-[0.67rem] text-[var(--color-text-muted)]">{adicionalesLabel}</p>
-        )}
-        {bebidasLabel && (
-          <p className="truncate text-[0.67rem] text-[var(--color-text-muted)]">{bebidasLabel}</p>
-        )}
-      </div>
-      <div className="flex flex-col items-end gap-1.5">
-        <PriceTag usdCents={item.baseUsdCents * item.quantity} rate={1} size="sm" />
-        <div className="flex items-center gap-1">
+    <div className="rounded-xl border border-[var(--color-border-ghost)] bg-[var(--color-bg-app)] overflow-hidden">
+      {/* Header: name + qty + remove */}
+      <div className="flex items-center gap-2.5 px-3 py-2.5">
+        <span className="text-lg leading-none shrink-0">{item.emoji}</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-[var(--color-text-main)] leading-tight line-clamp-2">
+            {item.quantity > 1 && (
+              <span className="text-[var(--color-primary)] font-black mr-1">{item.quantity}×</span>
+            )}
+            {item.name}
+          </p>
+          <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
+            {formatBs(item.baseBsCents)} / ud
+          </p>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
           <QtyControl
             value={item.quantity}
             onDecrement={() => updateQuantity(index, item.quantity - 1)}
@@ -189,6 +193,95 @@ function CartLineItem({ item, index }: { item: CartItem; index: number }) {
           >
             <Trash2 size={13} />
           </button>
+        </div>
+      </div>
+
+      {/* Details: contornos, removals, adicionales, bebidas */}
+      {hasDetails && (
+        <div className="flex flex-col gap-1 px-3 pb-2 pt-1 border-t border-[var(--color-border-ghost)] bg-white">
+          {/* Contornos */}
+          {(fixedContornos.length > 0 || substitutions.length > 0) && (
+            <div className="flex flex-wrap gap-1 items-start">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] w-[64px] shrink-0 pt-1">Contornos</span>
+              <div className="flex flex-wrap gap-1 flex-1">
+                {fixedContornos.map(c => (
+                  <span key={c.id} className="text-[10px] bg-[var(--color-surface-section)] px-1.5 py-0.5 rounded font-medium text-[var(--color-text-main)]">
+                    {c.name}
+                  </span>
+                ))}
+                {substitutions.map((s, i) => (
+                  <span key={i} className="text-[10px] bg-amber-50 px-1.5 py-0.5 rounded font-medium text-amber-800">
+                    <span className="line-through opacity-50 mr-0.5">{s.originalName}</span>→ {s.substituteName}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Removals */}
+          {removals.length > 0 && (
+            <div className="flex flex-wrap gap-1 items-start">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] w-[64px] shrink-0 pt-1">Sin</span>
+              <div className="flex flex-wrap gap-1 flex-1">
+                {removals.map(r => (
+                  <span key={r.componentId} className="text-[10px] bg-red-50 px-1.5 py-0.5 rounded font-medium text-red-700 italic">
+                    {r.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Adicionales */}
+          {adicionales.length > 0 && (
+            <div className="flex flex-wrap gap-1 items-start">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] w-[64px] shrink-0 pt-1">Extras</span>
+              <div className="flex flex-wrap gap-1 flex-1">
+                {adicionales.map(a => (
+                  <span key={a.id} className="text-[10px] bg-[var(--color-primary)]/5 px-1.5 py-0.5 rounded font-medium text-[var(--color-text-main)]">
+                    {(a.quantity ?? 1) > 1 && <span className="font-black text-[var(--color-primary)] mr-0.5">{a.quantity}×</span>}
+                    {a.name}
+                    {a.priceBsCents > 0 && (
+                      <span className="ml-1 text-[9px] text-[var(--color-primary)] font-bold">+{formatBs(a.priceBsCents * (a.quantity ?? 1))}</span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Bebidas */}
+          {bebidas.length > 0 && (
+            <div className="flex flex-wrap gap-1 items-start">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] w-[64px] shrink-0 pt-1">Bebidas</span>
+              <div className="flex flex-wrap gap-1 flex-1">
+                {bebidas.map(b => (
+                  <span key={b.id} className="text-[10px] bg-[var(--color-text-main)]/5 px-1.5 py-0.5 rounded font-medium text-[var(--color-text-main)]">
+                    {(b.quantity ?? 1) > 1 && <span className="font-black mr-0.5">{b.quantity}×</span>}
+                    {b.name}
+                    {b.priceBsCents > 0 && (
+                      <span className="ml-1 text-[9px] text-[var(--color-text-muted)] font-bold">+{formatBs(b.priceBsCents * (b.quantity ?? 1))}</span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Subtotal footer */}
+      <div className="flex items-center justify-between px-3 py-1.5 border-t border-[var(--color-border-ghost)] bg-[var(--color-surface-section)]">
+        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+          Subtotal{item.quantity > 1 ? ` × ${item.quantity}` : ""}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-[var(--color-text-muted)] bg-white px-1.5 py-0.5 rounded border border-[var(--color-border-ghost)]">
+            {formatRef(lineUsdCents)}
+          </span>
+          <span className="text-xs font-black text-[var(--color-text-main)]">
+            {formatBs(item.itemTotalBsCents)}
+          </span>
         </div>
       </div>
     </div>
@@ -249,16 +342,39 @@ function OrderForm({
   return (
     <div className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-3">
       {/* Totals */}
-      <div className="rounded-xl bg-[var(--color-text-main)] px-4 py-3">
-        <div className="mb-1 flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">Total</span>
+      <div className="rounded-xl bg-[var(--color-text-main)] px-4 py-3.5 shadow-lg ring-1 ring-white/5">
+        {/* Fiscal breakdown in waiter panel */}
+        <div className="mb-3.5 space-y-1.5 border-b border-white/10 pb-3.5">
+          <div className="flex justify-between text-[10px] font-bold text-white/40 uppercase tracking-widest">
+            <span>BASE IMP.</span>
+            <div className="flex gap-2">
+              <span>{formatBs(Math.round(totalBs / 1.16))}</span>
+              <span className="text-white/20 font-medium">({((totalUsd / 1.16) / 100).toFixed(2).replace(".", ",")})</span>
+            </div>
+          </div>
+          <div className="flex justify-between text-[10px] font-bold text-white/40 uppercase tracking-widest">
+            <span>IVA (16%)</span>
+            <div className="flex gap-2">
+              <span>{formatBs(totalBs - Math.round(totalBs / 1.16))}</span>
+              <span className="text-white/20 font-medium">({((totalUsd - totalUsd / 1.16) / 100).toFixed(2).replace(".", ",")})</span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-end justify-between">
-          <span className="text-2xl font-black leading-none text-white"
-            style={{ fontSize: "clamp(1.25rem, 4vw, 1.75rem)" }}>
-            {formatBs(totalBs)}
-          </span>
-          <span className="text-sm text-[var(--color-text-muted)] opacity-80">{formatRef(totalUsd)}</span>
+
+        <div className="flex items-end justify-between gap-4">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-1.5">Total del Pedido</span>
+          <div className="flex flex-col items-end">
+            <span className="font-display text-2xl font-black leading-none text-white lg:text-3xl"
+              style={{ fontSize: "clamp(1.5rem, 5vw, 2rem)" }}>
+              {formatBs(totalBs)}
+            </span>
+            <div className="mt-1.5 flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded-lg ring-1 ring-white/10">
+              <span className="text-[9px] font-black text-white/30 uppercase tracking-tighter">Ref</span>
+              <span className="text-sm font-bold text-amber-400 tabular-nums">
+                {formatRef(totalUsd).replace("REF ", "")}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -518,7 +634,7 @@ export function WaiterOrderClient({
         items: checkoutItems as any,
       });
       if (result?.data?.success) {
-        toast.success(`Pedido #${result.data.orderNumber} enviado a cocina`);
+        toast.success(`Pedido #${result.data.orderNumber} enviado a cocina (Imprimiendo orden)`);
         clearCart();
         setTableNumber("");
         setCustomerName("");
