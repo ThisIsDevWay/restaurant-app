@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-interface FixturePosition {
+export interface FixturePosition {
   id: string;
   gridCol: number;
   gridRow: number;

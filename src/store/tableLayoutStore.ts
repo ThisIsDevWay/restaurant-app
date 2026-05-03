@@ -1,11 +1,20 @@
 import { create } from "zustand";
 
-interface TablePosition {
+export interface TablePosition {
   id: string;
   gridCol: number;
   gridRow: number;
   colSpan: number;
   rowSpan: number;
+}
+
+export interface FixturePosition {
+  id: string;
+  gridCol: number;
+  gridRow: number;
+  colSpan: number;
+  rowSpan: number;
+  rotation: number;
 }
 
 interface TableLayoutState {
