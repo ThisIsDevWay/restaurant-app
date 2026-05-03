@@ -13,7 +13,11 @@ export default async function WaiterPage({
   searchParams: Promise<{ table?: string }>;
 }) {
   const { table: prefilledTable } = await searchParams;
-  
+
+  // Start of today in America/Caracas timezone
+  const todayCaracas = new Date().toLocaleDateString("en-CA", { timeZone: "America/Caracas" }); // YYYY-MM-DD
+  const todayStart = new Date(`${todayCaracas}T00:00:00-04:00`);
+
   const [dailyMenuData, categories, rateData, allContornos, settings, tables, fixtures, activeOrders] = await Promise.all([
     getDailyMenuWithOptionsAndComponents().catch(() => ({ items: [], dailyAdicionales: [], dailyBebidas: [] })),
     getCategories().catch(() => []),
@@ -22,7 +26,7 @@ export default async function WaiterPage({
     getSettings().catch(() => null),
     getAllTables().catch(() => []),
     getAllFixtures().catch(() => []),
-    getKitchenOrdersSimple().catch(() => []),
+    getKitchenOrdersSimple(todayStart).catch(() => []),
   ]);
 
   return (

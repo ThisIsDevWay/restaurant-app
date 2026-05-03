@@ -20,6 +20,7 @@ function makeCartItem(overrides: Partial<CartItem> = {}): CartItem {
     categoryAllowAlone: true,
     categoryIsSimple: false,
     categoryName: "Platos Fuertes",
+    isPrepackaged: false,
     ...overrides,
   };
 }

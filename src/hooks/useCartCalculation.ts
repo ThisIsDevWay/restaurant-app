@@ -15,6 +15,7 @@ interface CartItemResult {
   priceUsdCents: number;
   priceBsCents: number;
   quantity: number;
+  isPrepackaged?: boolean;
 }
 
 interface UseCartCalculationParams {
@@ -85,6 +86,7 @@ export function useCartCalculation({
       priceUsdCents: c.priceUsdCents,
       priceBsCents: Math.round(c.priceUsdCents * currentRateBsPerUsd),
       quantity: 1,
+      isPrepackaged: c.isPrepackaged,
     }));
     removableContornos.forEach((c) => {
       if (!substitutionMap[c.id]) {
@@ -94,6 +96,7 @@ export function useCartCalculation({
           priceUsdCents: c.priceUsdCents,
           priceBsCents: Math.round(c.priceUsdCents * currentRateBsPerUsd),
           quantity: 1,
+          isPrepackaged: c.isPrepackaged,
         });
       }
     });
@@ -133,6 +136,7 @@ export function useCartCalculation({
           priceUsdCents: adicional.priceUsdCents,
           priceBsCents: Math.round(adicional.priceUsdCents * currentRateBsPerUsd),
           quantity: qty,
+          isPrepackaged: adicional.isPrepackaged,
         });
       }
     }
@@ -152,6 +156,7 @@ export function useCartCalculation({
           priceUsdCents: bebida.priceUsdCents,
           priceBsCents: Math.round(bebida.priceUsdCents * currentRateBsPerUsd),
           quantity: qty,
+          isPrepackaged: bebida.isPrepackaged,
         });
       }
     }

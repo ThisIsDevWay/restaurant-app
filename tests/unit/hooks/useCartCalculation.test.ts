@@ -21,6 +21,7 @@ function makeItem(overrides: Partial<MenuItem> = {}): MenuItem {
     categoryAllowAlone: true,
     categoryIsSimple: false,
     isAvailable: true,
+    isPrepackaged: false,
     imageUrl: null,
     sortOrder: 0,
     optionGroups: [],
@@ -33,27 +34,27 @@ function makeItem(overrides: Partial<MenuItem> = {}): MenuItem {
 
 const contornoFixed: Contorno = {
   id: "c1", name: "Arroz", priceUsdCents: 50,
-  isAvailable: true, removable: false, substituteContornoIds: [], sortOrder: 0,
+  isAvailable: true, isPrepackaged: false, removable: false, substituteContornoIds: [], sortOrder: 0,
 };
 
 const contornoRemovable: Contorno = {
   id: "c2", name: "Ensalada", priceUsdCents: 30,
-  isAvailable: true, removable: true, substituteContornoIds: ["c3"], sortOrder: 1,
+  isAvailable: true, isPrepackaged: false, removable: true, substituteContornoIds: ["c3"], sortOrder: 1,
 };
 
 const globalContornoSub: GlobalContorno = {
   id: "c3", name: "Tajadas", priceUsdCents: 40,
-  isAvailable: true, sortOrder: 2,
+  isAvailable: true, isPrepackaged: false, sortOrder: 2,
 };
 
 const adicional: SimpleItem = {
   id: "a1", name: "Queso extra", priceUsdCents: 60,
-  isAvailable: true, sortOrder: 0,
+  isAvailable: true, isPrepackaged: false, sortOrder: 0,
 };
 
 const bebida: SimpleItem = {
   id: "b1", name: "Coca-Cola", priceUsdCents: 100,
-  isAvailable: true, sortOrder: 0,
+  isAvailable: true, isPrepackaged: false, sortOrder: 0,
 };
 
 describe("useCartCalculation", () => {

@@ -1,6 +1,6 @@
 import { db } from "../index";
 import { orders } from "../schema";
-import { eq, and, lt, sql, inArray } from "drizzle-orm";
+import { eq, and, lt, sql, inArray, gte } from "drizzle-orm";
 
 export async function getOrderById(id: string) {
   const [order] = await db
@@ -130,12 +130,18 @@ export async function expirePendingOrders() {
   return result;
 }
 
-export async function getKitchenOrdersSimple() {
+export async function getKitchenOrdersSimple(since?: Date) {
+  const whereClause = [
+    sql`${orders.status} IN ('paid', 'kitchen', 'delivered', 'whatsapp')`,
+  ];
+
+  if (since) {
+    whereClause.push(gte(orders.createdAt, since));
+  }
+
   return db
     .select()
     .from(orders)
-    .where(
-      sql`${orders.status} IN ('paid', 'kitchen', 'whatsapp')`,
-    )
+    .where(and(...whereClause))
     .orderBy(orders.createdAt);
 }

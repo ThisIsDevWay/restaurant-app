@@ -106,6 +106,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                     name: validContorno.name,
                     priceUsdCents: validContorno.priceUsdCents,
                     priceBsCents: usdCentsToBsCents(validContorno.priceUsdCents, rate),
+                    isPrepackaged: validContorno.isPrepackaged,
                 });
             }
         }
@@ -123,6 +124,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                     name: dailyAdicional.name,
                     priceUsdCents: dailyAdicional.priceUsdCents,
                     priceBsCents: usdCentsToBsCents(dailyAdicional.priceUsdCents, rate),
+                    isPrepackaged: dailyAdicional.isPrepackaged,
                     substitutesComponentId: ad.substitutesComponentId,
                     substitutesComponentName: ad.substitutesComponentName,
                     quantity: qty,
@@ -142,6 +144,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                         name: validAdicional.name,
                         priceUsdCents: validAdicional.priceUsdCents,
                         priceBsCents: usdCentsToBsCents(validAdicional.priceUsdCents, rate),
+                        isPrepackaged: validAdicional.isPrepackaged,
                         substitutesComponentId: ad.substitutesComponentId,
                         substitutesComponentName: ad.substitutesComponentName,
                         quantity: qty,
@@ -162,6 +165,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                         name: validContorno.name,
                         priceUsdCents: validContorno.priceUsdCents,
                         priceBsCents: usdCentsToBsCents(validContorno.priceUsdCents, rate),
+                        isPrepackaged: validContorno.isPrepackaged,
                         substitutesComponentId: ad.substitutesComponentId,
                         substitutesComponentName: ad.substitutesComponentName,
                         quantity: qty,
@@ -180,6 +184,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                         name: globalContorno.name,
                         priceUsdCents: globalContorno.priceUsdCents,
                         priceBsCents: usdCentsToBsCents(globalContorno.priceUsdCents, rate),
+                        isPrepackaged: globalContorno.isPrepackaged,
                         substitutesComponentId: ad.substitutesComponentId,
                         substitutesComponentName: ad.substitutesComponentName,
                         quantity: qty,
@@ -199,6 +204,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                                 name: opt.name,
                                 priceUsdCents: opt.priceUsdCents,
                                 priceBsCents: usdCentsToBsCents(opt.priceUsdCents, rate),
+                                isPrepackaged: false, // Legacy options don't have this field yet
                                 substitutesComponentId: ad.substitutesComponentId,
                                 substitutesComponentName: ad.substitutesComponentName,
                                 quantity: qty,
@@ -230,6 +236,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                         name: dailyBebida.name,
                         priceUsdCents: dailyBebida.priceUsdCents,
                         priceBsCents: usdCentsToBsCents(dailyBebida.priceUsdCents, rate),
+                        isPrepackaged: dailyBebida.isPrepackaged,
                         quantity: qty,
                     });
                     found = true;
@@ -247,6 +254,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                             name: validBebida.name,
                             priceUsdCents: validBebida.priceUsdCents,
                             priceBsCents: usdCentsToBsCents(validBebida.priceUsdCents, rate),
+                            isPrepackaged: validBebida.isPrepackaged,
                             quantity: qty,
                         });
                         found = true;
@@ -272,6 +280,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
             name: menuItem.name,
             priceUsdCents: menuItem.priceUsdCents,
             priceBsCents: itemBaseBsCents,
+            isPrepackaged: menuItem.isPrepackaged,
             costUsdCents: menuItem.costUsdCents,
             includedNote: menuItem.includedNote ?? null,
             fixedContornos,
@@ -319,7 +328,24 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
     const { snapshotItems, subtotalUsdCents, subtotalBsCents } = await calculateOrderTotals(items, rate, today);
 
     // 2. Server-side surcharge recalculation — single source of truth
-    const serverSurcharges = calculateSurcharges(items, input.orderMode ?? null, {
+    // Create SurchargeItem objects using validated database status where possible
+    const surchargeItems = snapshotItems.map(item => ({
+        categoryIsSimple: items.find(i => i.id === item.id)?.categoryIsSimple ?? false,
+        categoryName: items.find(i => i.id === item.id)?.categoryName ?? "",
+        quantity: item.quantity,
+        isPrepackaged: item.isPrepackaged,
+        selectedAdicionales: item.selectedAdicionales.map(a => ({
+            quantity: a.quantity,
+            isPrepackaged: a.isPrepackaged,
+            substitutesComponentId: a.substitutesComponentId
+        })),
+        selectedBebidas: item.selectedBebidas.map(b => ({
+            quantity: b.quantity,
+            isPrepackaged: b.isPrepackaged
+        }))
+    }));
+
+    const serverSurcharges = calculateSurcharges(surchargeItems, input.orderMode ?? null, {
         packagingFeePerPlateUsdCents: settings.packagingFeePerPlateUsdCents,
         packagingFeePerAdicionalUsdCents: settings.packagingFeePerAdicionalUsdCents,
         packagingFeePerBebidaUsdCents: settings.packagingFeePerBebidaUsdCents,

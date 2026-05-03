@@ -10,10 +10,12 @@ import { eq } from "drizzle-orm";
 import { generateTicketText } from "@/lib/print-formatter";
 import { formatOrderDate } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { calculateSurcharges, buildSurchargesSnapshot } from "@/lib/utils/calculate-surcharges";
+import { usdCentsToBsCents } from "@/lib/money";
 import type { CheckoutItem } from "@/lib/types/checkout";
 
 const waiterOrderSchema = v.object({
-  tableNumber: v.pipe(v.string(), v.minLength(1, "Mesa requerida")),
+  tableNumber: v.pipe(v.string(), v.minLength(1, "Requerido")),
   customerName: v.optional(v.string()),
   paymentMethod: v.picklist([
     "Efectivo $",
@@ -24,12 +26,15 @@ const waiterOrderSchema = v.object({
     "Transf.",
     "Binance",
   ]),
+  orderMode: v.picklist(["on_site", "take_away", "delivery"]),
+  customerPhone: v.optional(v.string()),
+  paymentReference: v.optional(v.string()),
   items: v.any(), // CheckoutItem[] — validado en service
 });
 
 const updateWaiterOrderSchema = v.object({
   id: v.pipe(v.string(), v.uuid()),
-  tableNumber: v.pipe(v.string(), v.minLength(1, "Mesa requerida")),
+  tableNumber: v.pipe(v.string(), v.minLength(1, "Requerido")),
   customerName: v.optional(v.string()),
   paymentMethod: v.picklist([
     "Efectivo $",
@@ -40,6 +45,9 @@ const updateWaiterOrderSchema = v.object({
     "Transf.",
     "Binance",
   ]),
+  orderMode: v.picklist(["on_site", "take_away", "delivery"]),
+  customerPhone: v.optional(v.string()),
+  paymentReference: v.optional(v.string()),
   items: v.any(), // CheckoutItem[] — validado en service
 });
 
@@ -68,36 +76,72 @@ export const createWaiterOrderAction = authenticatedActionClient
 
     const applyIgtf = settings.applyIgtf;
     const igtfPercentage = Number(settings.igtfPercentage) || 3;
-    const isForeignCurrency = parsedInput.paymentMethod === "Efectivo $" || parsedInput.paymentMethod === "Zelle" || parsedInput.paymentMethod === "Binance";
+    const isForeignCurrency =
+      parsedInput.paymentMethod === "Efectivo $" ||
+      parsedInput.paymentMethod === "Zelle" ||
+      parsedInput.paymentMethod === "Binance";
 
-    const igtfUsdCents = (applyIgtf && isForeignCurrency) ? Math.round(subtotalUsdCents * (igtfPercentage / 100)) : 0;
+    const surchargeItems = snapshotItems.map((item) => ({
+      categoryIsSimple: items.find((i) => i.id === item.id)?.categoryIsSimple ?? false,
+      categoryName: items.find((i) => i.id === item.id)?.categoryName ?? "",
+      quantity: item.quantity,
+      isPrepackaged: item.isPrepackaged,
+      selectedAdicionales: item.selectedAdicionales.map((a) => ({
+        quantity: a.quantity,
+        isPrepackaged: a.isPrepackaged,
+        substitutesComponentId: a.substitutesComponentId,
+      })),
+      selectedBebidas: item.selectedBebidas.map((b) => ({
+        quantity: b.quantity,
+        isPrepackaged: b.isPrepackaged,
+      })),
+    }));
+
+    const serverSurcharges = calculateSurcharges(surchargeItems, parsedInput.orderMode, {
+      packagingFeePerPlateUsdCents: settings.packagingFeePerPlateUsdCents,
+      packagingFeePerAdicionalUsdCents: settings.packagingFeePerAdicionalUsdCents,
+      packagingFeePerBebidaUsdCents: settings.packagingFeePerBebidaUsdCents,
+      deliveryFeeUsdCents: settings.deliveryFeeUsdCents,
+    });
+
+    const igtfUsdCents =
+      applyIgtf && isForeignCurrency
+        ? Math.round((subtotalUsdCents + serverSurcharges.totalSurchargeUsdCents) * (igtfPercentage / 100))
+        : 0;
     const igtfBsCents = Math.round(igtfUsdCents * rateResult.rate);
 
-    const grandTotalUsdCents = subtotalUsdCents + igtfUsdCents; // sin surcharges (on_site sin empaque)
-    const grandTotalBsCents = subtotalBsCents + igtfBsCents;
+    const grandTotalUsdCents = subtotalUsdCents + igtfUsdCents + serverSurcharges.totalSurchargeUsdCents;
+    const grandTotalBsCents =
+      subtotalBsCents + igtfBsCents + usdCentsToBsCents(serverSurcharges.totalSurchargeUsdCents, rateResult.rate);
 
     const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000); // expira en 8h
 
     const { order, reason } = await createOrderWithCapacityCheck(
       {
-        customerPhone: parsedInput.customerName 
-          ? `mesero-${parsedInput.customerName.substring(0, 15)}` 
-          : `mesa-${parsedInput.tableNumber}`, 
+        customerPhone: parsedInput.customerPhone?.trim()
+          ? parsedInput.customerPhone.trim()
+          : parsedInput.customerName
+            ? `mesero-${parsedInput.customerName.substring(0, 15)}`
+            : `mesa-${parsedInput.tableNumber}`,
         itemsSnapshot: snapshotItems,
         subtotalUsdCents,
         subtotalBsCents,
-        packagingUsdCents: 0,
-        deliveryUsdCents: 0,
+        packagingUsdCents: serverSurcharges.packagingUsdCents,
+        deliveryUsdCents: serverSurcharges.deliveryUsdCents,
         igtfUsdCents,
         igtfBsCents,
         grandTotalUsdCents,
         grandTotalBsCents,
-        surchargesSnapshot: null,
+        surchargesSnapshot: buildSurchargesSnapshot(serverSurcharges, parsedInput.orderMode, settings),
         status: "kitchen", // Va directo a cocina
         paymentMethod: parsedInput.paymentMethod,
         paymentProvider: "whatsapp_manual", // provider dummy; el pago es presencial
-        orderMode: "on_site",
-        tableNumber: parsedInput.tableNumber,
+        orderMode: parsedInput.orderMode,
+        tableNumber: parsedInput.orderMode === "take_away" && !parsedInput.tableNumber.trim()
+          ? "Mostrador"
+          : parsedInput.orderMode === "delivery" && !parsedInput.tableNumber.trim()
+            ? "Domicilio"
+            : parsedInput.tableNumber,
         customerName: parsedInput.customerName || null,
         deliveryAddress: null,
         gpsCoords: null,
@@ -127,7 +171,7 @@ export const createWaiterOrderAction = authenticatedActionClient
       date: formatOrderDate(new Date()),
       paymentMethod: parsedInput.paymentMethod,
       waiterName: ctx.user.name ?? undefined,
-      orderMode: "on_site",
+      orderMode: parsedInput.orderMode,
       restaurantName: settings.restaurantName,
     });
 
@@ -174,13 +218,43 @@ export const updateWaiterOrderAction = authenticatedActionClient
 
     const applyIgtf = settings.applyIgtf;
     const igtfPercentage = Number(settings.igtfPercentage) || 3;
-    const isForeignCurrency = parsedInput.paymentMethod === "Efectivo $" || parsedInput.paymentMethod === "Zelle" || parsedInput.paymentMethod === "Binance";
+    const isForeignCurrency =
+      parsedInput.paymentMethod === "Efectivo $" ||
+      parsedInput.paymentMethod === "Zelle" ||
+      parsedInput.paymentMethod === "Binance";
 
-    const igtfUsdCents = (applyIgtf && isForeignCurrency) ? Math.round(subtotalUsdCents * (igtfPercentage / 100)) : 0;
+    const surchargeItems = snapshotItems.map((item) => ({
+      categoryIsSimple: items.find((i) => i.id === item.id)?.categoryIsSimple ?? false,
+      categoryName: items.find((i) => i.id === item.id)?.categoryName ?? "",
+      quantity: item.quantity,
+      isPrepackaged: item.isPrepackaged,
+      selectedAdicionales: item.selectedAdicionales.map((a) => ({
+        quantity: a.quantity,
+        isPrepackaged: a.isPrepackaged,
+        substitutesComponentId: a.substitutesComponentId,
+      })),
+      selectedBebidas: item.selectedBebidas.map((b) => ({
+        quantity: b.quantity,
+        isPrepackaged: b.isPrepackaged,
+      })),
+    }));
+
+    const serverSurcharges = calculateSurcharges(surchargeItems, parsedInput.orderMode, {
+      packagingFeePerPlateUsdCents: settings.packagingFeePerPlateUsdCents,
+      packagingFeePerAdicionalUsdCents: settings.packagingFeePerAdicionalUsdCents,
+      packagingFeePerBebidaUsdCents: settings.packagingFeePerBebidaUsdCents,
+      deliveryFeeUsdCents: settings.deliveryFeeUsdCents,
+    });
+
+    const igtfUsdCents =
+      applyIgtf && isForeignCurrency
+        ? Math.round((subtotalUsdCents + serverSurcharges.totalSurchargeUsdCents) * (igtfPercentage / 100))
+        : 0;
     const igtfBsCents = Math.round(igtfUsdCents * rateResult.rate);
 
-    const grandTotalUsdCents = subtotalUsdCents + igtfUsdCents;
-    const grandTotalBsCents = subtotalBsCents + igtfBsCents;
+    const grandTotalUsdCents = subtotalUsdCents + igtfUsdCents + serverSurcharges.totalSurchargeUsdCents;
+    const grandTotalBsCents =
+      subtotalBsCents + igtfBsCents + usdCentsToBsCents(serverSurcharges.totalSurchargeUsdCents, rateResult.rate);
 
     const [order] = await db
       .update(orders)
@@ -189,14 +263,20 @@ export const updateWaiterOrderAction = authenticatedActionClient
           ? `mesero-${parsedInput.customerName.substring(0, 15)}`
           : `mesa-${parsedInput.tableNumber}`,
         itemsSnapshot: snapshotItems,
-        subtotalUsdCents,
-        subtotalBsCents,
+        packagingUsdCents: serverSurcharges.packagingUsdCents,
+        deliveryUsdCents: serverSurcharges.deliveryUsdCents,
         igtfUsdCents,
         igtfBsCents,
         grandTotalUsdCents,
         grandTotalBsCents,
+        surchargesSnapshot: buildSurchargesSnapshot(serverSurcharges, parsedInput.orderMode, settings),
         paymentMethod: parsedInput.paymentMethod,
-        tableNumber: parsedInput.tableNumber,
+        orderMode: parsedInput.orderMode,
+        tableNumber: parsedInput.orderMode === "take_away" && !parsedInput.tableNumber.trim()
+          ? "Mostrador"
+          : parsedInput.orderMode === "delivery" && !parsedInput.tableNumber.trim()
+            ? "Domicilio"
+            : parsedInput.tableNumber,
         customerName: parsedInput.customerName || null,
         updatedAt: new Date(),
       })
@@ -218,7 +298,7 @@ export const updateWaiterOrderAction = authenticatedActionClient
       date: formatOrderDate(new Date()),
       paymentMethod: parsedInput.paymentMethod,
       waiterName: ctx.user.name ?? undefined,
-      orderMode: "on_site",
+      orderMode: parsedInput.orderMode,
       restaurantName: settings.restaurantName,
       isUpdate: true,
     });

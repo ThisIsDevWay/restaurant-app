@@ -16,8 +16,16 @@ export interface SurchargeItem {
   categoryIsSimple: boolean;
   categoryName: string;
   quantity: number;
-  selectedAdicionales: Array<{ quantity?: number; substitutesComponentId?: string }>;
-  selectedBebidas?: Array<{ quantity?: number }>;
+  isPrepackaged?: boolean;
+  selectedAdicionales: Array<{
+    quantity?: number;
+    isPrepackaged?: boolean;
+    substitutesComponentId?: string;
+  }>;
+  selectedBebidas?: Array<{
+    quantity?: number;
+    isPrepackaged?: boolean;
+  }>;
 }
 
 /** Settings necesarios para el calculo (se leen de DB en server, de form en client) */
@@ -66,6 +74,7 @@ export interface SurchargesSnapshot {
  * - Items simples (isSimple=true) se cuentan como adicionales o bebidas
  *   segun el nombre de la categoria (contiene "bebida")
  * - Platos principales cuentan sus sub-items (adicionales, bebidas)
+ * - 🚨 NUEVO: Si item.isPrepackaged === true, NO cobra envase.
  */
 export function calculateSurcharges(
   items: SurchargeItem[],
@@ -91,7 +100,8 @@ export function calculateSurcharges(
   for (const item of items) {
     if (item.categoryIsSimple) {
       // Simple items (accessories/drinks) ordered alone
-      // Use category name to distinguish drinks — more robust than emoji
+      if (item.isPrepackaged) continue; // SKIP PREPACKAGED
+
       const isDrink = item.categoryName.toLowerCase().includes("bebida");
       if (isDrink) {
         bebidaCount += item.quantity;
@@ -100,7 +110,9 @@ export function calculateSurcharges(
       }
     } else {
       // Main dishes (platos)
-      plateCount += item.quantity;
+      if (!item.isPrepackaged) {
+        plateCount += item.quantity;
+      }
 
       // ┌───────────────────────────────────────────────────────────────────────┐
       // │ ⚠️  NO multiplicar sub-items por item.quantity.                      │
@@ -116,11 +128,17 @@ export function calculateSurcharges(
       // │ Bug histórico: multiplicar aquí por item.quantity duplicaba los       │
       // │ conteos de empaquetado.  NO reintroducir.                            │
       // └───────────────────────────────────────────────────────────────────────┘
-      const pureAdicionales = item.selectedAdicionales.filter(a => !a.substitutesComponentId);
-      adicionalCount +=
-        pureAdicionales.reduce((sum, a) => sum + (a.quantity ?? 1), 0);
-      bebidaCount +=
-        (item.selectedBebidas ?? []).reduce((sum, b) => sum + (b.quantity ?? 1), 0);
+      const pureAdicionales = item.selectedAdicionales.filter((a) => !a.substitutesComponentId);
+      adicionalCount += pureAdicionales.reduce((sum, a) => {
+        if (a.isPrepackaged) return sum; // SKIP PREPACKAGED
+        return sum + (a.quantity ?? 1);
+      }, 0);
+
+      // Bebidas
+      bebidaCount += (item.selectedBebidas ?? []).reduce((sum, b) => {
+        if (b.isPrepackaged) return sum; // SKIP PREPACKAGED
+        return sum + (b.quantity ?? 1);
+      }, 0);
     }
   }
 
