@@ -7,7 +7,6 @@ import { type CartItem } from "@/store/cartStore";
 import { type SimpleItem } from "@/components/customer/ItemDetailModal.types";
 import { formatBs, formatRef } from "@/lib/money";
 import Image from "next/image";
-import supabaseLoader from "@/lib/supabase-image-loader";
 
 // Helper components that stay local to the grid for now as they are very specific
 function PriceTag({ usdCents, rate, size = "sm" }: { usdCents: number; rate: number; size?: "sm" | "md" | "lg" }) {
@@ -183,7 +182,6 @@ export function MenuItemGrid({
                   >
                     {item.imageUrl ? (
                       <Image
-                        loader={supabaseLoader}
                         src={item.imageUrl}
                         alt={item.name}
                         fill
