@@ -25,6 +25,7 @@ interface MenuItemCardProps {
   categoryName: string;
   categoryAllowAlone: boolean;
   isAvailable: boolean;
+  isPrepackaged: boolean;
   imageUrl: string | null;
   priority?: boolean;
   hasRequiredOptions: boolean;
@@ -43,6 +44,7 @@ export function MenuItemCardModern({
   categoryName,
   categoryAllowAlone,
   isAvailable,
+  isPrepackaged,
   imageUrl,
   priority = false,
   hasRequiredOptions,
@@ -75,6 +77,7 @@ export function MenuItemCardModern({
       categoryAllowAlone,
       categoryIsSimple,
       categoryName,
+      isPrepackaged,
       includedNote: includedNote ?? null,
     };
 

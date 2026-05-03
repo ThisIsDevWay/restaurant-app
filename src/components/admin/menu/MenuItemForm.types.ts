@@ -23,6 +23,7 @@ export interface MenuItemFormProps {
     sortOrder?: number | null;
     imageUrl?: string | null;
     isAvailable: boolean;
+    isPrepackaged: boolean;
   };
   exchangeRate: number;
 }

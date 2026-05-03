@@ -20,6 +20,7 @@ interface ContornoOption {
   priceUsdCents: number;
   isAvailable: boolean;
   sortOrder: number;
+  isPrepackaged: boolean;
 }
 
 interface SimpleItem {
@@ -28,6 +29,7 @@ interface SimpleItem {
   priceUsdCents: number;
   isAvailable: boolean;
   sortOrder: number;
+  isPrepackaged: boolean;
 }
 
 interface MenuGridProps {
@@ -206,6 +208,7 @@ export function MenuGrid({
             categoryName={item.categoryName}
             categoryAllowAlone={item.categoryAllowAlone}
             isAvailable={item.isAvailable}
+            isPrepackaged={item.isPrepackaged}
             imageUrl={item.imageUrl}
             priority={index < 4}
             hasRequiredOptions={needsDetailModal}

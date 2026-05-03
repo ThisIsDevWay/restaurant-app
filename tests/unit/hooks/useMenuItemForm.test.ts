@@ -209,6 +209,7 @@ describe("useMenuItemForm — image validation", () => {
           costUsdCents: 500,
           costUpdatedAt: new Date(),
           isAvailable: true,
+          isPrepackaged: false,
           imageUrl: "https://example.com/existing.jpg",
           sortOrder: 0,
         },

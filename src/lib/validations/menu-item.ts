@@ -14,6 +14,7 @@ const menuItemBaseSchema = v.object({
   costUsdCents: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
   categoryId: v.pipe(v.string(), v.uuid()),
   isAvailable: v.boolean(),
+  isPrepackaged: v.optional(v.boolean(), false),
   imageUrl: v.optional(v.string()),
   sortOrder: v.optional(v.pipe(v.number(), v.integer())),
 });

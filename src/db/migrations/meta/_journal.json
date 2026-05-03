@@ -43,6 +43,13 @@
       "when": 1777135997276,
       "tag": "0005_premium_namor",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777832487887,
+      "tag": "0006_add_prepackaged_field",
+      "breakpoints": true
     }
   ]
 }

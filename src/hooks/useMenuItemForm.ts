@@ -41,6 +41,7 @@ const menuItemFormSchema = v.object({
   )),
   imageUrl: v.optional(v.string()),
   isAvailable: v.boolean(),
+  isPrepackaged: v.boolean(),
 });
 
 export type FormValues = v.InferOutput<typeof menuItemFormSchema>;
@@ -106,6 +107,7 @@ export function useMenuItemForm({
       costUsdDollars: initialData?.costUsdCents ? String((initialData.costUsdCents / 100).toFixed(2)) : "",
       imageUrl: initialData?.imageUrl ?? "",
       isAvailable: initialData?.isAvailable ?? true,
+      isPrepackaged: initialData?.isPrepackaged ?? false,
     },
   });
 
@@ -200,6 +202,7 @@ export function useMenuItemForm({
           data: { ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "",
             hideAdicionales: data.hideAdicionales ?? false,
             hideBebidas: data.hideBebidas ?? false,
+            isPrepackaged: data.isPrepackaged ?? false,
           },
         });
         if (updateResult?.serverError) throw new Error(updateResult.serverError);
@@ -210,6 +213,7 @@ export function useMenuItemForm({
           ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "",
           hideAdicionales: data.hideAdicionales ?? false,
           hideBebidas: data.hideBebidas ?? false,
+          isPrepackaged: data.isPrepackaged ?? false,
         });
         if (createResult?.serverError) throw new Error(createResult.serverError);
         if (createResult?.validationErrors) throw new Error("Error de validación al crear");

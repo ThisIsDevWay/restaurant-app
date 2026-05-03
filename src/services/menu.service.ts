@@ -9,6 +9,7 @@ export async function generateDailyMenuSnapshot(date: string) {
             id: menuItems.id,
             name: menuItems.name,
             priceUsdCents: menuItems.priceUsdCents,
+            isPrepackaged: menuItems.isPrepackaged,
             isAvailable: dailyAdicionales.isAvailable,
         })
         .from(dailyAdicionales)
@@ -21,6 +22,7 @@ export async function generateDailyMenuSnapshot(date: string) {
             id: menuItems.id,
             name: menuItems.name,
             priceUsdCents: menuItems.priceUsdCents,
+            isPrepackaged: menuItems.isPrepackaged,
             isAvailable: dailyBebidas.isAvailable,
         })
         .from(dailyBebidas)
@@ -37,6 +39,7 @@ export async function generateDailyMenuSnapshot(date: string) {
             id: menuItems.id,
             name: menuItems.name,
             priceUsdCents: menuItems.priceUsdCents,
+            isPrepackaged: menuItems.isPrepackaged,
             isAvailable: dailyContornos.isAvailable,
         })
         .from(dailyContornos)

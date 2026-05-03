@@ -39,6 +39,7 @@ export async function getDailyMenuItemsForDate(dateStr: string) {
       itemCategoryId: menuItems.categoryId,
       itemIsAvailable: dailyMenuItems.isAvailable,
       itemImageUrl: menuItems.imageUrl,
+      itemIsPrepackaged: menuItems.isPrepackaged,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
       categoryIsSimple: categories.isSimple,
@@ -70,6 +71,7 @@ export async function getDailyBebidasAsMenuItemsForDate(dateStr: string) {
       itemCategoryId: menuItems.categoryId,
       itemIsAvailable: dailyBebidas.isAvailable,
       itemImageUrl: menuItems.imageUrl,
+      itemIsPrepackaged: menuItems.isPrepackaged,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
       categoryIsSimple: categories.isSimple,
@@ -101,6 +103,7 @@ export async function getDailyAdicionalesAsMenuItemsForDate(dateStr: string) {
       itemCategoryId: menuItems.categoryId,
       itemIsAvailable: dailyAdicionales.isAvailable,
       itemImageUrl: menuItems.imageUrl,
+      itemIsPrepackaged: menuItems.isPrepackaged,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
       categoryIsSimple: categories.isSimple,
@@ -132,6 +135,7 @@ export async function getDailyContornosAsMenuItemsForDate(dateStr: string) {
       itemCategoryId: menuItems.categoryId,
       itemIsAvailable: dailyContornos.isAvailable,
       itemImageUrl: menuItems.imageUrl,
+      itemIsPrepackaged: menuItems.isPrepackaged,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
       categoryIsSimple: categories.isSimple,
@@ -212,6 +216,7 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: menuItems.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       sortOrder: menuItems.sortOrder,
     })
     .from(menuItemAdicionales)
@@ -235,6 +240,7 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: menuItems.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       sortOrder: menuItems.sortOrder,
       removable: menuItemContornos.removable,
       substituteContornoIds: menuItemContornos.substituteContornoIds,
@@ -256,6 +262,7 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: menuItems.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       sortOrder: menuItems.sortOrder,
     })
     .from(menuItemBebidas)
@@ -269,6 +276,7 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: dailyAdicionales.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       sortOrder: dailyAdicionales.sortOrder,
     })
     .from(dailyAdicionales)
@@ -282,6 +290,7 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: dailyBebidas.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       sortOrder: dailyBebidas.sortOrder,
     })
     .from(dailyBebidas)
@@ -295,6 +304,7 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: dailyContornos.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       sortOrder: dailyContornos.sortOrder,
     })
     .from(dailyContornos)
@@ -381,6 +391,7 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
     categoryAllowAlone: d.categoryAllowAlone,
     categoryIsSimple: d.categoryIsSimple,
     isAvailable: d.itemIsAvailable,
+    isPrepackaged: d.itemIsPrepackaged,
     imageUrl: d.itemImageUrl,
     sortOrder: d.sortOrder,
     optionGroups: optionsByItem.get(d.menuItemId) ?? [],

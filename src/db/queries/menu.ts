@@ -57,6 +57,7 @@ export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
         isAvailable: menuItems.isAvailable,
         imageUrl: menuItems.imageUrl,
         sortOrder: menuItems.sortOrder,
+        isPrepackaged: menuItems.isPrepackaged,
       })
       .from(menuItems)
       .innerJoin(categories, eq(menuItems.categoryId, categories.id))
@@ -144,6 +145,7 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
         isAvailable: menuItems.isAvailable,
         imageUrl: menuItems.imageUrl,
         sortOrder: menuItems.sortOrder,
+        isPrepackaged: menuItems.isPrepackaged,
       })
       .from(menuItems)
       .innerJoin(categories, eq(menuItems.categoryId, categories.id))
@@ -184,6 +186,7 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
         name: menuItems.name,
         priceUsdCents: menuItems.priceUsdCents,
         isAvailable: menuItems.isAvailable,
+        isPrepackaged: menuItems.isPrepackaged,
         sortOrder: menuItems.sortOrder,
       })
       .from(menuItemAdicionales)
@@ -198,6 +201,7 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
         name: menuItems.name,
         priceUsdCents: menuItems.priceUsdCents,
         isAvailable: menuItems.isAvailable,
+        isPrepackaged: menuItems.isPrepackaged,
         sortOrder: menuItems.sortOrder,
         removable: menuItemContornos.removable,
         substituteContornoIds: menuItemContornos.substituteContornoIds,
@@ -214,6 +218,7 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
         name: menuItems.name,
         priceUsdCents: menuItems.priceUsdCents,
         isAvailable: menuItems.isAvailable,
+        isPrepackaged: menuItems.isPrepackaged,
         sortOrder: menuItems.sortOrder,
       })
       .from(menuItemBebidas)
@@ -264,6 +269,7 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
       name: row.name,
       priceUsdCents: row.priceUsdCents,
       isAvailable: row.isAvailable,
+      isPrepackaged: row.isPrepackaged,
       sortOrder: row.sortOrder,
     });
   }
@@ -280,6 +286,7 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
       name: row.name,
       priceUsdCents: row.priceUsdCents,
       isAvailable: row.isAvailable,
+      isPrepackaged: row.isPrepackaged,
       removable: row.removable,
       substituteContornoIds: row.substituteContornoIds,
       sortOrder: row.sortOrder,
@@ -298,6 +305,7 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
       name: row.name,
       priceUsdCents: row.priceUsdCents,
       isAvailable: row.isAvailable,
+      isPrepackaged: row.isPrepackaged,
       sortOrder: row.sortOrder,
     });
   }
@@ -366,6 +374,7 @@ export async function getMenuItemWithOptions(id: string) {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: menuItems.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       removable: menuItemContornos.removable,
       substituteContornoIds: menuItemContornos.substituteContornoIds,
     })
@@ -410,6 +419,7 @@ export async function getMenuItemWithOptionsAndComponents(id: string) {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: menuItems.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       sortOrder: menuItems.sortOrder,
     })
     .from(menuItemAdicionales)
@@ -424,6 +434,7 @@ export async function getMenuItemWithOptionsAndComponents(id: string) {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: menuItems.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       sortOrder: menuItems.sortOrder,
       removable: menuItemContornos.removable,
       substituteContornoIds: menuItemContornos.substituteContornoIds,
@@ -440,6 +451,7 @@ export async function getMenuItemWithOptionsAndComponents(id: string) {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: menuItems.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       sortOrder: menuItems.sortOrder,
     })
     .from(menuItemBebidas)

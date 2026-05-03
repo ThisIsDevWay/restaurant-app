@@ -47,6 +47,7 @@ export interface CartItem {
   categoryAllowAlone: boolean;
   categoryIsSimple: boolean;
   categoryName: string;
+  isPrepackaged: boolean;
   includedNote?: string | null;
 }
 

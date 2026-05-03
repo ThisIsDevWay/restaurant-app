@@ -52,6 +52,7 @@ export function MenuItemForm({
   const selectedCategory = categories.find((c) => c.id === watchedCategoryId);
   const isSimpleCategory = selectedCategory?.isSimple ?? false;
   const isAvailable = form.watch("isAvailable");
+  const isPrepackaged = form.watch("isPrepackaged");
   const hideAdicionales = form.watch("hideAdicionales");
   const hideBebidas = form.watch("hideBebidas");
 
@@ -487,6 +488,31 @@ export function MenuItemForm({
                 <div
                   className="mif-toggle-thumb"
                   style={{ left: isAvailable ? 21 : 3 }}
+                />
+              </div>
+            </div>
+
+            {/* Prepackaged toggle */}
+            <div
+              className="mif-toggle-row"
+              style={{ marginTop: 12, background: "#f3f8ff", border: "1px solid #d0e1f9" }}
+              onClick={() => form.setValue("isPrepackaged", !isPrepackaged)}
+            >
+              <div>
+                <p className="mif-toggle-label">Ítem Pre-empaquetado</p>
+                <p className="mif-toggle-sub">
+                  {isPrepackaged
+                    ? "Exento de cargos por envase (ej: latas, botellas, snacks sellados)"
+                    : "Requiere envase del restaurante (se cobrará tarifa de empaque)"}
+                </p>
+              </div>
+              <div
+                className="mif-toggle-track"
+                style={{ background: isPrepackaged ? "#0066cc" : "#e0d5cc" }}
+              >
+                <div
+                  className="mif-toggle-thumb"
+                  style={{ left: isPrepackaged ? 21 : 3 }}
                 />
               </div>
             </div>

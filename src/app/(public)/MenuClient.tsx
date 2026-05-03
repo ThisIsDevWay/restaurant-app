@@ -22,6 +22,7 @@ interface ContornoOption {
   name: string;
   priceUsdCents: number;
   isAvailable: boolean;
+  isPrepackaged: boolean;
   sortOrder: number;
 }
 
@@ -30,6 +31,7 @@ interface SimpleItem {
   name: string;
   priceUsdCents: number;
   isAvailable: boolean;
+  isPrepackaged: boolean;
   sortOrder: number;
 }
 

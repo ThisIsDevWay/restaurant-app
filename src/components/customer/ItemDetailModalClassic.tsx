@@ -82,6 +82,7 @@ export function ItemDetailModalClassic({
             name: item.name,
             baseUsdCents: item.priceUsdCents,
             baseBsCents: Math.round(item.priceUsdCents * currentRateBsPerUsd),
+            isPrepackaged: item.isPrepackaged,
             emoji,
             fixedContornos: cart.cartFixedContornos,
             contornoSubstitutions: cart.cartContornoSubstitutions,

@@ -33,6 +33,7 @@ describe("cartStore deduplication and pricing", () => {
             categoryAllowAlone: true,
             categoryIsSimple: false,
             categoryName: "Platos Fuertes",
+            isPrepackaged: false,
         };
 
         const item2: Omit<CartItem, "quantity" | "itemTotalBsCents"> = {
@@ -64,6 +65,7 @@ describe("cartStore deduplication and pricing", () => {
             categoryAllowAlone: true,
             categoryIsSimple: false,
             categoryName: "Platos Fuertes",
+            isPrepackaged: false,
         };
 
         // The current computeItemTotal in cartStore.ts uses:

@@ -22,6 +22,7 @@ export interface SimpleItem {
   name: string;
   priceUsdCents: number;
   isAvailable: boolean;
+  isPrepackaged: boolean;
   sortOrder: number;
 }
 

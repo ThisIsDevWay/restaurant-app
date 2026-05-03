@@ -21,6 +21,7 @@ export const menuItems = pgTable(
       .notNull()
       .references(() => categories.id),
     isAvailable: boolean("is_available").notNull().default(true),
+    isPrepackaged: boolean("is_prepackaged").notNull().default(false),
     imageUrl: text("image_url"),
     sortOrder: integer("sort_order").notNull().default(0),
     costUsdCents: integer("cost_usd_cents"),

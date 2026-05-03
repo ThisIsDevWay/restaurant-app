@@ -9,6 +9,7 @@ export async function getAllContornos() {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: menuItems.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       sortOrder: menuItems.sortOrder,
     })
     .from(menuItems)
@@ -24,6 +25,7 @@ export async function getContornosByMenuItemId(menuItemId: string) {
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: menuItems.isAvailable,
+      isPrepackaged: menuItems.isPrepackaged,
       sortOrder: menuItems.sortOrder,
       removable: menuItemContornos.removable,
       substituteContornoIds: menuItemContornos.substituteContornoIds,

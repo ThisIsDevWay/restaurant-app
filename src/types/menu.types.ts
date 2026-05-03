@@ -40,6 +40,7 @@ export interface SimpleComponent {
   name: string;
   priceUsdCents: number;
   isAvailable: boolean;
+  isPrepackaged: boolean;
   sortOrder: number;
 }
 
@@ -65,6 +66,7 @@ export interface MenuItemWithComponents {
   categoryAllowAlone: boolean;
   categoryIsSimple: boolean;
   isAvailable: boolean;
+  isPrepackaged: boolean;
   imageUrl: string | null;
   sortOrder: number;
   optionGroups: OptionGroupWithOptions[];
