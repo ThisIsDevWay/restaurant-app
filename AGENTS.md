@@ -1,4 +1,4 @@
-# GM App — AGENT.md
+# GM App — AGENTS.md
 > Documento de contexto operacional para agente de codificación. Leer **completo** antes de cualquier tarea.  
 > Última actualización: basado en repomix del codebase activo.
 
