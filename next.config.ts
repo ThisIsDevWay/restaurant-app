@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 import withSerwistInit from "@serwist/next";
 import { withSentryConfig } from "@sentry/nextjs";
+import bundleAnalyzer from "@next/bundle-analyzer";
 
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 function getSupabaseDomain(): string {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -65,7 +69,7 @@ const withSerwist = withSerwistInit({
   disable: process.env.NODE_ENV !== "production",
 });
 
-export default withSentryConfig(withSerwist(nextConfig), {
+export default withBundleAnalyzer(withSentryConfig(withSerwist(nextConfig), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
@@ -75,4 +79,4 @@ export default withSentryConfig(withSerwist(nextConfig), {
   webpack: {
     automaticVercelMonitors: true,
   },
-});
+}));

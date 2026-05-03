@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { authConfig } from "./auth.config";
 
 const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -38,45 +40,33 @@ const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  pages: {
-    signIn: "/login",
-  },
-  session: {
-    strategy: "jwt",
-  },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id as string;
-        const allowedRoles = ["admin", "kitchen", "waiter", "user"];
-        token.role = allowedRoles.includes(user.role as string)
-          ? (user.role as string)
-          : "user";
-      } else if (token.id && process.env.NEXT_RUNTIME !== "edge") {
+    ...authConfig.callbacks,
+    async jwt({ token, user, trigger, session, account, profile, isNewUser }) {
+      // Call base jwt callback
+      let baseToken = token;
+      if (authConfig.callbacks?.jwt) {
+        // @ts-ignore
+        baseToken = await authConfig.callbacks.jwt({ token, user, trigger, session, account, profile, isNewUser }) || token;
+      }
+
+      if (!user && baseToken.id && process.env.NEXT_RUNTIME !== "edge") {
         // Re-validate role from DB to detect downgraded roles immediately
-        // Skip in Edge (Middleware) to avoid "net" module error
         try {
           const [dbUser] = await db
             .select({ role: users.role })
             .from(users)
-            .where(eq(users.id, token.id as string))
+            .where(eq(users.id, baseToken.id as string))
             .limit(1);
 
           if (dbUser) {
-            token.role = dbUser.role;
+            baseToken.role = dbUser.role;
           }
         } catch (err) {
           console.error("JWT role revalidation failed:", err);
         }
       }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-      }
-      return session;
+      return baseToken;
     },
   },
 });

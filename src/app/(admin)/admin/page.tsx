@@ -21,7 +21,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatBs, formatRef } from "@/lib/money";
-import { OrdersChart } from "@/components/admin/dashboard/OrdersChart";
+import { OrdersChartDynamic } from "@/components/admin/dashboard/OrdersChartDynamic";
+
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
 import { todayCaracas } from "@/lib/utils/date";
 import { and, gte, lte, desc } from "drizzle-orm";
@@ -224,7 +225,7 @@ export default async function AdminDashboard() {
           </div>
         </CardHeader>
         <CardContent className="pt-4">
-          <OrdersChart todayOrders={todayOrdersRaw} />
+          <OrdersChartDynamic todayOrders={todayOrdersRaw} />
         </CardContent>
       </Card>
 

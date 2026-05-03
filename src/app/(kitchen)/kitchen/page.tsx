@@ -1,7 +1,8 @@
-import { KitchenQueue } from "@/components/kitchen/KitchenQueue";
 import { getSettings } from "@/db/queries/settings";
+import { KitchenQueueDynamic } from "@/components/kitchen/KitchenQueueDynamic";
 
 export default async function KitchenPage() {
   const settings = await getSettings();
-  return <KitchenQueue restaurantName={settings?.restaurantName ?? "G&M"} logoUrl={settings?.logoUrl ?? ""} />;
+  return <KitchenQueueDynamic restaurantName={settings?.restaurantName ?? "G&M"} logoUrl={settings?.logoUrl ?? ""} />;
 }
+
