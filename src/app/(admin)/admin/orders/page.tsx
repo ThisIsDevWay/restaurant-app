@@ -24,6 +24,7 @@ export default async function AdminOrdersPage({
       subtotalBsCents: orders.subtotalBsCents,
       grandTotalBsCents: orders.grandTotalBsCents,
       customerPhone: orders.customerPhone,
+      customerName: orders.customerName,
       createdAt: orders.createdAt,
       paymentMethod: orders.paymentMethod,
       paymentProvider: orders.paymentProvider,

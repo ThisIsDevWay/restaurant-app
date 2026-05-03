@@ -33,11 +33,13 @@ type PaymentLog = {
 
 type OrderData = {
   customerPhone: string;
+  customerName?: string | null;
   paymentMethod: string;
   paymentProvider: string;
   paymentReference: string | null;
   rateSnapshotBsPerUsd: string;
   orderMode: string;
+  tableNumber?: string | null;
   deliveryAddress?: string | null;
   gpsCoords?: { lat: number; lng: number; accuracy: number } | null;
   comprobanteUrl?: string | null;
@@ -255,7 +257,7 @@ export function OrderPaymentPanel({
               className="py-1 px-3 text-[10px] font-bold bg-white/20 text-white border-white/30 backdrop-blur-sm mb-3"
             />
 
-            {/* Phone number — hero typography */}
+            {/* Customer name / phone — hero typography */}
             <p
               className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-0.5"
               style={{ fontFamily: "'Epilogue', sans-serif" }}
@@ -263,23 +265,68 @@ export function OrderPaymentPanel({
               Cliente
             </p>
             <div className="flex items-center justify-between gap-2">
-              <span
-                className="text-white font-black tracking-tight leading-none"
-                style={{
-                  fontFamily: "'Epilogue', sans-serif",
-                  fontSize: "clamp(1.1rem, 3vw, 1.35rem)",
-                }}
-              >
-                {order.customerPhone}
-              </span>
-              <a
-                href={`tel:${order.customerPhone}`}
-                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-[10px] font-bold tracking-wider uppercase transition-all hover:scale-105 active:scale-95 backdrop-blur-sm border border-white/20"
-              >
-                <Phone className="w-3 h-3" />
-                Llamar
-              </a>
+              <div className="flex flex-col gap-0.5 min-w-0">
+                {order.customerName ? (
+                  <span
+                    className="text-white font-black tracking-tight leading-tight"
+                    style={{
+                      fontFamily: "'Epilogue', sans-serif",
+                      fontSize: "clamp(1.1rem, 3vw, 1.35rem)",
+                    }}
+                  >
+                    {order.customerName}
+                  </span>
+                ) : null}
+                {order.customerPhone &&
+                  !order.customerPhone.startsWith("mesa-") &&
+                  !order.customerPhone.startsWith("mesero-") && (
+                    <span
+                      className={cn(
+                        "text-white/80 font-mono tracking-tight",
+                        order.customerName ? "text-sm" : "font-black",
+                      )}
+                      style={!order.customerName ? {
+                        fontFamily: "'Epilogue', sans-serif",
+                        fontSize: "clamp(1.1rem, 3vw, 1.35rem)",
+                      } : undefined}
+                    >
+                      {order.customerPhone}
+                    </span>
+                  )}
+                {/* Fallback if everything is synthetic */}
+                {!order.customerName &&
+                  (order.customerPhone?.startsWith("mesa-") ||
+                    order.customerPhone?.startsWith("mesero-")) && (
+                    <span
+                      className="text-white/50 text-sm font-semibold italic"
+                    >
+                      Pedido en sitio
+                    </span>
+                  )}
+              </div>
+              {/* Call button — only when phone is real */}
+              {order.customerPhone &&
+                !order.customerPhone.startsWith("mesa-") &&
+                !order.customerPhone.startsWith("mesero-") && (
+                  <a
+                    href={`tel:${order.customerPhone}`}
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-[10px] font-bold tracking-wider uppercase transition-all hover:scale-105 active:scale-95 backdrop-blur-sm border border-white/20"
+                  >
+                    <Phone className="w-3 h-3" />
+                    Llamar
+                  </a>
+                )}
             </div>
+
+            {/* Mesa / Retiro label — on_site & take_away */}
+            {order.tableNumber && order.orderMode !== "delivery" && (
+              <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 border border-white/20">
+                <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">
+                  {order.orderMode === "on_site" ? "Mesa" : "Retiro"}
+                </span>
+                <span className="text-white text-xs font-black">{order.tableNumber}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -367,8 +414,14 @@ export function OrderPaymentPanel({
           <dl className="divide-y-0">
             <DataRow
               label="Método"
-              value={formatProvider(order.paymentProvider)}
+              value={order.paymentMethod}
             />
+            {order.paymentProvider && order.paymentProvider !== "whatsapp_manual" && (
+              <DataRow
+                label="Proveedor"
+                value={formatProvider(order.paymentProvider)}
+              />
+            )}
             {order.paymentReference && (
               <DataRow
                 label="Referencia"

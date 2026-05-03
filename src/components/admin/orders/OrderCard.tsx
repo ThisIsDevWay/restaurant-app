@@ -19,6 +19,7 @@ export interface OrderListItem {
   subtotalBsCents: number;
   grandTotalBsCents: number;
   customerPhone: string;
+  customerName?: string | null;
   createdAt: Date;
   paymentMethod: string;
   paymentProvider?: string;
@@ -54,14 +55,24 @@ export function OrderCard({ order }: { order: OrderListItem }) {
     >
       {/* Row 1: Number + Status */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary font-bold text-sm tracking-tight border border-primary/10">
             #{order.orderNumber ?? order.id.slice(0, 8)}
           </span>
           <OrderModeChip mode={orderMode} className="py-1 px-2 text-[10px]" />
-          {order.tableNumber && (
+          {order.tableNumber && orderMode === "on_site" && (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold text-[10px] tracking-tight border border-amber-200">
-              MESA {order.tableNumber}
+              Mesa {order.tableNumber}
+            </span>
+          )}
+          {order.tableNumber && orderMode === "take_away" && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 font-bold text-[10px] tracking-tight border border-sky-200">
+              {order.tableNumber}
+            </span>
+          )}
+          {order.tableNumber && orderMode === "delivery" && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-bold text-[10px] tracking-tight border border-violet-200 max-w-[160px] truncate">
+              {order.tableNumber}
             </span>
           )}
         </div>
@@ -70,10 +81,19 @@ export function OrderCard({ order }: { order: OrderListItem }) {
 
       {/* Row 2: Customer Info + Time */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <div className="flex items-center gap-1.5 px-2 py-1 bg-stone-100 rounded-lg text-xs font-medium text-text-main border border-border/50">
-          <Phone className="h-3 w-3 text-text-muted/70" />
-          <span className="font-mono">{formatPhone(order.customerPhone)}</span>
-        </div>
+        {/* Customer name (primary) */}
+        {order.customerName && (
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/5 rounded-lg text-xs font-bold text-primary border border-primary/10">
+            {order.customerName}
+          </div>
+        )}
+        {/* Phone */}
+        {order.customerPhone && !order.customerPhone.startsWith("mesa-") && !order.customerPhone.startsWith("mesero-") && (
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-stone-100 rounded-lg text-xs font-medium text-text-main border border-border/50">
+            <Phone className="h-3 w-3 text-text-muted/70" />
+            <span className="font-mono">{formatPhone(order.customerPhone)}</span>
+          </div>
+        )}
         <div className="flex items-center gap-1.5 px-2 py-1 bg-stone-100 rounded-lg text-xs font-medium text-text-main border border-border/50">
           <Clock className="h-3 w-3 text-text-muted/70" />
           <span>{formatOrderTime(order.createdAt)}</span>
@@ -95,6 +115,7 @@ export function OrderCard({ order }: { order: OrderListItem }) {
           <span className="text-lg font-bold text-emerald-700 tracking-tight leading-none">
             {formatBs(order.grandTotalBsCents)}
           </span>
+          <span className="text-[10px] text-text-muted/70 mt-0.5 font-medium">{order.paymentMethod}</span>
         </div>
         <QuickActions
           orderId={order.id}

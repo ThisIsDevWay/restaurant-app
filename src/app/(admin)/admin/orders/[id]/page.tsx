@@ -221,11 +221,13 @@ export default async function OrderDetailPage({
             <OrderPaymentPanel
               order={{
                 customerPhone: order.customerPhone,
+                customerName: order.customerName,
                 paymentMethod: order.paymentMethod,
                 paymentProvider: order.paymentProvider,
                 paymentReference: order.paymentReference,
                 rateSnapshotBsPerUsd: order.rateSnapshotBsPerUsd,
                 orderMode: order.orderMode ?? "delivery",
+                tableNumber: order.tableNumber,
                 deliveryAddress: order.deliveryAddress,
                 gpsCoords: order.gpsCoords,
                 comprobanteUrl: order.paymentMetadata?.uploadedUrl,

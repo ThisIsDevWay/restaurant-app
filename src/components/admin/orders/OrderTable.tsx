@@ -143,9 +143,19 @@ export function OrderTable({
                     #{order.orderNumber ?? order.id.slice(0, 6)}
                   </span>
                   <OrderModeChip mode={order.orderMode ?? "delivery"} />
-                  {order.tableNumber && (
+                  {order.tableNumber && order.orderMode === "on_site" && (
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold text-[10px] tracking-tight border border-amber-200">
-                      MESA {order.tableNumber}
+                      Mesa {order.tableNumber}
+                    </span>
+                  )}
+                  {order.tableNumber && order.orderMode === "take_away" && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 font-bold text-[10px] tracking-tight border border-sky-200 max-w-[9rem] truncate">
+                      {order.tableNumber}
+                    </span>
+                  )}
+                  {order.tableNumber && order.orderMode === "delivery" && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-bold text-[10px] tracking-tight border border-violet-200 max-w-[9rem] truncate">
+                      {order.tableNumber}
                     </span>
                   )}
                 </div>
@@ -160,9 +170,20 @@ export function OrderTable({
 
               {/* Cliente */}
               <TableCell className="px-4 py-3 align-middle">
-                <span className="text-[13px] font-medium text-text-main tabular-nums">
-                  {formatPhone(order.customerPhone)}
-                </span>
+                <div className="flex flex-col gap-0.5">
+                  {(order as any).customerName ? (
+                    <span className="text-[13px] font-bold text-text-main">
+                      {(order as any).customerName}
+                    </span>
+                  ) : null}
+                  {order.customerPhone &&
+                    !order.customerPhone.startsWith("mesa-") &&
+                    !order.customerPhone.startsWith("mesero-") && (
+                      <span className="text-[11px] text-text-muted tabular-nums font-mono">
+                        {formatPhone(order.customerPhone)}
+                      </span>
+                    )}
+                </div>
               </TableCell>
 
               {/* Detalle */}
@@ -182,7 +203,7 @@ export function OrderTable({
               {/* Pago */}
               <TableCell className="hidden md:table-cell px-4 py-3 align-middle overflow-hidden">
                 <span className="text-[11px] font-semibold tracking-wide text-text-muted uppercase truncate block">
-                  {formatProvider(order.paymentProvider)}
+                  {order.paymentMethod}
                 </span>
               </TableCell>
 

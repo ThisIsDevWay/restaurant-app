@@ -48,6 +48,11 @@ export function OrderItemsTable({
   const displayTotalBs = grandTotalBsCents ?? subtotalBsCents;
   const displayTotalUsd = grandTotalUsdCents ?? subtotalUsdCents;
 
+  // Derive subtotal from snapshot items so it's always consistent,
+  // even for older orders where subtotalBsCents was stored incorrectly.
+  const derivedSubtotalBsCents = items.reduce((sum, item) => sum + item.itemTotalBsCents, 0);
+
+
   return (
     <Card className="ring-1 ring-border shadow-md rounded-2xl overflow-hidden border-none">
       <CardHeader className="bg-slate-50/50 border-b border-border/60 py-4 px-6">
@@ -223,7 +228,7 @@ export function OrderItemsTable({
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-text-muted">Subtotal de productos</span>
             <span className="text-sm font-bold text-text-main">
-              {formatBs(subtotalBsCents)}
+              {formatBs(derivedSubtotalBsCents)}
             </span>
           </div>
 

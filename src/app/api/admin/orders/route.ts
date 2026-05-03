@@ -20,11 +20,13 @@ export async function GET(req: Request) {
                 subtotalBsCents: orders.subtotalBsCents,
                 grandTotalBsCents: orders.grandTotalBsCents,
                 customerPhone: orders.customerPhone,
+                customerName: orders.customerName,
                 createdAt: orders.createdAt,
                 paymentMethod: orders.paymentMethod,
                 paymentProvider: orders.paymentProvider,
                 itemsSnapshot: orders.itemsSnapshot,
                 orderMode: orders.orderMode,
+                tableNumber: orders.tableNumber,
             })
             .from(orders)
             .where(sql`date(timezone('America/Caracas', ${orders.createdAt})) = ${targetDate}`)
