@@ -20,18 +20,12 @@ const supabaseDomain = getSupabaseDomain();
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "*.supabase.co",
-        pathname: "/storage/v1/object/public/**",
-      },
-      {
-        protocol: "https",
-        hostname: "*.supabase.co",
-        pathname: "/storage/v1/render/image/public/**",
-      },
-    ],
+    // Bypass Vercel Image Optimization entirely — images are served directly
+    // from Supabase Storage CDN. This eliminates /_next/image proxy overhead
+    // and avoids 403s from path whitelist mismatches.
+    // If Supabase Image Transformations (Pro plan) are enabled in the future,
+    // remove this flag and use supabase-image-loader.ts with /render/image/.
+    unoptimized: true,
   },
   async headers() {
     const cspImgSrc = supabaseDomain
