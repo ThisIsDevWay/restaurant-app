@@ -185,7 +185,7 @@ export function TableManagerClient({
       initialTables.forEach(t => { r[t.id] = (t.rotation ?? 0) as TableRotation; });
       setRotations(r);
     }
-  }, [initialTables, isDirty, setPositions, addPositions, setRotations, positions]);
+  }, [initialTables, isDirty, setPositions, addPositions, setRotations]);
 
   // Sync fixtures from server
   useEffect(() => {
