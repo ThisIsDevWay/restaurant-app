@@ -196,11 +196,14 @@ export function TableManagerClient({
     if (!fixtureIsDirty) {
       setFixturePositions(serverPos);
     } else {
-      const currentIds = new Set(Object.keys(fixturePositions));
+      // Read current positions as a point-in-time snapshot via getState()
+      // to avoid adding fixturePositions to deps (would cause infinite loop:
+      // addFixturePositions mutates the store → effect re-fires → loop).
+      const currentIds = new Set(Object.keys(useFixtureLayoutStore.getState().positions));
       const missing = serverPos.filter(p => !currentIds.has(p.id));
       if (missing.length > 0) addFixturePositions(missing);
     }
-  }, [initialFixtures, fixtureIsDirty, setFixturePositions, addFixturePositions, fixturePositions]);
+  }, [initialFixtures, fixtureIsDirty, setFixturePositions, addFixturePositions]);
 
   // Keyboard zoom
   useEffect(() => {
