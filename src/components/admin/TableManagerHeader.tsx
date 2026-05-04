@@ -1,9 +1,7 @@
 "use client";
 
-import { Save, Plus, ZoomIn, ZoomOut, Map, LayoutGrid, RotateCcw } from "lucide-react";
+import { Save, Plus, ZoomIn, ZoomOut, Map, LayoutGrid, RotateCcw, X, Printer, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { StatPill } from "@/components/salon/SalonSharedUI";
 import type { RestaurantTable } from "@/db/schema/restaurant-tables";
 
@@ -44,129 +42,186 @@ export function TableManagerHeader({
 }: TableManagerHeaderProps) {
   const needsSave = isDirty || fixtureIsDirty;
 
+  // Colors
+  const outlineVariant = "#e9e2d9";
+  const surfaceLow = "#f5ece0";
+  const ink = "#251a07";
+  const red = "#bb0005";
+  const redContainer = "#9a0004";
+
   return (
-    <header className="flex shrink-0 flex-col gap-4 border-b border-[#e9e2d9] bg-[#fff8f3] px-6 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+    <header
+      className="flex shrink-0 items-center justify-between px-6 py-3 z-20"
+      style={{
+        background: "rgba(255,248,243,0.85)",
+        backdropFilter: "blur(20px)",
+        borderBottom: `1px solid ${outlineVariant}`,
+      }}
+    >
       <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#251a07] text-white shadow-lg">
-          <Map size={24} />
-        </div>
         <div>
-          <h1 className="font-display text-2xl font-black tracking-tight text-[#251a07]">
-            Gestión de Salón
+          <h1
+            className="text-2xl font-black leading-none tracking-tight"
+            style={{
+              fontFamily: "var(--font-epilogue, 'Epilogue', serif)",
+              color: ink,
+            }}
+          >
+            Salón
           </h1>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#9a7a5a]">
-            Editor de Distribución y Espacios
+          <p className="text-xs mt-0.5" style={{ color: "#9a7a5a" }}>
+            {activeTables.length} mesas activas · {activeTables.reduce((s, t) => s + (t.capacity || 0), 0)} cubiertos
           </p>
         </div>
-      </div>
 
-      {/* Stats - Desktop */}
-      <div className="hidden items-center gap-2 xl:flex">
-        <StatPill label="Mesas" value={tables.length} />
-        <StatPill label="Activas" value={activeTables.length} />
-        <StatPill label="Secciones" value={sections.length} />
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Toggle Mode */}
-        <div className="flex rounded-2xl bg-[#f5ece0] p-1.5 shadow-inner">
+        {/* Mode Toggle */}
+        <div className="hidden md:flex items-center rounded-xl border p-1 ml-4" style={{ borderColor: outlineVariant, background: surfaceLow }}>
           <button
             onClick={() => setEditMode("tables")}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition-all ${
-              editMode === "tables"
-                ? "bg-[#251a07] text-white shadow-md"
-                : "text-[#9a7a5a] hover:bg-white/50"
-            }`}
+            className="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors"
+            style={{
+              background: editMode === "tables" ? "#fff" : "transparent",
+              color: editMode === "tables" ? red : "#9a7a5a",
+              boxShadow: editMode === "tables" ? `0 2px 8px rgba(37,26,7,0.06)` : "none",
+            }}
           >
-            <LayoutGrid size={14} />
-            MESAS
+            Mesas
           </button>
           <button
             onClick={() => setEditMode("space")}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition-all ${
-              editMode === "space"
-                ? "bg-[#251a07] text-white shadow-md"
-                : "text-[#9a7a5a] hover:bg-white/50"
-            }`}
+            className="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors"
+            style={{
+              background: editMode === "space" ? "#fff" : "transparent",
+              color: editMode === "space" ? red : "#9a7a5a",
+              boxShadow: editMode === "space" ? `0 2px 8px rgba(37,26,7,0.06)` : "none",
+            }}
           >
-            <RotateCcw size={14} />
-            ESPACIOS
+            Espacios
           </button>
         </div>
 
-        {/* Grid Size */}
-        <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-1.5 shadow-sm ring-1 ring-[#e9e2d9]">
-          <div className="flex items-center gap-1.5">
-            <Label className="text-[10px] font-black uppercase text-[#9a7a5a]">Cols</Label>
-            <Input
-              type="number"
-              className="h-7 w-12 rounded-lg border-none bg-[#f5ece0] text-center text-xs font-bold focus:ring-1 focus:ring-[#bb0005]"
-              value={gridCols}
-              onChange={(e) => setGridSize(parseInt(e.target.value) || 10, gridRows)}
-            />
-          </div>
-          <div className="h-4 w-px bg-[#e9e2d9]" />
-          <div className="flex items-center gap-1.5">
-            <Label className="text-[10px] font-black uppercase text-[#9a7a5a]">Filas</Label>
-            <Input
-              type="number"
-              className="h-7 w-12 rounded-lg border-none bg-[#f5ece0] text-center text-xs font-bold focus:ring-1 focus:ring-[#bb0005]"
-              value={gridRows}
-              onChange={(e) => setGridSize(gridCols, parseInt(e.target.value) || 10)}
-            />
-          </div>
+        {/* Dirty indicator */}
+        {(isDirty || fixtureIsDirty) && (
+          <span
+            className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+            style={{ background: "#fff1f2", color: red }}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+            Sin guardar
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* Stats — desktop only */}
+        <div className="hidden lg:flex items-center gap-2 mr-2">
+          <StatPill label="Total" value={tables.length} />
+          <StatPill label="Secciones" value={sections.length} />
         </div>
 
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-1 rounded-2xl bg-white p-1 shadow-sm ring-1 ring-[#e9e2d9]">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-xl text-[#9a7a5a] hover:bg-[#fff2e2]"
+        {/* Zoom */}
+        <div
+          className="flex items-center rounded-full border px-1"
+          style={{ borderColor: outlineVariant, background: surfaceLow }}
+        >
+          <button
+            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white"
             onClick={() => onZoomChange(Math.max(0.4, +(zoom - 0.1).toFixed(1)))}
+            title="Alejar (−)"
           >
-            <ZoomOut size={16} />
-          </Button>
-          <span className="min-w-[3rem] text-center text-[10px] font-black text-[#251a07]">
+            <ZoomOut size={14} style={{ color: ink }} />
+          </button>
+          <span className="w-10 text-center text-xs font-bold tabular-nums" style={{ color: ink }}>
             {Math.round(zoom * 100)}%
           </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-xl text-[#9a7a5a] hover:bg-[#fff2e2]"
+          <button
+            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white"
             onClick={() => onZoomChange(Math.min(1.5, +(zoom + 0.1).toFixed(1)))}
+            title="Acercar (+)"
           >
-            <ZoomIn size={16} />
-          </Button>
+            <ZoomIn size={14} style={{ color: ink }} />
+          </button>
+        </div>
+        
+        {/* Grid Dimensions */}
+        <div
+          className="flex items-center gap-3 rounded-full border px-3 py-1"
+          style={{ borderColor: outlineVariant, background: surfaceLow }}
+        >
+          <div className="flex flex-col items-center">
+            <span className="text-[8px] font-black uppercase tracking-widest opacity-40 leading-none mb-1">Ancho</span>
+            <div className="flex items-center gap-1.5">
+              <button 
+                onClick={() => setGridSize(Math.max(10, gridCols - 1), gridRows)}
+                className="hover:text-red-500 transition-colors"
+              >
+                <X size={10} className="rotate-45" />
+              </button>
+              <span className="text-xs font-bold w-4 text-center tabular-nums">{gridCols}</span>
+              <button 
+                onClick={() => setGridSize(Math.min(100, gridCols + 1), gridRows)}
+                className="hover:text-green-600 transition-colors"
+              >
+                <Plus size={10} />
+              </button>
+            </div>
+          </div>
+          
+          <div className="w-px h-6" style={{ background: outlineVariant }} />
+
+          <div className="flex flex-col items-center">
+            <span className="text-[8px] font-black uppercase tracking-widest opacity-40 leading-none mb-1">Alto</span>
+            <div className="flex items-center gap-1.5">
+              <button 
+                onClick={() => setGridSize(gridCols, Math.max(10, gridRows - 1))}
+                className="hover:text-red-500 transition-colors"
+              >
+                <X size={10} className="rotate-45" />
+              </button>
+              <span className="text-xs font-bold w-4 text-center tabular-nums">{gridRows}</span>
+              <button 
+                onClick={() => setGridSize(gridCols, Math.min(100, gridRows + 1))}
+                className="hover:text-green-600 transition-colors"
+              >
+                <Plus size={10} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Save Button */}
-        <Button
+        <button
+          className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all"
+          style={{
+            background: surfaceLow,
+            color: ink,
+            border: `1px solid ${outlineVariant}`,
+          }}
+          onClick={() => window.open("/api/admin/tables/qr-sheet", "_blank")}
+        >
+          <Printer size={15} />
+          <span className="hidden sm:inline">Imprimir QRs</span>
+        </button>
+
+        <button
+          className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition-all disabled:opacity-40"
+          style={{
+            background: needsSave
+              ? `linear-gradient(15deg, ${red}, ${redContainer})`
+              : surfaceLow,
+            color: needsSave ? "#fff" : "#9a7a5a",
+            boxShadow: needsSave ? `0 4px 24px rgba(187,0,5,0.25)` : "none",
+            cursor: needsSave ? "pointer" : "default",
+          }}
           onClick={onSaveLayout}
           disabled={!needsSave || isSavingLayout}
-          className={`h-11 rounded-2xl px-6 font-black shadow-lg transition-all ${
-            needsSave
-              ? "bg-[#bb0005] text-white hover:bg-[#9a0004] hover:shadow-xl hover:-translate-y-0.5"
-              : "bg-[#e9e2d9] text-[#9a7a5a]"
-          }`}
         >
           {isSavingLayout ? (
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            <RefreshCw size={15} className="animate-spin" />
           ) : (
-            <>
-              <Save size={18} className="mr-2" />
-              GUARDAR LAYOUT
-            </>
+            <Save size={15} />
           )}
-        </Button>
-
-        {/* Add Table Button */}
-        <Button
-          onClick={openCreate}
-          className="h-11 w-11 rounded-2xl bg-[#251a07] p-0 text-white shadow-lg hover:bg-[#3d2c0d] hover:shadow-xl hover:-translate-y-0.5"
-        >
-          <Plus size={24} />
-        </Button>
+          <span className="hidden sm:inline">Guardar Layout</span>
+        </button>
       </div>
     </header>
   );

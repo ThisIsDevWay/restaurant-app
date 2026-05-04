@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Plus, Pencil, Image as ImageIcon, AlertTriangle } from "lucide-react";
 
 interface MenuItem {
@@ -481,8 +482,13 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
                   {/* Image */}
                   <div className="mcv-img-wrap">
                     {item.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.imageUrl} alt={item.name} className="mcv-img" />
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.name}
+                        fill
+                        className="mcv-img"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
+                      />
                     ) : (
                       <div className="mcv-img-placeholder">
                         <ImageIcon size={28} color="#c4b09a" />

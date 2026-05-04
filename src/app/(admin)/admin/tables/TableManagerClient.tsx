@@ -106,6 +106,12 @@ export function TableManagerClient({
 
   type EditMode = "tables" | "space";
   const [editMode, setEditMode] = useState<EditMode>("tables");
+  
+  const handleSetEditMode = (mode: EditMode) => {
+    setEditMode(mode);
+    if (mode === "tables") setSelectedFixtureId(null);
+    else setSelectedId(null);
+  };
   const [activePanel, setActivePanel] = useState<"plan" | "list">("plan");
 
   const [fixtures, setFixtures] = useState<FloorFixture[]>(initialFixtures);
@@ -396,7 +402,7 @@ export function TableManagerClient({
     <div className="flex h-screen flex-col bg-[#fff8f3] font-jakarta text-[#251a07]">
       <TableManagerHeader
         editMode={editMode}
-        setEditMode={setEditMode}
+        setEditMode={handleSetEditMode}
         isDirty={isDirty}
         fixtureIsDirty={fixtureIsDirty}
         zoom={zoom}
@@ -412,7 +418,77 @@ export function TableManagerClient({
         openCreate={openCreate}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      {/* ── Mobile tab bar ── */}
+      <div
+        className="flex shrink-0 lg:hidden"
+        style={{ borderBottom: `1px solid #e9e2d9` }}
+      >
+        {(["plan", "list"] as const).map((tab) => (
+          <button
+            key={tab}
+            className="flex flex-1 items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors"
+            style={{
+              color: activePanel === tab ? "#bb0005" : "#9a7a5a",
+              borderBottom: activePanel === tab ? `2px solid #bb0005` : "2px solid transparent",
+              background: "#fffcf9",
+            }}
+            onClick={() => setActivePanel(tab)}
+          >
+            {tab === "plan" ? <Map size={16} /> : <LayoutGrid size={16} />}
+            {tab === "plan" ? "Plano" : "Mesas"}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+
+        {/* ── Floor plan ── */}
+        <div
+          className={cn(
+            "flex flex-col overflow-hidden flex-1",
+            activePanel !== "plan" && "hidden lg:flex"
+          )}
+        >
+          <FloorCanvas
+            ref={floorRef}
+            tables={tables}
+            fixtures={fixtures}
+            positions={positions}
+            fixturePositions={fixturePositions}
+            rotations={rotations}
+            zoom={zoom}
+            gridCols={gridCols}
+            gridRows={gridRows}
+            activeSection={activeSection}
+            setActiveSection={setActiveSection}
+            sections={sections}
+            selectedId={selectedId}
+            setSelectedId={setSelectedId}
+            selectedFixtureId={selectedFixtureId}
+            setSelectedFixtureId={setSelectedFixtureId}
+            editMode={editMode}
+            draggingId={draggingId}
+            resizingId={resizingId}
+            onPointerMove={onFloorPointerMove}
+            onPointerUp={onFloorPointerUp}
+            onDragOver={onFloorDragOver}
+            onDrop={onFloorDrop}
+            onTablePointerDown={startDrag}
+            onTableRotate={rotateTable}
+            onFixturePointerDown={startFixtureDrag}
+            onFixtureDelete={handleDeleteFixture}
+            onFixtureResizeStart={startFixtureResize}
+            onFixtureLabelChange={async (id, label) => {
+              setFixtures(p => p.map(f => f.id === id ? { ...f, label } : f));
+              await updateFixtureAction({ id, label });
+            }}
+            onFixtureRotate={(id) => {
+              const pos = fixturePositions[id];
+              if (pos) updateFixturePosition(id, { rotation: ((pos.rotation + 90) % 360) as 0|90|180|270 });
+            }}
+          />
+        </div>
+
         <SidebarPanel
           activeSection={activeSection}
           setActiveSection={setActiveSection}
@@ -430,79 +506,13 @@ export function TableManagerClient({
           onEdit={(t) => { setEditingTable({ ...t, rotation: (t.rotation ?? 0) as TableRotation }); setIsModalOpen(true); }}
           onDelete={setConfirmDelete}
           onQrPreview={setQrPreviewId}
+          editMode={editMode}
+          selectedFixtureId={selectedFixtureId}
+          handleTemplateDragStart={handleTemplateDragStart}
+          handleFixtureDragStart={handleFixtureDragStart}
+          openCreate={openCreate}
+          activePanel={activePanel}
         />
-
-        <div className="flex flex-1 flex-col overflow-hidden bg-[#f5ece0]">
-          {/* Mode-specific tools */}
-          <div className="flex items-center gap-2 p-4">
-            {editMode === "space" ? (
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-                {FIXTURE_CATALOG.map((f) => (
-                  <div
-                    key={f.type}
-                    draggable
-                    onDragStart={(e) => handleFixtureDragStart(e, f.type)}
-                    className="flex shrink-0 items-center gap-2 rounded-xl border-2 border-[#e9e2d9] bg-white px-3 py-2 cursor-grab hover:border-[#9a7a5a] transition-all"
-                  >
-                    <FixtureIcon type={f.type} size={14} color="#bb0005" />
-                    <span className="text-[10px] font-black uppercase tracking-wider">{f.label}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                {(["cuadrada", "rectangular", "circular"] as TableShape[]).map((s) => (
-                  <div
-                    key={s}
-                    draggable
-                    onDragStart={(e) => handleTemplateDragStart(e, s)}
-                    className="flex items-center gap-2 rounded-xl border-2 border-[#e9e2d9] bg-white px-3 py-2 cursor-grab hover:border-[#9a7a5a] transition-all"
-                  >
-                    <ShapeIcon shape={s} size={14} />
-                    <span className="text-[10px] font-black uppercase tracking-wider">{s}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <FloorCanvas
-            ref={floorRef}
-            tables={tables}
-            fixtures={fixtures}
-            positions={positions}
-            fixturePositions={fixturePositions}
-            rotations={rotations}
-            zoom={zoom}
-            gridCols={gridCols}
-            gridRows={gridRows}
-            activeSection={activeSection}
-            selectedId={selectedId}
-            selectedFixtureId={selectedFixtureId}
-            editMode={editMode}
-            draggingId={draggingId}
-            resizingId={resizingId}
-            onPointerMove={onFloorPointerMove}
-            onPointerUp={onFloorPointerUp}
-            onDragOver={onFloorDragOver}
-            onDrop={onFloorDrop}
-            onTablePointerDown={startDrag}
-            onTableClick={setSelectedId}
-            onTableRotate={rotateTable}
-            onFixturePointerDown={startFixtureDrag}
-            onFixtureClick={setSelectedFixtureId}
-            onFixtureDelete={handleDeleteFixture}
-            onFixtureResize={startFixtureResize}
-            onFixtureLabelChange={async (id, label) => {
-              setFixtures(p => p.map(f => f.id === id ? { ...f, label } : f));
-              await updateFixtureAction({ id, label });
-            }}
-            onFixtureRotate={(id) => {
-              const pos = fixturePositions[id];
-              if (pos) updateFixturePosition(id, { rotation: ((pos.rotation + 90) % 360) as 0|90|180|270 });
-            }}
-          />
-        </div>
       </div>
 
       {/* Modals */}
