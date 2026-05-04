@@ -191,7 +191,8 @@ export function TableManagerClient({
       initialTables.forEach(t => { r[t.id] = (t.rotation ?? 0) as TableRotation; });
       setRotations(r);
     }
-  }, [initialTables, isDirty, setPositions, addPositions, setRotations, positions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTables, isDirty, setPositions, setRotations]);
 
   // Sync fixtures from server
   useEffect(() => {
@@ -202,11 +203,12 @@ export function TableManagerClient({
     if (!fixtureIsDirty) {
       setFixturePositions(serverPos);
     } else {
-      const currentIds = new Set(Object.keys(fixturePositions));
+      const currentIds = new Set(Object.keys(useFixtureLayoutStore.getState().positions));
       const missing = serverPos.filter(p => !currentIds.has(p.id));
       if (missing.length > 0) addFixturePositions(missing);
     }
-  }, [initialFixtures, fixtureIsDirty, setFixturePositions, addFixturePositions, fixturePositions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFixtures, fixtureIsDirty, setFixturePositions, addFixturePositions]);
 
   // Keyboard zoom
   useEffect(() => {
