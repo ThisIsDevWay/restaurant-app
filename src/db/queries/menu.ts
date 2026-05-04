@@ -1,6 +1,6 @@
 import { db } from "../index";
 import { menuItems, optionGroups, options, categories, menuItemAdicionales, menuItemContornos, menuItemBebidas, orders } from "../schema";
-import { eq, sql, and, gte, lte, isNotNull, asc, desc, SQL } from "drizzle-orm";
+import { eq, sql, and, gte, lte, isNotNull, asc, desc, SQL, inArray } from "drizzle-orm";
 import { getSettings } from "./settings";
 import { buildMenuItemSortColumns, type MenuItemSortMode } from "./sort-utils";
 import type {
@@ -466,6 +466,172 @@ export async function getMenuItemWithOptionsAndComponents(id: string) {
     contornos: itemContornos,
     bebidas: itemBebidas,
   };
+}
+
+export async function getMenuItemsWithOptionsAndComponents(ids: string[]) {
+  if (ids.length === 0) return [];
+
+  const [items, groupRows, adicionalRows, contornoRows, bebidaRows] = await Promise.all([
+    db
+      .select()
+      .from(menuItems)
+      .where(inArray(menuItems.id, ids)),
+
+    db
+      .select({
+        groupId: optionGroups.id,
+        menuItemId: optionGroups.menuItemId,
+        groupName: optionGroups.name,
+        groupType: optionGroups.type,
+        groupRequired: optionGroups.required,
+        groupSortOrder: optionGroups.sortOrder,
+        optionId: options.id,
+        optionName: options.name,
+        optionPriceUsdCents: options.priceUsdCents,
+        optionIsAvailable: options.isAvailable,
+        optionSortOrder: options.sortOrder,
+      })
+      .from(optionGroups)
+      .innerJoin(options, eq(optionGroups.id, options.groupId))
+      .where(inArray(optionGroups.menuItemId, ids))
+      .orderBy(optionGroups.sortOrder, options.sortOrder),
+
+    db
+      .select({
+        menuItemId: menuItemAdicionales.menuItemId,
+        id: menuItems.id,
+        name: menuItems.name,
+        priceUsdCents: menuItems.priceUsdCents,
+        isAvailable: menuItems.isAvailable,
+        isPrepackaged: menuItems.isPrepackaged,
+        sortOrder: menuItems.sortOrder,
+      })
+      .from(menuItemAdicionales)
+      .innerJoin(menuItems, eq(menuItemAdicionales.adicionalItemId, menuItems.id))
+      .where(inArray(menuItemAdicionales.menuItemId, ids))
+      .orderBy(menuItems.sortOrder),
+
+    db
+      .select({
+        menuItemId: menuItemContornos.menuItemId,
+        id: menuItems.id,
+        name: menuItems.name,
+        priceUsdCents: menuItems.priceUsdCents,
+        isAvailable: menuItems.isAvailable,
+        isPrepackaged: menuItems.isPrepackaged,
+        sortOrder: menuItems.sortOrder,
+        removable: menuItemContornos.removable,
+        substituteContornoIds: menuItemContornos.substituteContornoIds,
+      })
+      .from(menuItemContornos)
+      .innerJoin(menuItems, eq(menuItemContornos.contornoItemId, menuItems.id))
+      .where(inArray(menuItemContornos.menuItemId, ids))
+      .orderBy(menuItems.sortOrder),
+
+    db
+      .select({
+        menuItemId: menuItemBebidas.menuItemId,
+        id: menuItems.id,
+        name: menuItems.name,
+        priceUsdCents: menuItems.priceUsdCents,
+        isAvailable: menuItems.isAvailable,
+        isPrepackaged: menuItems.isPrepackaged,
+        sortOrder: menuItems.sortOrder,
+      })
+      .from(menuItemBebidas)
+      .innerJoin(menuItems, eq(menuItemBebidas.bebidaItemId, menuItems.id))
+      .where(inArray(menuItemBebidas.menuItemId, ids))
+      .orderBy(menuItems.sortOrder),
+  ]);
+
+  const optionsByItem = new Map<string, OptionGroupWithOptions[]>();
+  for (const row of groupRows) {
+    let groups = optionsByItem.get(row.menuItemId);
+    if (!groups) {
+      groups = [];
+      optionsByItem.set(row.menuItemId, groups);
+    }
+    let group = groups.find((g: any) => g.id === row.groupId);
+    if (!group) {
+      group = {
+        id: row.groupId,
+        name: row.groupName,
+        type: row.groupType as "radio" | "checkbox",
+        required: row.groupRequired,
+        sortOrder: row.groupSortOrder,
+        options: [],
+      };
+      groups.push(group);
+    }
+    group.options.push({
+      id: row.optionId,
+      name: row.optionName,
+      priceUsdCents: row.optionPriceUsdCents,
+      isAvailable: row.optionIsAvailable,
+      sortOrder: row.optionSortOrder,
+    });
+  }
+
+  const adicionalesByItem = new Map<string, SimpleComponent[]>();
+  for (const row of adicionalRows) {
+    let list = adicionalesByItem.get(row.menuItemId);
+    if (!list) {
+      list = [];
+      adicionalesByItem.set(row.menuItemId, list);
+    }
+    list.push({
+      id: row.id,
+      name: row.name,
+      priceUsdCents: row.priceUsdCents,
+      isAvailable: row.isAvailable,
+      isPrepackaged: row.isPrepackaged,
+      sortOrder: row.sortOrder,
+    });
+  }
+
+  const contornosByItem = new Map<string, ContornoComponent[]>();
+  for (const row of contornoRows) {
+    let list = contornosByItem.get(row.menuItemId);
+    if (!list) {
+      list = [];
+      contornosByItem.set(row.menuItemId, list);
+    }
+    list.push({
+      id: row.id,
+      name: row.name,
+      priceUsdCents: row.priceUsdCents,
+      isAvailable: row.isAvailable,
+      isPrepackaged: row.isPrepackaged,
+      removable: row.removable,
+      substituteContornoIds: row.substituteContornoIds || [],
+      sortOrder: row.sortOrder,
+    });
+  }
+
+  const bebidasByItem = new Map<string, SimpleComponent[]>();
+  for (const row of bebidaRows) {
+    let list = bebidasByItem.get(row.menuItemId);
+    if (!list) {
+      list = [];
+      bebidasByItem.set(row.menuItemId, list);
+    }
+    list.push({
+      id: row.id,
+      name: row.name,
+      priceUsdCents: row.priceUsdCents,
+      isAvailable: row.isAvailable,
+      isPrepackaged: row.isPrepackaged,
+      sortOrder: row.sortOrder,
+    });
+  }
+
+  return items.map((item) => ({
+    ...item,
+    optionGroups: optionsByItem.get(item.id) ?? [],
+    adicionales: adicionalesByItem.get(item.id) ?? [],
+    contornos: contornosByItem.get(item.id) ?? [],
+    bebidas: bebidasByItem.get(item.id) ?? [],
+  })) as any[];
 }
 
 export async function getCategories() {

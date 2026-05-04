@@ -10,7 +10,8 @@ import { CheckoutInput } from "@/lib/validations/checkout";
 import { getSettings, getActiveRate } from "@/db/queries/settings";
 import { createOrderWithCapacityCheck } from "@/db/queries/orders";
 import { getActiveProvider } from "@/lib/payment-providers";
-import { getMenuItemWithOptionsAndComponents } from "@/db/queries/menu";
+import { getMenuItemsWithOptionsAndComponents } from "@/db/queries/menu";
+import { inArray } from "drizzle-orm";
 import { usdCentsToBsCents } from "@/lib/money";
 import { generateDailyMenuSnapshot } from "@/services/menu.service";
 import { calculateSurcharges, buildSurchargesSnapshot } from "@/lib/utils/calculate-surcharges";
@@ -32,10 +33,26 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
     let subtotalUsdCents = 0;
     const snapshotItems = [];
 
-    const { dailyAdicionalMap, dailyBebidaMap, globalContornoMap } = await generateDailyMenuSnapshot(date);
+    const itemIds = Array.from(new Set(items.map(i => i.id)));
+    const [menuItemsData, dailyDishEntries, { dailyAdicionalMap, dailyBebidaMap, globalContornoMap }] = await Promise.all([
+        getMenuItemsWithOptionsAndComponents(itemIds),
+        db
+            .select({ menuItemId: dailyMenuItems.menuItemId, isAvailable: dailyMenuItems.isAvailable })
+            .from(dailyMenuItems)
+            .where(
+                and(
+                    inArray(dailyMenuItems.menuItemId, itemIds),
+                    eq(dailyMenuItems.date, date)
+                )
+            ),
+        generateDailyMenuSnapshot(date)
+    ]);
+
+    const menuItemsMap = new Map(menuItemsData.map(i => [i.id, i]));
+    const dailyDishMap = new Map(dailyDishEntries.map(e => [e.menuItemId, e]));
 
     for (const clientItem of items) {
-        const menuItem = await getMenuItemWithOptionsAndComponents(clientItem.id);
+        const menuItem = menuItemsMap.get(clientItem.id);
         if (!menuItem) {
             throw new Error(`Item no encontrado: ${clientItem.id}`);
         }
@@ -44,17 +61,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
         }
 
         // 🚨 CRITICAL: Verify daily item availability
-        // Check dishes (dailyMenuItems)
-        const [dishEntry] = await db
-            .select({ isAvailable: dailyMenuItems.isAvailable })
-            .from(dailyMenuItems)
-            .where(
-                and(
-                    eq(dailyMenuItems.menuItemId, clientItem.id),
-                    eq(dailyMenuItems.date, date)
-                )
-            )
-            .limit(1);
+        const dishEntry = dailyDishMap.get(clientItem.id);
 
         // Fallback to pools (adicionales, bebidas, contornos)
         const poolEntry = dailyAdicionalMap.get(clientItem.id) 
