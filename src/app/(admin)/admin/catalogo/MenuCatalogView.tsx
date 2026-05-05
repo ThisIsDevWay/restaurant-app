@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Pencil, Image as ImageIcon, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Image as ImageIcon, AlertTriangle, Search, X } from "lucide-react";
 
 interface MenuItem {
   id: string;
@@ -68,6 +68,7 @@ const CATEGORY_COLORS: string[] = [
 
 export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [search, setSearch] = useState("");
 
   const categories = useMemo(() => {
     const order: string[] = [];
@@ -77,11 +78,23 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
 
   const grouped = useMemo(() => {
     const cats = activeCategory === "all" ? categories : [activeCategory];
+    const normalizedSearch = search.toLowerCase().trim();
+
     return cats.reduce<Record<string, MenuItem[]>>((acc, cat) => {
-      acc[cat] = items.filter((i) => i.categoryName === cat);
+      const filtered = items.filter((i) => {
+        const matchesCat = i.categoryName === cat;
+        const matchesSearch = !normalizedSearch ||
+          i.name.toLowerCase().includes(normalizedSearch) ||
+          i.description?.toLowerCase().includes(normalizedSearch);
+        return matchesCat && matchesSearch;
+      });
+
+      if (filtered.length > 0) {
+        acc[cat] = filtered;
+      }
       return acc;
     }, {});
-  }, [activeCategory, categories, items]);
+  }, [activeCategory, categories, items, search]);
 
   const stats = useMemo(() => {
     const available = items.filter((i) => i.isAvailable).length;
@@ -188,6 +201,57 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
           margin-left: 8px;
           align-self: center;
           opacity: 0.25;
+        }
+
+        .mcv-search-container {
+          margin-bottom: 24px;
+          position: relative;
+        }
+        .mcv-search-input {
+          width: 100%;
+          padding: 12px 16px 12px 42px;
+          border-radius: 14px;
+          border: 1.5px solid #f0e6df;
+          background: #fff;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 15px;
+          color: #251a07;
+          transition: all 0.2s ease;
+          outline: none;
+        }
+        .mcv-search-input:focus {
+          border-color: #bb0005;
+          box-shadow: 0 0 0 4px rgba(187, 0, 5, 0.05);
+        }
+        .mcv-search-icon {
+          position: absolute;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #9c8c78;
+          pointer-events: none;
+        }
+        .mcv-search-clear {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #f5ede6;
+          color: #9c8c78;
+          cursor: pointer;
+          border: none;
+          padding: 0;
+          transition: all 0.2s ease;
+        }
+        .mcv-search-clear:hover {
+          background: #e7bdb7;
+          color: #bb0005;
         }
 
         .mcv-grid {
@@ -390,6 +454,27 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
             </div>
           </div>
         )}
+
+        {/* ── Search bar ── */}
+        <div className="mcv-search-container">
+          <Search size={18} className="mcv-search-icon" />
+          <input
+            type="text"
+            className="mcv-search-input"
+            placeholder="Buscar por nombre o descripción..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button
+              className="mcv-search-clear"
+              onClick={() => setSearch("")}
+              title="Limpiar búsqueda"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
 
         {/* ── Category filter pills ── */}
         {categories.length > 1 && (

@@ -83,7 +83,7 @@ export function CartLineItem({ item, index, onEdit }: CartLineItemProps) {
   return (
     <div className="rounded-xl border border-[var(--color-border-ghost)] bg-[var(--color-bg-app)] overflow-hidden">
       {/* Header: name + qty + remove */}
-      <div className="flex items-center gap-2.5 px-3 py-2">
+      <div className="flex items-center gap-2.5 px-3 py-1.5">
         <span className="text-lg leading-none shrink-0">{item.emoji}</span>
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-bold text-[var(--color-text-main)] leading-tight line-clamp-1">
@@ -99,32 +99,32 @@ export function CartLineItem({ item, index, onEdit }: CartLineItemProps) {
             onDecrement={() => updateQuantity(index, item.quantity - 1)}
             onIncrement={() => updateQuantity(index, item.quantity + 1)}
           />
-          <div className="ml-1 flex items-center gap-0.5">
-            <button
-              onClick={onEdit}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg-app)] hover:text-[var(--color-primary)]"
-              aria-label="Editar"
-            >
-              <Pencil size={14} />
-            </button>
-            <button
-              onClick={() => removeItem(index)}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-[var(--color-error)]/40 transition-colors hover:bg-red-50 hover:text-[var(--color-error)]"
-              aria-label="Eliminar"
-            >
-              <Trash2 size={15} />
-            </button>
-          </div>
+        </div>
+        <div className="ml-1 flex items-center gap-0.5">
+          <button
+            onClick={onEdit}
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg-app)] hover:text-[var(--color-primary)]"
+            aria-label="Editar"
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            onClick={() => removeItem(index)}
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-[var(--color-error)]/40 transition-colors hover:bg-red-50 hover:text-[var(--color-error)]"
+            aria-label="Eliminar"
+          >
+            <Trash2 size={15} />
+          </button>
         </div>
       </div>
 
       {/* Details: contornos, removals, adicionales, bebidas */}
       {hasDetails && (
-        <div className="flex flex-col gap-1.5 px-3 pb-2.5 pt-1.5 border-t border-[var(--color-border-ghost)] bg-white/50">
+        <div className="flex flex-col gap-0.5 px-3 pb-1.5 pt-1 border-t border-[var(--color-border-ghost)] bg-white/50">
           {/* Contornos */}
           {(fixedContornos.length > 0 || substitutions.length > 0) && (
             <div className="flex flex-wrap gap-1 items-start">
-              <span className="text-[8px] font-black uppercase tracking-widest text-[var(--color-text-muted)] w-[60px] shrink-0 pt-1">
+              <span className="text-[8px] font-black uppercase tracking-widest text-[var(--color-text-muted)] w-[60px] shrink-0 pt-0.5">
                 Acompaña
               </span>
               <div className="flex flex-wrap gap-1 flex-1">
@@ -143,6 +143,11 @@ export function CartLineItem({ item, index, onEdit }: CartLineItemProps) {
                   >
                     <span className="line-through opacity-40 mr-1">{s.originalName}</span>
                     {s.substituteName}
+                    {s.priceBsCents > 0 && (
+                      <span className="ml-1 text-[9px] opacity-70">
+                        (+{formatBs(s.priceBsCents)})
+                      </span>
+                    )}
                   </span>
                 ))}
               </div>
@@ -152,7 +157,7 @@ export function CartLineItem({ item, index, onEdit }: CartLineItemProps) {
           {/* Removals */}
           {removals.length > 0 && (
             <div className="flex flex-wrap gap-1 items-start">
-              <span className="text-[8px] font-black uppercase tracking-widest text-[var(--color-text-muted)] w-[60px] shrink-0 pt-1">
+              <span className="text-[8px] font-black uppercase tracking-widest text-[var(--color-text-muted)] w-[60px] shrink-0 pt-0.5">
                 Sin
               </span>
               <div className="flex flex-wrap gap-1 flex-1">
@@ -171,7 +176,7 @@ export function CartLineItem({ item, index, onEdit }: CartLineItemProps) {
           {/* Adicionales */}
           {adicionales.length > 0 && (
             <div className="flex flex-wrap gap-1 items-start">
-              <span className="text-[8px] font-black uppercase tracking-widest text-[var(--color-text-muted)] w-[60px] shrink-0 pt-1">
+              <span className="text-[8px] font-black uppercase tracking-widest text-[var(--color-text-muted)] w-[60px] shrink-0 pt-0.5">
                 Extras
               </span>
               <div className="flex flex-wrap gap-1 flex-1">
@@ -182,6 +187,11 @@ export function CartLineItem({ item, index, onEdit }: CartLineItemProps) {
                   >
                     <span className="text-[var(--color-primary)] mr-1">{a.quantity ?? 1}×</span>
                     {a.name}
+                    {a.priceBsCents > 0 && (
+                      <span className="ml-1 text-[9px] text-[var(--color-primary)] opacity-70">
+                        (+{formatBs(a.priceBsCents * (a.quantity ?? 1))})
+                      </span>
+                    )}
                   </span>
                 ))}
               </div>
@@ -191,7 +201,7 @@ export function CartLineItem({ item, index, onEdit }: CartLineItemProps) {
           {/* Bebidas */}
           {bebidas.length > 0 && (
             <div className="flex flex-wrap gap-1 items-start">
-              <span className="text-[8px] font-black uppercase tracking-widest text-[var(--color-text-muted)] w-[60px] shrink-0 pt-1">
+              <span className="text-[8px] font-black uppercase tracking-widest text-[var(--color-text-muted)] w-[60px] shrink-0 pt-0.5">
                 Bebidas
               </span>
               <div className="flex flex-wrap gap-1 flex-1">
@@ -202,6 +212,11 @@ export function CartLineItem({ item, index, onEdit }: CartLineItemProps) {
                   >
                     <span className="mr-1">{b.quantity ?? 1}×</span>
                     {b.name}
+                    {b.priceBsCents > 0 && (
+                      <span className="ml-1 text-[9px] text-[var(--color-text-muted)] font-bold">
+                        (+{formatBs(b.priceBsCents * (b.quantity ?? 1))})
+                      </span>
+                    )}
                   </span>
                 ))}
               </div>
@@ -211,7 +226,7 @@ export function CartLineItem({ item, index, onEdit }: CartLineItemProps) {
       )}
 
       {/* Subtotal footer */}
-      <div className="flex items-center justify-between px-3 py-2 border-t border-[var(--color-border-ghost)] bg-[var(--color-surface-section)]/30">
+      <div className="flex items-center justify-between px-3 py-1 border-t border-[var(--color-border-ghost)] bg-[var(--color-surface-section)]/30">
         <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] opacity-50">
           Subtotal {item.quantity > 1 && <span className="text-[var(--color-primary)]">({item.quantity} und)</span>}
         </span>

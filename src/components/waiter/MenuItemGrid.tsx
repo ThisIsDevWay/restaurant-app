@@ -164,8 +164,12 @@ export function MenuItemGrid({
               return (
                 <button
                   key={item.id}
-                  onClick={() => onItemPress(item)}
-                  className="group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-white text-left transition-all hover:shadow-md active:scale-[0.97]"
+                  onClick={() => item.isAvailable && onItemPress(item)}
+                  disabled={!item.isAvailable}
+                  className={cn(
+                    "group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-white text-left transition-all",
+                    item.isAvailable ? "hover:shadow-md active:scale-[0.97]" : "opacity-60 grayscale-[0.5] cursor-not-allowed"
+                  )}
                   style={{
                     borderColor: inCartQty > 0 ? "var(--color-primary)" : "var(--color-border-ghost)",
                     boxShadow: inCartQty > 0
@@ -193,6 +197,14 @@ export function MenuItemGrid({
                         {getEmoji(item.categoryName)}
                       </span>
                     )}
+
+                    {!item.isAvailable && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                        <span className="rounded-lg bg-white px-2 py-1 text-[10px] font-black uppercase tracking-widest text-black shadow-xl">
+                          Agotado
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-1 flex-col justify-between" style={{ padding: "clamp(0.4rem, 1.5vw, 0.625rem)" }}>
@@ -201,8 +213,17 @@ export function MenuItemGrid({
                     </p>
                     <div className="mt-1.5 flex items-end justify-between">
                       <PriceTag usdCents={item.priceUsdCents} rate={rate} size="sm" />
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full text-white transition-transform group-active:scale-90" style={{ background: "var(--color-primary)" }}>
-                        {quickAdd ? <Plus size={14} strokeWidth={2.5} /> : <ChevronRight size={14} strokeWidth={2.5} />}
+                      <div 
+                        className={cn(
+                          "flex h-7 w-7 items-center justify-center rounded-full text-white transition-transform group-active:scale-90",
+                          item.isAvailable ? "bg-[var(--color-primary)]" : "bg-slate-300"
+                        )}
+                      >
+                        {item.isAvailable ? (
+                          quickAdd ? <Plus size={14} strokeWidth={2.5} /> : <ChevronRight size={14} strokeWidth={2.5} />
+                        ) : (
+                          <X size={14} strokeWidth={2.5} />
+                        )}
                       </div>
                     </div>
                   </div>

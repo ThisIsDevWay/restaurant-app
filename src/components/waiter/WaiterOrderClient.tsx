@@ -8,6 +8,7 @@ import {
 import { toast } from "sonner";
 import { useCartStore } from "@/store/cartStore";
 import { ItemDetailModalModern } from "@/components/customer/ItemDetailModalModern";
+import { useMenuAvailability } from "@/hooks/useMenuAvailability";
 import { createWaiterOrderAction, updateWaiterOrderAction } from "@/actions/waiter-order";
 import { formatBs } from "@/lib/money";
 import type { MenuItemWithComponents, SimpleComponent } from "@/types/menu.types";
@@ -24,6 +25,7 @@ import { OrderForm, SubmitButton, type WaiterPaymentMethod } from "./OrderForm";
 import { ActiveOrdersSheet } from "./ActiveOrdersSheet";
 import { TableSelectorModal } from "./TableSelectorModal";
 import { MenuItemGrid } from "./MenuItemGrid";
+import { QuickAvailabilityPanel } from "@/components/admin/availability/QuickAvailabilityPanel";
 
 interface WaiterOrderClientProps {
   items: MenuItemWithComponents[];
@@ -87,8 +89,60 @@ export function WaiterOrderClient({
   const setMounted = useCartStore(s => s.setMounted);
   const cartItems = useCartStore(s => s.items);
   const addItem = useCartStore(s => s.addItem);
+  const removeItem = useCartStore(s => s.removeItem);
   const clearCart = useCartStore(s => s.clearCart);
   const setItems = useCartStore(s => s.setItems);
+
+  // Local state for dynamic availability sync
+  const [localItems, setLocalItems] = useState(items);
+  const [localAdicionales, setLocalAdicionales] = useState(dailyAdicionales);
+  const [localBebidas, setLocalBebidas] = useState(dailyBebidas);
+  const [localAllContornos, setLocalAllContornos] = useState(allContornos);
+
+  useEffect(() => {
+    setLocalItems(items);
+    setLocalAdicionales(dailyAdicionales);
+    setLocalBebidas(dailyBebidas);
+    setLocalAllContornos(allContornos);
+  }, [items, dailyAdicionales, dailyBebidas, allContornos]);
+
+  const handleAvailabilityChange = useCallback((map: Map<string, boolean>) => {
+    // 1. Update Items & nested contornos
+    setLocalItems(prev => prev.map(item => ({
+      ...item,
+      isAvailable: map.has(item.id) ? map.get(item.id)! : item.isAvailable,
+      contornos: item.contornos.map(c => ({
+        ...c,
+        isAvailable: map.has(c.id) ? map.get(c.id)! : c.isAvailable
+      }))
+    })));
+
+    // 2. Update Adicionales, Bebidas, and allContornos
+    setLocalAdicionales(prev => prev.map(a => ({
+      ...a,
+      isAvailable: map.has(a.id) ? map.get(a.id)! : a.isAvailable
+    })));
+    setLocalBebidas(prev => prev.map(b => ({
+      ...b,
+      isAvailable: map.has(b.id) ? map.get(b.id)! : b.isAvailable
+    })));
+    setLocalAllContornos(prev => prev.map(c => ({
+      ...c,
+      isAvailable: map.has(c.id) ? map.get(c.id)! : c.isAvailable
+    })));
+
+    // 3. Cart Enforcement: notify and remove if an item in the current order was 86ed
+    cartItems.forEach((cartItem, index) => {
+      if (map.has(cartItem.id) && map.get(cartItem.id) === false) {
+        removeItem(index);
+        toast.error(`"${cartItem.name}" se agotó y fue removido.`, {
+          id: `sold-out-${cartItem.id}`,
+        });
+      }
+    });
+  }, [cartItems, removeItem]);
+
+  useMenuAvailability(handleAvailabilityChange);
 
   useEffect(() => { setMounted(); }, [setMounted]);
 
@@ -163,7 +217,7 @@ export function WaiterOrderClient({
     && !isSubmitting;
 
   function handleItemPress(item: MenuItemWithComponents) {
-    if (needsModal(item, dailyAdicionales, dailyBebidas, settings)) {
+    if (needsModal(item, localAdicionales, localBebidas, settings)) {
       setModalItem(item);
     } else {
       addItem({
@@ -195,7 +249,7 @@ export function WaiterOrderClient({
 
   const handleEditCartItem = (index: number) => {
     const item = cartItems[index];
-    const menuItem = items.find(i => i.id === item.id);
+    const menuItem = localItems.find(i => i.id === item.id);
     if (!menuItem) return;
     setEditingCartItemIndex(index);
     setEditingCartItemData(item);
@@ -232,7 +286,7 @@ export function WaiterOrderClient({
     // Map SnapshotItem fields (priceUsdCents / priceBsCents) → CartItem fields
     // (baseUsdCents / baseBsCents) so prices render correctly in the form.
     const newItems = (order.itemsSnapshot as any[]).map((snapItem) => {
-      const menuItem = items.find((i) => i.id === snapItem.id);
+      const menuItem = localItems.find((i) => i.id === snapItem.id);
       return {
         // Spread snapshot first to keep all extra fields
         ...snapItem,
@@ -257,7 +311,7 @@ export function WaiterOrderClient({
     setItems(newItems);
     toast.info(`Editando Pedido #${order.orderNumber}`);
     setIsSheetOpen(true);
-  }, [clearCart, items, setItems]);
+  }, [clearCart, setItems, localItems]);
 
 
   const handleCancelEdit = () => {
@@ -362,8 +416,8 @@ export function WaiterOrderClient({
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.3)]">
             <UtensilsCrossed size={18} className="text-white" />
           </div>
-          <div className="hidden xs:block">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 leading-none mb-1">Operación</p>
+          <div className="flex flex-col">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 leading-none mb-0.5">Modulo Pedidos</p>
             <p className="text-sm font-bold text-white leading-tight">
               {editingOrderNumber ? (
                 <span className="flex items-center gap-1.5 text-amber-400">
@@ -401,22 +455,25 @@ export function WaiterOrderClient({
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <MenuItemGrid
-          items={items}
-          categories={categories}
-          activeCategory={activeCategory}
-          setActiveCategory={setActiveCategory}
-          search={search}
-          setSearch={setSearch}
-          rate={rate}
-          dailyAdicionales={dailyAdicionales}
-          dailyBebidas={dailyBebidas}
-          settings={settings}
-          cartItems={cartItems}
-          onItemPress={handleItemPress}
-          getEmoji={getEmoji}
-          needsModal={needsModal}
-        />
+        <div className="relative flex flex-1 flex-col min-w-0 overflow-hidden">
+          <MenuItemGrid
+            items={localItems}
+            categories={categories}
+            activeCategory={activeCategory}
+            setActiveCategory={setActiveCategory}
+            search={search}
+            setSearch={setSearch}
+            rate={rate}
+            dailyAdicionales={localAdicionales}
+            dailyBebidas={localBebidas}
+            settings={settings}
+            cartItems={cartItems}
+            onItemPress={handleItemPress}
+            getEmoji={getEmoji}
+            needsModal={needsModal}
+          />
+          <QuickAvailabilityPanel className="absolute bottom-6 right-6" />
+        </div>
 
         {/* ─── Desktop Sidebar ─────────────────────────────────────────────── */}
         <aside className="hidden lg:flex lg:w-[22rem] xl:w-[26rem] flex-col border-l border-[var(--color-border)] bg-white">
@@ -539,10 +596,11 @@ export function WaiterOrderClient({
       {modalItem && (
         <ItemDetailModalModern
           item={modalItem} isOpen={!!modalItem} onClose={handleCloseModal}
-          currentRateBsPerUsd={rate} allContornos={allContornos}
-          dailyAdicionales={dailyAdicionales} dailyBebidas={dailyBebidas}
+          currentRateBsPerUsd={rate} allContornos={localAllContornos}
+          dailyAdicionales={localAdicionales} dailyBebidas={localBebidas}
           adicionalesEnabled={settings?.adicionalesEnabled !== false}
           bebidasEnabled={settings?.bebidasEnabled !== false}
+          maxQuantityPerItem={999}
           initialData={editingCartItemData} editingIndex={editingCartItemIndex}
         />
       )}

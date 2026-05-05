@@ -93,10 +93,10 @@ export function OrderForm({
   return (
     <div className="flex flex-col gap-2">
       {/* Totals */}
-      <div className="rounded-2xl bg-[var(--color-surface-section)] px-4 py-3 border border-[var(--color-border)] relative overflow-hidden group">
+      <div className="rounded-2xl bg-[var(--color-surface-section)] px-4 py-2 border border-[var(--color-border)] relative overflow-hidden group">
         {/* Fiscal breakdown - Compact */}
         {(packagingUsd > 0 || deliveryUsd > 0 || igtfUsd > 0) && (
-          <div className="mb-2 space-y-1 border-b border-[var(--color-border)]/30 pb-2">
+          <div className="mb-1 space-y-0.5 border-b border-[var(--color-border)]/30 pb-1.5">
             {packagingUsd > 0 && (
               <div className="flex justify-between items-baseline">
                 <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[0.15em]">Envases</span>
@@ -152,18 +152,18 @@ export function OrderForm({
       </div>
 
       {/* Form Fields */}
-      <div className="space-y-2.5">
+      <div className="space-y-1">
         <div>
           <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
             Modo de Entrega
           </label>
-          <div className="flex p-1 rounded-xl bg-[var(--color-bg-app)] border border-[var(--color-border)]">
+          <div className="flex p-0.5 rounded-xl bg-[var(--color-bg-app)] border border-[var(--color-border)]">
             {(["on_site", "take_away", "delivery"] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => setOrderMode(mode)}
-                className={`flex flex-1 items-center justify-center gap-1.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all rounded-lg ${
+                className={`flex flex-1 items-center justify-center gap-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider transition-all rounded-lg ${
                   orderMode === mode
                     ? "bg-[var(--color-primary)] text-white shadow-sm"
                     : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-section)]"
@@ -194,7 +194,7 @@ export function OrderForm({
                   onChange={e => setTableNumber(e.target.value)}
                   placeholder="Ej: 5"
                   required
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-10 pr-10 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-white py-1 pl-10 pr-10 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
                 />
                 <button
                   onClick={onOpenTableSelector}
@@ -216,7 +216,7 @@ export function OrderForm({
                   value={customerName}
                   onChange={e => setCustomerName(e.target.value)}
                   placeholder="Nombre"
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-white py-1 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
                 />
               </div>
             </div>
@@ -241,7 +241,7 @@ export function OrderForm({
                     placeholder="Calle, sector, referencia..."
                     required
                     rows={2}
-                    className="w-full resize-none rounded-xl border border-[var(--color-border)] bg-white py-2 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all leading-snug"
+                    className="w-full resize-none rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all leading-snug"
                     style={{ fieldSizing: "content" } as React.CSSProperties}
                   />
                 </div>
@@ -256,7 +256,7 @@ export function OrderForm({
                     onChange={e => setTableNumber(e.target.value)}
                     placeholder="Mostrador"
                     required
-                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
                   />
                 </div>
               )}
@@ -276,7 +276,7 @@ export function OrderForm({
                     onChange={e => setCustomerPhone?.(e.target.value)}
                     placeholder="0414-0000000"
                     required
-                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
                   />
                 </div>
               </div>
@@ -292,7 +292,7 @@ export function OrderForm({
                     onChange={e => setCustomerName(e.target.value)}
                     placeholder="Nombre"
                     required
-                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
                   />
                 </div>
               </div>
@@ -313,7 +313,7 @@ export function OrderForm({
                     value={paymentReference}
                     onChange={e => setPaymentReference?.(e.target.value)}
                     placeholder="Nro. de operación"
-                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
                   />
                 </div>
               </div>
@@ -327,7 +327,7 @@ export function OrderForm({
             Método de Pago
           </label>
           <Select value={paymentMethod} onValueChange={(val) => val && setPaymentMethod(val as WaiterPaymentMethod)}>
-            <SelectTrigger className="w-full h-10 border border-[var(--color-border)] bg-white px-3 text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all rounded-xl">
+            <SelectTrigger className="w-full h-9 border border-[var(--color-border)] bg-white px-3 text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all rounded-xl">
               <SelectValue placeholder="Seleccionar método" />
             </SelectTrigger>
             <SelectContent className="bg-white rounded-xl shadow-2xl border border-[var(--color-border)] p-1">
@@ -380,7 +380,7 @@ export function SubmitButton({ canSubmit, isSubmitting, isEditing, onSubmit, onC
       <button
         onClick={onSubmit}
         disabled={!canSubmit || isSubmitting}
-        className="w-full flex items-center justify-center gap-3 rounded-2xl py-4 text-base font-black transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 group overflow-hidden relative"
+        className="w-full flex items-center justify-center gap-3 rounded-2xl py-2.5 text-base font-black transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 group overflow-hidden relative"
         style={{
           background: canSubmit ? "var(--color-primary)" : "var(--color-input)",
           color: "white",

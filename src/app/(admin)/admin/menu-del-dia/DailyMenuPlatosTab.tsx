@@ -116,12 +116,12 @@ export function DailyMenuPlatosTab({
           background: rgba(255,248,243,0.95);
           border-top: 1px solid #f0e6df;
           border-bottom: 1px solid #f0e6df;
-          position: sticky; top: 0; z-index: 10;
+          position: sticky; top: 0; z-index: ;
           backdrop-filter: blur(8px);
         }
         .dmpt-cat-name {
           font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: 10px; font-weight: 800;
+          font-size: px; font-weight: 800;
           color: #9c8c78; text-transform: uppercase; letter-spacing: 0.08em;
           flex: 1;
         }
