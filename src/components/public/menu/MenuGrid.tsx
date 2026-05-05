@@ -172,9 +172,9 @@ export function MenuGrid({
       className={`
         w-full max-w-7xl mx-auto
         ${gridClasses}
-        px-4 pb-4
+        px-4 ${cartItems.length > 0 ? "pb-32" : "pb-12"}
         md:px-6 md:pt-4
-        lg:px-8 lg:pt-5 lg:pb-8
+        lg:px-8 lg:pt-5 ${cartItems.length > 0 ? "lg:pb-32" : "lg:pb-12"}
         xl:px-10
       `}
     >

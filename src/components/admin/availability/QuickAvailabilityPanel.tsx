@@ -24,7 +24,7 @@ interface AvailabilityItem {
   type: "plato" | "adicional" | "bebida" | "contorno";
 }
 
-export function QuickAvailabilityPanel() {
+export function QuickAvailabilityPanel({ className }: { className?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -82,15 +82,40 @@ export function QuickAvailabilityPanel() {
     setTogglingId(null);
   };
 
-  const filteredItems = items.filter(i => 
-    i.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredItems = items
+    .filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      // 1. Primary sort: Availability (exhausted items FIRST in the entire list)
+      if (a.isAvailable !== b.isAvailable) {
+        return a.isAvailable ? 1 : -1;
+      }
+
+      // 2. Secondary sort: Category Priority (Contornos > Adicionales > Bebidas > Others)
+      const typePriority: Record<string, number> = {
+        contorno: 1,
+        adicional: 2,
+        bebida: 3,
+      };
+      
+      const priorityA = typePriority[a.type] || 4;
+      const priorityB = typePriority[b.type] || 4;
+      
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      // 3. Final sort: Name alphabetically
+      return a.name.localeCompare(b.name);
+    });
 
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-[#251a07] text-white shadow-2xl transition-all hover:scale-110 active:scale-95 md:h-16 md:w-16"
+        className={cn(
+          "z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-[#251a07] text-white shadow-2xl transition-all hover:scale-110 active:scale-95 md:h-16 md:w-16",
+          className || "fixed bottom-6 right-6"
+        )}
       >
         <Package className="h-6 w-6 md:h-7 md:w-7" />
         <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-error text-[11px] font-bold ring-2 ring-white">

@@ -30,8 +30,10 @@ export function BebidasList({
         Bebidas disponibles hoy
       </p>
       <div className="flex flex-col gap-1">
-        {dailyBebidas.map((bebida) => {
-          const qty = quantities[bebida.id] ?? 0;
+        {dailyBebidas
+          .filter((bebida) => bebida.isAvailable)
+          .map((bebida) => {
+            const qty = quantities[bebida.id] ?? 0;
 
           return (
             <div

@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { dailyMenuItems, dailyAdicionales, dailyBebidas, dailyContornos } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { adminActionClient } from "@/lib/safe-action";
+import { adminActionClient, staffActionClient } from "@/lib/safe-action";
 import * as v from "valibot";
 import { todayCaracas } from "@/lib/utils/date";
 
@@ -14,7 +14,7 @@ const ToggleSchema = v.object({
   type: v.picklist(["plato", "adicional", "bebida", "contorno"]),
 });
 
-export const toggleDailyItemAvailabilityAction = adminActionClient
+export const toggleDailyItemAvailabilityAction = staffActionClient
   .schema(ToggleSchema)
   .action(async ({ parsedInput: { itemId, isAvailable, type } }) => {
     const today = todayCaracas(); // "YYYY-MM-DD"

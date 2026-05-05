@@ -32,8 +32,10 @@ export function AdicionalesList({
         Extras disponibles hoy para cualquier plato
       </p>
       <div className="flex flex-col gap-1">
-        {dailyAdicionales.map((adicional) => {
-          const isAlreadySubstitute = activeSubstituteIds.has(adicional.id);
+        {dailyAdicionales
+          .filter((adicional) => adicional.isAvailable)
+          .map((adicional) => {
+            const isAlreadySubstitute = activeSubstituteIds.has(adicional.id);
           const qty = quantities[adicional.id] ?? 0;
 
           return (
