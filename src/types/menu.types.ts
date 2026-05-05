@@ -61,6 +61,8 @@ export interface MenuItemWithComponents {
   hideAdicionales?: boolean;
   hideBebidas?: boolean;
   priceUsdCents: number;
+  costUsdCents?: number | null;
+  costUpdatedAt?: Date | null;
   categoryId: string;
   categoryName: string;
   categoryAllowAlone: boolean;

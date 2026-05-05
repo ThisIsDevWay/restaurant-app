@@ -30,3 +30,14 @@ export const adminActionClient = authenticatedActionClient.use(
         return next({ ctx })
     }
 )
+
+// Cliente de personal (admin, mesero, cocina)
+export const staffActionClient = authenticatedActionClient.use(
+    async ({ next, ctx }) => {
+        const role = ctx.user.role || ''
+        if (!['admin', 'waiter', 'kitchen'].includes(role)) {
+            throw new Error('No autorizado - Se requiere rol de personal')
+        }
+        return next({ ctx })
+    }
+)

@@ -4,18 +4,23 @@ import { eq, desc } from "drizzle-orm";
 
 import { unstable_cache, revalidateTag } from "next/cache";
 
-export const getSettings = unstable_cache(
-  async () => {
-    const [row] = await db
-      .select()
-      .from(settings)
-      .where(eq(settings.id, 1))
-      .limit(1);
-    return row ?? null;
-  },
-  ["settings"],
-  { tags: ["settings"], revalidate: 300 }
-);
+export async function getSettingsRaw() {
+  const [row] = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.id, 1))
+    .limit(1);
+  return row ?? null;
+}
+
+// Use unstable_cache only when running in Next.js environment
+export const getSettings = (typeof process !== "undefined" && process.env.NEXT_RUNTIME === "nodejs")
+  ? unstable_cache(
+      getSettingsRaw,
+      ["settings"],
+      { tags: ["settings"], revalidate: 300 }
+    )
+  : getSettingsRaw;
 
 export function invalidateSettingsCache() {
   revalidateTag("settings");
