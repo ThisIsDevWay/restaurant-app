@@ -191,7 +191,6 @@ export function TableManagerClient({
       initialTables.forEach(t => { r[t.id] = (t.rotation ?? 0) as TableRotation; });
       setRotations(r);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTables, isDirty, setPositions, setRotations]);
 
   // Sync fixtures from server
@@ -207,7 +206,6 @@ export function TableManagerClient({
       const missing = serverPos.filter(p => !currentIds.has(p.id));
       if (missing.length > 0) addFixturePositions(missing);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFixtures, fixtureIsDirty, setFixturePositions, addFixturePositions]);
 
   // Keyboard zoom
