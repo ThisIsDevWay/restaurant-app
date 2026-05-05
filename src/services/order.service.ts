@@ -10,11 +10,12 @@ import { CheckoutInput } from "@/lib/validations/checkout";
 import { getSettings, getActiveRate } from "@/db/queries/settings";
 import { createOrderWithCapacityCheck } from "@/db/queries/orders";
 import { getActiveProvider } from "@/lib/payment-providers";
-import { getMenuItemWithOptionsAndComponents } from "@/db/queries/menu";
+import { getMenuItemsWithOptionsAndComponents } from "@/db/queries/menu";
 import { usdCentsToBsCents } from "@/lib/money";
 import { generateDailyMenuSnapshot } from "@/services/menu.service";
 import { calculateSurcharges, buildSurchargesSnapshot } from "@/lib/utils/calculate-surcharges";
 import { logger } from "@/lib/logger";
+import { inArray } from "drizzle-orm";
 
 export async function createOrder(data: typeof orders.$inferInsert) {
     return createOrderDb(data);
@@ -31,11 +32,29 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 export async function calculateOrderTotals(items: CheckoutItem[], rate: number, date: string) {
     let subtotalUsdCents = 0;
     const snapshotItems = [];
+    const itemIds = items.map(i => i.id);
 
-    const { dailyAdicionalMap, dailyBebidaMap, globalContornoMap } = await generateDailyMenuSnapshot(date);
+    // Parallel fetch: menu items (with components), availability snapshot, and dish availability
+    const [menuItemsArray, snapshot, dailyDishRows] = await Promise.all([
+        getMenuItemsWithOptionsAndComponents(itemIds),
+        generateDailyMenuSnapshot(date),
+        db
+            .select({ menuItemId: dailyMenuItems.menuItemId, isAvailable: dailyMenuItems.isAvailable })
+            .from(dailyMenuItems)
+            .where(
+                and(
+                    inArray(dailyMenuItems.menuItemId, itemIds),
+                    eq(dailyMenuItems.date, date)
+                )
+            )
+    ]);
+
+    const { dailyAdicionalMap, dailyBebidaMap, globalContornoMap } = snapshot;
+    const menuItemsMap = new Map(menuItemsArray.map(m => [m.id, m]));
+    const dailyDishMap = new Map(dailyDishRows.map(r => [r.menuItemId, r.isAvailable]));
 
     for (const clientItem of items) {
-        const menuItem = await getMenuItemWithOptionsAndComponents(clientItem.id);
+        const menuItem = menuItemsMap.get(clientItem.id);
         if (!menuItem) {
             throw new Error(`Item no encontrado: ${clientItem.id}`);
         }
@@ -44,29 +63,19 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
         }
 
         // 🚨 CRITICAL: Verify daily item availability
-        // Check dishes (dailyMenuItems)
-        const [dishEntry] = await db
-            .select({ isAvailable: dailyMenuItems.isAvailable })
-            .from(dailyMenuItems)
-            .where(
-                and(
-                    eq(dailyMenuItems.menuItemId, clientItem.id),
-                    eq(dailyMenuItems.date, date)
-                )
-            )
-            .limit(1);
+        const dishIsAvailable = dailyDishMap.get(clientItem.id);
 
         // Fallback to pools (adicionales, bebidas, contornos)
         const poolEntry = dailyAdicionalMap.get(clientItem.id) 
             || dailyBebidaMap.get(clientItem.id) 
             || globalContornoMap.get(clientItem.id);
 
-        const dailyEntry = dishEntry || (poolEntry ? { isAvailable: poolEntry.isAvailable } : null);
+        const isAvailableToday = dishIsAvailable !== undefined ? dishIsAvailable : (poolEntry ? poolEntry.isAvailable : null);
 
-        if (!dailyEntry) {
+        if (isAvailableToday === null) {
             throw new Error(`"${menuItem.name}" no está configurado para el menú de hoy.`);
         }
-        if (!dailyEntry.isAvailable) {
+        if (!isAvailableToday) {
             throw new Error(`"${menuItem.name}" se agotó. Por favor actualiza tu pedido.`);
         }
 
@@ -204,7 +213,7 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
                                 name: opt.name,
                                 priceUsdCents: opt.priceUsdCents,
                                 priceBsCents: usdCentsToBsCents(opt.priceUsdCents, rate),
-                                isPrepackaged: false, // Legacy options don't have this field yet
+                                isPrepackaged: false,
                                 substitutesComponentId: ad.substitutesComponentId,
                                 substitutesComponentName: ad.substitutesComponentName,
                                 quantity: qty,
