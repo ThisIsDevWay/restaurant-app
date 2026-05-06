@@ -18,7 +18,7 @@ interface PrintData {
 }
 
 export function generateTicketText(data: PrintData): string {
-  const width = 32; // Standard 58mm width approx 32 chars
+  const width = 48; // 80mm paper (79.5mm), Font A = 48 chars/line
   const line = "-".repeat(width);
   const doubleLine = "=".repeat(width);
   
@@ -41,11 +41,14 @@ export function generateTicketText(data: PrintData): string {
   };
 
   const limit = (text: string) => text.substring(0, width);
+  const sanitize = (text: string) =>
+    text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x00-\x7F]/g, "?");
 
-  const [datePart, timePart] = data.date.split(", ");
+  const [rawDate, timePart] = data.date.split(", ");
+  const datePart = rawDate.split("/").map(p => p.padStart(2, "0")).join("/");
 
   let text = "";
-  text += center(data.restaurantName?.toUpperCase() || " ") + "\n";
+  text += center(sanitize(data.restaurantName || " ").toUpperCase()) + "\n";
   text += center(data.isUpdate ? "COMANDA ACTUALIZADA" : "COMANDA") + "\n";
   text += line + "\n";
   
@@ -76,12 +79,12 @@ export function generateTicketText(data: PrintData): string {
   text += justify(datePart, timePart || "") + "\n";
   
   if (data.waiterName) {
-    text += center(`MESERO: ${data.waiterName.toUpperCase()}`) + "\n";
+    text += center(`MESERO: ${sanitize(data.waiterName).toUpperCase()}`) + "\n";
   }
   
   if (data.tableNumber || data.customerName) {
     const mesaLabel = data.tableNumber ? `MESA: ${data.tableNumber}` : "";
-    const clienteLabel = data.customerName ? `CLIENTE: ${data.customerName.toUpperCase()}` : "";
+    const clienteLabel = data.customerName ? `CLIENTE: ${sanitize(data.customerName).toUpperCase()}` : "";
     
     if (mesaLabel && clienteLabel) {
       text += justify(mesaLabel, clienteLabel) + "\n";
@@ -101,7 +104,7 @@ export function generateTicketText(data: PrintData): string {
   const formatVal = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
 
   data.items.forEach((item: any) => {
-    const qtyName = `${item.quantity}x ${item.name.toUpperCase()}`;
+    const qtyName = `${item.quantity}x ${sanitize(item.name).toUpperCase()}`;
     const priceStr = formatVal(item.priceUsdCents * item.quantity);
     
     // Split name and price if too long, or justify
@@ -114,11 +117,11 @@ export function generateTicketText(data: PrintData): string {
     
     // Modifiers (indented and compact)
     if (item.selectedContorno) {
-      text += limit(` > ${item.selectedContorno.name}`) + "\n";
+      text += limit(` > ${sanitize(item.selectedContorno.name)}`) + "\n";
     }
     
     item.fixedContornos?.forEach((c: any) => {
-      text += limit(` > ${c.name}`) + "\n";
+      text += limit(` > ${sanitize(c.name)}`) + "\n";
     });
     
     if (item.includedNote) {
@@ -126,14 +129,14 @@ export function generateTicketText(data: PrintData): string {
     }
 
     item.removedComponents?.forEach((r: any) => {
-      text += limit(` [SIN ${r.name.toUpperCase()}]`) + "\n";
+      text += limit(` [SIN ${sanitize(r.name).toUpperCase()}]`) + "\n";
     });
 
     item.selectedAdicionales?.forEach((a: any) => {
       if (a.substitutesComponentName) {
-        text += limit(` ~ ${a.name} (POR ${a.substitutesComponentName.toUpperCase()})`) + "\n";
+        text += limit(` ~ ${sanitize(a.name)} (POR ${sanitize(a.substitutesComponentName).toUpperCase()})`) + "\n";
       } else {
-        const label = ` + ${a.quantity}x ${a.name}`;
+        const label = ` * ${a.quantity}x ${sanitize(a.name)}`;
         const price = a.priceUsdCents * (a.quantity || 1) * item.quantity;
         if (price > 0) {
           text += justify(label, formatVal(price)) + "\n";
@@ -144,7 +147,7 @@ export function generateTicketText(data: PrintData): string {
     });
 
     item.selectedBebidas?.forEach((b: any) => {
-      const label = ` * ${b.quantity}x ${b.name}`;
+      const label = ` * ${b.quantity}x ${sanitize(b.name)}`;
       const price = b.priceUsdCents * (b.quantity || 1) * item.quantity;
       if (price > 0) {
         text += justify(label, formatVal(price)) + "\n";
@@ -205,7 +208,7 @@ export function generateTicketText(data: PrintData): string {
   const bsStr = formatBs(totalBs).replace("Bs. ", "Bs ");
   const totalsStr = `${bsStr} (${formatRef(totalUsd)})`;
   text += justify("TOTAL:", totalsStr) + "\n";
-  text += "\n\n\n"; // Minimal space for cutting
+  text += "\n\n"; // Minimal space for cutting
   
   return text;
 }

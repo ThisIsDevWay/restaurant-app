@@ -61,10 +61,13 @@ func PrintRaw(printerName string, content string, copies int) error {
 	defer procClosePrinter.Call(uintptr(hPrinter))
 
 	// --- Comandos ESC/POS ---
-	escInit := []byte{0x1B, 0x40}             // ESC @ = Inicializar impresora (resetea ancho, fuente, etc.)
-	feedAndCut := []byte{                      // Avanzar papel + Corte parcial
-		0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A,  // 6 líneas de avance para que el ticket salga completo
-		0x1D, 0x56, 0x41, 0x03,               // GS V 65 3 = Corte parcial (deja una pestaña)
+	escInit := []byte{
+		0x1B, 0x40,       // ESC @ — Initialize (reset)
+		0x1B, 0x74, 0x02, // ESC t 2 — Select code page CP850 (Latin-1)
+	}
+	feedAndCut := []byte{ // Avanzar papel + Corte parcial
+		0x0A, 0x0A, // 2 líneas de avance (reducido de 6)
+		0x1D, 0x56, 0x41, 0x03, // GS V 65 3 = Corte parcial
 	}
 
 	for i := 1; i <= copies; i++ {
