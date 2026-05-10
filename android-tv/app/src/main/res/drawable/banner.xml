@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android TV requires a 320x180 banner for the home-screen tile.
+  This is a vector placeholder showing "Los Portillos" on a black/amber
+  background. Swap for a PNG (`res/drawable-xhdpi/banner.png`, 320x180)
+  in production for higher visual quality.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path
+        android:fillColor="#000000"
+        android:pathData="M0,0 L320,0 L320,180 L0,180 Z" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M16,68 L16,112 L24,112 L24,72 L48,72 L48,68 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M64,84 L64,108 L72,108 L72,84 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M88,84 L88,108 L96,108 L96,92 L104,92 L104,108 L112,108 L112,84 Z" />
+</vector>

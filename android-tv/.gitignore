@@ -1,0 +1,28 @@
+# Gradle
+.gradle/
+build/
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+captures/
+
+# Kotlin
+.kotlin/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Generated
+gen/
+out/
+release/
+
+# Signing — NEVER commit these
+keystore.properties
+*.keystore
+*.jks

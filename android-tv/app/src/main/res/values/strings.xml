@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Restaurante G y M</string>
+    <string name="error_reconnecting">Reconectando…</string>
+
+    <string name="config_title">Configuración TV</string>
+    <string name="config_subtitle">URL de la pantalla con el token de pre-provisión</string>
+    <string name="config_url_hint">https://tu-dominio.com/tv?token=tv_…</string>
+    <string name="config_save">Guardar y reiniciar</string>
+    <string name="config_invalid_url">URL inválida (debe empezar con http)</string>
+    <string name="config_version">v%1$s</string>
+</resources>

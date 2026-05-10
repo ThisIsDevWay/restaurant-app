@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!--
+      Declare Leanback (Android TV) support but make it optional so the
+      same APK can be installed on phones/tablets for development testing.
+      `touchscreen` is also marked optional — Aiwa TVs are non-touch.
+    -->
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:banner="@drawable/banner"
+        android:theme="@style/Theme.TvKiosk"
+        android:hardwareAccelerated="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="false"
+        android:allowBackup="false"
+        tools:targetApi="33">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|navigation|uiMode"
+            android:screenOrientation="behind"
+            android:resizeableActivity="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <!-- LEANBACK_LAUNCHER puts the app on the Android TV home tile rail. -->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <!-- LAUNCHER lets it also appear on phone/tablet for dev. -->
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ConfigActivity"
+            android:exported="true"
+            android:label="@string/config_title"
+            android:theme="@style/Theme.TvKiosk.Config" />
+
+        <!-- Auto-launch on device boot. -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+          ADB-driven URL configuration. Trigger from your laptop with:
+            adb shell am broadcast -a com.restaurantgm.tv.SET_URL
+                -e url "https://your-domain.com/tv?token=tv_abc123"
+          The URL is persisted to SharedPreferences and the WebView reloads.
+        -->
+        <receiver
+            android:name=".UrlReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.restaurantgm.tv.SET_URL" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>

@@ -57,6 +57,7 @@ audit.mjs
 .gemini/
 .agent/
 .agents/
+.claude/
 brain/
 
 # Testing artifacts
