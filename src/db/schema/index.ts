@@ -17,3 +17,12 @@ export { dailyContornos } from "./daily-contornos";
 export { printJobs } from "./print-jobs";
 export { restaurantTables } from "./restaurant-tables";
 export { floorFixtures } from "./floor-fixtures";
+export {
+  tvDisplays,
+  tvPairingSessions,
+  tvMedia,
+  tvEvents,
+  tvEventMedia,
+  tvEventAssignments,
+  tvDisplayMedia,
+} from "./tv";
