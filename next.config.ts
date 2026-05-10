@@ -31,6 +31,9 @@ const nextConfig: NextConfig = {
     const cspImgSrc = supabaseDomain
       ? `'self' data: blob: ${supabaseDomain}`
       : "'self' data: blob:";
+    const cspMediaSrc = supabaseDomain
+      ? `'self' data: blob: ${supabaseDomain}`
+      : "'self' data: blob:";
     const cspConnectSrc = supabaseDomain
       ? `'self' ${supabaseDomain} https://*.sentry.io wss://38.171.255.120`
       : "'self' https://*.sentry.io wss://38.171.255.120";
@@ -48,6 +51,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
               `img-src ${cspImgSrc}`,
+              `media-src ${cspMediaSrc}`,
               "font-src 'self' https://fonts.gstatic.com",
               `connect-src ${cspConnectSrc}`,
             ].join("; "),
