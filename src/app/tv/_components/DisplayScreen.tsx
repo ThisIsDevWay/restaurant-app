@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MenuBoardSlide, type MenuBoardData } from "./MenuBoardSlide";
 
 export type ContentItem = {
   id: string;
-  type: "image" | "video";
-  url: string;
+  type: "image" | "video" | "menu_board";
+  /** URL only set for image/video. */
+  url?: string;
   durationSeconds: number;
   muted: boolean;
+  /** Only set when type === "menu_board". */
+  menuBoard?: MenuBoardData;
 };
 
 export type ContentResponse = {
@@ -93,7 +97,7 @@ export function DisplayScreen({
     setCurrentIdx((i) => (i >= items.length ? 0 : i));
   }, [items.length]);
 
-  // Advance images on a timer. Videos also have a fallback timer
+  // Advance images & menu boards on a timer. Videos also have a fallback timer
   // (durationSeconds + 5s grace) in case `onEnded` never fires.
   useEffect(() => {
     if (items.length === 0) return;
@@ -101,7 +105,7 @@ export function DisplayScreen({
     if (!item) return;
     const advance = () =>
       setCurrentIdx((i) => (i + 1) % Math.max(1, items.length));
-    if (item.type === "image") {
+    if (item.type === "image" || item.type === "menu_board") {
       const ms = Math.max(1, item.durationSeconds) * 1000;
       const id = window.setTimeout(advance, ms);
       return () => window.clearTimeout(id);
@@ -228,7 +232,9 @@ function Carousel({
             }}
           >
             {shouldRender ? (
-              item.type === "image" ? (
+              item.type === "menu_board" && item.menuBoard ? (
+                <MenuBoardSlide data={item.menuBoard} />
+              ) : item.type === "image" && item.url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={item.url}
@@ -244,7 +250,7 @@ function Carousel({
                   }}
                   draggable={false}
                 />
-              ) : (
+              ) : item.type === "video" && item.url ? (
                 <VideoSlide
                   src={item.url}
                   active={isCurrent}
@@ -252,7 +258,7 @@ function Carousel({
                   volume={volume}
                   onEnded={onAdvance}
                 />
-              )
+              ) : null
             ) : null}
           </div>
         );
