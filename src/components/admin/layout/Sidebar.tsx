@@ -19,6 +19,7 @@ import {
   PlusCircle,
   User,
   Menu,
+  BookMarked,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -40,6 +41,7 @@ const navItems = [
   { href: "/waiter", label: "Toma de Pedido", icon: HandPlatter },
   { href: "/kitchen", label: "Cocina", icon: ChefHat },
   { href: "/admin/settings", label: "Configuración", icon: Settings },
+  { href: "/admin/docs", label: "Documentación", icon: BookMarked },
 ];
 
 /* ── Desktop: icon-only 64px sidebar ────────────────────────── */
