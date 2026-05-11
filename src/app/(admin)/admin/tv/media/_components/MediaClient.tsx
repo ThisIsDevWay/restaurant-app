@@ -12,6 +12,9 @@ import {
   VolumeX,
   Globe,
   CalendarDays,
+  UtensilsCrossed,
+  Clock,
+  Plus,
 } from "lucide-react";
 import {
   Card,
@@ -33,8 +36,14 @@ import {
   deleteTvMediaAction,
   reorderTvMediaAction,
   updateTvMediaAction,
+  createMenuBoardAction,
 } from "@/actions/tv";
-import type { TvMedia } from "@/db/schema/tv";
+import type { TvMedia, TvMenuBoardConfig } from "@/db/schema/tv";
+import {
+  DAY_LABELS_ES,
+  formatMinuteOfDay,
+  parseMinuteOfDay,
+} from "@/lib/services/tv-dayparting";
 
 const MAX_BYTES = 100 * 1024 * 1024;       // 100 MB por archivo
 const MAX_VIDEO_SECONDS = 300;             // 5 min — suficiente para promos
@@ -55,16 +64,25 @@ type EventMediaItem = TvMedia & {
   eventName: string;
 };
 
+export type CategoryLite = {
+  id: string;
+  name: string;
+  sortOrder: number;
+  isAvailable: boolean;
+};
+
 type Props = {
   initialMedia: TvMedia[];
   initialEventMedia: EventMediaItem[];
+  categories: CategoryLite[];
 };
 
-export function MediaClient({ initialMedia, initialEventMedia }: Props) {
+export function MediaClient({ initialMedia, initialEventMedia, categories }: Props) {
   const [media, setMedia] = useState<TvMedia[]>(initialMedia);
   const [eventMedia, setEventMedia] = useState<EventMediaItem[]>(initialEventMedia);
   const [queue, setQueue] = useState<UploadItem[]>([]);
   const [editing, setEditing] = useState<TvMedia | null>(null);
+  const [menuBoardOpen, setMenuBoardOpen] = useState(false);
   const [dropActive, setDropActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragIdRef = useRef<string | null>(null);
@@ -304,7 +322,7 @@ export function MediaClient({ initialMedia, initialEventMedia }: Props) {
             Arrastra archivos aquí o usa el botón para subir varios a la vez.
           </p>
         </div>
-        <div>
+        <div className="flex flex-wrap items-center gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -315,6 +333,14 @@ export function MediaClient({ initialMedia, initialEventMedia }: Props) {
               if (e.target.files?.length) enqueueFiles(e.target.files);
             }}
           />
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setMenuBoardOpen(true)}
+          >
+            <UtensilsCrossed className="h-4 w-4" />
+            Crear pantalla de menú
+          </Button>
           <Button
             size="lg"
             onClick={() => fileInputRef.current?.click()}
@@ -498,9 +524,21 @@ export function MediaClient({ initialMedia, initialEventMedia }: Props) {
       {editing && (
         <EditMediaDialog
           item={editing}
+          categories={categories}
           onClose={() => setEditing(null)}
           onSaved={async () => {
             setEditing(null);
+            await refresh();
+          }}
+        />
+      )}
+
+      {menuBoardOpen && (
+        <MenuBoardDialog
+          categories={categories}
+          onClose={() => setMenuBoardOpen(false)}
+          onSaved={async () => {
+            setMenuBoardOpen(false);
             await refresh();
           }}
         />
@@ -526,6 +564,11 @@ function MediaCard({
   onDragOver: (e: React.DragEvent) => void;
   onDrop: () => void;
 }) {
+  const hasDaypart =
+    item.daypartStartMinutes != null ||
+    item.daypartEndMinutes != null ||
+    item.daypartDaysMask != null;
+
   return (
     <div
       draggable
@@ -534,14 +577,16 @@ function MediaCard({
       onDrop={onDrop}
       className="group relative rounded-xl overflow-hidden bg-black ring-1 ring-border aspect-square cursor-move"
     >
-      {item.type === "image" ? (
+      {item.type === "menu_board" ? (
+        <MenuBoardPreview item={item} />
+      ) : item.type === "image" && item.publicUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={item.publicUrl}
           alt={item.title}
           className="w-full h-full object-cover"
         />
-      ) : (
+      ) : item.type === "video" ? (
         <>
           {item.thumbnailUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -550,7 +595,7 @@ function MediaCard({
               alt={item.title}
               className="w-full h-full object-cover"
             />
-          ) : (
+          ) : item.publicUrl ? (
             <video
               src={item.publicUrl}
               muted
@@ -558,7 +603,7 @@ function MediaCard({
               preload="metadata"
               className="w-full h-full object-cover"
             />
-          )}
+          ) : null}
           <div className="absolute top-2 left-2 inline-flex items-center gap-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
             <Video className="h-3 w-3" />
             VIDEO
@@ -578,6 +623,16 @@ function MediaCard({
             )}
           </div>
         </>
+      ) : null}
+
+      {hasDaypart && (
+        <div
+          className="absolute top-2 right-10 inline-flex items-center gap-1 bg-amber-500/90 text-black text-[10px] font-semibold px-1.5 py-0.5 rounded"
+          title="Programación por horario activa"
+        >
+          <Clock className="h-3 w-3" />
+          HORARIO
+        </div>
       )}
 
       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -629,14 +684,45 @@ function MediaCard({
   );
 }
 
+/* ───────────────────────── Menu Board Preview (grid card) ───────────────────────── */
+
+function MenuBoardPreview({ item }: { item: TvMedia }) {
+  const config = (item.slideConfig as TvMenuBoardConfig | null) ?? null;
+  const sourceLabel =
+    config?.source.type === "category"
+      ? "Categoría"
+      : config?.source.type === "daily"
+        ? "Menú del día"
+        : "Todo el menú";
+
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-500/20 via-amber-700/30 to-black p-4 text-center">
+      <UtensilsCrossed className="h-10 w-10 text-amber-300 mb-3" />
+      <p className="text-xs font-bold text-amber-100 uppercase tracking-widest mb-1">
+        Pantalla de menú
+      </p>
+      <p className="text-sm font-semibold text-white line-clamp-2 mb-1">
+        {config?.title ?? item.title}
+      </p>
+      <p className="text-[10px] text-amber-200/80">{sourceLabel}</p>
+      <div className="absolute top-2 left-2 inline-flex items-center gap-1 bg-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">
+        <UtensilsCrossed className="h-3 w-3" />
+        MENÚ
+      </div>
+    </div>
+  );
+}
+
 /* ───────────────────────── Edit Media Dialog ───────────────────────── */
 
 function EditMediaDialog({
   item,
+  categories,
   onClose,
   onSaved,
 }: {
   item: TvMedia;
+  categories: CategoryLite[];
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
@@ -646,15 +732,94 @@ function EditMediaDialog({
   const [muted, setMuted] = useState(item.muted);
   const [submitting, setSubmitting] = useState(false);
 
+  // Dayparting state.
+  const [enableDaypart, setEnableDaypart] = useState(
+    item.daypartStartMinutes != null ||
+      item.daypartEndMinutes != null ||
+      item.daypartDaysMask != null,
+  );
+  const [startTime, setStartTime] = useState<string>(
+    formatMinuteOfDay(item.daypartStartMinutes ?? null),
+  );
+  const [endTime, setEndTime] = useState<string>(
+    formatMinuteOfDay(item.daypartEndMinutes ?? null),
+  );
+  const [daysMask, setDaysMask] = useState<number>(
+    item.daypartDaysMask ?? 127,
+  );
+
+  // Menu board config (only for type='menu_board').
+  const initialConfig = (item.slideConfig as TvMenuBoardConfig | null) ?? null;
+  const [mbTitle, setMbTitle] = useState(initialConfig?.title ?? item.title);
+  const [mbSubtitle, setMbSubtitle] = useState(initialConfig?.subtitle ?? "");
+  const [mbSourceType, setMbSourceType] = useState<
+    "category" | "all_available" | "daily"
+  >(initialConfig?.source.type ?? "all_available");
+  const [mbCategoryId, setMbCategoryId] = useState<string>(
+    initialConfig?.source.type === "category"
+      ? initialConfig.source.categoryId
+      : categories[0]?.id ?? "",
+  );
+  const [mbLayout, setMbLayout] = useState<"list" | "grid">(
+    initialConfig?.layout ?? "list",
+  );
+  const [mbShowPrices, setMbShowPrices] = useState(initialConfig?.showPrices ?? true);
+  const [mbShowDescriptions, setMbShowDescriptions] = useState(
+    initialConfig?.showDescriptions ?? true,
+  );
+  const [mbShowImages, setMbShowImages] = useState(initialConfig?.showImages ?? false);
+  const [mbCurrency, setMbCurrency] = useState<"usd" | "ves" | "both">(
+    initialConfig?.currency ?? "both",
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+
+    let slideConfigUpdate: TvMenuBoardConfig | null | undefined = undefined;
+    if (item.type === "menu_board") {
+      if (mbSourceType === "category" && !mbCategoryId) {
+        toast.error("Selecciona una categoría");
+        setSubmitting(false);
+        return;
+      }
+      slideConfigUpdate = {
+        kind: "menu_board",
+        title: mbTitle.trim() || item.title,
+        subtitle: mbSubtitle.trim() || undefined,
+        source:
+          mbSourceType === "category"
+            ? { type: "category", categoryId: mbCategoryId }
+            : mbSourceType === "daily"
+              ? { type: "daily" }
+              : { type: "all_available" },
+        layout: mbLayout,
+        showPrices: mbShowPrices,
+        showDescriptions: mbShowDescriptions,
+        showImages: mbShowImages,
+        currency: mbCurrency,
+      };
+    }
+
+    let dayStart: number | null = null;
+    let dayEnd: number | null = null;
+    let dayMask: number | null = null;
+    if (enableDaypart) {
+      dayStart = parseMinuteOfDay(startTime);
+      dayEnd = parseMinuteOfDay(endTime);
+      dayMask = daysMask === 127 ? null : daysMask; // 127 = every day → store NULL
+    }
+
     const res = await updateTvMediaAction({
       id: item.id,
       title: title.trim() || undefined,
       durationSeconds,
       isActive,
       muted,
+      slideConfig: slideConfigUpdate,
+      daypartStartMinutes: dayStart,
+      daypartEndMinutes: dayEnd,
+      daypartDaysMask: dayMask,
     });
     setSubmitting(false);
     if (res?.data?.success) {
@@ -667,9 +832,11 @@ function EditMediaDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar medio</DialogTitle>
+          <DialogTitle>
+            {item.type === "menu_board" ? "Editar pantalla de menú" : "Editar medio"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -683,7 +850,8 @@ function EditMediaDialog({
           </div>
           <div>
             <Label htmlFor="m-dur">
-              Duración en segundos {item.type === "video" && "(informativo, los videos avanzan al terminar)"}
+              Duración en segundos{" "}
+              {item.type === "video" && "(informativo, los videos avanzan al terminar)"}
             </Label>
             <Input
               id="m-dur"
@@ -724,6 +892,69 @@ function EditMediaDialog({
               </span>
             </label>
           )}
+
+          {/* Menu board config */}
+          {item.type === "menu_board" && (
+            <div className="border-t border-border pt-4 space-y-3">
+              <p className="text-sm font-semibold text-text-main">
+                Contenido del menú
+              </p>
+              <MenuBoardConfigForm
+                categories={categories}
+                title={mbTitle}
+                setTitle={setMbTitle}
+                subtitle={mbSubtitle}
+                setSubtitle={setMbSubtitle}
+                sourceType={mbSourceType}
+                setSourceType={setMbSourceType}
+                categoryId={mbCategoryId}
+                setCategoryId={setMbCategoryId}
+                layout={mbLayout}
+                setLayout={setMbLayout}
+                showPrices={mbShowPrices}
+                setShowPrices={setMbShowPrices}
+                showDescriptions={mbShowDescriptions}
+                setShowDescriptions={setMbShowDescriptions}
+                showImages={mbShowImages}
+                setShowImages={setMbShowImages}
+                currency={mbCurrency}
+                setCurrency={setMbCurrency}
+              />
+            </div>
+          )}
+
+          {/* Dayparting */}
+          <div className="border-t border-border pt-4 space-y-3">
+            <label className="flex items-start gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enableDaypart}
+                onChange={(e) => setEnableDaypart(e.target.checked)}
+                className="h-4 w-4 mt-0.5"
+              />
+              <span>
+                <span className="font-semibold flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  Programar por horario (Dayparting)
+                </span>
+                <span className="text-xs text-text-muted block mt-0.5">
+                  Solo reproducir este medio en ciertas horas o días.
+                  Hora de Caracas (UTC-04:00).
+                </span>
+              </span>
+            </label>
+            {enableDaypart && (
+              <DaypartingFields
+                startTime={startTime}
+                setStartTime={setStartTime}
+                endTime={endTime}
+                setEndTime={setEndTime}
+                daysMask={daysMask}
+                setDaysMask={setDaysMask}
+              />
+            )}
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
@@ -735,6 +966,489 @@ function EditMediaDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* ───────────────────────── Menu Board Dialog (create) ───────────────────────── */
+
+function MenuBoardDialog({
+  categories,
+  onClose,
+  onSaved,
+}: {
+  categories: CategoryLite[];
+  onClose: () => void;
+  onSaved: () => void | Promise<void>;
+}) {
+  const [adminTitle, setAdminTitle] = useState("Pantalla de menú");
+  const [duration, setDuration] = useState(15);
+  const [title, setTitle] = useState("Nuestro menú");
+  const [subtitle, setSubtitle] = useState("");
+  const [sourceType, setSourceType] = useState<
+    "category" | "all_available" | "daily"
+  >("daily");
+  const [categoryId, setCategoryId] = useState<string>(categories[0]?.id ?? "");
+  const [layout, setLayout] = useState<"list" | "grid">("list");
+  const [showPrices, setShowPrices] = useState(true);
+  const [showDescriptions, setShowDescriptions] = useState(true);
+  const [showImages, setShowImages] = useState(false);
+  const [currency, setCurrency] = useState<"usd" | "ves" | "both">("both");
+
+  const [enableDaypart, setEnableDaypart] = useState(false);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [daysMask, setDaysMask] = useState(127);
+
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (sourceType === "category" && !categoryId) {
+      toast.error("Selecciona una categoría");
+      return;
+    }
+    if (!title.trim()) {
+      toast.error("Indica el título que se mostrará en pantalla");
+      return;
+    }
+    setSubmitting(true);
+
+    let dayStart: number | null = null;
+    let dayEnd: number | null = null;
+    let dayMaskValue: number | null = null;
+    if (enableDaypart) {
+      dayStart = parseMinuteOfDay(startTime);
+      dayEnd = parseMinuteOfDay(endTime);
+      dayMaskValue = daysMask === 127 ? null : daysMask;
+    }
+
+    const res = await createMenuBoardAction({
+      title: adminTitle.trim() || title.trim(),
+      durationSeconds: Math.max(3, Math.min(600, duration)),
+      config: {
+        kind: "menu_board",
+        title: title.trim(),
+        subtitle: subtitle.trim() || undefined,
+        source:
+          sourceType === "category"
+            ? { type: "category", categoryId }
+            : sourceType === "daily"
+              ? { type: "daily" }
+              : { type: "all_available" },
+        layout,
+        showPrices,
+        showDescriptions,
+        showImages,
+        currency,
+      },
+      daypartStartMinutes: dayStart,
+      daypartEndMinutes: dayEnd,
+      daypartDaysMask: dayMaskValue,
+    });
+    setSubmitting(false);
+
+    if (res?.data?.success) {
+      toast.success("Pantalla de menú creada");
+      await onSaved();
+    } else {
+      toast.error(res?.data?.error ?? "Error al crear");
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UtensilsCrossed className="h-5 w-5 text-amber-500" />
+            Crear pantalla de menú en vivo
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-text-main">
+            <strong>¿Qué es esto?</strong> Una diapositiva que muestra el menú
+            real del restaurante leído en vivo de la base de datos. Los precios
+            y la disponibilidad se actualizan automáticamente cada vez que la
+            TV consulta el servidor.
+          </div>
+
+          <div>
+            <Label htmlFor="mb-admin-title">Nombre interno (admin)</Label>
+            <Input
+              id="mb-admin-title"
+              value={adminTitle}
+              onChange={(e) => setAdminTitle(e.target.value)}
+              maxLength={200}
+              placeholder="Ej: Menú del día - Almuerzo"
+            />
+            <p className="mt-1 text-xs text-text-muted">
+              Solo se muestra en este panel. El título de la TV es el de abajo.
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="mb-dur">Duración en pantalla (segundos)</Label>
+            <Input
+              id="mb-dur"
+              type="number"
+              min={3}
+              max={600}
+              value={duration}
+              onChange={(e) =>
+                setDuration(Math.max(3, Math.min(600, Number(e.target.value) || 15)))
+              }
+            />
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-3">
+            <p className="text-sm font-semibold text-text-main">
+              Contenido en pantalla
+            </p>
+            <MenuBoardConfigForm
+              categories={categories}
+              title={title}
+              setTitle={setTitle}
+              subtitle={subtitle}
+              setSubtitle={setSubtitle}
+              sourceType={sourceType}
+              setSourceType={setSourceType}
+              categoryId={categoryId}
+              setCategoryId={setCategoryId}
+              layout={layout}
+              setLayout={setLayout}
+              showPrices={showPrices}
+              setShowPrices={setShowPrices}
+              showDescriptions={showDescriptions}
+              setShowDescriptions={setShowDescriptions}
+              showImages={showImages}
+              setShowImages={setShowImages}
+              currency={currency}
+              setCurrency={setCurrency}
+            />
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-3">
+            <label className="flex items-start gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enableDaypart}
+                onChange={(e) => setEnableDaypart(e.target.checked)}
+                className="h-4 w-4 mt-0.5"
+              />
+              <span>
+                <span className="font-semibold flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  Programar por horario
+                </span>
+                <span className="text-xs text-text-muted block mt-0.5">
+                  Ideal para mostrar &quot;Menú de desayuno&quot; solo de 7–11h, etc.
+                </span>
+              </span>
+            </label>
+            {enableDaypart && (
+              <DaypartingFields
+                startTime={startTime}
+                setStartTime={setStartTime}
+                endTime={endTime}
+                setEndTime={setEndTime}
+                daysMask={daysMask}
+                setDaysMask={setDaysMask}
+              />
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Creando…" : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  Crear pantalla
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ───────────── Shared sub-form: Menu Board config ───────────── */
+
+function MenuBoardConfigForm({
+  categories,
+  title,
+  setTitle,
+  subtitle,
+  setSubtitle,
+  sourceType,
+  setSourceType,
+  categoryId,
+  setCategoryId,
+  layout,
+  setLayout,
+  showPrices,
+  setShowPrices,
+  showDescriptions,
+  setShowDescriptions,
+  showImages,
+  setShowImages,
+  currency,
+  setCurrency,
+}: {
+  categories: CategoryLite[];
+  title: string;
+  setTitle: (s: string) => void;
+  subtitle: string;
+  setSubtitle: (s: string) => void;
+  sourceType: "category" | "all_available" | "daily";
+  setSourceType: (s: "category" | "all_available" | "daily") => void;
+  categoryId: string;
+  setCategoryId: (s: string) => void;
+  layout: "list" | "grid";
+  setLayout: (s: "list" | "grid") => void;
+  showPrices: boolean;
+  setShowPrices: (b: boolean) => void;
+  showDescriptions: boolean;
+  setShowDescriptions: (b: boolean) => void;
+  showImages: boolean;
+  setShowImages: (b: boolean) => void;
+  currency: "usd" | "ves" | "both";
+  setCurrency: (s: "usd" | "ves" | "both") => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label htmlFor="mb-title">Título mostrado en la TV</Label>
+        <Input
+          id="mb-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={120}
+          placeholder="Ej: Nuestro menú del día"
+        />
+      </div>
+      <div>
+        <Label htmlFor="mb-subtitle">Subtítulo (opcional)</Label>
+        <Input
+          id="mb-subtitle"
+          value={subtitle}
+          onChange={(e) => setSubtitle(e.target.value)}
+          maxLength={200}
+          placeholder="Ej: Sirviendo desde 1995"
+        />
+      </div>
+
+      <div>
+        <Label>¿Qué productos mostrar?</Label>
+        <div className="grid grid-cols-3 gap-2 mt-1.5">
+          {(
+            [
+              { value: "daily", label: "Menú del día" },
+              { value: "category", label: "Una categoría" },
+              { value: "all_available", label: "Todo el menú" },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setSourceType(opt.value)}
+              className={`text-xs rounded-md border px-2 py-2 transition ${
+                sourceType === opt.value
+                  ? "border-primary bg-primary/10 text-primary font-semibold"
+                  : "border-border bg-bg-surface text-text-muted hover:border-primary/40"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {sourceType === "category" && (
+        <div>
+          <Label htmlFor="mb-cat">Categoría</Label>
+          <select
+            id="mb-cat"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            className="w-full rounded-md border border-border bg-bg-surface px-3 py-2 text-sm"
+          >
+            {categories.length === 0 && <option value="">(sin categorías)</option>}
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div>
+        <Label>Diseño</Label>
+        <div className="grid grid-cols-2 gap-2 mt-1.5">
+          {(
+            [
+              { value: "list", label: "Lista (vertical)" },
+              { value: "grid", label: "Cuadrícula" },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setLayout(opt.value)}
+              className={`text-xs rounded-md border px-2 py-2 transition ${
+                layout === opt.value
+                  ? "border-primary bg-primary/10 text-primary font-semibold"
+                  : "border-border bg-bg-surface text-text-muted hover:border-primary/40"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <Label>Moneda mostrada</Label>
+        <div className="grid grid-cols-3 gap-2 mt-1.5">
+          {(
+            [
+              { value: "usd", label: "USD" },
+              { value: "ves", label: "Bs" },
+              { value: "both", label: "Ambas" },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setCurrency(opt.value)}
+              className={`text-xs rounded-md border px-2 py-2 transition ${
+                currency === opt.value
+                  ? "border-primary bg-primary/10 text-primary font-semibold"
+                  : "border-border bg-bg-surface text-text-muted hover:border-primary/40"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showPrices}
+            onChange={(e) => setShowPrices(e.target.checked)}
+            className="h-4 w-4"
+          />
+          Mostrar precios
+        </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showDescriptions}
+            onChange={(e) => setShowDescriptions(e.target.checked)}
+            className="h-4 w-4"
+          />
+          Mostrar descripciones
+        </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showImages}
+            onChange={(e) => setShowImages(e.target.checked)}
+            className="h-4 w-4"
+          />
+          Mostrar imágenes (si el producto tiene)
+        </label>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────── Shared sub-form: Dayparting time window ───────────── */
+
+function DaypartingFields({
+  startTime,
+  setStartTime,
+  endTime,
+  setEndTime,
+  daysMask,
+  setDaysMask,
+}: {
+  startTime: string;
+  setStartTime: (s: string) => void;
+  endTime: string;
+  setEndTime: (s: string) => void;
+  daysMask: number;
+  setDaysMask: (n: number) => void;
+}) {
+  const toggleDay = (bit: number) => {
+    setDaysMask(daysMask ^ (1 << bit));
+  };
+  return (
+    <div className="space-y-3 pl-6">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label htmlFor="dp-start">Desde</Label>
+          <Input
+            id="dp-start"
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="dp-end">Hasta</Label>
+          <Input
+            id="dp-end"
+            type="time"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+          />
+        </div>
+      </div>
+      <p className="text-xs text-text-muted -mt-1">
+        Si dejas ambos en blanco se ignora la franja horaria. Si la hora final
+        es menor que la inicial el bloque cruza la medianoche (ej. 22:00 → 02:00).
+      </p>
+
+      <div>
+        <Label>Días activos</Label>
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          {DAY_LABELS_ES.map((d) => {
+            const active = (daysMask & (1 << d.bit)) !== 0;
+            return (
+              <button
+                key={d.bit}
+                type="button"
+                onClick={() => toggleDay(d.bit)}
+                className={`text-xs rounded-md border px-2.5 py-1 transition ${
+                  active
+                    ? "border-primary bg-primary/10 text-primary font-semibold"
+                    : "border-border bg-bg-surface text-text-muted"
+                }`}
+                title={d.full}
+              >
+                {d.short}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-text-muted mt-1">
+          {daysMask === 127
+            ? "Todos los días"
+            : daysMask === 0
+              ? "⚠ Sin días marcados — el medio no se reproducirá"
+              : `${[...Array(7)].filter((_, i) => (daysMask & (1 << i)) !== 0).length} día(s) seleccionado(s)`}
+        </p>
+      </div>
+    </div>
   );
 }
 

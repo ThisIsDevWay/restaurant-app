@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { tvMedia, tvEventMedia, tvEvents } from "@/db/schema";
-import { asc, desc, eq, and } from "drizzle-orm";
+import { tvMedia, tvEventMedia, tvEvents, categories } from "@/db/schema";
+import { asc, desc, eq } from "drizzle-orm";
 import { MediaClient } from "./_components/MediaClient";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +33,10 @@ export default async function MediaPage() {
       isActive: tvMedia.isActive,
       isGlobal: tvMedia.isGlobal,
       muted: tvMedia.muted,
+      slideConfig: tvMedia.slideConfig,
+      daypartStartMinutes: tvMedia.daypartStartMinutes,
+      daypartEndMinutes: tvMedia.daypartEndMinutes,
+      daypartDaysMask: tvMedia.daypartDaysMask,
       uploadedByUserId: tvMedia.uploadedByUserId,
       createdAt: tvMedia.createdAt,
       updatedAt: tvMedia.updatedAt,
@@ -46,10 +50,23 @@ export default async function MediaPage() {
     .where(eq(tvMedia.isGlobal, false))
     .orderBy(desc(tvMedia.createdAt));
 
+  // Categories for the "Create menu board" picker.
+  const categoryRows = await db
+    .select({
+      id: categories.id,
+      name: categories.name,
+      sortOrder: categories.sortOrder,
+      isAvailable: categories.isAvailable,
+    })
+    .from(categories)
+    .where(eq(categories.isAvailable, true))
+    .orderBy(asc(categories.sortOrder), asc(categories.name));
+
   return (
     <MediaClient
       initialMedia={globalMedia}
       initialEventMedia={eventMediaRows}
+      categories={categoryRows}
     />
   );
 }

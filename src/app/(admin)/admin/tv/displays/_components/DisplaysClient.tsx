@@ -1013,13 +1013,17 @@ function DisplayMediaDialog({
 function MediaThumb({ item }: { item: TvMedia }) {
   return (
     <div className="relative w-12 h-12 rounded overflow-hidden bg-black shrink-0 ring-1 ring-border">
-      {item.type === "image" ? (
+      {item.type === "image" && item.publicUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={item.publicUrl}
           alt=""
           className="w-full h-full object-cover"
         />
+      ) : item.type === "menu_board" ? (
+        <div className="w-full h-full flex items-center justify-center bg-amber-500/15 text-[9px] font-bold text-amber-600">
+          MENÚ
+        </div>
       ) : item.thumbnailUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
