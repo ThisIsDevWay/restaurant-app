@@ -28,6 +28,59 @@ export const updateTvDisplaySchema = v.object({
 
 export const idSchema = v.object({ id: v.pipe(v.string(), v.uuid()) });
 
+/* ─── Menu Board slide config (matches TvMenuBoardConfig in schema/tv.ts) ─── */
+
+const menuBoardSourceSchema = v.union([
+  v.object({
+    type: v.literal("category"),
+    categoryId: v.pipe(v.string(), v.uuid()),
+  }),
+  v.object({ type: v.literal("all_available") }),
+  v.object({ type: v.literal("daily") }),
+]);
+
+export const menuBoardConfigSchema = v.object({
+  kind: v.literal("menu_board"),
+  title: v.pipe(v.string(), v.minLength(1), v.maxLength(120)),
+  subtitle: v.optional(v.pipe(v.string(), v.maxLength(200))),
+  source: menuBoardSourceSchema,
+  layout: v.picklist(["list", "grid"]),
+  showPrices: v.boolean(),
+  showDescriptions: v.boolean(),
+  showImages: v.boolean(),
+  currency: v.picklist(["usd", "ves", "both"]),
+  maxItems: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(48))),
+});
+
+/* ─── Dayparting fields (optional on create/update) ──────────────── */
+
+const minuteOfDaySchema = v.pipe(
+  v.number(),
+  v.integer(),
+  v.minValue(0),
+  v.maxValue(1439),
+);
+const daysMaskSchema = v.pipe(
+  v.number(),
+  v.integer(),
+  v.minValue(0),
+  v.maxValue(127),
+);
+
+export const createMenuBoardSchema = v.object({
+  title: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
+  durationSeconds: v.pipe(
+    v.number(),
+    v.integer(),
+    v.minValue(3),
+    v.maxValue(600),
+  ),
+  config: menuBoardConfigSchema,
+  daypartStartMinutes: v.optional(v.nullable(minuteOfDaySchema)),
+  daypartEndMinutes: v.optional(v.nullable(minuteOfDaySchema)),
+  daypartDaysMask: v.optional(v.nullable(daysMaskSchema)),
+});
+
 export const updateTvMediaSchema = v.object({
   id: v.pipe(v.string(), v.uuid()),
   title: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200))),
@@ -36,6 +89,10 @@ export const updateTvMediaSchema = v.object({
   ),
   isActive: v.optional(v.boolean()),
   muted: v.optional(v.boolean()),
+  slideConfig: v.optional(v.nullable(menuBoardConfigSchema)),
+  daypartStartMinutes: v.optional(v.nullable(minuteOfDaySchema)),
+  daypartEndMinutes: v.optional(v.nullable(minuteOfDaySchema)),
+  daypartDaysMask: v.optional(v.nullable(daysMaskSchema)),
 });
 
 export const reorderSchema = v.object({

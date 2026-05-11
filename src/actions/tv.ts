@@ -28,6 +28,7 @@ import {
   reorderEventMediaSchema,
   assignEventSchema,
   setDisplayMediaSchema,
+  createMenuBoardSchema,
 } from "@/lib/validations/tv";
 
 function revalidateTv() {
@@ -162,6 +163,13 @@ export const updateTvMediaAction = adminActionClient
       updates.durationSeconds = rest.durationSeconds;
     if (rest.isActive !== undefined) updates.isActive = rest.isActive;
     if (rest.muted !== undefined) updates.muted = rest.muted;
+    if (rest.slideConfig !== undefined) updates.slideConfig = rest.slideConfig;
+    if (rest.daypartStartMinutes !== undefined)
+      updates.daypartStartMinutes = rest.daypartStartMinutes;
+    if (rest.daypartEndMinutes !== undefined)
+      updates.daypartEndMinutes = rest.daypartEndMinutes;
+    if (rest.daypartDaysMask !== undefined)
+      updates.daypartDaysMask = rest.daypartDaysMask;
 
     try {
       const [row] = await db
@@ -173,6 +181,53 @@ export const updateTvMediaAction = adminActionClient
       return { success: true as const, media: row };
     } catch {
       return { success: false as const, error: "Error al actualizar medio" };
+    }
+  });
+
+/**
+ * Creates a "live menu board" slide (type='menu_board'). No file upload — the
+ * slide renders the current menu/category each time the TV polls.
+ */
+export const createMenuBoardAction = adminActionClient
+  .schema(createMenuBoardSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const userId = ctx.user.id as string | undefined;
+    try {
+      // Compute next displayOrder so the new slide appears at the end.
+      const [last] = await db
+        .select({ displayOrder: tvMedia.displayOrder })
+        .from(tvMedia)
+        .orderBy(desc(tvMedia.displayOrder))
+        .limit(1);
+      const nextOrder = (last?.displayOrder ?? -1) + 1;
+
+      const [row] = await db
+        .insert(tvMedia)
+        .values({
+          title: parsedInput.title,
+          type: "menu_board",
+          // File columns intentionally null for menu boards.
+          storagePath: null,
+          publicUrl: null,
+          mimeType: null,
+          fileSizeBytes: null,
+          durationSeconds: parsedInput.durationSeconds,
+          displayOrder: nextOrder,
+          isActive: true,
+          isGlobal: true,
+          muted: true,
+          slideConfig: parsedInput.config,
+          daypartStartMinutes: parsedInput.daypartStartMinutes ?? null,
+          daypartEndMinutes: parsedInput.daypartEndMinutes ?? null,
+          daypartDaysMask: parsedInput.daypartDaysMask ?? null,
+          uploadedByUserId: userId ?? null,
+        })
+        .returning();
+      revalidateTv();
+      return { success: true as const, media: row };
+    } catch (err) {
+      console.error("createMenuBoardAction failed", err);
+      return { success: false as const, error: "Error al crear pantalla de menú" };
     }
   });
 

@@ -9,14 +9,20 @@ import {
   tvDisplayMedia,
 } from "@/db/schema";
 import { and, asc, desc, eq, isNull, lte, gte, or, sql } from "drizzle-orm";
+import type { TvMenuBoardConfig } from "@/db/schema/tv";
+import { isItemActiveNow } from "./tv-dayparting";
+import { resolveMenuBoard, type MenuBoardData } from "./tv-menu-board";
 
 export type ResolvedItem = {
   id: string;
-  type: "image" | "video";
-  url: string;
+  type: "image" | "video" | "menu_board";
+  /** Only set for image/video. */
+  url?: string;
   durationSeconds: number;
   /** If true, this item is muted regardless of display.audioEnabled. */
   muted: boolean;
+  /** Only set for menu_board items. */
+  menuBoard?: MenuBoardData;
 };
 
 export type ResolvedPlaylist = {
@@ -28,6 +34,19 @@ export type ResolvedPlaylist = {
   version: string;
 };
 
+/** Row shape returned by every internal media query before final transform. */
+type RawMediaRow = {
+  id: string;
+  type: "image" | "video" | "menu_board";
+  url: string | null;
+  durationSeconds: number;
+  muted: boolean;
+  slideConfig: TvMenuBoardConfig | null;
+  daypartStartMinutes: number | null;
+  daypartEndMinutes: number | null;
+  daypartDaysMask: number | null;
+};
+
 /**
  * Resolves which playlist a given TV should show right now.
  *
@@ -35,17 +54,24 @@ export type ResolvedPlaylist = {
  *  1. Active event whose date range matches now AND
  *     (appliesToAllDisplays = true OR a tvEventAssignment exists for this display).
  *     If multiple events match, use the most recently created.
- *  2. Default playlist: active media items ordered by displayOrder.
+ *  2. Default playlist:
+ *     a) If this display has explicit selections in tvDisplayMedia → use those.
+ *     b) Otherwise → all global media.
+ *
+ * After source selection, items are filtered by their dayparting fields (only
+ * those active at the current local time pass through). Menu board slides have
+ * their data resolved on-the-fly so the TV always shows fresh prices/availability.
  *
  * Returns a deterministic `version` hash so the TV can skip re-rendering
- * when its content hasn't changed since the last poll.
+ * when its content hasn't changed since the last poll. The hash includes the
+ * current 15-minute time bucket so dayparting transitions trigger a refresh.
  */
 export async function resolveContentForDisplay(
   displayId: string,
 ): Promise<ResolvedPlaylist> {
   const now = new Date();
 
-  // Find a matching active event for this display.
+  // ── Try to find a matching active event for this display ────────────
   const matchingEvents = await db
     .select({
       id: tvEvents.id,
@@ -77,13 +103,17 @@ export async function resolveContentForDisplay(
 
   if (matchingEvents.length > 0) {
     const event = matchingEvents[0];
-    const eventItems = await db
+    const eventRows = await db
       .select({
         id: tvMedia.id,
         type: tvMedia.type,
         url: tvMedia.publicUrl,
         durationSeconds: tvMedia.durationSeconds,
         muted: tvMedia.muted,
+        slideConfig: tvMedia.slideConfig,
+        daypartStartMinutes: tvMedia.daypartStartMinutes,
+        daypartEndMinutes: tvMedia.daypartEndMinutes,
+        daypartDaysMask: tvMedia.daypartDaysMask,
         displayOrder: tvEventMedia.displayOrder,
       })
       .from(tvEventMedia)
@@ -96,33 +126,29 @@ export async function resolveContentForDisplay(
       )
       .orderBy(asc(tvEventMedia.displayOrder), asc(tvMedia.createdAt));
 
-    const items: ResolvedItem[] = eventItems.map((row) => ({
-      id: row.id,
-      type: row.type,
-      url: row.url,
-      durationSeconds: row.durationSeconds,
-      muted: row.muted,
-    }));
+    const items = await materializeItems(eventRows, now);
 
     return {
       source: "event",
       eventId: event.id,
       eventName: event.name,
       items,
-      version: hashItems(items),
+      version: hashItems(items, now),
     };
   }
 
-  // Default playlist resolution:
-  //   1. If this display has explicit selections in tvDisplayMedia → use those.
-  //   2. Otherwise → fallback to ALL global media (back-compat).
-  const displaySpecificItems = await db
+  // ── Default playlist resolution ──────────────────────────────────────
+  const displaySpecificRows = await db
     .select({
       id: tvMedia.id,
       type: tvMedia.type,
       url: tvMedia.publicUrl,
       durationSeconds: tvMedia.durationSeconds,
       muted: tvMedia.muted,
+      slideConfig: tvMedia.slideConfig,
+      daypartStartMinutes: tvMedia.daypartStartMinutes,
+      daypartEndMinutes: tvMedia.daypartEndMinutes,
+      daypartDaysMask: tvMedia.daypartDaysMask,
       perDisplayOrder: tvDisplayMedia.displayOrder,
     })
     .from(tvDisplayMedia)
@@ -136,9 +162,9 @@ export async function resolveContentForDisplay(
     )
     .orderBy(asc(tvDisplayMedia.displayOrder), asc(tvMedia.createdAt));
 
-  const defaultItems =
-    displaySpecificItems.length > 0
-      ? displaySpecificItems
+  const defaultRows =
+    displaySpecificRows.length > 0
+      ? displaySpecificRows
       : await db
           .select({
             id: tvMedia.id,
@@ -146,38 +172,96 @@ export async function resolveContentForDisplay(
             url: tvMedia.publicUrl,
             durationSeconds: tvMedia.durationSeconds,
             muted: tvMedia.muted,
+            slideConfig: tvMedia.slideConfig,
+            daypartStartMinutes: tvMedia.daypartStartMinutes,
+            daypartEndMinutes: tvMedia.daypartEndMinutes,
+            daypartDaysMask: tvMedia.daypartDaysMask,
           })
           .from(tvMedia)
           .where(and(eq(tvMedia.isActive, true), eq(tvMedia.isGlobal, true)))
           .orderBy(asc(tvMedia.displayOrder), asc(tvMedia.createdAt));
 
-  const items: ResolvedItem[] = defaultItems.map((row) => ({
-    id: row.id,
-    type: row.type,
-    url: row.url,
-    durationSeconds: row.durationSeconds,
-    muted: row.muted,
-  }));
+  const items = await materializeItems(defaultRows, now);
 
   return {
     source: "default",
     eventId: null,
     eventName: null,
     items,
-    version: hashItems(items),
+    version: hashItems(items, now),
   };
+}
+
+/**
+ * Applies dayparting filter and resolves menu-board data. Image/video items
+ * pass through. Items whose URL is missing (incomplete uploads) are dropped.
+ */
+async function materializeItems(
+  rows: RawMediaRow[],
+  now: Date,
+): Promise<ResolvedItem[]> {
+  const out: ResolvedItem[] = [];
+  for (const row of rows) {
+    if (!isItemActiveNow(row, now)) continue;
+
+    if (row.type === "menu_board") {
+      if (!row.slideConfig) continue; // misconfigured slide
+      let pages: MenuBoardData[];
+      try {
+        pages = await resolveMenuBoard(row.slideConfig);
+      } catch (err) {
+        console.error("Failed to resolve menu board", row.id, err);
+        continue;
+      }
+      // Each page becomes its own carousel item so the display auto-advances
+      // through the full menu without any client-side timer in the slide.
+      for (const page of pages) {
+        out.push({
+          id: pages.length === 1 ? row.id : `${row.id}-p${page.pageIndex}`,
+          type: "menu_board",
+          durationSeconds: row.durationSeconds,
+          muted: true,
+          menuBoard: page,
+        });
+      }
+    } else {
+      if (!row.url) continue; // image/video without a URL: skip
+      out.push({
+        id: row.id,
+        type: row.type,
+        url: row.url,
+        durationSeconds: row.durationSeconds,
+        muted: row.muted,
+      });
+    }
+  }
+  return out;
 }
 
 /**
  * Stable hash that changes when items, their order, or their durations change.
  * 8-char SHA-1 prefix is plenty to detect real changes; collisions are harmless
  * (worst case: TV does an extra refresh).
+ *
+ * For menu_board items we hash item names/prices so menu DB edits invalidate
+ * the cache. The naïve "set of items" view already changes when dayparting
+ * filters add/remove items, so the bucket isn't needed for time transitions.
  */
-function hashItems(items: ResolvedItem[]): string {
+function hashItems(items: ResolvedItem[], _now: Date): string {
   if (items.length === 0) return "empty";
-  // Include muted flag so toggling audio on a clip refreshes the TV.
   const payload = items
-    .map((i) => `${i.id}:${i.durationSeconds}:${i.muted ? 1 : 0}`)
+    .map((i) => {
+      if (i.type === "menu_board") {
+        const mb = i.menuBoard;
+        const sig = mb
+          ? mb.items
+              .map((m) => `${m.id}:${m.priceUsdCents}`)
+              .join(",")
+          : "";
+        return `mb:${i.id}:${i.durationSeconds}:${sig}`;
+      }
+      return `${i.id}:${i.durationSeconds}:${i.muted ? 1 : 0}`;
+    })
     .join("|");
   return crypto
     .createHash("sha1")
