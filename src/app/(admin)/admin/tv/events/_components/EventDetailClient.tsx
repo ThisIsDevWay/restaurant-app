@@ -54,8 +54,8 @@ type UploadItem = {
 type EventMediaItem = {
   id: string;
   title: string;
-  type: "image" | "video";
-  publicUrl: string;
+  type: "image" | "video" | "menu_board";
+  publicUrl: string | null;
   thumbnailUrl: string | null;
   durationSeconds: number;
   displayOrder: number;
@@ -416,7 +416,11 @@ export function EventDetailClient({
                   onDrop={() => handleDrop(item.id)}
                   className="group relative rounded-xl overflow-hidden bg-black ring-1 ring-border aspect-square cursor-move"
                 >
-                  {item.type === "image" ? (
+                  {item.type === "menu_board" ? (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-500/30 via-amber-700/30 to-black text-amber-100 text-[10px] font-bold uppercase tracking-widest">
+                      Pantalla de menú
+                    </div>
+                  ) : item.type === "image" && item.publicUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={item.publicUrl}
@@ -430,7 +434,7 @@ export function EventDetailClient({
                       alt={item.title}
                       className="w-full h-full object-cover"
                     />
-                  ) : (
+                  ) : item.publicUrl ? (
                     <video
                       src={item.publicUrl}
                       muted
@@ -438,7 +442,7 @@ export function EventDetailClient({
                       preload="metadata"
                       className="w-full h-full object-cover"
                     />
-                  )}
+                  ) : null}
                   {item.type === "video" && (
                     <div className="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded inline-flex items-center gap-1">
                       <Video className="h-3 w-3" /> VIDEO
@@ -510,8 +514,8 @@ function EventInfoSection({ event }: { event: TvEvent }) {
       id: event.id,
       name: name.trim() || undefined,
       description: description.trim() || null,
-      startsAt: startsAt ? new Date(startsAt).toISOString() : null,
-      endsAt: endsAt ? new Date(endsAt).toISOString() : null,
+      startsAt: startsAt ? new Date(startsAt + ":00-04:00").toISOString() : null,
+      endsAt: endsAt ? new Date(endsAt + ":00-04:00").toISOString() : null,
       appliesToAllDisplays,
       isActive,
     });
@@ -737,7 +741,11 @@ function MediaPickerDialog({
                       : "ring-border hover:ring-primary/50"
                 }`}
               >
-                {item.type === "image" ? (
+                {item.type === "menu_board" ? (
+                  <div className="w-full h-full flex items-center justify-center bg-amber-500/15 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                    MENÚ
+                  </div>
+                ) : item.type === "image" && item.publicUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={item.publicUrl}
@@ -785,8 +793,18 @@ function MediaPickerDialog({
 }
 
 function toLocalDatetimeInput(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  // Format the UTC timestamp as Caracas wall-clock time (UTC-4, no DST).
+  const fmt = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Caracas",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  // sv-SE produces "YYYY-MM-DD HH:MM" which matches datetime-local value format.
+  return fmt.format(d).replace(" ", "T");
 }
 
 function readVideoMetadata(file: File): Promise<{

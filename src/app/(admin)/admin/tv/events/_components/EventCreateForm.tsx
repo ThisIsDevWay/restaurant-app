@@ -31,8 +31,8 @@ export function EventCreateForm() {
     const res = await createTvEventAction({
       name: name.trim(),
       description: description.trim() || null,
-      startsAt: startsAt ? new Date(startsAt).toISOString() : null,
-      endsAt: endsAt ? new Date(endsAt).toISOString() : null,
+      startsAt: startsAt ? new Date(startsAt + ":00-04:00").toISOString() : null,
+      endsAt: endsAt ? new Date(endsAt + ":00-04:00").toISOString() : null,
       appliesToAllDisplays,
     });
     setSubmitting(false);
