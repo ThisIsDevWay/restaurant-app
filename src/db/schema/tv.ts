@@ -8,6 +8,7 @@ import {
   uniqueIndex,
   index,
   check,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { users } from "./users";
@@ -125,23 +126,60 @@ export const tvPairingSessions = pgTable(
  * Media library: images and videos uploaded by the admin.
  * Stored in Supabase Storage bucket "tv-media".
  */
+/**
+ * Slide config for non-file slides ("menu_board" type). Stored as JSONB so we
+ * can evolve the shape without further migrations. Ignored for image/video.
+ */
+export type TvMenuBoardConfig = {
+  kind: "menu_board";
+  /** Big heading shown at the top of the board. */
+  title: string;
+  /** Optional subtitle / tagline under the heading. */
+  subtitle?: string;
+  /** Which menu items to pull. */
+  source:
+    | { type: "category"; categoryId: string }
+    | { type: "all_available" }
+    | { type: "daily" };
+  /** Visual layout. */
+  layout: "list" | "grid";
+  showPrices: boolean;
+  showDescriptions: boolean;
+  showImages: boolean;
+  /** Which currency(ies) to render next to each price. */
+  currency: "usd" | "ves" | "both";
+  /** Optional manual cap on total items fetched across all pages. */
+  maxItems?: number;
+  /**
+   * Items shown per page. When items exceed this, additional slides are
+   * generated automatically so the carousel pages through the full menu.
+   * Defaults: 6 for grid, 8 for list.
+   */
+  itemsPerPage?: number;
+};
+
 export const tvMedia = pgTable(
   "tv_media",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     title: text("title").notNull(),
-    /** 'image' | 'video' */
-    type: text("type").notNull().$type<"image" | "video">(),
+    /** 'image' | 'video' | 'menu_board' */
+    type: text("type")
+      .notNull()
+      .$type<"image" | "video" | "menu_board">(),
     storageBucket: text("storage_bucket").notNull().default("tv-media"),
-    /** Path within bucket, e.g. "2026/05/abc123.jpg" */
-    storagePath: text("storage_path").notNull(),
-    publicUrl: text("public_url").notNull(),
+    /** Path within bucket. NULL for menu_board slides (no file). */
+    storagePath: text("storage_path"),
+    /** Public URL. NULL for menu_board slides. */
+    publicUrl: text("public_url"),
     thumbnailUrl: text("thumbnail_url"),
-    mimeType: text("mime_type").notNull(),
-    fileSizeBytes: integer("file_size_bytes").notNull(),
+    /** NULL for menu_board slides. */
+    mimeType: text("mime_type"),
+    /** NULL for menu_board slides. */
+    fileSizeBytes: integer("file_size_bytes"),
     width: integer("width"),
     height: integer("height"),
-    /** For images: how long to display. For videos: actual duration (informative). */
+    /** For images & menu boards: how long to display. For videos: informative. */
     durationSeconds: integer("duration_seconds").notNull().default(10),
     /** Order within the default playlist. Lower = earlier. */
     displayOrder: integer("display_order").notNull().default(0),
@@ -158,6 +196,26 @@ export const tvMedia = pgTable(
      * per-clip when sound is desired.
      */
     muted: boolean("muted").notNull().default(true),
+    /**
+     * Renderer config for non-file slide types. Currently used by type='menu_board'.
+     */
+    slideConfig: jsonb("slide_config").$type<TvMenuBoardConfig | null>(),
+    /* ─── Dayparting (time-of-day scheduling) ────────────────────────────
+     *
+     * All three NULL = play always (default behavior).
+     *
+     * `daypartStartMinutes`/`daypartEndMinutes` = minutes since local midnight,
+     * 0..1439. If `start <= end` the window is the natural interval. If
+     * `start > end` the window wraps midnight (e.g. 22:00→02:00).
+     *
+     * `daypartDaysMask` is a 7-bit field, bit 0 = Sunday, bit 6 = Saturday.
+     * NULL = every day.
+     *
+     * Times are interpreted in the restaurant's local timezone ("America/Caracas").
+     */
+    daypartStartMinutes: integer("daypart_start_minutes"),
+    daypartEndMinutes: integer("daypart_end_minutes"),
+    daypartDaysMask: integer("daypart_days_mask"),
     uploadedByUserId: uuid("uploaded_by_user_id").references(() => users.id, {
       onDelete: "set null",
     }),
@@ -171,7 +229,7 @@ export const tvMedia = pgTable(
   (table) => [
     check(
       "tv_media_type_check",
-      sql`${table.type} IN ('image', 'video')`,
+      sql`${table.type} IN ('image', 'video', 'menu_board')`,
     ),
     check(
       "tv_media_duration_check",
@@ -179,7 +237,19 @@ export const tvMedia = pgTable(
     ),
     check(
       "tv_media_size_check",
-      sql`${table.fileSizeBytes} >= 0`,
+      sql`${table.fileSizeBytes} IS NULL OR ${table.fileSizeBytes} >= 0`,
+    ),
+    check(
+      "tv_media_daypart_start_check",
+      sql`${table.daypartStartMinutes} IS NULL OR (${table.daypartStartMinutes} >= 0 AND ${table.daypartStartMinutes} <= 1439)`,
+    ),
+    check(
+      "tv_media_daypart_end_check",
+      sql`${table.daypartEndMinutes} IS NULL OR (${table.daypartEndMinutes} >= 0 AND ${table.daypartEndMinutes} <= 1439)`,
+    ),
+    check(
+      "tv_media_daypart_days_check",
+      sql`${table.daypartDaysMask} IS NULL OR (${table.daypartDaysMask} >= 0 AND ${table.daypartDaysMask} <= 127)`,
     ),
   ],
 );
