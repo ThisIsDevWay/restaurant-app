@@ -55,6 +55,7 @@ function formatLocalDate(date: Date): string {
  */
 export async function resolveMenuBoard(
   config: TvMenuBoardConfig,
+  orientationHint?: "portrait" | "landscape",
 ): Promise<MenuBoardData[]> {
   // ── Settings + exchange rate ─────────────────────────────────────────
   const [settingsRow] = await db.select().from(settings).limit(1);
@@ -166,9 +167,11 @@ export async function resolveMenuBoard(
   const perPage =
     config.itemsPerPage && config.itemsPerPage > 0
       ? config.itemsPerPage
-      : config.layout === "list"
-        ? 8
-        : 6;
+      : orientationHint === "portrait"
+        ? 3
+        : config.layout === "list"
+          ? 8
+          : 6;
 
   // Split into pages.
   const pages: Array<MenuBoardData["items"]> = [];

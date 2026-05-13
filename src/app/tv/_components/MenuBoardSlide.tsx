@@ -170,8 +170,47 @@ function PriceTag({
   const [mainFs, subFs] = {
     grid:     [cu(12, unit * 1.75, 60), cu(10, unit * 1.15, 40)],
     list:     [cu(14, unit * 2.2,  72), cu(11, unit * 1.4,  46)],
-    portrait: [cu(16, unit * 3.6, 100), cu(12, unit * 2.2,  64)],
+    portrait: [cu(14, unit * 3.0,  80), cu(10, unit * 2.0,  56)],
   }[variant];
+
+  if (variant === "portrait") {
+    return (
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: cu(3, unit * 0.8, 16),
+          background: "rgba(0,0,0,0.4)",
+          border: "1px solid rgba(255,248,243,0.15)",
+          padding: `${cu(1.5, unit * 0.6, 12)} ${cu(4, unit * 1.5, 32)}`,
+          borderRadius: 999,
+          width: "fit-content",
+          marginTop: cu(2, unit, 20),
+        }}
+      >
+        {(data.currency === "usd" || data.currency === "both") && (
+          <span style={{ color: "#f59e0b", fontWeight: 800, fontSize: mainFs, fontVariantNumeric: "tabular-nums" }}>
+            {usd}
+          </span>
+        )}
+        {data.currency === "both" && bs && (
+          <div style={{ width: 1, height: "1em", background: "rgba(255,248,243,0.2)" }} />
+        )}
+        {(data.currency === "ves" || data.currency === "both") && bs && (
+          <span
+            style={{
+              color: data.currency === "both" ? "rgba(255,248,243,0.7)" : "#f59e0b",
+              fontWeight: data.currency === "both" ? 500 : 800,
+              fontSize: data.currency === "both" ? subFs : mainFs,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            Bs {bs}
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, lineHeight: 1.05, flexShrink: 0 }}>
@@ -205,9 +244,15 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    // Use offsetWidth/offsetHeight instead of getBoundingClientRect().
+    // getBoundingClientRect() returns post-transform dimensions, so a
+    // 1080×1920 container rotated 90° via CSS reports 1920×1080 — making
+    // isPortrait always false. offset* gives the pre-transform layout
+    // dimensions which correctly reflect the intended orientation.
     const measure = () => {
-      const r = el.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) setBox({ w: r.width, h: r.height });
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      if (w > 0 && h > 0) setBox({ w, h });
     };
     measure();
     if (typeof ResizeObserver === "undefined") return;
@@ -318,10 +363,10 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
           <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.4)", fontSize: cu(14, unit * 2, 56) }}>
             No hay productos para mostrar
           </div>
+        ) : isList ? (
+          <ListLayout grouped={grouped} data={data} hasMultipleCategories={hasMultipleCategories} reserveSlot={reserveSlot} unit={unit} isPortrait={isPortrait} />
         ) : isPortrait ? (
           <PortraitLayout grouped={grouped} data={data} hasMultipleCategories={hasMultipleCategories} unit={unit} />
-        ) : isList ? (
-          <ListLayout grouped={grouped} data={data} hasMultipleCategories={hasMultipleCategories} reserveSlot={reserveSlot} unit={unit} />
         ) : (
           <GridLayout grouped={grouped} data={data} hasMultipleCategories={hasMultipleCategories} reserveSlot={reserveSlot} cols={cols} unit={unit} />
         )}
@@ -329,11 +374,6 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
 
       {/* ── Footer ── */}
       <div style={{ flexShrink: 0, marginTop: cu(4, unit * 1.2, 32), display: "flex", alignItems: "center", justifyContent: "center", gap: cu(8, unit * 2, 48) }}>
-        {data.showPrices && (data.currency === "both" || data.currency === "ves") && data.rateBsPerUsd != null && (
-          <div style={{ fontSize: cu(8, unit * 1.0, 28), color: "rgba(255,255,255,0.35)", letterSpacing: "0.1em" }}>
-            Tasa: 1 USD = Bs {BS_FMT.format(data.rateBsPerUsd)}
-          </div>
-        )}
         {multiPage && (
           <div style={{ display: "flex", alignItems: "center", gap: cu(3, unit * 0.45, 12) }}>
             {Array.from({ length: data.totalPages }, (_, i) => (
@@ -373,20 +413,42 @@ function PortraitLayout({
     for (const item of g.items) flat.push({ item, idx: flat.length });
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: cu(6, unit * 1.5, 40), overflow: "hidden" }}>
+    <>
+      <style>{`
+        @keyframes tv-ken-burns {
+          0% { transform: scale(1); }
+          100% { transform: scale(1.05); }
+        }
+      `}</style>
+      <div
+        style={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          gap: cu(6, unit * 1.8, 44),
+          overflow: "hidden",
+        }}
+      >
+      {/* Category labels — Heritage Red per DESIGN.md */}
       {hasMultipleCategories && (
-        <div style={{ flexShrink: 0, display: "flex", gap: cu(8, unit * 2, 48), flexWrap: "wrap" }}>
+        <div
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            gap: cu(8, unit * 2, 48),
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
           {grouped.map((g) => (
             <div
               key={g.name}
               style={{
                 fontSize: cu(9, unit * 1.5, 42),
-                color: "#f59e0b",
+                color: "#d6d3d1",
                 fontWeight: 700,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                borderBottom: "1px solid rgba(245,158,11,0.35)",
-                paddingBottom: "0.3em",
               }}
             >
               {g.name}
@@ -394,10 +456,19 @@ function PortraitLayout({
           ))}
         </div>
       )}
+
+      {/* Item rows — 3 per page, alternating image side */}
       {flat.map(({ item, idx }) => (
-        <PortraitRow key={item.id} item={item} data={data} imageLeft={idx % 2 === 0} unit={unit} />
+        <PortraitRow
+          key={item.id}
+          item={item}
+          data={data}
+          imageLeft={idx % 2 === 0}
+          unit={unit}
+        />
       ))}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -412,11 +483,53 @@ function PortraitRow({
   imageLeft: boolean;
   unit: number;
 }) {
-  const pad = cu(6, unit * 3, 80);
+  const gap = cu(8, unit * 2.5, 64);
 
+  // Render image directly — no wrapper box, no dark background, no clipping.
+  // The food photography blends naturally into the dark page gradient.
   const imgSlot = (
-    <div style={{ flex: "0 0 38%", minWidth: 0, minHeight: 0 }}>
-      <ImageSlot item={item} unit={unit} radius={unit * 1.2} />
+    <div
+      style={{
+        flex: "0 0 48%",
+        minWidth: 0,
+        minHeight: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+      }}
+    >
+      {/* Spotlight Glow */}
+      <div
+        style={{
+          position: "absolute",
+          inset: "10%",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(255, 248, 243, 0.08) 0%, transparent 65%)",
+          zIndex: 0,
+        }}
+      />
+      {item.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.imageUrl}
+          alt=""
+          draggable={false}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            display: "block",
+            position: "relative",
+            zIndex: 1,
+            animation: "tv-ken-burns 15s ease-in-out infinite alternate",
+            filter: "drop-shadow(0 20px 35px rgba(0,0,0,0.8))",
+          }}
+        />
+      ) : (
+        /* Monogram placeholder — keep ImageSlot only for items without image */
+        <ImageSlot item={item} unit={unit} radius={unit * 1.4} />
+      )}
     </div>
   );
 
@@ -428,17 +541,18 @@ function PortraitRow({
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
-        gap: cu(4, unit * 0.8, 20),
-        paddingLeft: imageLeft ? pad : "0",
-        paddingRight: imageLeft ? "0" : pad,
+        alignItems: "flex-start",
+        textAlign: "left",
+        gap: cu(6, unit * 1.8, 44),
       }}
     >
+      {/* Dish name — big and bold, warm cream per DESIGN.md */}
       <div
         style={{
-          fontSize: cu(14, unit * 3.8, 110),
-          fontWeight: 700,
-          color: "#fff",
-          lineHeight: 1.15,
+          fontSize: cu(18, unit * 4.5, 130),
+          fontWeight: 800,
+          color: "#fff8f3",
+          lineHeight: 1.1,
           overflow: "hidden",
           display: "-webkit-box",
           WebkitLineClamp: 2,
@@ -447,22 +561,23 @@ function PortraitRow({
       >
         {item.name}
       </div>
+
+      {/* Description — warm cream at reduced opacity */}
       {data.showDescriptions && item.description && (
         <div
           style={{
-            fontSize: cu(10, unit * 2.2, 64),
-            color: "rgba(255,255,255,0.58)",
-            lineHeight: 1.35,
+            fontSize: cu(11, unit * 2.6, 72),
+            color: "rgba(255,248,243,0.55)",
+            lineHeight: 1.5,
+            letterSpacing: "0.02em",
             fontWeight: 300,
-            overflow: "hidden",
-            display: "-webkit-box",
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: "vertical",
           }}
         >
           {item.description}
         </div>
       )}
+
+      {/* Price */}
       {data.showPrices && (
         <PriceTag item={item} data={data} unit={unit} variant="portrait" />
       )}
@@ -477,6 +592,7 @@ function PortraitRow({
         display: "flex",
         flexDirection: imageLeft ? "row" : "row-reverse",
         alignItems: "stretch",
+        gap,
         overflow: "hidden",
       }}
     >
@@ -614,12 +730,14 @@ function ListLayout({
   hasMultipleCategories,
   reserveSlot,
   unit,
+  isPortrait,
 }: {
   grouped: { name: string; items: MenuBoardData["items"] }[];
   data: MenuBoardData;
   hasMultipleCategories: boolean;
   reserveSlot: boolean;
   unit: number;
+  isPortrait: boolean;
 }) {
   const totalRows = grouped.reduce(
     (acc, g) => acc + g.items.length + (hasMultipleCategories ? 0.5 : 0),
@@ -627,27 +745,48 @@ function ListLayout({
   );
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: cu(4, unit * 1, 28), overflow: "hidden" }}>
-      {grouped.map((cat) => (
-        <div key={cat.name} style={{ display: "contents" }}>
+    <div
+      style={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: totalRows <= 4 ? "center" : "flex-start",
+        overflow: "hidden",
+        width: isPortrait ? "90%" : "85%",
+        margin: "0 auto",
+      }}
+    >
+      {grouped.map((cat, ci) => (
+        <div key={cat.name} style={{ width: "100%" }}>
           {hasMultipleCategories && (
             <div
               style={{
-                flexShrink: 0,
-                fontSize: cu(9, unit * 1.5, 42),
-                color: "#f59e0b",
+                width: "100%",
+                fontSize: isPortrait ? cu(11, unit * 2.5, 60) : cu(10, unit * 1.8, 50),
+                color: "#d6d3d1", /* text-stone-300 */
                 fontWeight: 700,
-                letterSpacing: "0.18em",
+                letterSpacing: "0.1em", /* tracking-widest style */
                 textTransform: "uppercase",
-                borderBottom: "1px solid rgba(245,158,11,0.3)",
-                paddingBottom: "0.3em",
+                paddingBottom: cu(3, unit * 0.8, 18),
+                marginBottom: cu(4, unit * 1.2, 24),
+                marginTop: ci > 0 ? cu(8, unit * 2.5, 50) : 0,
+                borderBottom: "1px solid rgba(255,255,255,0.1)",
               }}
             >
               {cat.name}
             </div>
           )}
-          {cat.items.map((item) => (
-            <ListRow key={item.id} item={item} data={data} reserveSlot={reserveSlot} unit={unit} totalRows={totalRows} />
+          {cat.items.map((item, idx) => (
+            <ListRow
+              key={item.id}
+              item={item}
+              data={data}
+              reserveSlot={reserveSlot}
+              unit={unit}
+              totalRows={totalRows}
+              showDivider={idx < cat.items.length - 1 || ci < grouped.length - 1}
+              isPortrait={isPortrait}
+            />
           ))}
         </div>
       ))}
@@ -661,61 +800,124 @@ function ListRow({
   reserveSlot,
   unit,
   totalRows,
+  showDivider,
+  isPortrait,
 }: {
   item: MenuBoardData["items"][number];
   data: MenuBoardData;
   reserveSlot: boolean;
   unit: number;
   totalRows: number;
+  showDivider: boolean;
+  isPortrait: boolean;
 }) {
-  const imgSize = cu(40, unit * 8, 220);
+  const imgSize = isPortrait
+    ? cu(70, unit * 16, 360)
+    : cu(55, unit * 12, 280);
+
+  const titleFs = isPortrait
+    ? cu(15, unit * 3.5, 80)
+    : cu(13, unit * 2.2, 64);
+
+  const descFs = isPortrait
+    ? cu(11, unit * 2.4, 56)
+    : cu(9, unit * 1.5, 42);
+
+  // Use list variant to keep price right aligned in grid
+  const priceVariant = "list" as const;
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", gap: cu(8, unit * 2, 52), overflow: "hidden" }}>
-      {reserveSlot && (
-        <div style={{ flexShrink: 0, width: imgSize, height: imgSize }}>
-          <ImageSlot item={item} unit={unit} radius={unit * 0.8} />
-        </div>
-      )}
-      <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-        <div
-          style={{
-            fontSize: cu(13, unit * 2.1, 64),
-            fontWeight: 700,
-            color: "#fff",
-            lineHeight: 1.2,
-            overflow: "hidden",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-          }}
-        >
-          {item.name}
-        </div>
-        {data.showDescriptions && item.description && (
+    <div
+      style={{
+        borderBottom: showDivider ? "1px solid rgba(255,255,255,0.1)" : "none",
+        paddingBottom: cu(4, unit * 1.2, 24),
+        marginBottom: cu(4, unit * 1.2, 24),
+        background: "radial-gradient(ellipse at center, rgba(255,255,255,0.03) 0%, transparent 70%)",
+        borderRadius: unit * 1,
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: reserveSlot ? `${imgSize}px 1fr auto` : "1fr auto",
+          gap: isPortrait ? cu(8, unit * 2.5, 56) : cu(6, unit * 1.8, 48),
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        {/* ── Columna 1: Imagen ── */}
+        {reserveSlot && (
           <div
             style={{
-              fontSize: cu(9, unit * 1.3, 38),
-              color: "rgba(255,255,255,0.55)",
-              marginTop: cu(2, unit * 0.25, 8),
-              lineHeight: 1.35,
-              fontWeight: 300,
-              overflow: "hidden",
-              display: "-webkit-box",
-              WebkitLineClamp: totalRows <= 6 ? 2 : 1,
-              WebkitBoxOrient: "vertical",
+              width: imgSize,
+              height: imgSize,
+              position: "relative",
+              borderRadius: "50%",
             }}
           >
-            {item.description}
+            {item.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={item.imageUrl}
+                alt=""
+                draggable={false}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  display: "block",
+                  borderRadius: "50%",
+                  filter: "drop-shadow(0 25px 25px rgba(0,0,0,0.5))", /* drop-shadow-2xl */
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              />
+            ) : (
+              <ImageSlot item={item} unit={unit} radius={unit * 5} />
+            )}
+          </div>
+        )}
+
+        {/* ── Columna 2: Texto ── */}
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0, gap: cu(2, unit * 0.5, 12) }}>
+          <div
+            style={{
+              fontSize: titleFs,
+              fontWeight: 700,
+              color: "#fff8f3",
+              lineHeight: 1.2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {item.name}
+          </div>
+
+          {data.showDescriptions && item.description && (
+            <div
+              style={{
+                fontSize: descFs,
+                color: "#a8a29e", /* text-stone-400 */
+                lineHeight: 1.625, /* leading-relaxed */
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: totalRows <= 4 ? 3 : 2,
+                WebkitBoxOrient: "vertical",
+              }}
+            >
+              {item.description}
+            </div>
+          )}
+        </div>
+
+        {/* ── Columna 3: Precio ── */}
+        {data.showPrices && (
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "flex-end" }}>
+            <PriceTag item={item} data={data} unit={unit} variant={priceVariant} />
           </div>
         )}
       </div>
-      {/* Dotted leader */}
-      <div
-        style={{ flex: "0 1 5%", borderBottom: `${Math.max(1, unit * 0.15)}px dotted rgba(255,255,255,0.13)`, alignSelf: "center", minWidth: cu(12, unit * 1.5, 40) }}
-        aria-hidden
-      />
-      {data.showPrices && <PriceTag item={item} data={data} unit={unit} variant="list" />}
     </div>
   );
 }

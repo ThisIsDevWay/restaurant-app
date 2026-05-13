@@ -71,6 +71,19 @@ export async function resolveContentForDisplay(
 ): Promise<ResolvedPlaylist> {
   const now = new Date();
 
+  // Look up the display to get its orientation for portrait-aware pagination.
+  const [displayRow] = await db
+    .select({ orientation: tvDisplays.orientation })
+    .from(tvDisplays)
+    .where(eq(tvDisplays.id, displayId))
+    .limit(1);
+  const orientationHint: "portrait" | "landscape" | undefined =
+    displayRow?.orientation === "portrait"
+      ? "portrait"
+      : displayRow?.orientation === "landscape"
+        ? "landscape"
+        : undefined;
+
   // ── Try to find a matching active event for this display ────────────
   const matchingEvents = await db
     .select({
@@ -126,7 +139,7 @@ export async function resolveContentForDisplay(
       )
       .orderBy(asc(tvEventMedia.displayOrder), asc(tvMedia.createdAt));
 
-    const items = await materializeItems(eventRows, now);
+    const items = await materializeItems(eventRows, now, orientationHint);
 
     return {
       source: "event",
@@ -181,7 +194,7 @@ export async function resolveContentForDisplay(
           .where(and(eq(tvMedia.isActive, true), eq(tvMedia.isGlobal, true)))
           .orderBy(asc(tvMedia.displayOrder), asc(tvMedia.createdAt));
 
-  const items = await materializeItems(defaultRows, now);
+  const items = await materializeItems(defaultRows, now, orientationHint);
 
   return {
     source: "default",
@@ -199,6 +212,7 @@ export async function resolveContentForDisplay(
 async function materializeItems(
   rows: RawMediaRow[],
   now: Date,
+  orientationHint?: "portrait" | "landscape",
 ): Promise<ResolvedItem[]> {
   const out: ResolvedItem[] = [];
   for (const row of rows) {
@@ -208,7 +222,7 @@ async function materializeItems(
       if (!row.slideConfig) continue; // misconfigured slide
       let pages: MenuBoardData[];
       try {
-        pages = await resolveMenuBoard(row.slideConfig);
+        pages = await resolveMenuBoard(row.slideConfig, orientationHint);
       } catch (err) {
         console.error("Failed to resolve menu board", row.id, err);
         continue;
