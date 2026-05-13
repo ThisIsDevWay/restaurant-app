@@ -4,6 +4,7 @@ import { UtensilsCrossed, Plus, Coffee } from "lucide-react";
 import { useDailyMenuState } from "@/hooks/useDailyMenuState";
 import { useItemContornos } from "@/hooks/useItemContornos";
 import { useDailyMenuSync } from "@/hooks/useDailyMenuSync";
+import { useMenuPdfDownload } from "./useMenuPdfDownload";
 import { formatDateLabel } from "./DailyMenu.types";
 import { DailyMenuHeader } from "./DailyMenuHeader";
 import { DailyMenuPlatosTab } from "./DailyMenuPlatosTab";
@@ -47,6 +48,7 @@ export function DailyMenuClient({
   });
 
   const contornos = useItemContornos({ allItems });
+  const pdf = useMenuPdfDownload(state.selectedDate);
   const { label: dateLabel, badge: dateBadge } = formatDateLabel(state.selectedDate, today);
 
   function handleToggle(id: string) {
@@ -126,6 +128,12 @@ export function DailyMenuClient({
         isDirty={state.isDirty}
         isPending={sync.isPending}
         onSave={sync.handleSave}
+        pdfStatus={pdf.state.status}
+        pdfPreviewUrl={pdf.state.status === "ready" ? pdf.state.previewUrl : undefined}
+        pdfErrorMessage={pdf.state.status === "error" ? pdf.state.message : undefined}
+        onGeneratePdf={pdf.generate}
+        onDownloadPdf={pdf.download}
+        onResetPdf={pdf.reset}
       />
 
       {/* Tab bar */}

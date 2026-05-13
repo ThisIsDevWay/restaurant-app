@@ -54,6 +54,7 @@ const nextConfig: NextConfig = {
               `media-src ${cspMediaSrc}`,
               "font-src 'self' https://fonts.gstatic.com",
               `connect-src ${cspConnectSrc}`,
+              "frame-src 'self' blob:",
             ].join("; "),
           },
           { key: "X-Frame-Options", value: "DENY" },
