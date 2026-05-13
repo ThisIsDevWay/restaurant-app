@@ -42,8 +42,8 @@ export async function fetchBCVRates(): Promise<BCVRates> {
           body += chunk.toString();
         });
         res.on("end", () => {
-          const usdRate = parseRateFromHTML(body, "dolar");
-          const eurRate = parseRateFromHTML(body, "euro");
+          const usdRate = parseRateFromHTML(body, "USD");
+          const eurRate = parseRateFromHTML(body, "EUR");
           resolve({
             usd: usdRate !== null ? { rate: usdRate, source: "bcv_official" } : null,
             eur: eurRate !== null ? { rate: eurRate, source: "bcv_official" } : null,
@@ -72,10 +72,20 @@ export async function fetchBCVRate(): Promise<BCVRate | null> {
  * Extracts a rate from BCV's HTML for a given currency section.
  * Looks for the <div id="currencyId"> section and the <strong> tag with the rate.
  */
-function parseRateFromHTML(html: string, currencyId: string): number | null {
-  const match = html.match(
-    new RegExp(`id="${currencyId}"[\\s\\S]*?<strong>\\s*([\\d.,]+)\\s*<\\/strong>`, "i"),
+function parseRateFromHTML(html: string, currencyCode: string): number | null {
+  // Try the new format: <span> USD</span> ... <strong class="...">123,45</strong>
+  let match = html.match(
+    new RegExp(`<span>\\s*${currencyCode}\\s*<\\/span>[\\s\\S]*?<strong[^>]*>\\s*([\\d.,]+)\\s*<\\/strong>`, "i"),
   );
+
+  // Fallback to the old format just in case
+  if (!match) {
+    const legacyId = currencyCode === "USD" ? "dolar" : "euro";
+    match = html.match(
+      new RegExp(`id="${legacyId}"[\\s\\S]*?<strong[^>]*>\\s*([\\d.,]+)\\s*<\\/strong>`, "i"),
+    );
+  }
+
   if (!match) return null;
 
   // Parse "123,45" → 123.45 (Venezuelan decimal separator is comma)
