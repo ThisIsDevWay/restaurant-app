@@ -7,15 +7,17 @@ export const authConfig = {
   session: {
     strategy: "jwt",
   },
-  providers: [], // Empty array for Edge compatibility, Credentials added in auth.ts
+  providers: [], // Empty array for Edge compatibility, providers added in auth.ts
   callbacks: {
+    // Base JWT callback — edge-compatible (no DB calls).
+    // Runs for both initial sign-in (sets id/role from user) and subsequent calls (passes through).
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id as string;
+        token.id = (user.id as string) ?? token.id;
         const allowedRoles = ["admin", "kitchen", "waiter", "user"];
-        token.role = allowedRoles.includes(user.role as string)
-          ? (user.role as string)
-          : "user";
+        if (user.role && allowedRoles.includes(user.role as string)) {
+          token.role = user.role as string;
+        }
       }
       return token;
     },

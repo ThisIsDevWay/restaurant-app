@@ -18,6 +18,7 @@ import {
   X,
   PlusCircle,
   User,
+  Users,
   Menu,
   BookMarked,
 } from "lucide-react";
@@ -40,6 +41,7 @@ const navItems = [
   { href: "/admin/tv", label: "Smart TVs", icon: Tv },
   { href: "/waiter", label: "Toma de Pedido", icon: HandPlatter },
   { href: "/kitchen", label: "Cocina", icon: ChefHat },
+  { href: "/admin/users", label: "Usuarios", icon: Users },
   { href: "/admin/settings", label: "Configuración", icon: Settings },
   { href: "/admin/docs", label: "Documentación", icon: BookMarked },
 ];
