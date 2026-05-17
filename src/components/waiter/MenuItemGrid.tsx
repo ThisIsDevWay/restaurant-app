@@ -15,7 +15,7 @@ function PriceTag({ usdCents, rate, size = "sm" }: { usdCents: number; rate: num
   return (
     <div className="flex flex-col leading-tight">
       <span className="text-[10px] font-bold text-[var(--color-text-muted)]">
-        {formatRef(usdCents).replace("REF ", "$")}
+        {formatRef(usdCents)}
       </span>
       <span className={`font-black text-[var(--color-text-main)] ${size === "sm" ? "text-xs" : size === "lg" ? "text-xl" : "text-base"}`}>
         {formatBs(bsCents).replace("Bs. ", "")}

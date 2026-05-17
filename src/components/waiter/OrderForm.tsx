@@ -103,7 +103,7 @@ export function OrderForm({
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-[var(--color-text-main)]">{formatBs(Math.round(packagingUsd * rate))}</span>
                   <span className="text-[10px] text-[var(--color-text-muted)] font-medium bg-[var(--color-bg-app)] px-1.5 py-0.5 rounded tabular-nums border border-[var(--color-border-ghost)]">
-                    ({formatRef(packagingUsd).replace("REF ", "$")})
+                    ({formatRef(packagingUsd)})
                   </span>
                 </div>
               </div>
@@ -115,7 +115,7 @@ export function OrderForm({
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-[var(--color-text-main)]">{formatBs(Math.round(deliveryUsd * rate))}</span>
                   <span className="text-[10px] text-[var(--color-text-muted)] font-medium bg-[var(--color-bg-app)] px-1.5 py-0.5 rounded tabular-nums border border-[var(--color-border-ghost)]">
-                    ({formatRef(deliveryUsd).replace("REF ", "$")})
+                    ({formatRef(deliveryUsd)})
                   </span>
                 </div>
               </div>
@@ -127,7 +127,7 @@ export function OrderForm({
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-[var(--color-text-main)]">{formatBs(Math.round(igtfUsd * rate))}</span>
                   <span className="text-[10px] text-[var(--color-text-muted)] font-medium bg-[var(--color-bg-app)] px-1.5 py-0.5 rounded tabular-nums border border-[var(--color-border-ghost)]">
-                    ({formatRef(igtfUsd).replace("REF ", "$")})
+                    ({formatRef(igtfUsd)})
                   </span>
                 </div>
               </div>
@@ -140,7 +140,7 @@ export function OrderForm({
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[var(--color-text-muted)] leading-none">Total</span>
             <span className="text-base font-black text-[var(--color-primary)] tabular-nums">
-              {formatRef(totalUsd).replace("REF ", "$ ")}
+              {formatRef(totalUsd)}
             </span>
           </div>
           <div className="text-right">
