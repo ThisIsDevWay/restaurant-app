@@ -313,7 +313,7 @@ function drawTier(
   doc.setFont("times", "normal");
   doc.setFontSize(fs.tierPriceRef);
   doc.setTextColor(...GRAY);
-  const refStr = `Ref. ${formatUsd(tier.priceUsdCents)}$`;
+  const refStr = `REF. ${formatUsd(tier.priceUsdCents)}`;
   doc.text(refStr, x + w - 4, y, { align: "right" });
 
   y += 6; // Move down before drawing the line
