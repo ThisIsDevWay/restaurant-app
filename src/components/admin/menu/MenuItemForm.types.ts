@@ -9,10 +9,13 @@ export const formSchema = {
 
 export interface MenuItemFormProps {
   categories: { id: string; name: string; isSimple?: boolean }[];
+  /** Items from isSimple categories — the pool for the contorno picker. */
+  availableContornos: Array<{ id: string; name: string; categoryName: string }>;
   initialData?: {
     id: string;
     name: string;
     description?: string | null;
+    portionNote?: string | null;
     includedNote?: string | null;
     hideAdicionales?: boolean;
     hideBebidas?: boolean;
@@ -24,6 +27,8 @@ export interface MenuItemFormProps {
     imageUrl?: string | null;
     isAvailable: boolean;
     isPrepackaged: boolean;
+    /** Contornos already assigned to this item (edit mode only). */
+    contornos?: Array<{ id: string; name: string; removable: boolean }>;
   };
   exchangeRate: number;
 }

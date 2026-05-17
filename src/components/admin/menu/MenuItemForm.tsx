@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, Trash2, AlertCircle, Printer } from "lucide-react";
+import { ChevronLeft, Trash2, AlertCircle, Printer, X, ChevronDown, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMenuItemForm } from "@/hooks/useMenuItemForm";
 import { MenuItemImageUpload } from "./MenuItemImageUpload";
@@ -38,6 +38,7 @@ function SectionHeader({ number, label }: { number: string; label: string }) {
 
 export function MenuItemForm({
   categories,
+  availableContornos,
   initialData,
   exchangeRate,
 }: MenuItemFormProps) {
@@ -390,6 +391,124 @@ export function MenuItemForm({
                     <p className="mif-field-error">{form.errors.name.message}</p>
                   )}
                 </div>
+
+                {/* ── Porción de proteína ── */}
+                <div>
+                  <label className="mif-label">Porción de proteína</label>
+                  <input
+                    {...form.register("portionNote")}
+                    placeholder="Ej: 200g · 1 pechuga · 3 tenders · Plato completo"
+                    className="mif-input"
+                    maxLength={100}
+                  />
+                  <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11, color: "#9c8c78", marginTop: 5, lineHeight: 1.5 }}>
+                    Visible en el menú digital y TV. Vacío = sin proteína definida (sopas, postres, etc.)
+                  </p>
+                  {form.errors.portionNote && (
+                    <p className="mif-field-error">{(form.errors.portionNote as { message?: string }).message}</p>
+                  )}
+                </div>
+
+                {/* ── Contornos que incluye ── */}
+                <div>
+                  <label className="mif-label">
+                    Contornos que incluye{" "}
+                    <span style={{ color: "#9c8c78", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
+                      (acompañantes del plato)
+                    </span>
+                  </label>
+                  <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11, color: "#9c8c78", marginBottom: 8, lineHeight: 1.5 }}>
+                    Marca &quot;Removible&quot; si el cliente puede pedirlo sin ese contorno. Vacío = sin acompañantes fijos (sopas, etc.)
+                  </p>
+
+                  {form.contornos.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 8 }}>
+                      {form.contornos.map((c) => (
+                        <div
+                          key={c.id}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 8,
+                            padding: "6px 8px 6px 12px",
+                            background: "#fff8f3", border: "1px solid #f0e6df", borderRadius: 8,
+                          }}
+                        >
+                          <span style={{ flex: 1, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "#251a07" }}>
+                            {c.name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => form.toggleContornoRemovable(c.id)}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 4,
+                              padding: "3px 9px",
+                              background: c.removable ? "#f0fdf4" : "#fdf8f3",
+                              border: `1px solid ${c.removable ? "#86efac" : "#e0d5cc"}`,
+                              borderRadius: 100, cursor: "pointer",
+                              fontFamily: "'Plus Jakarta Sans', sans-serif",
+                              fontSize: 11, fontWeight: 600,
+                              color: c.removable ? "#15803d" : "#9c8c78",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <RotateCcw size={9} />
+                            {c.removable ? "Removible" : "Fijo"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => form.removeContorno(c.id)}
+                            style={{
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              width: 24, height: 24, borderRadius: "50%",
+                              background: "transparent", border: "1px solid #f0e6df",
+                              cursor: "pointer", color: "#9c8c78", flexShrink: 0,
+                            }}
+                          >
+                            <X size={11} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {availableContornos.filter((ac) => !form.contornos.find((c) => c.id === ac.id)).length > 0 && (
+                    <div style={{ position: "relative" }}>
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          const id = e.target.value;
+                          if (!id) return;
+                          const item = availableContornos.find((ac) => ac.id === id);
+                          if (item) form.addContorno({ id: item.id, name: item.name, removable: false });
+                        }}
+                        style={{
+                          width: "100%", height: 42, padding: "0 36px 0 14px",
+                          fontFamily: "'Plus Jakarta Sans', sans-serif",
+                          fontSize: 14, fontWeight: 500, color: "#251a07",
+                          background: "#fff", border: "1px solid #ede0d8",
+                          borderRadius: 10, outline: "none",
+                          appearance: "none", cursor: "pointer",
+                        }}
+                      >
+                        <option value="">+ Agregar contorno…</option>
+                        {availableContornos
+                          .filter((ac) => !form.contornos.find((c) => c.id === ac.id))
+                          .map((ac) => (
+                            <option key={ac.id} value={ac.id}>
+                              {ac.name} — {ac.categoryName}
+                            </option>
+                          ))}
+                      </select>
+                      <ChevronDown size={14} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#9c8c78", pointerEvents: "none" }} />
+                    </div>
+                  )}
+
+                  {form.contornos.length === 0 && availableContornos.length === 0 && (
+                    <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 12, color: "#c4b09a", fontStyle: "italic" }}>
+                      No hay ítems de contorno disponibles. Crea ítems en categorías simples primero.
+                    </p>
+                  )}
+                </div>
+
                 <div>
                   <label className="mif-label">Descripción</label>
                   <textarea

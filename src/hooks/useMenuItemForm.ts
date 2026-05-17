@@ -19,6 +19,7 @@ const menuItemFormSchema = v.object({
   description: v.optional(
     v.pipe(v.string(), v.maxLength(300, "Máximo 300 caracteres")),
   ),
+  portionNote: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(100, "Máximo 100 caracteres")))),
   includedNote: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(200, "Máximo 200 caracteres")))),
   hideAdicionales: v.boolean(),
   hideBebidas: v.boolean(),
@@ -52,6 +53,8 @@ export interface UseMenuItemFormParams {
   exchangeRate: number;
 }
 
+export type ContornoEntry = { id: string; name: string; removable: boolean };
+
 export interface UseMenuItemFormReturn {
   register: ReturnType<typeof useForm<FormValues>>["register"];
   handleSubmit: ReturnType<typeof useForm<FormValues>>["handleSubmit"];
@@ -71,6 +74,11 @@ export interface UseMenuItemFormReturn {
   onDelete: () => Promise<void>;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement> | File) => Promise<void>;
   onFormSubmit: (data: FormValues) => Promise<void>;
+  // Contornos state
+  contornos: ContornoEntry[];
+  addContorno: (item: ContornoEntry) => void;
+  removeContorno: (id: string) => void;
+  toggleContornoRemovable: (id: string) => void;
 }
 
 export function useMenuItemForm({
@@ -88,6 +96,19 @@ export function useMenuItemForm({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Contornos are managed separately (relational, not a column on menu_items)
+  const [contornos, setContornos] = useState<ContornoEntry[]>(initialData?.contornos ?? []);
+
+  function addContorno(item: ContornoEntry) {
+    setContornos((prev) => prev.some((c) => c.id === item.id) ? prev : [...prev, item]);
+  }
+  function removeContorno(id: string) {
+    setContornos((prev) => prev.filter((c) => c.id !== id));
+  }
+  function toggleContornoRemovable(id: string) {
+    setContornos((prev) => prev.map((c) => c.id === id ? { ...c, removable: !c.removable } : c));
+  }
+
   const {
     register,
     handleSubmit,
@@ -99,6 +120,7 @@ export function useMenuItemForm({
     defaultValues: {
       name: initialData?.name ?? "",
       description: initialData?.description ?? "",
+      portionNote: initialData?.portionNote ?? null,
       includedNote: initialData?.includedNote ?? "",
       hideAdicionales: initialData?.hideAdicionales ?? false,
       hideBebidas: initialData?.hideBebidas ?? false,
@@ -196,13 +218,21 @@ export function useMenuItemForm({
         ? Math.round(parseFloat(data.costUsdDollars) * 100)
         : undefined;
       let itemId: string;
+      const contornoPayload = contornos.map((c) => ({ id: c.id, removable: c.removable }));
+
       if (isEdit) {
         const updateResult = await updateMenuItemAction({
           id: initialData.id,
-          data: { ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "",
+          data: {
+            ...data,
+            priceUsdCents,
+            costUsdCents,
+            imageUrl: data.imageUrl ?? "",
+            portionNote: data.portionNote ?? null,
             hideAdicionales: data.hideAdicionales ?? false,
             hideBebidas: data.hideBebidas ?? false,
             isPrepackaged: data.isPrepackaged ?? false,
+            contornos: contornoPayload,
           },
         });
         if (updateResult?.serverError) throw new Error(updateResult.serverError);
@@ -210,10 +240,15 @@ export function useMenuItemForm({
         itemId = initialData.id;
       } else {
         const createResult = await createMenuItemAction({
-          ...data, priceUsdCents, costUsdCents, imageUrl: data.imageUrl ?? "",
+          ...data,
+          priceUsdCents,
+          costUsdCents,
+          imageUrl: data.imageUrl ?? "",
+          portionNote: data.portionNote ?? null,
           hideAdicionales: data.hideAdicionales ?? false,
           hideBebidas: data.hideBebidas ?? false,
           isPrepackaged: data.isPrepackaged ?? false,
+          contornos: contornoPayload,
         });
         if (createResult?.serverError) throw new Error(createResult.serverError);
         if (createResult?.validationErrors) throw new Error("Error de validación al crear");
@@ -251,5 +286,9 @@ export function useMenuItemForm({
     handleImageUpload,
     handleRemoveImage,
     onFormSubmit,
+    contornos,
+    addContorno,
+    removeContorno,
+    toggleContornoRemovable,
   };
 }

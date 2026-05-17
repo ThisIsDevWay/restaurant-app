@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getMenuItemById, getCategories } from "@/db/queries/menu";
+import { getMenuItemById, getCategories, getMenuItemContornos, getSimpleMenuItems } from "@/db/queries/menu";
 import { getActiveRate } from "@/db/queries/settings";
 import { MenuItemForm } from "@/components/admin/menu/MenuItemForm";
 
@@ -10,7 +10,7 @@ export default async function EditMenuItemPage({
 }) {
   const { id } = await params;
 
-  // Ola 1: data base crítica
+  // Wave 1: critical base data
   const [item, categories] = await Promise.all([
     getMenuItemById(id).catch((err) => {
       console.error("[EditMenuItemPage] item query failed:", err);
@@ -26,11 +26,19 @@ export default async function EditMenuItemPage({
     notFound();
   }
 
-  // Ola 2: data complementaria
-  const [rateResult] = await Promise.all([
+  // Wave 2: supplementary data in parallel
+  const [rateResult, currentContornos, availableContornos] = await Promise.all([
     getActiveRate().catch((err) => {
       console.error("[EditMenuItemPage] rate query failed:", err);
       return null;
+    }),
+    getMenuItemContornos(id).catch((err) => {
+      console.error("[EditMenuItemPage] contornos query failed:", err);
+      return [] as Awaited<ReturnType<typeof getMenuItemContornos>>;
+    }),
+    getSimpleMenuItems().catch((err) => {
+      console.error("[EditMenuItemPage] simpleItems query failed:", err);
+      return [] as Awaited<ReturnType<typeof getSimpleMenuItems>>;
     }),
   ]);
 
@@ -38,7 +46,12 @@ export default async function EditMenuItemPage({
     <div className="-mt-2">
       <MenuItemForm
         categories={categories}
-        initialData={item}
+        availableContornos={availableContornos}
+        initialData={{
+          ...item,
+          portionNote: item.portionNote ?? null,
+          contornos: currentContornos,
+        }}
         exchangeRate={rateResult?.rate ?? 0}
       />
     </div>
