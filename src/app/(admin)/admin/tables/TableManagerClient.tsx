@@ -114,6 +114,25 @@ export function TableManagerClient({
   };
   const [activePanel, setActivePanel] = useState<"plan" | "list">("plan");
 
+  useEffect(() => {
+    // Solo registrar el listener si hay cambios sin guardar
+    const hasUnsavedChanges = isDirty || fixtureIsDirty;
+    if (!hasUnsavedChanges) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // El mensaje personalizado ya no se muestra en browsers modernos,
+      // pero preventDefault() activa el diálogo nativo del browser
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Limpiar el listener cuando los cambios se guarden o el componente desmonte
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty, fixtureIsDirty]);
+
   const [fixtures, setFixtures] = useState<FloorFixture[]>(initialFixtures);
   const [tables, setTables] = useState<RestaurantTable[]>(initialTables);
   const [selectedId, setSelectedId] = useState<string | null>(null);
