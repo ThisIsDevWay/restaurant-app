@@ -7,6 +7,7 @@ import {
   timestamp,
   numeric,
   serial,
+  index,
 } from "drizzle-orm/pg-core";
 import { exchangeRates } from "./exchangeRates";
 import { paymentsLog } from "./payments-log";
@@ -130,4 +131,9 @@ export const orders = pgTable("orders", {
     uploadedUrl?: string;
     [key: string]: any;
   }>(),
-});
+}, (table) => ({
+  statusIdx: index("orders_status_idx").on(table.status),
+  createdAtIdx: index("orders_created_at_idx").on(table.createdAt),
+  orderNumberIdx: index("orders_order_number_idx").on(table.orderNumber),
+  customerPhoneIdx: index("orders_customer_phone_idx").on(table.customerPhone),
+}));
