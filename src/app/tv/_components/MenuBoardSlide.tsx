@@ -31,6 +31,12 @@ export type MenuBoardData = {
     id: string;
     name: string;
     description: string | null;
+    /** Free-text protein quantity, e.g. "200g" or "3 tenders". Null = not set. */
+    portionNote: string | null;
+    /** Free-text "includes" note, e.g. "Papas fritas y bebida". Null = not set. */
+    includedNote: string | null;
+    /** Names of contornos included with the dish (display only). */
+    contornos: string[];
     imageUrl: string | null;
     priceUsdCents: number;
     categoryId: string;
@@ -40,12 +46,9 @@ export type MenuBoardData = {
 
 /* ─────────────── Formatters ─────────────── */
 
-const USD_FMT = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+function fmtRef(cents: number): string {
+  return `REF. ${(cents / 100).toFixed(2).replace(".", ",")}`;
+}
 
 const BS_FMT = new Intl.NumberFormat("es-VE", {
   minimumFractionDigits: 2,
@@ -88,6 +91,36 @@ function initials(name: string) {
     .filter((w) => !/^(de|del|la|el|los|las|y|con|en|al)$/i.test(w));
   const src = words.length ? words : [name.trim()];
   return ((src[0]?.[0] ?? "") + (src[1]?.[0] ?? "")).toUpperCase().slice(0, 2) || "•";
+}
+
+/** Spanish lowercase words — kept lowercase mid-phrase in title casing. */
+const ES_LOWER_WORDS = new Set([
+  "de", "del", "la", "el", "los", "las", "y", "con", "en", "al", "a", "e", "o", "u",
+]);
+
+/**
+ * Consistent Spanish title case: first letter of each significant word
+ * uppercased, articles/prepositions kept lowercase (except as first word).
+ * "pasta china" → "Pasta China"; "pechuga a la plancha" → "Pechuga a la Plancha".
+ */
+function titleCaseEs(s: string): string {
+  return s
+    .trim()
+    .split(/\s+/)
+    .map((w, i) => {
+      const lw = w.toLowerCase();
+      if (i > 0 && ES_LOWER_WORDS.has(lw)) return lw;
+      return lw.charAt(0).toUpperCase() + lw.slice(1);
+    })
+    .join(" ");
+}
+
+/**
+ * Strips a trailing parenthetical from a contorno name so the board shows
+ * "Arroz" instead of the raw DB name "Arroz (Contorno)".
+ */
+function cleanContorno(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, "").trim() || name.trim();
 }
 
 /* ─────────────── ImageSlot ─────────────── */
@@ -163,12 +196,12 @@ function PriceTag({
   /** Scale multipliers per context. */
   variant: "grid" | "list" | "portrait";
 }) {
-  const usd = USD_FMT.format(item.priceUsdCents / 100);
+  const usd = fmtRef(item.priceUsdCents);
   const bs = fmtBs(item.priceUsdCents, data.rateBsPerUsd);
 
   // Primary price size and secondary (Bs) size per variant.
   const [mainFs, subFs] = {
-    grid:     [cu(12, unit * 1.75, 60), cu(10, unit * 1.15, 40)],
+    grid:     [cu(15, unit * 2.8,  80), cu(11, unit * 1.7,  50)],
     list:     [cu(14, unit * 2.2,  72), cu(11, unit * 1.4,  46)],
     portrait: [cu(14, unit * 3.0,  80), cu(10, unit * 2.0,  56)],
   }[variant];
@@ -181,25 +214,24 @@ function PriceTag({
           alignItems: "center",
           gap: cu(3, unit * 0.8, 16),
           background: "rgba(0,0,0,0.4)",
-          border: "1px solid rgba(255,248,243,0.15)",
+          border: "1px solid rgba(184, 91, 53, 0.25)",
           padding: `${cu(1.5, unit * 0.6, 12)} ${cu(4, unit * 1.5, 32)}`,
           borderRadius: 999,
           width: "fit-content",
-          marginTop: cu(2, unit, 20),
         }}
       >
         {(data.currency === "usd" || data.currency === "both") && (
-          <span style={{ color: "#f59e0b", fontWeight: 800, fontSize: mainFs, fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ color: "#b85b35", fontWeight: 800, fontSize: mainFs, fontVariantNumeric: "tabular-nums" }}>
             {usd}
           </span>
         )}
         {data.currency === "both" && bs && (
-          <div style={{ width: 1, height: "1em", background: "rgba(255,248,243,0.2)" }} />
+          <div style={{ width: 1, height: "1em", background: "rgba(184, 91, 53, 0.3)" }} />
         )}
         {(data.currency === "ves" || data.currency === "both") && bs && (
           <span
             style={{
-              color: data.currency === "both" ? "rgba(255,248,243,0.7)" : "#f59e0b",
+              color: data.currency === "both" ? "rgba(184, 91, 53, 0.7)" : "#b85b35",
               fontWeight: data.currency === "both" ? 500 : 800,
               fontSize: data.currency === "both" ? subFs : mainFs,
               fontVariantNumeric: "tabular-nums",
@@ -213,16 +245,25 @@ function PriceTag({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, lineHeight: 1.05, flexShrink: 0 }}>
+    <div 
+      style={{ 
+        display: "flex", 
+        flexDirection: "column", 
+        alignItems: variant === "grid" ? "center" : "flex-start", 
+        gap: cu(1, unit * 0.4, 8), 
+        lineHeight: 1.05, 
+        flexShrink: 0 
+      }}
+    >
       {(data.currency === "usd" || data.currency === "both") && (
-        <span style={{ color: "#f59e0b", fontWeight: 800, fontSize: mainFs, fontVariantNumeric: "tabular-nums" }}>
+        <span style={{ color: "#b85b35", fontWeight: 800, fontSize: mainFs, fontVariantNumeric: "tabular-nums" }}>
           {usd}
         </span>
       )}
       {(data.currency === "ves" || data.currency === "both") && bs && (
         <span
           style={{
-            color: data.currency === "both" ? "rgba(255,255,255,0.6)" : "#f59e0b",
+            color: data.currency === "both" ? "rgba(184, 91, 53, 0.7)" : "#b85b35",
             fontWeight: data.currency === "both" ? 500 : 800,
             fontSize: data.currency === "both" ? subFs : mainFs,
             fontVariantNumeric: "tabular-nums",
@@ -278,8 +319,7 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
   const cols = useMemo(() => {
     if (isList || isPortrait) return 1; // portrait handled separately
     if (n <= 2) return n;
-    if (n <= 6) return 3;
-    return 4;
+    return 3;
   }, [isList, isPortrait, n]);
 
   const grouped = useMemo(() => {
@@ -305,9 +345,9 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
       style={{
         position: "absolute",
         inset: 0,
-        background: "radial-gradient(ellipse at top, #1a1208 0%, #0a0604 60%, #000 100%)",
-        color: "#fff",
-        fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+        background: "radial-gradient(ellipse at top, #21130d 0%, #0d0705 60%, #000000 100%)",
+        color: "#fff8f3",
+        fontFamily: "var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif",
         padding: pad,
         display: "flex",
         flexDirection: "column",
@@ -315,16 +355,23 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
         boxSizing: "border-box",
       }}
     >
+      <style>{`
+        @keyframes tv-ken-burns {
+          0% { transform: scale(1); }
+          100% { transform: scale(1.05); }
+        }
+      `}</style>
       {/* ── Header ── */}
       <div style={{ textAlign: "center", marginBottom: cu(4, unit * 2, 48), flexShrink: 0 }}>
         <div
           style={{
-            fontSize: cu(8, unit * 1.1, 32),
-            color: "#f59e0b",
+            fontSize: cu(12, unit * 2.8, 72),
+            color: "#fff8f3",
             letterSpacing: "0.4em",
             textTransform: "uppercase",
-            fontWeight: 600,
-            marginBottom: cu(2, unit * 0.5, 12),
+            fontWeight: 700,
+            marginBottom: cu(3, unit * 0.8, 16),
+            fontFamily: "var(--font-display), system-ui, sans-serif",
           }}
         >
           {data.restaurantName}
@@ -335,10 +382,11 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
             fontWeight: 800,
             lineHeight: 1.05,
             margin: 0,
-            background: "linear-gradient(180deg, #fff 0%, #fcd34d 60%, #f59e0b 100%)",
+            background: "linear-gradient(180deg, #ffffff 0%, #fff8f3 40%, #e2c2a0 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
+            fontFamily: "var(--font-display), system-ui, sans-serif",
           }}
         >
           {data.title}
@@ -346,10 +394,13 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
         {data.subtitle && (
           <div
             style={{
-              fontSize: cu(11, unit * 1.9, 56),
-              color: "rgba(255,255,255,0.7)",
-              marginTop: cu(2, unit * 0.6, 16),
-              fontWeight: 300,
+              fontSize: cu(9, unit * 1.5, 44),
+              color: "rgba(255, 248, 243, 0.78)",
+              marginTop: cu(3, unit * 1, 22),
+              fontWeight: 600,
+              letterSpacing: "0.32em",
+              textTransform: "uppercase",
+              fontFamily: "var(--font-display), system-ui, sans-serif",
             }}
           >
             {data.subtitle}
@@ -383,7 +434,7 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
                   width:  i === data.pageIndex ? cu(12, unit * 1.8, 52) : cu(4, unit * 0.65, 18),
                   height: cu(4, unit * 0.65, 18),
                   borderRadius: 999,
-                  background: i === data.pageIndex ? "#f59e0b" : "rgba(255,255,255,0.22)",
+                  background: i === data.pageIndex ? "#fff8f3" : "rgba(255, 248, 243, 0.22)",
                   transition: "all 0.4s ease",
                 }}
               />
@@ -414,12 +465,6 @@ function PortraitLayout({
 
   return (
     <>
-      <style>{`
-        @keyframes tv-ken-burns {
-          0% { transform: scale(1); }
-          100% { transform: scale(1.05); }
-        }
-      `}</style>
       <div
         style={{
           height: "100%",
@@ -429,29 +474,34 @@ function PortraitLayout({
           overflow: "hidden",
         }}
       >
-      {/* Category labels — Heritage Red per DESIGN.md */}
+      {/* Category labels — separated by amber bullets */}
       {hasMultipleCategories && (
         <div
           style={{
             flexShrink: 0,
             display: "flex",
-            gap: cu(8, unit * 2, 48),
+            gap: cu(5, unit * 1.4, 32),
             flexWrap: "wrap",
             justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          {grouped.map((g) => (
-            <div
-              key={g.name}
-              style={{
-                fontSize: cu(9, unit * 1.5, 42),
-                color: "#d6d3d1",
-                fontWeight: 700,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-              }}
-            >
-              {g.name}
+          {grouped.map((g, i) => (
+            <div key={g.name} style={{ display: "flex", alignItems: "center", gap: cu(5, unit * 1.4, 32) }}>
+              {i > 0 && (
+                <span style={{ color: "rgba(122, 142, 124, 0.6)", fontSize: cu(7, unit * 1.1, 28) }}>•</span>
+              )}
+              <span
+                style={{
+                  fontSize: cu(9, unit * 1.5, 42),
+                  color: "#d6d3d1",
+                  fontWeight: 700,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {g.name}
+              </span>
             </div>
           ))}
         </div>
@@ -483,14 +533,14 @@ function PortraitRow({
   imageLeft: boolean;
   unit: number;
 }) {
-  const gap = cu(8, unit * 2.5, 64);
+  const gap = cu(10, unit * 3, 80);
 
   // Render image directly — no wrapper box, no dark background, no clipping.
   // The food photography blends naturally into the dark page gradient.
   const imgSlot = (
     <div
       style={{
-        flex: "0 0 48%",
+        flex: "0 0 60%",
         minWidth: 0,
         minHeight: 0,
         display: "flex",
@@ -543,41 +593,86 @@ function PortraitRow({
         justifyContent: "center",
         alignItems: "flex-start",
         textAlign: "left",
-        gap: cu(6, unit * 1.8, 44),
+        gap: cu(6, unit * 2.6, 64),
       }}
     >
-      {/* Dish name — big and bold, warm cream per DESIGN.md */}
-      <div
-        style={{
-          fontSize: cu(18, unit * 4.5, 130),
-          fontWeight: 800,
-          color: "#fff8f3",
-          lineHeight: 1.1,
-          overflow: "hidden",
-          display: "-webkit-box",
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: "vertical",
-        }}
-      >
-        {item.name}
+      {/* Info group — name, portion, contornos kept tight together */}
+      <div style={{ display: "flex", flexDirection: "column", gap: cu(3, unit * 1.4, 34) }}>
+        {/* Dish name + portionNote inline */}
+        <div style={{ lineHeight: 1.06 }}>
+          <span
+            style={{
+              fontSize: cu(20, unit * 5.2, 150),
+              fontWeight: 800,
+              color: "#fff8f3",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {titleCaseEs(item.name)}
+          </span>
+          {item.portionNote && (
+            <span
+              style={{
+                fontSize: cu(11, unit * 2.4, 62),
+                color: "rgba(255, 248, 243, 0.45)",
+                fontWeight: 500,
+                marginLeft: "0.35em",
+                display: "inline-block",
+                whiteSpace: "normal",
+                lineHeight: 1.25,
+                verticalAlign: "middle",
+                fontFamily: "var(--font-sans), system-ui, sans-serif",
+              }}
+            >
+              ({item.portionNote})
+            </span>
+          )}
+        </div>
+
+        {/* Contornos + includedNote — pill badges */}
+        {(item.contornos.length > 0 || item.includedNote) && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: cu(3, unit * 0.9, 20) }}>
+            {item.contornos.map((c) => (
+              <span
+                key={c}
+                style={{
+                  fontSize: cu(9, unit * 1.9, 48),
+                  fontWeight: 700,
+                  color: "#fff8f3",
+                  background: "rgba(122, 142, 124, 0.12)",
+                  border: "1px solid rgba(122, 142, 124, 0.3)",
+                  borderRadius: 999,
+                  padding: `${cu(2, unit * 0.6, 14)} ${cu(5, unit * 1.4, 32)}`,
+                  letterSpacing: "0.01em",
+                  whiteSpace: "nowrap" as const,
+                }}
+              >
+                {cleanContorno(c)}
+              </span>
+            ))}
+            {item.includedNote && item.includedNote.split(/[,·•]+/).map((part) => part.trim()).filter(Boolean).map((part) => (
+              <span
+                key={part}
+                style={{
+                  fontSize: cu(9, unit * 1.9, 48),
+                  fontWeight: 700,
+                  color: "#fff8f3",
+                  background: "rgba(122, 142, 124, 0.12)",
+                  border: "1px solid rgba(122, 142, 124, 0.3)",
+                  borderRadius: 999,
+                  padding: `${cu(2, unit * 0.6, 14)} ${cu(5, unit * 1.4, 32)}`,
+                  letterSpacing: "0.01em",
+                  whiteSpace: "nowrap" as const,
+                }}
+              >
+                {part}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Description — warm cream at reduced opacity */}
-      {data.showDescriptions && item.description && (
-        <div
-          style={{
-            fontSize: cu(11, unit * 2.6, 72),
-            color: "rgba(255,248,243,0.55)",
-            lineHeight: 1.5,
-            letterSpacing: "0.02em",
-            fontWeight: 300,
-          }}
-        >
-          {item.description}
-        </div>
-      )}
-
-      {/* Price */}
+      {/* Price — separated from the info group */}
       {data.showPrices && (
         <PriceTag item={item} data={data} unit={unit} variant="portrait" />
       )}
@@ -630,11 +725,11 @@ function GridLayout({
               key={g.name}
               style={{
                 fontSize: cu(9, unit * 1.5, 42),
-                color: "#f59e0b",
+                color: "#fff8f3",
                 fontWeight: 700,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                borderBottom: "1px solid rgba(245,158,11,0.35)",
+                borderBottom: "1px solid rgba(122, 142, 124, 0.45)",
                 paddingBottom: "0.3em",
               }}
             >
@@ -674,47 +769,154 @@ function GridCell({
   unit: number;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", gap: cu(3, unit * 0.6, 16) }}>
+    <div 
+      style={{ 
+        display: "flex", 
+        flexDirection: "column", 
+        minHeight: 0, 
+        overflow: "hidden", 
+        gap: cu(6, unit * 1.6, 48),
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+      }}
+    >
+      {/* Image Container with Ken Burns Zoom & Spotlight Glow */}
       {reserveSlot && (
-        <div style={{ flex: 1, minHeight: 0 }}>
-          <ImageSlot item={item} unit={unit} radius={unit * 0.9} />
-        </div>
-      )}
-      <div style={{ flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: cu(4, unit * 0.8, 20) }}>
-          <span
-            style={{
-              fontSize: cu(11, unit * 1.75, 52),
-              fontWeight: 700,
-              color: "#fff",
-              lineHeight: 1.15,
-              minWidth: 0,
-              flex: 1,
-              overflow: "hidden",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-            }}
-          >
-            {item.name}
-          </span>
-          {data.showPrices && <PriceTag item={item} data={data} unit={unit} variant="grid" />}
-        </div>
-        {data.showDescriptions && item.description && (
+        <div 
+          style={{ 
+            flex: "0 0 68%", 
+            width: "100%",
+            minHeight: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+          }}
+        >
+          {/* Spotlight Glow */}
           <div
             style={{
-              fontSize: cu(9, unit * 1.15, 34),
-              color: "rgba(255,255,255,0.52)",
-              lineHeight: 1.3,
-              fontWeight: 300,
-              marginTop: cu(2, unit * 0.25, 8),
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
+              position: "absolute",
+              inset: "0%",
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(255, 248, 243, 0.09) 0%, transparent 70%)",
+              zIndex: 0,
+            }}
+          />
+          {item.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.imageUrl}
+              alt=""
+              draggable={false}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+                position: "relative",
+                zIndex: 1,
+                animation: "tv-ken-burns 16s ease-in-out infinite alternate",
+                filter: "drop-shadow(0 25px 35px rgba(0,0,0,0.85))",
+              }}
+            />
+          ) : (
+            <div style={{ width: "95%", height: "95%", position: "relative", zIndex: 1 }}>
+              <ImageSlot item={item} unit={unit} radius={unit * 1.6} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Centered Typography Details */}
+      <div 
+        style={{ 
+          flexShrink: 0, 
+          display: "flex", 
+          flexDirection: "column", 
+          gap: cu(4, unit * 1.2, 32),
+          alignItems: "center",
+          textAlign: "center"
+        }}
+      >
+        {/* Name + portionNote inline */}
+        <div style={{ lineHeight: 1.15 }}>
+          <span
+            style={{
+              fontSize: cu(15, unit * 2.6, 76),
+              fontWeight: 800,
+              color: "#fff8f3",
+              fontFamily: "var(--font-display), system-ui, sans-serif",
             }}
           >
-            {item.description}
+            {titleCaseEs(item.name)}
+          </span>
+          {item.portionNote && (
+            <span
+              style={{
+                fontSize: cu(10, unit * 1.8, 42),
+                color: "rgba(255, 248, 243, 0.45)",
+                fontWeight: 500,
+                marginLeft: "0.35em",
+                display: "inline-block",
+                whiteSpace: "normal",
+                lineHeight: 1.2,
+                verticalAlign: "middle",
+                fontFamily: "var(--font-sans), system-ui, sans-serif",
+              }}
+            >
+              ({item.portionNote})
+            </span>
+          )}
+        </div>
+
+        {/* Contornos + includedNote — pill badges */}
+        {(item.contornos.length > 0 || item.includedNote) && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: cu(3, unit * 0.7, 16), justifyContent: "center" }}>
+            {item.contornos.map((c) => (
+              <span
+                key={c}
+                style={{
+                  fontSize: cu(9, unit * 1.6, 38),
+                  fontWeight: 700,
+                  color: "#fff8f3",
+                  background: "rgba(122, 142, 124, 0.12)",
+                  border: "1px solid rgba(122, 142, 124, 0.3)",
+                  borderRadius: 999,
+                  padding: `${cu(1.5, unit * 0.5, 10)} ${cu(5, unit * 1.2, 28)}`,
+                  whiteSpace: "nowrap" as const,
+                  fontFamily: "var(--font-sans), system-ui, sans-serif",
+                }}
+              >
+                {cleanContorno(c)}
+              </span>
+            ))}
+            {item.includedNote && item.includedNote.split(/[,·•]+/).map((p) => p.trim()).filter(Boolean).map((p) => (
+              <span
+                key={p}
+                style={{
+                  fontSize: cu(9, unit * 1.6, 38),
+                  fontWeight: 700,
+                  color: "#fff8f3",
+                  background: "rgba(122, 142, 124, 0.12)",
+                  border: "1px solid rgba(122, 142, 124, 0.3)",
+                  borderRadius: 999,
+                  padding: `${cu(1.5, unit * 0.5, 10)} ${cu(5, unit * 1.2, 28)}`,
+                  whiteSpace: "nowrap" as const,
+                  fontFamily: "var(--font-sans), system-ui, sans-serif",
+                }}
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Price — below text, centered */}
+        {data.showPrices && (
+          <div style={{ marginTop: cu(3, unit * 0.6, 16) }}>
+            <PriceTag item={item} data={data} unit={unit} variant="grid" />
           </div>
         )}
       </div>
@@ -739,10 +941,7 @@ function ListLayout({
   unit: number;
   isPortrait: boolean;
 }) {
-  const totalRows = grouped.reduce(
-    (acc, g) => acc + g.items.length + (hasMultipleCategories ? 0.5 : 0),
-    0,
-  );
+  const totalRows = grouped.reduce((acc, g) => acc + g.items.length, 0);
 
   return (
     <div
@@ -770,7 +969,7 @@ function ListLayout({
                 paddingBottom: cu(3, unit * 0.8, 18),
                 marginBottom: cu(4, unit * 1.2, 24),
                 marginTop: ci > 0 ? cu(8, unit * 2.5, 50) : 0,
-                borderBottom: "1px solid rgba(255,255,255,0.1)",
+                borderBottom: "1px solid rgba(122, 142, 124, 0.25)",
               }}
             >
               {cat.name}
@@ -783,7 +982,6 @@ function ListLayout({
               data={data}
               reserveSlot={reserveSlot}
               unit={unit}
-              totalRows={totalRows}
               showDivider={idx < cat.items.length - 1 || ci < grouped.length - 1}
               isPortrait={isPortrait}
             />
@@ -799,7 +997,6 @@ function ListRow({
   data,
   reserveSlot,
   unit,
-  totalRows,
   showDivider,
   isPortrait,
 }: {
@@ -807,7 +1004,6 @@ function ListRow({
   data: MenuBoardData;
   reserveSlot: boolean;
   unit: number;
-  totalRows: number;
   showDivider: boolean;
   isPortrait: boolean;
 }) {
@@ -818,10 +1014,6 @@ function ListRow({
   const titleFs = isPortrait
     ? cu(15, unit * 3.5, 80)
     : cu(13, unit * 2.2, 64);
-
-  const descFs = isPortrait
-    ? cu(11, unit * 2.4, 56)
-    : cu(9, unit * 1.5, 42);
 
   // Use list variant to keep price right aligned in grid
   const priceVariant = "list" as const;
@@ -879,34 +1071,74 @@ function ListRow({
         )}
 
         {/* ── Columna 2: Texto ── */}
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0, gap: cu(2, unit * 0.5, 12) }}>
-          <div
-            style={{
-              fontSize: titleFs,
-              fontWeight: 700,
-              color: "#fff8f3",
-              lineHeight: 1.2,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {item.name}
-          </div>
-
-          {data.showDescriptions && item.description && (
-            <div
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0, gap: cu(2, unit * 0.6, 14) }}>
+          {/* Name + portionNote inline */}
+          <div style={{ lineHeight: 1.2, overflow: "hidden" }}>
+            <span
               style={{
-                fontSize: descFs,
-                color: "#a8a29e", /* text-stone-400 */
-                lineHeight: 1.625, /* leading-relaxed */
-                overflow: "hidden",
-                display: "-webkit-box",
-                WebkitLineClamp: totalRows <= 4 ? 3 : 2,
-                WebkitBoxOrient: "vertical",
+                fontSize: titleFs,
+                fontWeight: 700,
+                color: "#fff8f3",
               }}
             >
-              {item.description}
+              {titleCaseEs(item.name)}
+            </span>
+            {item.portionNote && (
+              <span
+                style={{
+                  fontSize: cu(9, unit * 1.7, 44),
+                  color: "rgba(255, 248, 243, 0.45)",
+                  fontWeight: 500,
+                  marginLeft: "0.35em",
+                  display: "inline-block",
+                  whiteSpace: "normal",
+                  lineHeight: 1.2,
+                  verticalAlign: "middle",
+                  fontFamily: "var(--font-sans), system-ui, sans-serif",
+                }}
+              >
+                ({item.portionNote})
+              </span>
+            )}
+          </div>
+
+          {/* Contornos + includedNote — pill badges */}
+          {(item.contornos.length > 0 || item.includedNote) && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: cu(2, unit * 0.6, 14) }}>
+              {item.contornos.map((c) => (
+                <span
+                  key={c}
+                  style={{
+                    fontSize: cu(8, unit * 1.5, 38),
+                    fontWeight: 700,
+                    color: "#fff8f3",
+                    background: "rgba(122, 142, 124, 0.12)",
+                    border: "1px solid rgba(122, 142, 124, 0.3)",
+                    borderRadius: 999,
+                    padding: `${cu(2, unit * 0.5, 12)} ${cu(4, unit * 1.1, 26)}`,
+                    whiteSpace: "nowrap" as const,
+                  }}
+                >
+                  {cleanContorno(c)}
+                </span>
+              ))}
+              {item.includedNote && item.includedNote.split(/[,·•]+/).map((p) => p.trim()).filter(Boolean).map((p) => (
+                <span
+                  key={p}
+                  style={{
+                    fontSize: cu(8, unit * 1.5, 38),
+                    fontWeight: 700,
+                    color: "#fff8f3",
+                    background: "rgba(122, 142, 124, 0.12)",
+                    border: "1px solid rgba(122, 142, 124, 0.3)",
+                    borderRadius: 999,
+                    padding: `${cu(2, unit * 0.5, 12)} ${cu(4, unit * 1.1, 26)}`,
+                    whiteSpace: "nowrap" as const,
+                  }}
+                >
+                  {p}
+                </span>
+              ))}
             </div>
           )}
         </div>

@@ -5,8 +5,9 @@ import {
   dailyMenuItems,
   settings,
   exchangeRates,
+  menuItemContornos,
 } from "@/db/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { TvMenuBoardConfig } from "@/db/schema/tv";
 
 const RESTAURANT_TZ = "America/Caracas";
@@ -33,6 +34,10 @@ export type MenuBoardData = {
     id: string;
     name: string;
     description: string | null;
+    portionNote: string | null;
+    /** Free-text "includes" note (e.g. "Papas fritas y bebida"). Null = not set. */
+    includedNote: string | null;
+    contornos: string[];
     imageUrl: string | null;
     priceUsdCents: number;
     categoryId: string;
@@ -80,15 +85,18 @@ export async function resolveMenuBoard(
   const restaurantName = settingsRow?.restaurantName ?? "Restaurante G y M";
 
   // ── Menu items by source ─────────────────────────────────────────────
-  let rows: MenuBoardData["items"] = [];
+  type RawRow = Omit<MenuBoardData["items"][number], "contornos">;
+  let rows: RawRow[] = [];
 
   if (config.source.type === "category") {
     const categoryId = config.source.categoryId;
-    const result = await db
+    rows = await db
       .select({
         id: menuItems.id,
         name: menuItems.name,
         description: menuItems.description,
+        portionNote: menuItems.portionNote,
+        includedNote: menuItems.includedNote,
         imageUrl: menuItems.imageUrl,
         priceUsdCents: menuItems.priceUsdCents,
         categoryId: menuItems.categoryId,
@@ -105,18 +113,18 @@ export async function resolveMenuBoard(
         ),
       )
       .orderBy(asc(menuItems.sortOrder), asc(menuItems.name));
-    rows = result;
   } else if (config.source.type === "all_available") {
-    const result = await db
+    rows = await db
       .select({
         id: menuItems.id,
         name: menuItems.name,
         description: menuItems.description,
+        portionNote: menuItems.portionNote,
+        includedNote: menuItems.includedNote,
         imageUrl: menuItems.imageUrl,
         priceUsdCents: menuItems.priceUsdCents,
         categoryId: menuItems.categoryId,
         categoryName: categories.name,
-        categorySortOrder: categories.sortOrder,
         sortOrder: menuItems.sortOrder,
       })
       .from(menuItems)
@@ -128,20 +136,20 @@ export async function resolveMenuBoard(
         ),
       )
       .orderBy(asc(categories.sortOrder), asc(menuItems.sortOrder));
-    rows = result;
   } else {
     // daily
     const today = formatLocalDate(new Date());
-    const result = await db
+    rows = await db
       .select({
         id: menuItems.id,
         name: menuItems.name,
         description: menuItems.description,
+        portionNote: menuItems.portionNote,
+        includedNote: menuItems.includedNote,
         imageUrl: menuItems.imageUrl,
         priceUsdCents: menuItems.priceUsdCents,
         categoryId: menuItems.categoryId,
         categoryName: categories.name,
-        categorySortOrder: categories.sortOrder,
         sortOrder: dailyMenuItems.sortOrder,
       })
       .from(dailyMenuItems)
@@ -156,12 +164,34 @@ export async function resolveMenuBoard(
         ),
       )
       .orderBy(asc(categories.sortOrder), asc(dailyMenuItems.sortOrder));
-    rows = result;
+  }
+
+  // ── Batch-resolve contornos for all items ────────────────────────────
+  const allIds = rows.map((r) => r.id);
+  const contornoNamesByItem = new Map<string, string[]>();
+  if (allIds.length > 0) {
+    const contornoRows = await db
+      .select({
+        menuItemId: menuItemContornos.menuItemId,
+        contornoName: menuItems.name,
+      })
+      .from(menuItemContornos)
+      .innerJoin(menuItems, eq(menuItemContornos.contornoItemId, menuItems.id))
+      .where(inArray(menuItemContornos.menuItemId, allIds))
+      .orderBy(asc(menuItems.sortOrder));
+
+    for (const row of contornoRows) {
+      const list = contornoNamesByItem.get(row.menuItemId) ?? [];
+      list.push(row.contornoName);
+      contornoNamesByItem.set(row.menuItemId, list);
+    }
   }
 
   // Apply total item cap (default 120 — large enough not to truncate typical menus).
   const totalCap = config.maxItems && config.maxItems > 0 ? config.maxItems : 120;
-  const allItems = rows.slice(0, totalCap);
+  const allItems: MenuBoardData["items"] = rows
+    .slice(0, totalCap)
+    .map((r) => ({ ...r, contornos: contornoNamesByItem.get(r.id) ?? [] }));
 
   // Items per page: admin-configured, or sensible default by layout.
   const perPage =
@@ -171,7 +201,7 @@ export async function resolveMenuBoard(
         ? 3
         : config.layout === "list"
           ? 8
-          : 6;
+          : 3;
 
   // Split into pages.
   const pages: Array<MenuBoardData["items"]> = [];
