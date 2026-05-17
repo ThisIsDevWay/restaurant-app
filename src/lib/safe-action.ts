@@ -1,10 +1,25 @@
 import { createSafeActionClient } from 'next-safe-action'
 import { auth } from '@/lib/auth'
 
+import * as Sentry from "@sentry/nextjs";
+
 // Cliente público (sin autenticación requerida)
 export const actionClient = createSafeActionClient({
-    handleServerError(e) {
+    handleServerError(e, utils) {
+        // Captura en Sentry con contexto de la action
+        Sentry.captureException(e, {
+            tags: {
+                actionName: (utils as any)?.metadata?.actionName ?? "unknown_action",
+            },
+            extra: {
+                clientInput: (utils as any)?.clientInput,
+            },
+        });
+
+        // Log local existente — mantener
         console.error('Action error:', e)
+        
+        // Devolver mensaje al cliente — mantener el comportamiento actual
         if (e instanceof Error) {
             return e.message
         }
