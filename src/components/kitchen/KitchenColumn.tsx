@@ -28,7 +28,9 @@ export function KitchenColumn({ variant, orders, newOrderIds, onAction, onReprin
         </h2>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {orders.map((order) => (
+        {[...orders]
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          .map((order) => (
           <KitchenOrderCard
             key={order.id}
             order={order}
