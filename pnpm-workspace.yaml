@@ -1,0 +1,10 @@
+allowBuilds:
+  '@sentry/cli': true
+  canvas: true
+  core-js: true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+
+overrides:
+  import-in-the-middle: 2.0.6

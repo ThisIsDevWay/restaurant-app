@@ -1,0 +1,378 @@
+1. Platos y Postres
+
+Pollo Guisado: 5,70   
+Mojito Criollo: 5,70   
+Mollejita en Coco: 5,70   
+Arroz Chino: 5,70   
+Pasta Boloña: 5,70   
+Pasta con Pollo: 5,70   
+Macarrón con Pollo: 5,70   
+Macarrón Boloña: 5,70   
+Pasta 4 Quesos: 7,60   
+Muchacho en Salsa: 8,00   
+Lomo Negro: 8,00   
+Lomo con Papa: 8,00   
+Lomo en Coco: 8,00   
+Lomo Guisado: 8,00   
+Lomo Salteado: 8,00   
+Lomo con Brócoli y Coliflor: 8,00   
+Costilla Guisada: 7,00   
+Costilla en Coco: 7,00   
+Strogonof: 8,00   
+Albóndiga en Salsa: 7,00   
+Chuleta de Cerdo: 7,60   
+Costillita de Cerdo: 7,60   
+Lomo de Cerdo: 8,00   
+Pechuga al Ajillo: 7,60   
+Milanesa de Pollo: 7,60   
+Cordón Blue: 8,00   
+Pechuga 4 Quesos: 7,60   
+Filet de Pescado Rebosado: 8,00   
+Pechuga con Brócoli: 8,00   
+Pollo Salteado a la BBQ: 7,60   
+Pollo Televisado Entero: 14,20   
+1/2 Pollo Televisado: 8,31   
+1/4 Pechuga: 5,15   
+Menú Infantil: 7,00   
+Muslo al Horno: 6,30   
+Pollo en Salsa Blanca: 7,00   
+Tenders de Pollo: 7,00   
+Chuleta Ahumada: 8,00   
+Arroz Chino con Tenders: 7,00   
+Arroz Chino con Camarón: 8,00   
+Camarones al Ajillo: 8,00   
+
+
+Atún: 8,00   
+
+
+Courvina en Rueda Frita: 8,00   
+
+
+Filet de Pescado: 8,00   
+
+
+Pasta China: 8,00   
+
+
+Chopsuey: 8,00   
+
+
+Pasticho: 8,00   
+
+
+Ovejo en Coco: 7,60   
+
+
+Chivo en Coco: 7,60   
+
+
+Hígado Encebollado: 7,60   
+
+
+Corazón en Coco: 5,70   
+
+
+Lengua en Salsa: 7,00   
+
+
+Pasta Carbonara con Pollo: 7,60   
+
+
+Parrilla de Chorizo: 5,70   
+
+
+Ossobuco en Salsa: 7,00   
+
+
+Macarrón 4 Quesos: 7,60   
+
+
+Bistec en Salsa: 8,00   
+
+
+Asado Negro: 8,00   
+
+
+Bistec Frito/Plancha: 8,00   
+
+
+Costillita Agridulce: 7,60   
+
+
+Camarones Salteados: 8,00   
+
+
+Chicharrón de Pescado: 8,00   
+
+
+Courvina al Vapor: 8,00   
+
+
+Pechuga al Horno: 7,60   
+
+
+Pasta Napoli Chorizos: 5,70   
+
+
+Lomo en Crema: 8,00   
+
+
+Pernil al Horno: 8,00   
+
+
+Pabellón: 7,60   
+
+
+Filet de Pescado al Vapor: 8,00   
+
+
+Pollo en Coco: 7,00   
+
+
+Bollos Pelones: 5,70   
+
+
+Sopa Fosforera: 8,00   
+
+
+Carne Mechada: 8,00   
+
+
+Pasta con Camarones: 8,00   
+
+
+Arroz a la Marinera: 8,00   
+
+
+Bisctec Encebollado: 8,00   
+
+
+Muchacho en Salsa de Piña: 8,00   
+
+
+Pollo Agridulce: 5,70   
+
+
+Pollo Crema Champiñón: 7,60   
+
+
+Alitas a la Broaster: 7,60   
+
+
+Pollo a la Naranja: 7,60   
+
+
+Pollo a la Broaster: 7,60   
+
+
+Cazuela de Marisco: 8,00   
+
+
+Chicharrón de Puerco: 8,00   
+
+
+Lomito en Salsa: 8,00   
+
+
+Pepitonas: 8,00   
+
+
+Pechuga a la Plancha: 7,60   
+
+
+Pechuga Mostaza Miel: 7,60   
+
+
+Macarrón Napoli Chorizos: 5,70   
+
+
+Ovejo Guisado: 5,70   
+
+
+Chivo Guisado: 5,70   
+
+
+Chivo al Curry: 5,70   
+
+
+Triple de Mariscos: 8,00   
+
+
+Mollejitas Guisadas: 5,70   
+
+
+Desayuno Criollo: 7,60   
+
+
+Ovejo al Curry: 5,70   
+
+
+Costilla al Horno: 7,60   
+
+
+Plato Navideño: 14,00   
+
+
+Pasta con Pollo en Salsa: 5,70   
+
+
+Paella: 5,70   
+
+
+Pechuga en Crema Blanca: 8,00   
+
+
+Pollo en Salsa Negra: 5,70   
+
+
+Paella con Camarones: 8,00   
+
+
+Callos Guisados: 5,70   
+
+
+Pollo Guisado con Papa: 5,70   
+
+
+Parrilla Mixta: 8,00   
+
+
+Puerco Guisado: 7,60   
+
+
+Parrilla de Puerco: 8,00   
+
+
+Cangrejas: 7,60   
+
+
+Rabo en Coco: 5,70   
+
+
+Macarrón con Lomo Salteado: 8,00   
+
+
+Pollo en Salsa Napoli: 5,70   
+
+
+Sopa de Cangrejos: 8,00   
+
+
+Camarones Rebosado: 8,00   
+
+
+Pasta con Lomo y Vegetales: 8,00   
+ 
+
+Hamburguesa: 6,99   
+
+
+Pasta Amatriciana: 7,60   
+
+
+Ensalada Cesar: 7,60   
+
+
+
+2. Adicionales
+
+Adicional Papas Fritas: 3,50   
+
+
+Adicional Plátano Frito: 1,50   
+
+
+Adicional de Ensalada: 1,50   
+
+
+Adicional Arroz Chino: 3,00   
+
+
+Adicional Yuca: 1,50   
+
+
+Adicional de Patacón: 3,00   
+
+
+Adicional de Arepitas: 1,50   
+
+
+Adicional Queso Frito: 2,00   
+
+
+Adicional Salsa Agridulce: 1,10   
+
+3. Bebidas
+
+Refresco Botellita 350ml: 1,10   
+
+
+Refresco Retornable 1.25: 2,51   
+
+
+Té: 1,50   
+
+
+Refresco 2 Lts: 3,50   
+
+
+Refresco Bombonita: 1,50   
+
+
+Refresco 1.5 Lts: 3,00   
+
+
+Jugo Natural: 2,00   
+
+
+Gatorade: 1,50   
+
+
+Té 1.5 Lts: 8,00   
+
+
+Speedmax: 0,80   
+
+
+Agua Mineral 600ml: 1,50   
+
+
+Jugo Pulp: 1,10   
+
+
+Jugo Fresh: 1,10   
+
+
+Soda 355ml: 1,10   
+
+
+Refresco 1 Lts: 2,00   
+
+
+Agua Saborizada: 1,50   
+
+
+
+4. Cobros de Delivery
+
+Delivery 1: 1,00   
+
+
+Delivery 1,5: 1,50   
+
+
+Delivery 2,5: 2,51   
+
+
+Delivery 3: 3,00   
+
+
+Delivery 4: 4,00   
+
+
+Delivery 5: 5,00   
+
+5. Empaques
+
+Bandeja para Llevar: 0,50
