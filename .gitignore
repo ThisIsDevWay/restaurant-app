@@ -79,3 +79,10 @@ diff_checkout.txt
 supabase/.temp/
 test-*.ts
 opencode.jsonc
+
+# Print Agent — binaries compiled from print-agent/main.go
+print-agent/agent.exe
+print-agent/agent
+print-agent/*.exe
+print-agent/*.rar
+print-agent/*.zip
