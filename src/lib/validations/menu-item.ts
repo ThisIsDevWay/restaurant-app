@@ -3,9 +3,14 @@ import * as v from "valibot";
 const menuItemBaseSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, "Nombre requerido")),
   description: v.optional(v.string()),
+  portionNote: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(100, "Máximo 100 caracteres")))),
   includedNote: v.optional(v.nullable(v.string())),
   hideAdicionales: v.optional(v.boolean(), false),
   hideBebidas: v.optional(v.boolean(), false),
+  contornos: v.optional(v.array(v.object({
+    id: v.pipe(v.string(), v.uuid("ID de contorno inválido")),
+    removable: v.boolean(),
+  })), []),
   priceUsdCents: v.pipe(
     v.number(),
     v.integer(),

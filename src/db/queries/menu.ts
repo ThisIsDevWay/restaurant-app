@@ -811,6 +811,34 @@ export async function getWeightedAverageMarginToday(): Promise<WeightedMarginRes
   return { weightedMarginPct, totalItemsSold };
 }
 
+/** All contornos currently assigned to a menu item (for the edit form). */
+export async function getMenuItemContornos(menuItemId: string) {
+  return db
+    .select({
+      id: menuItems.id,
+      name: menuItems.name,
+      removable: menuItemContornos.removable,
+    })
+    .from(menuItemContornos)
+    .innerJoin(menuItems, eq(menuItemContornos.contornoItemId, menuItems.id))
+    .where(eq(menuItemContornos.menuItemId, menuItemId))
+    .orderBy(menuItems.sortOrder);
+}
+
+/** All available menu items from isSimple categories — used as the contorno picker pool. */
+export async function getSimpleMenuItems() {
+  return db
+    .select({
+      id: menuItems.id,
+      name: menuItems.name,
+      categoryName: categories.name,
+    })
+    .from(menuItems)
+    .innerJoin(categories, eq(menuItems.categoryId, categories.id))
+    .where(and(eq(categories.isSimple, true), eq(menuItems.isAvailable, true)))
+    .orderBy(asc(categories.sortOrder), asc(menuItems.sortOrder));
+}
+
 export async function getStaleCostItems(days: number = 7) {
   const threshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 

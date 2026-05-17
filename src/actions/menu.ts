@@ -2,7 +2,7 @@
 
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db";
-import { menuItems, optionGroups, options } from "@/db/schema";
+import { menuItems, optionGroups, options, menuItemContornos } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase";
@@ -14,17 +14,35 @@ export const createMenuItemAction = adminActionClient
   .schema(menuItemSchema)
   .action(async ({ parsedInput }) => {
     try {
-      if (parsedInput.sortOrder === undefined) {
+      // Separate relational fields from the menu_items columns
+      const { contornos = [], sortOrder, ...rest } = parsedInput;
+
+      let resolvedSortOrder = sortOrder;
+      if (resolvedSortOrder === undefined) {
         const lastItem = await db
           .select({ sortOrder: menuItems.sortOrder })
           .from(menuItems)
-          .where(eq(menuItems.categoryId, parsedInput.categoryId))
+          .where(eq(menuItems.categoryId, rest.categoryId))
           .orderBy(desc(menuItems.sortOrder))
           .limit(1);
-        parsedInput.sortOrder = (lastItem[0]?.sortOrder ?? 0) + 1;
+        resolvedSortOrder = (lastItem[0]?.sortOrder ?? 0) + 1;
       }
 
-      const [item] = await db.insert(menuItems).values(parsedInput).returning();
+      const [item] = await db
+        .insert(menuItems)
+        .values({ ...rest, sortOrder: resolvedSortOrder })
+        .returning();
+
+      if (contornos.length > 0) {
+        await db.insert(menuItemContornos).values(
+          contornos.map((c) => ({
+            menuItemId: item.id,
+            contornoItemId: c.id,
+            removable: c.removable,
+          })),
+        );
+      }
+
       revalidatePath("/");
       revalidatePath("/admin");
       revalidatePath("/admin/catalogo");
@@ -40,10 +58,13 @@ export const updateMenuItemAction = adminActionClient
   .schema(v.object({ id: v.string(), data: menuItemSchema }))
   .action(async ({ parsedInput: { id, data } }) => {
     try {
+      // Separate relational fields from the menu_items columns
+      const { contornos = [], ...menuItemData } = data;
+
       const updateData = {
-        ...data,
+        ...menuItemData,
         updatedAt: new Date(),
-        ...(data.costUsdCents != null && { costUpdatedAt: new Date() }),
+        ...(menuItemData.costUsdCents != null && { costUpdatedAt: new Date() }),
       };
 
       const [item] = await db
@@ -51,6 +72,19 @@ export const updateMenuItemAction = adminActionClient
         .set(updateData)
         .where(eq(menuItems.id, id))
         .returning();
+
+      // Sync contornos: full replace (delete + re-insert)
+      await db.delete(menuItemContornos).where(eq(menuItemContornos.menuItemId, id));
+      if (contornos.length > 0) {
+        await db.insert(menuItemContornos).values(
+          contornos.map((c) => ({
+            menuItemId: id,
+            contornoItemId: c.id,
+            removable: c.removable,
+          })),
+        );
+      }
+
       revalidatePath("/");
       revalidatePath("/admin");
       revalidatePath("/admin/catalogo");
