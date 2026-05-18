@@ -92,6 +92,7 @@ export const orders = pgTable("orders", {
   deliveryAddress: text("delivery_address"),
   tableNumber: text("table_number"),
   customerName: text("customer_name"),
+  createdByRole: text("created_by_role").$type<"admin" | "waiter" | "cashier">(),
   // Surcharges — packaging + delivery fees calculados al momento del checkout
   packagingUsdCents: integer("packaging_usd_cents").notNull().default(0),
   deliveryUsdCents: integer("delivery_usd_cents").notNull().default(0),
