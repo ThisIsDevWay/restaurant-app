@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
-  UtensilsCrossed, ArrowLeft, Table2, ShoppingCart, ChevronUp, X, Store, Package,
+  UtensilsCrossed, ArrowLeft, Table2, ShoppingCart, ChevronUp, X, Store, Package, ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore } from "@/store/cartStore";
 import { ItemDetailModalModern } from "@/components/customer/ItemDetailModalModern";
 import { useMenuAvailability } from "@/hooks/useMenuAvailability";
-import { createWaiterOrderAction, updateWaiterOrderAction } from "@/actions/waiter-order";
+import { useActiveOrders } from "@/hooks/useActiveOrders";
+import { createWaiterOrderAction, updateWaiterOrderAction, settleOrderAction } from "@/actions/waiter-order";
 import { formatBs } from "@/lib/money";
 import type { MenuItemWithComponents, SimpleComponent } from "@/types/menu.types";
 import type { SimpleItem } from "@/components/customer/ItemDetailModal.types";
@@ -24,7 +25,6 @@ import { CartLineItem } from "./CartLineItem";
 import { OrderForm, SubmitButton, type WaiterPaymentMethod } from "./OrderForm";
 import { ActiveOrdersSheet } from "./ActiveOrdersSheet";
 import { TableSelectorModal } from "./TableSelectorModal";
-import { CobroModal } from "./CobroModal";
 import { MenuItemGrid } from "./MenuItemGrid";
 import { QuickAvailabilityPanel } from "@/components/admin/availability/QuickAvailabilityPanel";
 
@@ -88,7 +88,7 @@ export function WaiterOrderClient({
   tables = [], fixtures = [], activeOrders = [], variant = "waiter",
 }: WaiterOrderClientProps) {
   const isCaja = variant === "caja";
-  const submitLabel = isCaja ? "Cobrar" : "Enviar a Cocina";
+  const { data: liveOrders = [], refetch: refetchOrders } = useActiveOrders(activeOrders);
   const mounted = useCartStore(s => s.mounted);
   const setMounted = useCartStore(s => s.setMounted);
   const cartItems = useCartStore(s => s.items);
@@ -168,9 +168,19 @@ export function WaiterOrderClient({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingCartItemIndex, setEditingCartItemIndex] = useState<number | null>(null);
   const [editingCartItemData, setEditingCartItemData] = useState<any | null>(null);
-  const [cobroOrder, setCobroOrder] = useState<any | null>(null);
+  const [paymentReference, setPaymentReference] = useState("");
+  const [editingOrderPaidAt, setEditingOrderPaidAt] = useState<string | null>(null);
+  const [isWaiterOrdersSheetOpen, setIsWaiterOrdersSheetOpen] = useState(false);
 
   const deliveryZones = (settings?.deliveryZones as Array<{ label: string; feeUsdCents: number }> | undefined) ?? [];
+
+  // Listas de órdenes. Caja: "Órdenes" = cobradas del día; "Pedido de Mesero" = pedidos
+  // internos (no del checkout público) aún sin cobrar — la cola de cobro del cajero.
+  const paidOrders = liveOrders.filter((o: any) => o.paidAt);
+  const waiterPendingOrders = liveOrders.filter(
+    (o: any) => !o.paidAt && !o.checkoutToken,
+  );
+  const ordersListForSheet = isCaja ? paidOrders : liveOrders;
 
   useEffect(() => {
     if (isTableSelectorOpen && typeof window !== "undefined") {
@@ -219,6 +229,19 @@ export function WaiterOrderClient({
   const igtfUsdCents = (applyIgtf && isForeignCurrency) ? Math.round(totalUsdCents * (igtfPercentage / 100)) : 0;
   const grandTotalUsdCents = totalUsdCents + igtfUsdCents;
   const grandTotalBsCents = Math.round(grandTotalUsdCents * rate);
+  // En caja el envío cobra, salvo que se esté editando un pedido ya cobrado.
+  const willCharge = isCaja && !(editingOrderId !== null && editingOrderPaidAt !== null);
+  const isCashMethod = paymentMethod === "Efectivo $" || paymentMethod === "Efectivo Bs";
+  const needsReference = willCharge && !isCashMethod;
+
+  const submitLabel = !isCaja
+    ? editingOrderId
+      ? "Actualizar Pedido"
+      : "Enviar a Cocina"
+    : willCharge
+      ? "Cobrar"
+      : "Actualizar Pedido";
+
   const canSubmit = count > 0
     && !isSubmitting
     && (orderMode !== "on_site" || tableNumber.trim().length > 0)
@@ -227,7 +250,8 @@ export function WaiterOrderClient({
       tableNumber.trim().length > 0
       && customerPhone.trim().length > 0
       && deliveryZone.trim().length > 0
-    ));
+    ))
+    && (!needsReference || paymentReference.trim().length > 0);
 
   function handleItemPress(item: MenuItemWithComponents) {
     if (needsModal(item, localAdicionales, localBebidas, settings)) {
@@ -290,6 +314,8 @@ export function WaiterOrderClient({
       pos: "Punto / PdV", zelle: "Zelle", transfer: "Transf.", binance: "Binance",
     };
     setPaymentMethod((oldToNew[order.paymentMethod] || order.paymentMethod) as WaiterPaymentMethod);
+    setPaymentReference(order.paymentReference || "");
+    setEditingOrderPaidAt(order.paidAt ?? null);
     // Restore exact mode including delivery
     const mode = order.orderMode as "on_site" | "take_away" | "delivery";
     setOrderMode(["on_site", "take_away", "delivery"].includes(mode) ? mode : "on_site");
@@ -327,15 +353,23 @@ export function WaiterOrderClient({
   }, [clearCart, setItems, localItems]);
 
 
-  const handleCancelEdit = () => {
+  const resetForm = useCallback(() => {
     clearCart();
     setEditingOrderId(null);
     setEditingOrderNumber(null);
+    setEditingOrderPaidAt(null);
     setTableNumber("");
     setCustomerName("");
     setCustomerPhone("");
     setDeliveryZone("");
+    setPaymentReference("");
+    setPaymentMethod("Punto / PdV");
     setOrderMode("on_site");
+    setIsSheetOpen(false);
+  }, [clearCart]);
+
+  const handleCancelEdit = () => {
+    resetForm();
     toast.success("Edición cancelada");
   };
 
@@ -361,69 +395,66 @@ export function WaiterOrderClient({
         categoryIsSimple: item.categoryIsSimple, categoryName: item.categoryName,
       };
     });
+    const baseFields = {
+      tableNumber: orderMode === "take_away" ? undefined : tableNumber.trim(),
+      customerName: customerName.trim() || undefined,
+      customerPhone: customerPhone.trim() || undefined,
+      deliveryZoneLabel: orderMode === "delivery" ? deliveryZone : undefined,
+      paymentMethod,
+      orderMode,
+      items: checkoutItems as any,
+    };
+
     try {
-      if (editingOrderId) {
-        const result = await updateWaiterOrderAction({
+      if (editingOrderId && isCaja && !editingOrderPaidAt) {
+        // Caja: actualizar el pedido de mesero y cobrarlo en un solo paso.
+        const upd = await updateWaiterOrderAction({
           id: editingOrderId,
-          tableNumber: orderMode === "take_away" ? undefined : tableNumber.trim(),
-          customerName: customerName.trim() || undefined,
-          customerPhone: customerPhone.trim() || undefined,
-          deliveryZoneLabel: orderMode === "delivery" ? deliveryZone : undefined,
-          paymentMethod,
-          orderMode,
-          items: checkoutItems as any,
+          ...baseFields,
+          skipPrint: true,
         });
+        if (!upd?.data?.success) {
+          toast.error(upd?.serverError ?? "Error al actualizar el pedido");
+          return;
+        }
+        const settled = await settleOrderAction({
+          id: editingOrderId,
+          paymentMethod,
+          paymentReference: paymentReference.trim() || undefined,
+        });
+        if (settled?.data?.success) {
+          toast.success(`Pedido #${editingOrderNumber} cobrado`);
+          resetForm();
+          refetchOrders();
+        } else {
+          toast.error(settled?.serverError ?? "Error al cobrar el pedido");
+        }
+      } else if (editingOrderId) {
+        // Mesero edita, o caja edita un pedido ya cobrado: solo actualizar.
+        const result = await updateWaiterOrderAction({ id: editingOrderId, ...baseFields });
         if (result?.data?.success) {
           toast.success(`Pedido #${editingOrderNumber} actualizado`);
-          clearCart();
-          setTableNumber("");
-          setCustomerName("");
-          setCustomerPhone("");
-          setDeliveryZone("");
-          setPaymentMethod("Punto / PdV");
-          setOrderMode("on_site");
-          setEditingOrderId(null);
-          setEditingOrderNumber(null);
-          setIsSheetOpen(false);
+          resetForm();
+          refetchOrders();
         } else {
           toast.error(result?.serverError ?? "Error al procesar el pedido");
         }
       } else {
+        // Nuevo pedido. En caja se crea ya cobrado (chargeNow).
         const result = await createWaiterOrderAction({
-          tableNumber: orderMode === "take_away" ? undefined : tableNumber.trim(),
-          customerName: customerName.trim() || undefined,
-          customerPhone: customerPhone.trim() || undefined,
-          deliveryZoneLabel: orderMode === "delivery" ? deliveryZone : undefined,
-          paymentMethod,
-          orderMode,
-          items: checkoutItems as any,
+          ...baseFields,
+          ...(isCaja
+            ? { chargeNow: true, paymentReference: paymentReference.trim() || undefined }
+            : {}),
         });
         if (result?.data?.success) {
-          const data = result.data;
-          clearCart();
-          setTableNumber("");
-          setCustomerName("");
-          setCustomerPhone("");
-          setDeliveryZone("");
-          setPaymentMethod("Punto / PdV");
-          setOrderMode("on_site");
-          setIsSheetOpen(false);
-          if (variant === "caja") {
-            // Caja: crear y cobrar en un solo paso — abre el cobro de inmediato.
-            setCobroOrder({
-              id: data.orderId,
-              orderNumber: data.orderNumber,
-              paymentMethod: data.paymentMethod,
-              subtotalUsdCents: data.subtotalUsdCents,
-              subtotalBsCents: data.subtotalBsCents,
-              packagingUsdCents: data.packagingUsdCents,
-              deliveryUsdCents: data.deliveryUsdCents,
-              rateSnapshotBsPerUsd: data.rateSnapshotBsPerUsd,
-              paidAt: null,
-            });
-          } else {
-            toast.success(`Pedido #${data.orderNumber} enviado`);
-          }
+          toast.success(
+            isCaja
+              ? `Pedido #${result.data.orderNumber} cobrado`
+              : `Pedido #${result.data.orderNumber} enviado`,
+          );
+          resetForm();
+          refetchOrders();
         } else {
           toast.error(result?.serverError ?? "Error al procesar el pedido");
         }
@@ -460,15 +491,30 @@ export function WaiterOrderClient({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setIsOrdersSheetOpen(true)} 
+          <button
+            onClick={() => setIsOrdersSheetOpen(true)}
             className="flex h-10 items-center gap-2 rounded-xl bg-white/5 px-4 text-xs font-black uppercase tracking-widest text-white/80 hover:bg-white/10 hover:text-white transition-all border border-white/5 active:scale-95"
           >
             <Table2 size={16} className="text-amber-400" />
             <span className="hidden md:inline">Órdenes</span>
           </button>
-          
-          <button 
+
+          {isCaja && (
+            <button
+              onClick={() => setIsWaiterOrdersSheetOpen(true)}
+              className="relative flex h-10 items-center gap-2 rounded-xl bg-white/5 px-4 text-xs font-black uppercase tracking-widest text-white/80 hover:bg-white/10 hover:text-white transition-all border border-white/5 active:scale-95"
+            >
+              <ClipboardList size={16} className="text-amber-400" />
+              <span className="hidden md:inline">Pedido de Mesero</span>
+              {waiterPendingOrders.length > 0 && (
+                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--color-primary)] px-1 text-[10px] font-black text-white">
+                  {waiterPendingOrders.length}
+                </span>
+              )}
+            </button>
+          )}
+
+          <button
             onClick={() => setIsSheetOpen(true)} 
             className="relative flex h-10 items-center gap-3 rounded-xl bg-[var(--color-primary)] pl-4 pr-3 lg:hidden shadow-[0_4px_15px_rgba(var(--color-primary-rgb),0.4)] active:scale-95 transition-all group overflow-hidden"
           >
@@ -551,6 +597,7 @@ export function WaiterOrderClient({
                 customerName={customerName} setCustomerName={setCustomerName}
                 customerPhone={customerPhone} setCustomerPhone={setCustomerPhone}
                 deliveryZones={deliveryZones} deliveryZone={deliveryZone} setDeliveryZone={setDeliveryZone}
+                variant={variant} paymentReference={paymentReference} setPaymentReference={setPaymentReference}
                 paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod}
                 onSubmit={handleSubmit} canSubmit={canSubmit} isSubmitting={isSubmitting}
                 totalUsd={grandTotalUsdCents} totalBs={grandTotalBsCents} rate={rate} igtfUsd={igtfUsdCents}
@@ -607,6 +654,7 @@ export function WaiterOrderClient({
                     customerName={customerName} setCustomerName={setCustomerName}
                     customerPhone={customerPhone} setCustomerPhone={setCustomerPhone}
                     deliveryZones={deliveryZones} deliveryZone={deliveryZone} setDeliveryZone={setDeliveryZone}
+                    variant={variant} paymentReference={paymentReference} setPaymentReference={setPaymentReference}
                     paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod}
                     onSubmit={handleSubmit} canSubmit={canSubmit} isSubmitting={isSubmitting}
                     totalUsd={grandTotalUsdCents} totalBs={grandTotalBsCents} rate={rate} igtfUsd={igtfUsdCents}
@@ -640,16 +688,20 @@ export function WaiterOrderClient({
       <ActiveOrdersSheet
         isOpen={isOrdersSheetOpen}
         onClose={() => setIsOrdersSheetOpen(false)}
-        orders={activeOrders}
-        onSelect={handleEditOrder}
-        onCobrar={(order) => { setCobroOrder(order); setIsOrdersSheetOpen(false); }}
+        orders={ordersListForSheet}
+        onSelect={(order) => { handleEditOrder(order); setIsOrdersSheetOpen(false); }}
+        title={isCaja ? "Órdenes Cobradas" : "Órdenes Activas"}
+        emptyText={isCaja ? "No hay órdenes cobradas hoy" : "No hay órdenes activas"}
       />
 
-      {cobroOrder && (
-        <CobroModal
-          order={cobroOrder}
-          settings={settings}
-          onClose={() => setCobroOrder(null)}
+      {isCaja && (
+        <ActiveOrdersSheet
+          isOpen={isWaiterOrdersSheetOpen}
+          onClose={() => setIsWaiterOrdersSheetOpen(false)}
+          orders={waiterPendingOrders}
+          onSelect={(order) => { handleEditOrder(order); setIsWaiterOrdersSheetOpen(false); }}
+          title="Pedidos de Mesero"
+          emptyText="No hay pedidos de mesero por cobrar"
         />
       )}
 

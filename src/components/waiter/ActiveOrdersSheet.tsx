@@ -1,6 +1,6 @@
 "use client";
 
-import { ChefHat, Clock, Phone, MapPin, User, Wallet, CheckCircle2 } from "lucide-react";
+import { ChefHat, Clock, Phone, MapPin, User, CheckCircle2, CircleDollarSign } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { formatBs } from "@/lib/money";
 import { formatPhone } from "@/lib/utils";
@@ -14,7 +14,8 @@ interface ActiveOrdersSheetProps {
   onClose: () => void;
   orders: any[];
   onSelect: (order: any) => void;
-  onCobrar: (order: any) => void;
+  title?: string;
+  emptyText?: string;
 }
 
 const STATUS_ACCENT: Record<string, string> = {
@@ -54,6 +55,18 @@ function LocationBadge({ order }: { order: any }) {
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-100 text-violet-700 font-bold text-[10px] tracking-tight border border-violet-200 max-w-[140px] truncate">
       <MapPin className="h-2.5 w-2.5 shrink-0" />
       <span className="truncate">{table || "Domicilio"}</span>
+    </span>
+  );
+}
+
+function PaymentBadge({ order }: { order: any }) {
+  return order.paidAt ? (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 font-bold text-[10px] tracking-tight border border-emerald-200">
+      <CheckCircle2 className="h-2.5 w-2.5" /> Cobrado
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 font-bold text-[10px] tracking-tight border border-amber-200">
+      <CircleDollarSign className="h-2.5 w-2.5" /> Por cobrar
     </span>
   );
 }
@@ -99,7 +112,8 @@ export function ActiveOrdersSheet({
   onClose,
   orders,
   onSelect,
-  onCobrar,
+  title = "Órdenes Activas",
+  emptyText = "No hay órdenes activas",
 }: ActiveOrdersSheetProps) {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -107,7 +121,7 @@ export function ActiveOrdersSheet({
         <SheetHeader className="px-6 py-5 bg-white border-b shrink-0">
           <SheetTitle className="flex items-center justify-between">
             <span className="text-xl font-display font-black text-slate-900">
-              Órdenes Activas
+              {title}
             </span>
             {orders.length > 0 && (
               <span className="inline-flex items-center justify-center h-6 min-w-[24px] px-1.5 rounded-full bg-primary text-white text-xs font-black">
@@ -121,7 +135,7 @@ export function ActiveOrdersSheet({
           {orders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center opacity-40">
               <ChefHat size={48} className="mb-3" />
-              <p className="font-bold text-slate-700">No hay órdenes activas</p>
+              <p className="font-bold text-slate-700">{emptyText}</p>
               <p className="text-xs text-slate-500 mt-1">Las órdenes del día aparecerán aquí</p>
             </div>
           ) : (
@@ -148,6 +162,7 @@ export function ActiveOrdersSheet({
                     </span>
                     <OrderModeChip mode={order.orderMode ?? "on_site"} />
                     <LocationBadge order={order} />
+                    <PaymentBadge order={order} />
                   </div>
                   <OrderStatusBadge status={order.status} />
                 </div>
@@ -174,23 +189,6 @@ export function ActiveOrdersSheet({
                       </span>
                     )}
                   </div>
-                </div>
-
-                {/* Row 4: Cobro */}
-                <div className="mt-3 pt-3 border-t border-slate-100">
-                  {order.paidAt ? (
-                    <span className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 py-2 text-xs font-black uppercase tracking-widest text-emerald-600 border border-emerald-100">
-                      <CheckCircle2 size={14} /> Cobrado
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onCobrar(order); }}
-                      className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary py-2 text-xs font-black uppercase tracking-widest text-white shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
-                    >
-                      <Wallet size={14} /> Cobrar
-                    </button>
-                  )}
                 </div>
               </div>
             ))

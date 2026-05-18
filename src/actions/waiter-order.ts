@@ -31,6 +31,9 @@ const waiterOrderSchema = v.object({
   orderMode: v.picklist(["on_site", "take_away", "delivery"]),
   customerPhone: v.optional(v.string()),
   deliveryZoneLabel: v.optional(v.string()),
+  // Caja: cuando es true, la orden se crea ya cobrada (un solo paso).
+  chargeNow: v.optional(v.boolean()),
+  paymentReference: v.optional(v.string()),
   items: v.any(), // CheckoutItem[] — validado en service
 });
 
@@ -42,6 +45,9 @@ const updateWaiterOrderSchema = v.object({
   orderMode: v.picklist(["on_site", "take_away", "delivery"]),
   customerPhone: v.optional(v.string()),
   deliveryZoneLabel: v.optional(v.string()),
+  // Caja: cuando el cobro invoca el update, no reimprime (el ticket de cobro
+  // de settleOrderAction ya lleva los ítems finales).
+  skipPrint: v.optional(v.boolean()),
   items: v.any(), // CheckoutItem[] — validado en service
 });
 
@@ -57,6 +63,16 @@ export const createWaiterOrderAction = authenticatedActionClient
     // Guard: solo admin o waiter
     if (!["admin", "waiter", "cashier"].includes(ctx.user.role as string)) {
       throw new Error("No autorizado");
+    }
+
+    // Caja: cobro en un solo paso al crear.
+    const chargeNow = parsedInput.chargeNow === true;
+    const isCash =
+      parsedInput.paymentMethod === "Efectivo $" ||
+      parsedInput.paymentMethod === "Efectivo Bs";
+    const paymentReference = parsedInput.paymentReference?.trim() ?? "";
+    if (chargeNow && !isCash && !paymentReference) {
+      throw new Error("La referencia de pago es obligatoria para este método");
     }
 
     const settings = await getSettings();
@@ -134,7 +150,12 @@ export const createWaiterOrderAction = authenticatedActionClient
           ? "Domicilio"
           : "";
 
-    const initialStatus = settings.requirePaymentBeforeKitchen ? "pending" : "kitchen";
+    // Si la caja cobra al crear, el pedido nace pagado y va directo a cocina.
+    const initialStatus = chargeNow
+      ? "kitchen"
+      : settings.requirePaymentBeforeKitchen
+        ? "pending"
+        : "kitchen";
 
     const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000); // expira en 8h
 
@@ -163,6 +184,9 @@ export const createWaiterOrderAction = authenticatedActionClient
         status: initialStatus,
         paymentMethod: parsedInput.paymentMethod,
         paymentProvider: "whatsapp_manual", // provider dummy; el pago es presencial
+        paymentReference: chargeNow ? paymentReference || null : null,
+        paidAt: chargeNow ? new Date() : null,
+        createdByRole: ctx.user.role as "admin" | "waiter" | "cashier",
         orderMode: parsedInput.orderMode,
         tableNumber: resolvedTableNumber,
         customerName: parsedInput.customerName || null,
@@ -211,6 +235,8 @@ export const createWaiterOrderAction = authenticatedActionClient
 
     revalidatePath("/kitchen");
     revalidatePath("/admin/orders");
+    revalidatePath("/waiter");
+    revalidatePath("/caja");
 
     return {
       success: true,
@@ -336,35 +362,39 @@ export const updateWaiterOrderAction = authenticatedActionClient
 
     if (!order) throw new Error("Error al actualizar la orden");
 
-    // Generar texto para el ticket
-    const ticketText = generateTicketText({
-      orderNumber: order.orderNumber,
-      tableNumber: resolvedTableNumber,
-      customerName: parsedInput.customerName,
-      items: snapshotItems,
-      totalBsCents: grandTotalBsCents,
-      totalUsdCents: grandTotalUsdCents,
-      igtfBsCents,
-      igtfUsdCents,
-      date: formatOrderDate(new Date()),
-      paymentMethod: parsedInput.paymentMethod,
-      waiterName: ctx.user.name ?? undefined,
-      orderMode: parsedInput.orderMode,
-      restaurantName: settings.restaurantName,
-      isUpdate: true,
-    });
+    // Generar e imprimir la comanda actualizada — salvo que el cobro de caja
+    // lo invoque con skipPrint (el ticket de cobro ya llevará los ítems finales).
+    if (!parsedInput.skipPrint) {
+      const ticketText = generateTicketText({
+        orderNumber: order.orderNumber,
+        tableNumber: resolvedTableNumber,
+        customerName: parsedInput.customerName,
+        items: snapshotItems,
+        totalBsCents: grandTotalBsCents,
+        totalUsdCents: grandTotalUsdCents,
+        igtfBsCents,
+        igtfUsdCents,
+        date: formatOrderDate(new Date()),
+        paymentMethod: parsedInput.paymentMethod,
+        waiterName: ctx.user.name ?? undefined,
+        orderMode: parsedInput.orderMode,
+        restaurantName: settings.restaurantName,
+        isUpdate: true,
+      });
 
-    // Crear trabajo de impresión
-    await db.insert(printJobs).values({
-      orderId: order.id,
-      copies: 2,
-      rawContent: ticketText,
-      status: "pending",
-      target: "main",
-    });
+      await db.insert(printJobs).values({
+        orderId: order.id,
+        copies: 2,
+        rawContent: ticketText,
+        status: "pending",
+        target: "main",
+      });
+    }
 
     revalidatePath("/kitchen");
     revalidatePath("/admin/orders");
+    revalidatePath("/waiter");
+    revalidatePath("/caja");
 
     return {
       success: true,
@@ -483,6 +513,7 @@ export const settleOrderAction = authenticatedActionClient
     revalidatePath("/kitchen");
     revalidatePath("/admin/orders");
     revalidatePath("/waiter");
+    revalidatePath("/caja");
 
     return {
       success: true,

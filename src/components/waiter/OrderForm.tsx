@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  DollarSign, Coins, Smartphone, CreditCard, Banknote, Landmark, Table2, Map, User, Send, CheckCircle2, Store, Package, Truck, Phone, MapPin
+  DollarSign, Coins, Smartphone, CreditCard, Banknote, Landmark, Table2, Map, User, Send, CheckCircle2, Store, Package, Truck, Phone, MapPin, Hash
 } from "lucide-react";
 import { formatBs, formatRef } from "@/lib/money";
 import {
@@ -36,6 +36,10 @@ interface OrderFormProps {
   deliveryZones?: Array<{ label: string; feeUsdCents: number }>;
   deliveryZone?: string;
   setDeliveryZone?: (v: string) => void;
+  /** "waiter" toma pedidos; "caja" toma y cobra (muestra el campo de referencia). */
+  variant?: "waiter" | "caja";
+  paymentReference?: string;
+  setPaymentReference?: (v: string) => void;
   prefilledTable?: string;
   onOpenTableSelector: () => void;
   isEditing?: boolean;
@@ -72,6 +76,9 @@ export function OrderForm({
   deliveryZones = [],
   deliveryZone = "",
   setDeliveryZone,
+  variant = "waiter",
+  paymentReference = "",
+  setPaymentReference,
   prefilledTable,
   onOpenTableSelector,
   isEditing,
@@ -82,6 +89,18 @@ export function OrderForm({
   showSubmitButton = true,
   submitLabel = "Enviar a Cocina",
 }: OrderFormProps) {
+  const isCash = paymentMethod === "Efectivo $" || paymentMethod === "Efectivo Bs";
+  // En caja se cobra al instante: pedir referencia para métodos no-efectivo.
+  const needsReference = variant === "caja" && !isCash;
+  const referencePlaceholder =
+    paymentMethod === "Pago Móvil" || paymentMethod === "Transf."
+      ? "Últimos 4 dígitos"
+      : paymentMethod === "Zelle"
+        ? "Nº de confirmación"
+        : paymentMethod === "Binance"
+          ? "ID de transacción"
+          : "Nº de referencia / lote";
+
   const methods = [
     { id: "Efectivo $", label: "Efectivo $", icon: <DollarSign size={16} /> },
     { id: "Efectivo Bs", label: "Efectivo Bs", icon: <Coins size={16} /> },
@@ -332,7 +351,10 @@ export function OrderForm({
         {/* Pago */}
         <div className="space-y-1">
           <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-            Método de Pago <span className="font-medium normal-case text-[var(--color-text-muted)]/60">(tentativo)</span>
+            Método de Pago
+            {variant === "waiter" && (
+              <span className="font-medium normal-case text-[var(--color-text-muted)]/60"> (tentativo)</span>
+            )}
           </label>
           <Select value={paymentMethod} onValueChange={(val) => val && setPaymentMethod(val as WaiterPaymentMethod)}>
             <SelectTrigger className="w-full h-9 border border-[var(--color-border)] bg-white px-3 text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all rounded-xl">
@@ -354,6 +376,29 @@ export function OrderForm({
             </SelectContent>
           </Select>
         </div>
+
+        {/* Referencia de pago — solo en caja, para métodos no-efectivo */}
+        {needsReference && (
+          <div className="space-y-1">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+              Referencia de Pago <span className="text-[var(--color-primary)]">*</span>
+            </label>
+            <div className="relative group">
+              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-[var(--color-surface-section)] group-focus-within:bg-[var(--color-primary-light)] transition-colors">
+                <Hash size={13} className="text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
+              </div>
+              <input
+                type="text"
+                inputMode={paymentMethod === "Pago Móvil" || paymentMethod === "Transf." ? "numeric" : "text"}
+                value={paymentReference}
+                onChange={e => setPaymentReference?.(e.target.value)}
+                placeholder={referencePlaceholder}
+                required
+                className="w-full rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
+              />
+            </div>
+          </div>
+        )}
 
 
         {/* Submit button — only shown in mobile/inline mode */}
