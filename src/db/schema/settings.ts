@@ -6,6 +6,7 @@ import {
   uuid,
   numeric,
   boolean,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { exchangeRates } from "./exchangeRates";
 
@@ -62,6 +63,13 @@ export const settings = pgTable("settings", {
   packagingFeePerBebidaUsdCents: integer("packaging_fee_per_bebida_usd_cents").notNull().default(0),
   deliveryFeeUsdCents: integer("delivery_fee_usd_cents").notNull().default(0),
   deliveryCoverage: text("delivery_coverage"),
+  deliveryZones: jsonb("delivery_zones")
+    .notNull()
+    .default([])
+    .$type<Array<{ label: string; feeUsdCents: number }>>(),
+  requirePaymentBeforeKitchen: boolean("require_payment_before_kitchen")
+    .notNull()
+    .default(false),
   paymentPagoMovilEnabled: boolean("payment_pago_movil_enabled").notNull().default(true),
   paymentTransferEnabled: boolean("payment_transfer_enabled").notNull().default(true),
   menuLayout: text("menu_layout").notNull().default("modern"),

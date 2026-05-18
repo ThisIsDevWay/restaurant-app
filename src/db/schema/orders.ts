@@ -109,6 +109,7 @@ export const orders = pgTable("orders", {
     packagingUsdCents: number;
     deliveryFeeUsdCents: number;
     deliveryUsdCents: number;
+    deliveryZoneLabel?: string;
     orderMode: string;
   }>(),
   exchangeRateId: uuid("exchange_rate_id")
@@ -119,6 +120,7 @@ export const orders = pgTable("orders", {
     scale: 8,
   }).notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
