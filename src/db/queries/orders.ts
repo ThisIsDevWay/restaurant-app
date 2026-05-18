@@ -130,9 +130,11 @@ export async function expirePendingOrders() {
   return result;
 }
 
-export async function getKitchenOrdersSimple(since?: Date) {
+export async function getKitchenOrdersSimple(since?: Date, includePending = false) {
   const whereClause = [
-    sql`${orders.status} IN ('paid', 'kitchen', 'delivered', 'whatsapp')`,
+    includePending
+      ? sql`${orders.status} IN ('pending', 'paid', 'kitchen', 'delivered', 'whatsapp')`
+      : sql`${orders.status} IN ('paid', 'kitchen', 'delivered', 'whatsapp')`,
   ];
 
   if (since) {
