@@ -412,6 +412,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
       {state.type === "enter_reference" && (
         <ReferenceEntry
           orderId={state.orderId}
+          checkoutToken={checkoutToken ?? ""}
           expiresAt={state.expiresAt}
           totalBsCents={state.totalBsCents}
           bankDetails={state.bankDetails}

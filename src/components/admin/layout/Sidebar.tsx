@@ -21,6 +21,7 @@ import {
   Users,
   Menu,
   BookMarked,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -40,6 +41,7 @@ const navItems = [
   { href: "/admin/tables", label: "Mesas", icon: Table2 },
   { href: "/admin/tv", label: "Smart TVs", icon: Tv },
   { href: "/waiter", label: "Toma de Pedido", icon: HandPlatter },
+  { href: "/caja", label: "Caja", icon: Wallet },
   { href: "/kitchen", label: "Cocina", icon: ChefHat },
   { href: "/admin/users", label: "Usuarios", icon: Users },
   { href: "/admin/settings", label: "Configuración", icon: Settings },

@@ -12,6 +12,7 @@ import { CopyButton } from "./CopyButton";
 
 interface ReferenceEntryProps {
   orderId: string;
+  checkoutToken: string;
   expiresAt: string;
   totalBsCents: number;
   bankDetails: BankDetails;
@@ -24,6 +25,7 @@ interface ReferenceEntryProps {
 
 export function ReferenceEntry({
   orderId,
+  checkoutToken,
   expiresAt,
   totalBsCents,
   bankDetails,
@@ -69,7 +71,7 @@ export function ReferenceEntry({
       const res = await fetch("/api/payment-confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, reference: reference.trim() }),
+        body: JSON.stringify({ orderId, reference: reference.trim(), checkoutToken }),
       });
 
       const data = await res.json();

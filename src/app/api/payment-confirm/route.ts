@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { getOrderById } from "@/db/queries/orders";
 import { getSettings } from "@/db/queries/settings";
 import { rateLimiters, getIP } from "@/lib/rate-limit";
@@ -11,6 +12,7 @@ import * as v from "valibot";
 const confirmSchema = v.object({
   orderId: v.pipe(v.string(), v.uuid()),
   reference: v.pipe(v.string(), v.minLength(1)),
+  checkoutToken: v.pipe(v.string(), v.uuid()),
 });
 
 export async function POST(req: Request) {
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { orderId, reference } = parsed.output;
+    const { orderId, reference, checkoutToken } = parsed.output;
 
     const order = await getOrderById(orderId);
     if (!order) {
@@ -40,6 +42,17 @@ export async function POST(req: Request) {
         { success: false, error: "Orden no encontrada" },
         { status: 404 },
       );
+    }
+
+    // Verify the caller owns this order — compare tokens with constant-time equality
+    // to prevent timing attacks. Reject if token is missing (already-paid orders have null token).
+    if (!order.checkoutToken) {
+      return NextResponse.json({ success: false, error: "Token inválido" }, { status: 401 });
+    }
+    const bufA = Buffer.from(checkoutToken, "utf8");
+    const bufB = Buffer.from(order.checkoutToken, "utf8");
+    if (bufA.length !== bufB.length || !timingSafeEqual(bufA, bufB)) {
+      return NextResponse.json({ success: false, error: "Token inválido" }, { status: 401 });
     }
 
     const result = await confirmPayment(orderId, reference);

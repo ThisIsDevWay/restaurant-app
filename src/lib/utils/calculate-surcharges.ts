@@ -57,6 +57,7 @@ export interface SurchargesSnapshot {
   packagingUsdCents: number;
   deliveryFeeUsdCents: number;
   deliveryUsdCents: number;
+  deliveryZoneLabel?: string;
   orderMode: string;
 }
 
@@ -168,6 +169,7 @@ export function buildSurchargesSnapshot(
   surcharges: SurchargeResult,
   orderMode: string | null,
   settings: SurchargeSettings,
+  deliveryZoneLabel?: string,
 ): SurchargesSnapshot {
   return {
     plateCount: surcharges.plateCount,
@@ -179,6 +181,7 @@ export function buildSurchargesSnapshot(
     packagingUsdCents: surcharges.packagingUsdCents,
     deliveryFeeUsdCents: settings.deliveryFeeUsdCents,
     deliveryUsdCents: surcharges.deliveryUsdCents,
+    ...(deliveryZoneLabel ? { deliveryZoneLabel } : {}),
     orderMode: orderMode ?? "on_site",
   };
 }
