@@ -14,5 +14,6 @@ export default async function AuthRedirectPage() {
 
   if (role === "kitchen") redirect("/kitchen");
   if (role === "waiter") redirect("/waiter");
+  if (role === "cashier") redirect("/caja");
   redirect("/admin");
 }

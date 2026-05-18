@@ -9,7 +9,7 @@ export type UserRow = {
   name: string | null;
   email: string;
   image: string | null;
-  role: "admin" | "kitchen" | "waiter";
+  role: "admin" | "kitchen" | "waiter" | "cashier";
   hasPassword: boolean;
   createdAt: Date;
 };

@@ -145,7 +145,16 @@ export const requireKitchenOrAdmin = async () => {
 export const requireWaiterOrAdmin = async () => {
   const session = await auth();
   if (!session?.user?.role) redirect("/login");
-  if (!["admin", "waiter"].includes(session.user.role)) {
+  if (!["admin", "waiter", "cashier"].includes(session.user.role)) {
+    redirect("/login");
+  }
+  return session;
+};
+
+export const requireCashierOrAdmin = async () => {
+  const session = await auth();
+  if (!session?.user?.role) redirect("/login");
+  if (!["admin", "cashier"].includes(session.user.role)) {
     redirect("/login");
   }
   return session;

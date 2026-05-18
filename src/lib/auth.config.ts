@@ -14,7 +14,7 @@ export const authConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.id = (user.id as string) ?? token.id;
-        const allowedRoles = ["admin", "kitchen", "waiter", "user"];
+        const allowedRoles = ["admin", "kitchen", "waiter", "cashier", "user"];
         if (user.role && allowedRoles.includes(user.role as string)) {
           token.role = user.role as string;
         }

@@ -20,7 +20,13 @@ export default NextAuth(authConfig).auth((req) => {
   }
 
   if (pathname.startsWith("/waiter")) {
-    if (!isLoggedIn || !["admin", "waiter"].includes(role ?? "")) {
+    if (!isLoggedIn || !["admin", "waiter", "cashier"].includes(role ?? "")) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+  }
+
+  if (pathname.startsWith("/caja")) {
+    if (!isLoggedIn || !["admin", "cashier"].includes(role ?? "")) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
   }
@@ -29,5 +35,5 @@ export default NextAuth(authConfig).auth((req) => {
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/kitchen/:path*", "/waiter/:path*"],
+  matcher: ["/admin/:path*", "/kitchen/:path*", "/waiter/:path*", "/caja/:path*"],
 };

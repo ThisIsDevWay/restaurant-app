@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   ChefHat,
   UtensilsCrossed,
+  Wallet,
 } from "lucide-react";
 import {
   createUserAction,
@@ -23,7 +24,7 @@ import {
 } from "@/actions/users";
 import type { UserRow } from "@/db/queries/users";
 
-type Role = "admin" | "kitchen" | "waiter";
+type Role = "admin" | "kitchen" | "waiter" | "cashier";
 
 const ROLE_CONFIG: Record<Role, { label: string; color: string; icon: React.ElementType }> = {
   admin: {
@@ -40,6 +41,11 @@ const ROLE_CONFIG: Record<Role, { label: string; color: string; icon: React.Elem
     label: "Mesero",
     color: "bg-blue-50 text-blue-700 ring-blue-200",
     icon: UtensilsCrossed,
+  },
+  cashier: {
+    label: "Cajero",
+    color: "bg-amber-50 text-amber-700 ring-amber-200",
+    icon: Wallet,
   },
 };
 
@@ -395,7 +401,7 @@ export function UsersClient({ initialUsers }: { initialUsers: UserRow[] }) {
                   Rol
                 </label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(["admin", "kitchen", "waiter"] as Role[]).map((role) => {
+                  {(["admin", "kitchen", "waiter", "cashier"] as Role[]).map((role) => {
                     const cfg = ROLE_CONFIG[role];
                     const Icon = cfg.icon;
                     return (

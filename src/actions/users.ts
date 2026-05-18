@@ -8,7 +8,7 @@ import { adminActionClient } from "@/lib/safe-action";
 import bcrypt from "bcryptjs";
 import * as v from "valibot";
 
-const roleEnum = v.picklist(["admin", "kitchen", "waiter"] as const);
+const roleEnum = v.picklist(["admin", "kitchen", "waiter", "cashier"] as const);
 
 export const createUserAction = adminActionClient
   .schema(
