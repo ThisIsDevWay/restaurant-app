@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { menuItems, optionGroups, options, menuItemContornos } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { invalidateMenuCache } from "@/db/queries/menu";
 import { supabase } from "@/lib/supabase";
 import { menuItemSchema, optionGroupSchema } from "@/lib/validations/menu-item";
 import * as v from "valibot";
@@ -43,7 +44,7 @@ export const createMenuItemAction = adminActionClient
         );
       }
 
-      revalidatePath("/");
+      invalidateMenuCache();
       revalidatePath("/admin");
       revalidatePath("/admin/catalogo");
       return { success: true, item };
@@ -85,7 +86,7 @@ export const updateMenuItemAction = adminActionClient
         );
       }
 
-      revalidatePath("/");
+      invalidateMenuCache();
       revalidatePath("/admin");
       revalidatePath("/admin/catalogo");
       return { success: true, item };
@@ -101,7 +102,7 @@ export const deleteMenuItemAction = adminActionClient
   .action(async ({ parsedInput: { id } }) => {
     try {
       await db.delete(menuItems).where(eq(menuItems.id, id));
-      revalidatePath("/");
+      invalidateMenuCache();
       revalidatePath("/admin");
       revalidatePath("/admin/catalogo");
       return { success: true };
@@ -137,7 +138,7 @@ export const createOptionGroupAction = adminActionClient
         });
       }
 
-      revalidatePath("/");
+      invalidateMenuCache();
       return { success: true, group };
     } catch {
       return { success: false, error: "Error al crear grupo de opciones" };

@@ -3,8 +3,9 @@
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db";
 import { categories, menuItems } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { invalidateMenuCache } from "@/db/queries/menu";
 import { adminActionClient } from "@/lib/safe-action";
 import * as v from "valibot";
 
@@ -25,7 +26,7 @@ export const createCategoryAction = adminActionClient
         .insert(categories)
         .values({ name, sortOrder: nextSort, allowAlone, isSimple })
         .returning();
-      revalidatePath("/");
+      invalidateMenuCache();
       revalidatePath("/admin/categories");
       return { success: true, category: cat };
     } catch {
@@ -48,7 +49,7 @@ export const updateCategoryAction = adminActionClient
         .update(categories)
         .set({ name, allowAlone, isSimple })
         .where(eq(categories.id, id));
-      revalidatePath("/");
+      invalidateMenuCache();
       revalidatePath("/admin/categories");
       return { success: true };
     } catch {
@@ -66,7 +67,7 @@ export const toggleCategorySimpleAction = adminActionClient
         .update(categories)
         .set({ isSimple })
         .where(eq(categories.id, id));
-      revalidatePath("/");
+      invalidateMenuCache();
       revalidatePath("/admin/categories");
       return { success: true };
     } catch {
@@ -104,7 +105,7 @@ export const deleteCategoryAction = adminActionClient
       }
 
       await db.delete(categories).where(eq(categories.id, id));
-      revalidatePath("/");
+      invalidateMenuCache();
       revalidatePath("/admin/categories");
       return { success: true };
     } catch {
@@ -118,13 +119,17 @@ export const reorderCategoriesAction = adminActionClient
   .schema(v.object({ orderedIds: v.array(v.string()) }))
   .action(async ({ parsedInput: { orderedIds } }) => {
     try {
-      for (let i = 0; i < orderedIds.length; i++) {
-        await db
-          .update(categories)
-          .set({ sortOrder: i })
-          .where(eq(categories.id, orderedIds[i]));
-      }
-      revalidatePath("/");
+      if (orderedIds.length === 0) return { success: true };
+      await db
+        .update(categories)
+        .set({
+          sortOrder: sql`CASE ${categories.id} ${sql.join(
+            orderedIds.map((id, i) => sql`WHEN ${id} THEN ${i}`),
+            sql` `,
+          )} END`,
+        })
+        .where(inArray(categories.id, orderedIds));
+      invalidateMenuCache();
       revalidatePath("/admin/categories");
       return { success: true };
     } catch {
@@ -142,7 +147,7 @@ export const toggleCategoryAvailabilityAction = adminActionClient
         .update(categories)
         .set({ isAvailable })
         .where(eq(categories.id, id));
-      revalidatePath("/");
+      invalidateMenuCache();
       revalidatePath("/admin/categories");
       return { success: true };
     } catch {
@@ -160,7 +165,7 @@ export const toggleCategoryAloneAction = adminActionClient
         .update(categories)
         .set({ allowAlone })
         .where(eq(categories.id, id));
-      revalidatePath("/");
+      invalidateMenuCache();
       revalidatePath("/admin/categories");
       return { success: true };
     } catch {

@@ -3,6 +3,7 @@ import { menuItems, optionGroups, options, categories, menuItemAdicionales, menu
 import { eq, sql, and, gte, lte, isNotNull, asc, desc, SQL } from "drizzle-orm";
 import { getSettings } from "./settings";
 import { buildMenuItemSortColumns, type MenuItemSortMode } from "./sort-utils";
+import { unstable_cache, revalidateTag } from "next/cache";
 import type {
   MenuItemWithComponents,
   OptionGroupWithOptions,
@@ -663,7 +664,7 @@ export async function getMenuItemWithOptionsAndComponents(id: string) {
   };
 }
 
-export async function getCategories() {
+async function getCategoriesRaw() {
   return db
     .select({
       id: categories.id,
@@ -675,6 +676,14 @@ export async function getCategories() {
     })
     .from(categories)
     .orderBy(categories.sortOrder);
+}
+
+export const getCategories = (typeof process !== "undefined" && process.env.NEXT_RUNTIME === "nodejs")
+  ? unstable_cache(getCategoriesRaw, ["categories"], { tags: ["menu"], revalidate: 300 })
+  : getCategoriesRaw;
+
+export function invalidateMenuCache() {
+  revalidateTag("menu");
 }
 
 export async function getCategoriesWithItemCount() {

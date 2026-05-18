@@ -2,6 +2,7 @@
 
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { invalidateMenuCache } from "@/db/queries/menu";
 import { setMenuItemAdicionales as setMenuItemAdicionalesDb } from "@/db/queries/adicionales";
 import { adminActionClient } from "@/lib/safe-action";
 import * as v from "valibot";
@@ -11,7 +12,7 @@ export const saveMenuItemAdicionalesAction = adminActionClient
   .action(async ({ parsedInput: { menuItemId, adicionalIds } }) => {
     try {
       await setMenuItemAdicionalesDb(menuItemId, adicionalIds);
-      revalidatePath("/");
+      invalidateMenuCache();
       revalidatePath("/admin/catalogo");
       return { success: true };
     } catch {

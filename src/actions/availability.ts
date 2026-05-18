@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { dailyMenuItems, dailyAdicionales, dailyBebidas, dailyContornos } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { invalidateDailyMenuCache } from "@/db/queries/daily-menu";
 import { adminActionClient, staffActionClient } from "@/lib/safe-action";
 import * as v from "valibot";
 import { todayCaracas } from "@/lib/utils/date";
@@ -48,7 +49,7 @@ export const toggleDailyItemAvailabilityAction = staffActionClient
           break;
       }
 
-      revalidatePath("/");
+      invalidateDailyMenuCache();
       revalidatePath("/admin/menu-del-dia");
       revalidatePath("/admin/orders");
       

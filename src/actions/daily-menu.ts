@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { dailyMenuItems, dailyAdicionales, dailyBebidas, dailyContornos } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { invalidateDailyMenuCache } from "@/db/queries/daily-menu";
 import { logger } from "@/lib/logger";
 import { adminActionClient } from "@/lib/safe-action";
 import * as v from "valibot";
@@ -27,7 +28,7 @@ export const syncDailyMenuAction = adminActionClient
         }
       });
 
-      revalidatePath("/");
+      invalidateDailyMenuCache();
       revalidatePath("/admin/menu-del-dia");
       return { success: true };
     } catch (error) {
@@ -58,7 +59,7 @@ export const syncDailyAdicionalesAction = adminActionClient
         }
       });
 
-      revalidatePath("/");
+      invalidateDailyMenuCache();
       revalidatePath("/admin/menu-del-dia");
       return { success: true };
     } catch (error) {
@@ -90,7 +91,7 @@ export const syncDailyBebidasAction = adminActionClient
         }
       });
 
-      revalidatePath("/");
+      invalidateDailyMenuCache();
       revalidatePath("/admin/menu-del-dia");
       return { success: true };
     } catch (error) {
@@ -122,7 +123,7 @@ export const syncDailyContornosAction = adminActionClient
         }
       });
 
-      revalidatePath("/");
+      invalidateDailyMenuCache();
       revalidatePath("/admin/menu-del-dia");
       return { success: true };
     } catch (error) {
@@ -216,7 +217,7 @@ export const copyDailyMenuFromAction = adminActionClient
         return items.length;
       });
 
-      revalidatePath("/");
+      invalidateDailyMenuCache();
       revalidatePath("/admin/menu-del-dia");
       return { success: true, count };
     } catch (error) {

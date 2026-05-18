@@ -2,6 +2,7 @@
 
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { invalidateMenuCache } from "@/db/queries/menu";
 import {
   setMenuItemContornos as setMenuItemContornosDb,
 } from "@/db/queries/contornos";
@@ -27,7 +28,7 @@ export const saveMenuItemContornosAction = adminActionClient
           substituteContornoIds: item.substituteContornoIds,
         })),
       );
-      revalidatePath("/");
+      invalidateMenuCache();
       revalidatePath("/admin/catalogo");
       return { success: true };
     } catch (error) {

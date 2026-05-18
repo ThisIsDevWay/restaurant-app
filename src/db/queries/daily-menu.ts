@@ -15,6 +15,7 @@ import {
 import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import { getSettings } from "./settings";
 import { sortDailyMenuItems, type MenuItemSortMode } from "./sort-utils";
+import { unstable_cache, revalidateTag } from "next/cache";
 
 function formatLocalDate(date: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -153,7 +154,7 @@ export async function getDailyContornosAsMenuItemsForDate(dateStr: string) {
     .orderBy(categories.sortOrder, dailyContornos.sortOrder);
 }
 
-export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
+async function getDailyMenuWithOptionsAndComponentsRaw(dateStr?: string) {
   const today = dateStr ?? formatLocalDate(new Date());
 
   const settings = await getSettings();
@@ -406,6 +407,26 @@ export async function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
     dailyBebidas: dailyBebidaRows,
     dailyContornos: dailyContornoRows,
   };
+}
+
+const getDailyMenuCached = (typeof process !== "undefined" && process.env.NEXT_RUNTIME === "nodejs")
+  ? unstable_cache(
+      getDailyMenuWithOptionsAndComponentsRaw,
+      ["daily-menu"],
+      { tags: ["daily-menu"], revalidate: 300 },
+    )
+  : getDailyMenuWithOptionsAndComponentsRaw;
+
+export function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
+  const today = dateStr ?? new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Caracas",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  return getDailyMenuCached(today);
+}
+
+export function invalidateDailyMenuCache() {
+  revalidateTag("daily-menu");
 }
 
 export async function getDailyMenuItemIds(dateStr: string) {
