@@ -226,7 +226,7 @@ export const FloorCanvas = forwardRef<HTMLDivElement, FloorCanvasProps>(({
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => { e.stopPropagation(); setSelectedFixtureId(null); }}
                         className="absolute flex items-center justify-center rounded-full bg-slate-800 text-white shadow-lg"
-                        style={{ top: -12, left: -12, width: 24, height: 24, zIndex: 12, border: "2px solid #fff" }}
+                        style={{ top: -22, left: -22, width: 44, height: 44, zIndex: 12, border: "2px solid #fff" }}
                       >
                         <X size={14} />
                       </button>
@@ -235,7 +235,7 @@ export const FloorCanvas = forwardRef<HTMLDivElement, FloorCanvasProps>(({
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => { e.stopPropagation(); onFixtureDelete(fixture.id); }}
                         className="absolute flex items-center justify-center rounded-full bg-red-600 text-white shadow-lg"
-                        style={{ top: -12, right: -12, width: 24, height: 24, zIndex: 12, border: "2px solid #fff" }}
+                        style={{ top: -22, right: -22, width: 44, height: 44, zIndex: 12, border: "2px solid #fff" }}
                       >
                         <Trash2 size={12} strokeWidth={2.5} />
                       </button>
@@ -257,13 +257,17 @@ export const FloorCanvas = forwardRef<HTMLDivElement, FloorCanvasProps>(({
 
                       <div
                         onPointerDown={(e) => onFixtureResizeStart(e, fixture.id)}
-                        className="absolute bottom-0 right-0 w-6 h-6 flex items-center justify-center cursor-nwse-resize z-30"
-                        style={{
-                          background: `linear-gradient(135deg, transparent 50%, ${red} 50%)`,
-                          borderBottomRightRadius: entry.isWall ? 0 : 8,
-                        }}
+                        className="absolute bottom-0 right-0 w-11 h-11 flex items-end justify-end cursor-nwse-resize z-30"
                       >
-                        <div className="w-1.5 h-1.5 rounded-full bg-white translate-x-1 translate-y-1" />
+                        <div
+                          className="w-6 h-6 flex items-center justify-center"
+                          style={{
+                            background: `linear-gradient(135deg, transparent 50%, ${red} 50%)`,
+                            borderBottomRightRadius: entry.isWall ? 0 : 8,
+                          }}
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full bg-white translate-x-1 translate-y-1" />
+                        </div>
                       </div>
                     </>
                   )}
@@ -339,11 +343,11 @@ export const FloorCanvas = forwardRef<HTMLDivElement, FloorCanvasProps>(({
                   {isSelected && !isDraggingThis && (
                     <div
                       onPointerDown={(e) => e.stopPropagation()}
-                      className="absolute -right-3 -top-3 flex flex-col gap-1"
+                      className="absolute -right-5 -top-5 flex flex-col gap-1"
                     >
                       <button
                         onClick={(e) => { e.stopPropagation(); onTableRotate(table.id); }}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg bg-white shadow-xl ring-1 ring-black/5"
+                        className="flex h-11 w-11 items-center justify-center rounded-lg bg-white shadow-xl ring-1 ring-black/5"
                         style={{ color: red }}
                       >
                         <RotateCw size={14} />

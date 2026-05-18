@@ -24,6 +24,7 @@ import { CartLineItem } from "./CartLineItem";
 import { OrderForm, SubmitButton, type WaiterPaymentMethod } from "./OrderForm";
 import { ActiveOrdersSheet } from "./ActiveOrdersSheet";
 import { TableSelectorModal } from "./TableSelectorModal";
+import { CobroModal } from "./CobroModal";
 import { MenuItemGrid } from "./MenuItemGrid";
 import { QuickAvailabilityPanel } from "@/components/admin/availability/QuickAvailabilityPanel";
 
@@ -39,6 +40,7 @@ interface WaiterOrderClientProps {
   tables?: RestaurantTable[];
   fixtures?: FloorFixture[];
   activeOrders?: any[];
+  variant?: "waiter" | "caja";
 }
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -83,8 +85,10 @@ function EmptyCart() {
 export function WaiterOrderClient({
   items, categories, dailyAdicionales, dailyBebidas,
   allContornos, rate, settings, prefilledTable,
-  tables = [], fixtures = [], activeOrders = [],
+  tables = [], fixtures = [], activeOrders = [], variant = "waiter",
 }: WaiterOrderClientProps) {
+  const isCaja = variant === "caja";
+  const submitLabel = isCaja ? "Cobrar" : "Enviar a Cocina";
   const mounted = useCartStore(s => s.mounted);
   const setMounted = useCartStore(s => s.setMounted);
   const cartItems = useCartStore(s => s.items);
@@ -152,7 +156,7 @@ export function WaiterOrderClient({
   const [tableNumber, setTableNumber] = useState(prefilledTable ?? "");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [paymentReference, setPaymentReference] = useState("");
+  const [deliveryZone, setDeliveryZone] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<WaiterPaymentMethod>("Punto / PdV");
   const [orderMode, setOrderMode] = useState<"on_site" | "take_away" | "delivery">("on_site");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -164,6 +168,9 @@ export function WaiterOrderClient({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingCartItemIndex, setEditingCartItemIndex] = useState<number | null>(null);
   const [editingCartItemData, setEditingCartItemData] = useState<any | null>(null);
+  const [cobroOrder, setCobroOrder] = useState<any | null>(null);
+
+  const deliveryZones = (settings?.deliveryZones as Array<{ label: string; feeUsdCents: number }> | undefined) ?? [];
 
   useEffect(() => {
     if (isTableSelectorOpen && typeof window !== "undefined") {
@@ -194,11 +201,13 @@ export function WaiterOrderClient({
   }, 0);
 
   // Calculate surcharges (Packaging / Delivery)
+  const selectedZone = deliveryZones.find((z) => z.label === deliveryZone);
   const surchargeSettings: SurchargeSettings = {
     packagingFeePerPlateUsdCents: Number(settings?.packagingFeePerPlateUsdCents) || 0,
     packagingFeePerAdicionalUsdCents: Number(settings?.packagingFeePerAdicionalUsdCents) || 0,
     packagingFeePerBebidaUsdCents: Number(settings?.packagingFeePerBebidaUsdCents) || 0,
-    deliveryFeeUsdCents: Number(settings?.deliveryFeeUsdCents) || 0,
+    deliveryFeeUsdCents:
+      orderMode === "delivery" ? selectedZone?.feeUsdCents ?? 0 : 0,
   };
 
   const surcharges = calculateSurcharges(cartItems, orderMode, surchargeSettings);
@@ -211,10 +220,14 @@ export function WaiterOrderClient({
   const grandTotalUsdCents = totalUsdCents + igtfUsdCents;
   const grandTotalBsCents = Math.round(grandTotalUsdCents * rate);
   const canSubmit = count > 0
-    && tableNumber.trim().length > 0
+    && !isSubmitting
+    && (orderMode !== "on_site" || tableNumber.trim().length > 0)
     && (orderMode === "on_site" || customerName.trim().length > 0)
-    && (orderMode === "on_site" || customerPhone.trim().length > 0)
-    && !isSubmitting;
+    && (orderMode !== "delivery" || (
+      tableNumber.trim().length > 0
+      && customerPhone.trim().length > 0
+      && deliveryZone.trim().length > 0
+    ));
 
   function handleItemPress(item: MenuItemWithComponents) {
     if (needsModal(item, localAdicionales, localBebidas, settings)) {
@@ -271,7 +284,7 @@ export function WaiterOrderClient({
     setCustomerPhone(
       phone.startsWith("mesa-") || phone.startsWith("mesero-") ? "" : phone
     );
-    setPaymentReference(order.paymentReference || "");
+    setDeliveryZone((order.surchargesSnapshot?.deliveryZoneLabel as string) || "");
     const oldToNew: Record<string, string> = {
       cash_usd: "Efectivo $", cash_bs: "Efectivo Bs", pago_movil: "Pago Móvil",
       pos: "Punto / PdV", zelle: "Zelle", transfer: "Transf.", binance: "Binance",
@@ -321,7 +334,7 @@ export function WaiterOrderClient({
     setTableNumber("");
     setCustomerName("");
     setCustomerPhone("");
-    setPaymentReference("");
+    setDeliveryZone("");
     setOrderMode("on_site");
     toast.success("Edición cancelada");
   };
@@ -352,10 +365,10 @@ export function WaiterOrderClient({
       if (editingOrderId) {
         const result = await updateWaiterOrderAction({
           id: editingOrderId,
-          tableNumber: tableNumber.trim(),
+          tableNumber: orderMode === "take_away" ? undefined : tableNumber.trim(),
           customerName: customerName.trim() || undefined,
           customerPhone: customerPhone.trim() || undefined,
-          paymentReference: paymentReference.trim() || undefined,
+          deliveryZoneLabel: orderMode === "delivery" ? deliveryZone : undefined,
           paymentMethod,
           orderMode,
           items: checkoutItems as any,
@@ -366,7 +379,7 @@ export function WaiterOrderClient({
           setTableNumber("");
           setCustomerName("");
           setCustomerPhone("");
-          setPaymentReference("");
+          setDeliveryZone("");
           setPaymentMethod("Punto / PdV");
           setOrderMode("on_site");
           setEditingOrderId(null);
@@ -377,24 +390,40 @@ export function WaiterOrderClient({
         }
       } else {
         const result = await createWaiterOrderAction({
-          tableNumber: tableNumber.trim(),
+          tableNumber: orderMode === "take_away" ? undefined : tableNumber.trim(),
           customerName: customerName.trim() || undefined,
           customerPhone: customerPhone.trim() || undefined,
-          paymentReference: paymentReference.trim() || undefined,
+          deliveryZoneLabel: orderMode === "delivery" ? deliveryZone : undefined,
           paymentMethod,
           orderMode,
           items: checkoutItems as any,
         });
         if (result?.data?.success) {
-          toast.success(`Pedido #${result.data.orderNumber} enviado`);
+          const data = result.data;
           clearCart();
           setTableNumber("");
           setCustomerName("");
           setCustomerPhone("");
-          setPaymentReference("");
+          setDeliveryZone("");
           setPaymentMethod("Punto / PdV");
           setOrderMode("on_site");
           setIsSheetOpen(false);
+          if (variant === "caja") {
+            // Caja: crear y cobrar en un solo paso — abre el cobro de inmediato.
+            setCobroOrder({
+              id: data.orderId,
+              orderNumber: data.orderNumber,
+              paymentMethod: data.paymentMethod,
+              subtotalUsdCents: data.subtotalUsdCents,
+              subtotalBsCents: data.subtotalBsCents,
+              packagingUsdCents: data.packagingUsdCents,
+              deliveryUsdCents: data.deliveryUsdCents,
+              rateSnapshotBsPerUsd: data.rateSnapshotBsPerUsd,
+              paidAt: null,
+            });
+          } else {
+            toast.success(`Pedido #${data.orderNumber} enviado`);
+          }
         } else {
           toast.error(result?.serverError ?? "Error al procesar el pedido");
         }
@@ -410,14 +439,16 @@ export function WaiterOrderClient({
     <div className="flex h-[100dvh] flex-col overflow-hidden" style={{ background: "var(--color-bg-app)", fontFamily: "var(--font-sans)" }}>
       <header className="flex shrink-0 items-center justify-between px-4 py-3 z-30 shadow-md border-b border-white/5" style={{ background: "var(--color-text-main)" }}>
         <div className="flex items-center gap-3">
-          <Link href="/admin" className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all active:scale-95 shadow-inner">
-            <ArrowLeft size={20} />
-          </Link>
+          {!isCaja && (
+            <Link href="/admin" className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all active:scale-95 shadow-inner">
+              <ArrowLeft size={20} />
+            </Link>
+          )}
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.3)]">
             <UtensilsCrossed size={18} className="text-white" />
           </div>
           <div className="flex flex-col">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 leading-none mb-0.5">Modulo Pedidos</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 leading-none mb-0.5">{isCaja ? "Caja" : "Modulo Pedidos"}</p>
             <p className="text-sm font-bold text-white leading-tight">
               {editingOrderNumber ? (
                 <span className="flex items-center gap-1.5 text-amber-400">
@@ -519,7 +550,7 @@ export function WaiterOrderClient({
                 tableNumber={tableNumber} setTableNumber={setTableNumber}
                 customerName={customerName} setCustomerName={setCustomerName}
                 customerPhone={customerPhone} setCustomerPhone={setCustomerPhone}
-                paymentReference={paymentReference} setPaymentReference={setPaymentReference}
+                deliveryZones={deliveryZones} deliveryZone={deliveryZone} setDeliveryZone={setDeliveryZone}
                 paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod}
                 onSubmit={handleSubmit} canSubmit={canSubmit} isSubmitting={isSubmitting}
                 totalUsd={grandTotalUsdCents} totalBs={grandTotalBsCents} rate={rate} igtfUsd={igtfUsdCents}
@@ -528,7 +559,7 @@ export function WaiterOrderClient({
                 orderMode={orderMode} setOrderMode={setOrderMode}
                 prefilledTable={prefilledTable} onOpenTableSelector={() => setIsTableSelectorOpen(true)}
                 isEditing={!!editingOrderId} onCancelEdit={handleCancelEdit} onEditItem={handleEditCartItem}
-                showSubmitButton={false}
+                showSubmitButton={false} submitLabel={submitLabel}
               />
             </div>
           </div>
@@ -541,6 +572,7 @@ export function WaiterOrderClient({
               isEditing={!!editingOrderId}
               onSubmit={handleSubmit}
               onCancelEdit={handleCancelEdit}
+              submitLabel={submitLabel}
             />
           </div>
         </aside>
@@ -574,7 +606,7 @@ export function WaiterOrderClient({
                     tableNumber={tableNumber} setTableNumber={setTableNumber}
                     customerName={customerName} setCustomerName={setCustomerName}
                     customerPhone={customerPhone} setCustomerPhone={setCustomerPhone}
-                    paymentReference={paymentReference} setPaymentReference={setPaymentReference}
+                    deliveryZones={deliveryZones} deliveryZone={deliveryZone} setDeliveryZone={setDeliveryZone}
                     paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod}
                     onSubmit={handleSubmit} canSubmit={canSubmit} isSubmitting={isSubmitting}
                     totalUsd={grandTotalUsdCents} totalBs={grandTotalBsCents} rate={rate} igtfUsd={igtfUsdCents}
@@ -583,7 +615,7 @@ export function WaiterOrderClient({
                     orderMode={orderMode} setOrderMode={setOrderMode}
                     prefilledTable={prefilledTable} onOpenTableSelector={() => setIsTableSelectorOpen(true)}
                     isEditing={!!editingOrderId} onCancelEdit={handleCancelEdit} onEditItem={handleEditCartItem}
-                    showSubmitButton={true}
+                    showSubmitButton={true} submitLabel={submitLabel}
                   />
                 </div>
               </div>
@@ -605,7 +637,21 @@ export function WaiterOrderClient({
         />
       )}
 
-      <ActiveOrdersSheet isOpen={isOrdersSheetOpen} onClose={() => setIsOrdersSheetOpen(false)} orders={activeOrders} onSelect={handleEditOrder} />
+      <ActiveOrdersSheet
+        isOpen={isOrdersSheetOpen}
+        onClose={() => setIsOrdersSheetOpen(false)}
+        orders={activeOrders}
+        onSelect={handleEditOrder}
+        onCobrar={(order) => { setCobroOrder(order); setIsOrdersSheetOpen(false); }}
+      />
+
+      {cobroOrder && (
+        <CobroModal
+          order={cobroOrder}
+          settings={settings}
+          onClose={() => setCobroOrder(null)}
+        />
+      )}
 
       <TableSelectorModal
         isOpen={isTableSelectorOpen}

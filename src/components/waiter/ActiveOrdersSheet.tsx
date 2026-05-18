@@ -1,6 +1,6 @@
 "use client";
 
-import { ChefHat, Clock, Phone, MapPin, User } from "lucide-react";
+import { ChefHat, Clock, Phone, MapPin, User, Wallet, CheckCircle2 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { formatBs } from "@/lib/money";
 import { formatPhone } from "@/lib/utils";
@@ -14,6 +14,7 @@ interface ActiveOrdersSheetProps {
   onClose: () => void;
   orders: any[];
   onSelect: (order: any) => void;
+  onCobrar: (order: any) => void;
 }
 
 const STATUS_ACCENT: Record<string, string> = {
@@ -98,6 +99,7 @@ export function ActiveOrdersSheet({
   onClose,
   orders,
   onSelect,
+  onCobrar,
 }: ActiveOrdersSheetProps) {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -124,11 +126,14 @@ export function ActiveOrdersSheet({
             </div>
           ) : (
             orders.map((order) => (
-              <button
+              <div
                 key={order.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelect(order)}
+                onKeyDown={(e) => { if (e.key === "Enter") onSelect(order); }}
                 className={cn(
-                  "w-full text-left bg-white rounded-2xl p-4 shadow-sm",
+                  "w-full text-left bg-white rounded-2xl p-4 shadow-sm cursor-pointer",
                   "border-l-4 border border-transparent",
                   "hover:shadow-md hover:border-primary/30 transition-all group",
                   STATUS_ACCENT[order.status as string] ?? "border-l-slate-200"
@@ -170,7 +175,24 @@ export function ActiveOrdersSheet({
                     )}
                   </div>
                 </div>
-              </button>
+
+                {/* Row 4: Cobro */}
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  {order.paidAt ? (
+                    <span className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 py-2 text-xs font-black uppercase tracking-widest text-emerald-600 border border-emerald-100">
+                      <CheckCircle2 size={14} /> Cobrado
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onCobrar(order); }}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary py-2 text-xs font-black uppercase tracking-widest text-white shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
+                    >
+                      <Wallet size={14} /> Cobrar
+                    </button>
+                  )}
+                </div>
+              </div>
             ))
           )}
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { 
-  DollarSign, Coins, Smartphone, CreditCard, Banknote, Landmark, Table2, Map, User, Send, CheckCircle2, Store, Package, Truck, Phone, Hash
+import {
+  DollarSign, Coins, Smartphone, CreditCard, Banknote, Landmark, Table2, Map, User, Send, CheckCircle2, Store, Package, Truck, Phone, MapPin
 } from "lucide-react";
 import { formatBs, formatRef } from "@/lib/money";
 import {
@@ -33,8 +33,9 @@ interface OrderFormProps {
   deliveryUsd?: number;
   customerPhone?: string;
   setCustomerPhone?: (v: string) => void;
-  paymentReference?: string;
-  setPaymentReference?: (v: string) => void;
+  deliveryZones?: Array<{ label: string; feeUsdCents: number }>;
+  deliveryZone?: string;
+  setDeliveryZone?: (v: string) => void;
   prefilledTable?: string;
   onOpenTableSelector: () => void;
   isEditing?: boolean;
@@ -42,9 +43,11 @@ interface OrderFormProps {
   onEditItem?: (index: number) => void;
   orderMode: "on_site" | "take_away" | "delivery";
   setOrderMode: (v: "on_site" | "take_away" | "delivery") => void;
-  /** When true, the submit button is rendered inline (mobile). 
+  /** When true, the submit button is rendered inline (mobile).
    *  When false/undefined, the submit button is omitted (rendered externally for desktop sticky). */
   showSubmitButton?: boolean;
+  /** Label for the submit button when not editing (e.g. "Enviar a Cocina", "Cobrar"). */
+  submitLabel?: string;
 }
 
 export function OrderForm({
@@ -66,8 +69,9 @@ export function OrderForm({
   deliveryUsd = 0,
   customerPhone = "",
   setCustomerPhone,
-  paymentReference = "",
-  setPaymentReference,
+  deliveryZones = [],
+  deliveryZone = "",
+  setDeliveryZone,
   prefilledTable,
   onOpenTableSelector,
   isEditing,
@@ -76,10 +80,8 @@ export function OrderForm({
   orderMode,
   setOrderMode,
   showSubmitButton = true,
+  submitLabel = "Enviar a Cocina",
 }: OrderFormProps) {
-  const METHODS_NEEDING_REFERENCE: WaiterPaymentMethod[] = ["Pago Móvil", "Zelle", "Transf.", "Binance"];
-  const needsReference = METHODS_NEEDING_REFERENCE.includes(paymentMethod);
-
   const methods = [
     { id: "Efectivo $", label: "Efectivo $", icon: <DollarSign size={16} /> },
     { id: "Efectivo Bs", label: "Efectivo Bs", icon: <Coins size={16} /> },
@@ -221,45 +223,54 @@ export function OrderForm({
               </div>
             </div>
           </div>
-        ) : (
-          /* ── LLEVAR / DELIVERY: campos extendidos ── */
+        ) : orderMode === "delivery" ? (
+          /* ── DELIVERY: dirección + zona + teléfono + cliente ── */
           <div className="space-y-2">
-            {/* Dirección (delivery) o Retirar por (take_away) */}
+            {/* Dirección de entrega */}
             <div className="space-y-1">
               <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                {orderMode === "delivery" ? "Dirección de entrega" : "Retirar por"}
+                Dirección de entrega <span className="text-[var(--color-primary)]">*</span>
               </label>
-              {orderMode === "delivery" ? (
-                /* textarea auto-sizing para dirección larga */
-                <div className="relative group">
-                  <div className="absolute left-2.5 top-[0.6rem] p-1 rounded-lg bg-[var(--color-surface-section)] group-focus-within:bg-[var(--color-primary-light)] transition-colors">
-                    <Truck size={13} className="text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                  </div>
-                  <textarea
-                    value={tableNumber}
-                    onChange={e => setTableNumber(e.target.value)}
-                    placeholder="Calle, sector, referencia..."
-                    required
-                    rows={2}
-                    className="w-full resize-none rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all leading-snug"
-                    style={{ fieldSizing: "content" } as React.CSSProperties}
-                  />
+              <div className="relative group">
+                <div className="absolute left-2.5 top-[0.6rem] p-1 rounded-lg bg-[var(--color-surface-section)] group-focus-within:bg-[var(--color-primary-light)] transition-colors">
+                  <Truck size={13} className="text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
                 </div>
-              ) : (
-                <div className="relative group">
-                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-[var(--color-surface-section)] group-focus-within:bg-[var(--color-primary-light)] transition-colors">
-                    <Table2 size={13} className="text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                  </div>
-                  <input
-                    type="text"
-                    value={tableNumber}
-                    onChange={e => setTableNumber(e.target.value)}
-                    placeholder="Mostrador"
-                    required
-                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
-                  />
-                </div>
-              )}
+                <textarea
+                  value={tableNumber}
+                  onChange={e => setTableNumber(e.target.value)}
+                  placeholder="Calle, sector, referencia..."
+                  required
+                  rows={2}
+                  className="w-full resize-none rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all leading-snug"
+                  style={{ fieldSizing: "content" } as React.CSSProperties}
+                />
+              </div>
+            </div>
+
+            {/* Zona de delivery */}
+            <div className="space-y-1">
+              <label className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                <MapPin size={11} /> Zona de delivery <span className="text-[var(--color-primary)]">*</span>
+              </label>
+              <Select value={deliveryZone} onValueChange={(val) => val && setDeliveryZone?.(val)}>
+                <SelectTrigger className="w-full h-9 border border-[var(--color-border)] bg-white px-3 text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all rounded-xl">
+                  <SelectValue placeholder={deliveryZones.length ? "Seleccionar zona" : "Sin zonas configuradas"} />
+                </SelectTrigger>
+                <SelectContent className="bg-white rounded-xl shadow-2xl border border-[var(--color-border)] p-1">
+                  {deliveryZones.map((zone) => (
+                    <SelectItem
+                      key={zone.label}
+                      value={zone.label}
+                      className="text-sm font-bold py-2 px-3 rounded-lg focus:bg-[var(--color-surface-section)] focus:text-[var(--color-primary)] cursor-pointer"
+                    >
+                      <div className="flex w-full items-center justify-between gap-3">
+                        <span>{zone.label}</span>
+                        <span className="text-[var(--color-text-muted)] tabular-nums">{formatRef(zone.feeUsdCents)}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Teléfono + Cliente */}
@@ -297,34 +308,31 @@ export function OrderForm({
                 </div>
               </div>
             </div>
-
-            {/* Referencia de pago (solo si el método lo requiere) */}
-            {needsReference && (
-              <div className="space-y-1">
-                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                  Ref. de pago <span className="text-[10px] font-medium normal-case text-[var(--color-text-muted)]/60">(opcional)</span>
-                </label>
-                <div className="relative group">
-                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-[var(--color-surface-section)] group-focus-within:bg-[var(--color-primary-light)] transition-colors">
-                    <Hash size={13} className="text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                  </div>
-                  <input
-                    type="text"
-                    value={paymentReference}
-                    onChange={e => setPaymentReference?.(e.target.value)}
-                    placeholder="Nro. de operación"
-                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
-                  />
-                </div>
+          </div>
+        ) : (
+          /* ── PARA LLEVAR: solo cliente ── */
+          <div className="space-y-1">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cliente <span className="text-[var(--color-primary)]">*</span></label>
+            <div className="relative group">
+              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-[var(--color-surface-section)] group-focus-within:bg-[var(--color-primary-light)] transition-colors">
+                <User size={13} className="text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
               </div>
-            )}
+              <input
+                type="text"
+                value={customerName}
+                onChange={e => setCustomerName(e.target.value)}
+                placeholder="Nombre"
+                required
+                className="w-full rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all"
+              />
+            </div>
           </div>
         )}
 
         {/* Pago */}
         <div className="space-y-1">
           <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-            Método de Pago
+            Método de Pago <span className="font-medium normal-case text-[var(--color-text-muted)]/60">(tentativo)</span>
           </label>
           <Select value={paymentMethod} onValueChange={(val) => val && setPaymentMethod(val as WaiterPaymentMethod)}>
             <SelectTrigger className="w-full h-9 border border-[var(--color-border)] bg-white px-3 text-sm font-bold text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all rounded-xl">
@@ -357,6 +365,7 @@ export function OrderForm({
               isEditing={isEditing}
               onSubmit={onSubmit}
               onCancelEdit={onCancelEdit}
+              submitLabel={submitLabel}
             />
           </div>
         )}
@@ -372,9 +381,10 @@ interface SubmitButtonProps {
   isEditing?: boolean;
   onSubmit: () => void;
   onCancelEdit?: () => void;
+  submitLabel?: string;
 }
 
-export function SubmitButton({ canSubmit, isSubmitting, isEditing, onSubmit, onCancelEdit }: SubmitButtonProps) {
+export function SubmitButton({ canSubmit, isSubmitting, isEditing, onSubmit, onCancelEdit, submitLabel = "Enviar a Cocina" }: SubmitButtonProps) {
   return (
     <>
       <button
@@ -398,7 +408,7 @@ export function SubmitButton({ canSubmit, isSubmitting, isEditing, onSubmit, onC
         ) : (
           <>
             {isEditing ? <CheckCircle2 size={20} /> : <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
-            <span className="uppercase tracking-widest">{isEditing ? "Actualizar Pedido" : "Enviar a Cocina"}</span>
+            <span className="uppercase tracking-widest">{isEditing ? "Actualizar Pedido" : submitLabel}</span>
           </>
         )}
       </button>

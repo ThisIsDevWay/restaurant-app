@@ -28,10 +28,35 @@ export function TableSelectorModal({
   fixtures,
   gridCols,
   gridRows,
-  layoutZoom,
+  layoutZoom: _layoutZoom,
   onSelectTable,
 }: TableSelectorModalProps) {
   if (!isOpen) return null;
+
+  // Compute the tight bounding box of actual content (tables + fixtures).
+  // The admin grid is 20×14 cells but content rarely fills every cell —
+  // fitting to the real extent instead of the full grid yields a larger zoom.
+  const allItems = [
+    ...tables.map((t) => ({ col: t.gridCol, row: t.gridRow, cs: t.colSpan ?? 1, rs: t.rowSpan ?? 1 })),
+    ...fixtures.map((f) => ({ col: f.gridCol, row: f.gridRow, cs: f.colSpan ?? 1, rs: f.rowSpan ?? 1 })),
+  ];
+  const usedCols = allItems.length > 0 ? Math.max(...allItems.map((i) => i.col + i.cs - 1)) : gridCols;
+  const usedRows = allItems.length > 0 ? Math.max(...allItems.map((i) => i.row + i.rs - 1)) : gridRows;
+  // Add 1-cell margin so content doesn't touch the canvas edge.
+  const effectiveCols = Math.min(usedCols + 1, gridCols);
+  const effectiveRows = Math.min(usedRows + 1, gridRows);
+
+  // Fit zoom to available modal area (both axes) so no scrollbars appear.
+  // header ~61px + footer ~40px + p-4 top+bottom 32px = 133px reserved.
+  const layoutZoom = typeof window !== "undefined"
+    ? (() => {
+        const modalW = Math.min(window.innerWidth - 32, 896);
+        const availW = modalW - 32; // p-4 (16px) × 2 horizontal
+        const availH = window.innerHeight * 0.9 - 133 - 32; // reserved + p-4 vertical
+        const z = Math.min(availW / (effectiveCols * CELL_SIZE), availH / (effectiveRows * CELL_SIZE));
+        return Math.min(Math.max(z, 0.45), 1);
+      })()
+    : _layoutZoom;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -85,12 +110,12 @@ export function TableSelectorModal({
             </div>
           ) : (
             /* Tablet/Desktop: Full Layout */
-            <div className="flex min-h-full min-w-full p-12 md:p-24 overflow-visible">
+            <div className="flex min-h-full min-w-full p-4 overflow-visible">
               <div
                 className="m-auto relative shadow-2xl transition-all duration-300 flex-shrink-0"
                 style={{
-                  width: gridCols * CELL_SIZE * layoutZoom,
-                  height: gridRows * CELL_SIZE * layoutZoom,
+                  width: effectiveCols * CELL_SIZE * layoutZoom,
+                  height: effectiveRows * CELL_SIZE * layoutZoom,
                   background: "#fffaf6",
                   borderRadius: 16 * layoutZoom,
                   backgroundImage:
@@ -195,61 +220,29 @@ export function TableSelectorModal({
                           style={{
                             background: pal.bg,
                             border: `2px solid ${pal.border}`,
-                            borderRadius:
-                              table.shape === "circular"
-                                ? "50%"
-                                : table.shape === "cuadrada"
-                                ? 4 * layoutZoom
-                                : 8 * layoutZoom,
+                            borderRadius: table.shape === "circular" ? "999px" : 8 * layoutZoom,
                             transform: `rotate(${rotation}deg)`,
                           }}
                         >
                           <div
-                            className="flex flex-col items-center justify-center overflow-hidden"
-                            style={{
-                              transform: `rotate(${-rotation}deg)`,
-                              maxWidth: rotation % 90 !== 0 ? "70%" : "90%",
-                              maxHeight: rotation % 90 !== 0 ? "70%" : "90%",
-                            }}
+                            className="flex flex-col items-center justify-center"
+                            style={{ transform: `rotate(${-rotation}deg)` }}
                           >
                             <span
-                              className="font-black leading-tight text-center w-full break-words"
+                              className="font-black text-center leading-none"
                               style={{
-                                fontSize: Math.max(
-                                  8 * layoutZoom,
-                                  Math.min(
-                                    table.colSpan * 4.5 * layoutZoom,
-                                    14 * layoutZoom
-                                  )
-                                ),
+                                fontSize: Math.max(10, (table.label.length > 3 ? 12 : 14) * layoutZoom),
                                 color: pal.text,
                                 fontFamily: "var(--font-epilogue, serif)",
-                                display: "-webkit-box",
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: "vertical",
-                                overflow: "hidden",
                               }}
                             >
                               {table.label}
                             </span>
-                            <div
-                              className="flex items-center gap-0.5 mt-0.5"
-                              style={{
-                                opacity: 0.6,
-                                fontSize: Math.max(
-                                  7 * layoutZoom,
-                                  table.colSpan * 3.5 * layoutZoom
-                                ),
-                                color: pal.text,
-                              }}
-                            >
-                              <Users
-                                size={Math.max(
-                                  7 * layoutZoom,
-                                  table.colSpan * 3.5 * layoutZoom
-                                )}
-                              />
-                              <span>{table.capacity}</span>
+                            <div className="flex items-center gap-1 mt-0.5 opacity-50">
+                              <Users size={10 * layoutZoom} style={{ color: pal.text }} />
+                              <span className="font-bold" style={{ color: pal.text, fontSize: 9 * layoutZoom }}>
+                                {table.capacity}
+                              </span>
                             </div>
                           </div>
                         </div>

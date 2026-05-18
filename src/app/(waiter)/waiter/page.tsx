@@ -26,7 +26,7 @@ export default async function WaiterPage({
     getSettings().catch(() => null),
     getAllTables().catch(() => []),
     getAllFixtures().catch(() => []),
-    getKitchenOrdersSimple(todayStart).catch(() => []),
+    getKitchenOrdersSimple(todayStart, true).catch(() => []),
   ]);
 
   return (
