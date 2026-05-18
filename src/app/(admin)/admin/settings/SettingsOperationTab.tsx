@@ -1,6 +1,7 @@
 "use client";
 
-import { Store, Package, MapPin } from "lucide-react";
+import { useState } from "react";
+import { Store, Package, MapPin, Plus, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,46 @@ export function SettingsOperationTab({
   decimalInputs,
   setDecimalInputs,
 }: SettingsOperationTabProps) {
+  const [zonePrices, setZonePrices] = useState<string[]>(() =>
+    form.deliveryZones.map((z) => (z.feeUsdCents / 100).toFixed(2)),
+  );
+
+  const addZone = () => {
+    updateField("deliveryZones", [
+      ...form.deliveryZones,
+      { label: "", feeUsdCents: 0 },
+    ]);
+    setZonePrices((prev) => [...prev, "0.00"]);
+  };
+
+  const removeZone = (index: number) => {
+    updateField(
+      "deliveryZones",
+      form.deliveryZones.filter((_, i) => i !== index),
+    );
+    setZonePrices((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateZoneLabel = (index: number, label: string) => {
+    updateField(
+      "deliveryZones",
+      form.deliveryZones.map((z, i) => (i === index ? { ...z, label } : z)),
+    );
+  };
+
+  const updateZonePrice = (index: number, value: string) => {
+    setZonePrices((prev) => prev.map((p, i) => (i === index ? value : p)));
+    const cents = Math.round(parseFloat(value) * 100);
+    if (!isNaN(cents)) {
+      updateField(
+        "deliveryZones",
+        form.deliveryZones.map((z, i) =>
+          i === index ? { ...z, feeUsdCents: cents } : z,
+        ),
+      );
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-300">
       <Card className="p-6 border-none shadow-sm bg-white rounded-2xl">
@@ -198,6 +239,76 @@ export function SettingsOperationTab({
               className="rounded-xl h-10"
             />
           </div>
+        </div>
+
+        <div className="mt-8 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label className="font-bold">Zonas de Delivery (Mesero)</Label>
+              <p className="text-[11px] text-text-muted leading-snug">
+                Tarifas por zona que el mesero elige al tomar un pedido a domicilio. El costo de delivery fijo de arriba se mantiene para el checkout público.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={addZone}
+              className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" /> Agregar zona
+            </button>
+          </div>
+          {form.deliveryZones.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border/60 py-4 text-center text-xs text-text-muted">
+              Sin zonas configuradas.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {form.deliveryZones.map((zone, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    value={zone.label}
+                    onChange={(e) => updateZoneLabel(index, e.target.value)}
+                    placeholder="Nombre de la zona (ej: Delivery 1)"
+                    className="rounded-xl h-10 flex-1"
+                  />
+                  <div className="relative w-32">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-bold">$</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={zonePrices[index] ?? ""}
+                      onChange={(e) => updateZonePrice(index, e.target.value)}
+                      className="pl-7 rounded-xl h-10 font-mono"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeZone(index)}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/60 text-text-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500"
+                    title="Eliminar zona"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <Card className="p-6 border-none shadow-sm bg-white rounded-2xl">
+        <h3 className="text-lg font-bold text-text-main mb-6">Flujo de Cobro</h3>
+        <div className="flex items-center justify-between p-4 rounded-xl bg-bg-app border border-border/40">
+          <div className="space-y-1">
+            <Label className="text-sm font-bold">Exigir cobro antes de enviar a cocina</Label>
+            <p className="text-[11px] text-text-muted leading-snug">
+              Si está activo, los pedidos del mesero quedan pendientes hasta cobrarse en caja y solo entonces pasan a cocina. Si está inactivo, el pedido va a cocina de inmediato y el cobro se registra después.
+            </p>
+          </div>
+          <Switch
+            checked={form.requirePaymentBeforeKitchen}
+            onCheckedChange={(v) => updateField("requirePaymentBeforeKitchen", v)}
+          />
         </div>
       </Card>
     </div>

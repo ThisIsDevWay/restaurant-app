@@ -47,6 +47,15 @@ export const settingsSchema = v.object({
   packagingFeePerBebidaUsdCents: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
   deliveryFeeUsdCents: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
   deliveryCoverage: v.optional(v.string()),
+  deliveryZones: v.optional(
+    v.array(
+      v.object({
+        label: v.pipe(v.string(), v.minLength(1)),
+        feeUsdCents: v.pipe(v.number(), v.integer(), v.minValue(0)),
+      }),
+    ),
+  ),
+  requirePaymentBeforeKitchen: v.optional(v.boolean()),
   paymentPagoMovilEnabled: v.optional(v.boolean()),
   paymentTransferEnabled: v.optional(v.boolean()),
   menuLayout: v.optional(v.picklist(["modern", "classic"])),

@@ -62,6 +62,8 @@ const DEFAULT_FORM: SettingsFormData = {
   packagingFeePerBebidaUsdCents: 0,
   deliveryFeeUsdCents: 0,
   deliveryCoverage: "",
+  deliveryZones: [],
+  requirePaymentBeforeKitchen: false,
   paymentPagoMovilEnabled: true,
   paymentTransferEnabled: true,
   menuLayout: "modern",

@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
-import { updateSettings as updateSettingsDb, getActiveRate, getSettings, getLatestRateByCurrency } from "@/db/queries/settings";
+import { updateSettings as updateSettingsDb, getActiveRate, getSettings, getLatestRateByCurrency, invalidateSettingsCache } from "@/db/queries/settings";
 import { settingsSchema } from "@/lib/validations/settings";
 import * as v from "valibot";
 import { revalidatePath } from "next/cache";
@@ -35,7 +35,7 @@ export const saveSettingsAction = adminActionClient
       }
 
       await updateSettingsDb(updatePayload);
-      revalidatePath("/");
+      invalidateSettingsCache();
       revalidatePath("/admin/settings");
       revalidatePath("/admin/tables");
       return { success: true } as ActionResult;
@@ -65,7 +65,7 @@ export const toggleGlobalAdicionalesAction = adminActionClient
   .schema(v.object({ enabled: v.boolean() }))
   .action(async ({ parsedInput: { enabled } }) => {
     await updateSettingsDb({ adicionalesEnabled: enabled });
-    revalidatePath("/");
+    invalidateSettingsCache();
     revalidatePath("/admin/catalogo");
     return { success: true };
   });
@@ -76,7 +76,7 @@ export const toggleGlobalBebidasAction = adminActionClient
   .schema(v.object({ enabled: v.boolean() }))
   .action(async ({ parsedInput: { enabled } }) => {
     await updateSettingsDb({ bebidasEnabled: enabled });
-    revalidatePath("/");
+    invalidateSettingsCache();
     revalidatePath("/admin/catalogo");
     return { success: true };
   });

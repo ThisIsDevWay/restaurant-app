@@ -55,6 +55,8 @@ export interface SettingsFormData {
   packagingFeePerBebidaUsdCents: number;
   deliveryFeeUsdCents: number;
   deliveryCoverage: string;
+  deliveryZones: Array<{ label: string; feeUsdCents: number }>;
+  requirePaymentBeforeKitchen: boolean;
   paymentPagoMovilEnabled: boolean;
   paymentTransferEnabled: boolean;
   menuLayout: "modern" | "classic";

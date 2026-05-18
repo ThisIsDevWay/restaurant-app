@@ -66,6 +66,8 @@ export default async function SettingsPage() {
               packagingFeePerBebidaUsdCents: settings.packagingFeePerBebidaUsdCents ?? 0,
               deliveryFeeUsdCents: settings.deliveryFeeUsdCents ?? 0,
               deliveryCoverage: settings.deliveryCoverage ?? "",
+              deliveryZones: settings.deliveryZones ?? [],
+              requirePaymentBeforeKitchen: settings.requirePaymentBeforeKitchen ?? false,
               paymentPagoMovilEnabled: settings.paymentPagoMovilEnabled ?? true,
               paymentTransferEnabled: settings.paymentTransferEnabled ?? true,
               menuLayout: (settings.menuLayout ?? "modern") as "modern" | "classic",
