@@ -9,8 +9,6 @@ import { Cart } from "@/components/public/cart/Cart";
 import { ActiveOrdersBanner } from "@/components/public/ActiveOrdersBanner";
 import Link from "next/link";
 
-export const revalidate = 30;
-
 export default async function MenuPage() {
   try {
     // Ola 1: data base crítica para el renderizado inicial
