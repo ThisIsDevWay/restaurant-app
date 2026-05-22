@@ -86,3 +86,6 @@ print-agent/agent
 print-agent/*.exe
 print-agent/*.rar
 print-agent/*.zip
+
+# MCP Server Config
+.mcp.json
