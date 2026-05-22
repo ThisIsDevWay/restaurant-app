@@ -2,7 +2,7 @@ import { db } from "../index";
 import { settings, exchangeRates } from "../schema";
 import { eq, desc } from "drizzle-orm";
 
-import { unstable_cache, revalidateTag } from "next/cache";
+import { unstable_cache, revalidateTag, revalidatePath } from "next/cache";
 
 export async function getSettingsRaw() {
   const [row] = await db
@@ -24,6 +24,7 @@ export const getSettings = (typeof process !== "undefined" && process.env.NEXT_R
 
 export function invalidateSettingsCache() {
   revalidateTag("settings");
+  revalidatePath("/");
 }
 
 export async function getActiveRate(): Promise<{ rate: number; fetchedAt: string; currency: string } | null> {
