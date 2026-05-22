@@ -12,6 +12,14 @@ const serwist = new Serwist({
       matcher: ({ url }: { url: URL }) => url.pathname.startsWith("/api/"),
       handler: new NetworkOnly(),
     },
+    // Videos from Supabase Storage are never cached — they're large and
+    // the TV screen always has a stable connection.
+    {
+      matcher: ({ url }: { url: URL }) =>
+        url.hostname.includes("supabase.co") &&
+        /\.(?:mp4|webm|mov)$/i.test(url.pathname),
+      handler: new NetworkOnly(),
+    },
     ...defaultCache,
   ],
 });
