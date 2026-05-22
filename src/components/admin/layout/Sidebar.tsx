@@ -22,6 +22,7 @@ import {
   Menu,
   BookMarked,
   Wallet,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -34,6 +35,7 @@ import { signOut } from "next-auth/react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/reportes", label: "Reportes", icon: BarChart3 },
   { href: "/admin/orders", label: "Órdenes", icon: ShoppingBag },
   { href: "/admin/menu-del-dia", label: "Menú del Día", icon: CalendarDays },
   { href: "/admin/catalogo", label: "Catálogo", icon: BookOpen },

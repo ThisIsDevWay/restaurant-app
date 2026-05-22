@@ -11,7 +11,8 @@ import {
   UtensilsCrossed,
   Plus,
   Coffee,
-  Package
+  Package,
+  AlertTriangle
 } from "lucide-react";
 import { toggleDailyItemAvailabilityAction } from "@/actions/availability";
 import { toast } from "sonner";
@@ -30,14 +31,23 @@ export function QuickAvailabilityPanel({ className }: { className?: string }) {
   const [search, setSearch] = useState("");
   const [items, setItems] = useState<AvailabilityItem[]>([]);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  // Riesgo de "86" por plato (clave = itemId, valor = % de días con agotamiento temprano)
+  const [riskMap, setRiskMap] = useState<Record<string, number>>({});
 
   const fetchAvailability = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/menu/availability", { cache: "no-store" });
+      // Carga de ítems + riesgo de agotamiento en paralelo. El riesgo es
+      // opcional: si falla, el panel sigue funcionando sin alertas.
+      const [res, riskRes] = await Promise.all([
+        fetch("/api/menu/availability", { cache: "no-store" }),
+        fetch("/api/admin/availability/sellout-risk", { cache: "no-store" }).catch(
+          () => null,
+        ),
+      ]);
       if (!res.ok) throw new Error();
       const data = await res.json();
-      
+
       const flattened: AvailabilityItem[] = [
         ...data.platos.map((p: any) => ({ ...p, type: "plato" })),
         ...data.adicionales.map((a: any) => ({ ...a, type: "adicional" })),
@@ -48,8 +58,13 @@ export function QuickAvailabilityPanel({ className }: { className?: string }) {
       // We need names too. The API currently only returns IDs.
       // ⚠️ Wait, the API needs to return names to be useful here.
       // I should update the API route.
-      
+
       setItems(flattened);
+
+      if (riskRes && riskRes.ok) {
+        const riskData = await riskRes.json();
+        setRiskMap((riskData?.riskMap ?? {}) as Record<string, number>);
+      }
     } catch (error) {
       toast.error("Error al cargar disponibilidad");
     } finally {
@@ -200,7 +215,17 @@ export function QuickAvailabilityPanel({ className }: { className?: string }) {
                   </div>
                   
                   <div className="flex-1 text-left">
-                    <p className="text-[15px] font-bold text-[#251a07] leading-tight">{item.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[15px] font-bold text-[#251a07] leading-tight">{item.name}</p>
+                      {item.type === "plato" && riskMap[item.id] >= 8 && (
+                        <span
+                          title={`Se agotó temprano el ${Math.round(riskMap[item.id])}% de los días`}
+                          className="shrink-0"
+                        >
+                          <AlertTriangle className="size-3.5" style={{ color: "#bb0005" }} />
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">{item.type}</p>
                   </div>
 
