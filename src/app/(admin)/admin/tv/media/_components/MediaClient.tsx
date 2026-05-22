@@ -15,6 +15,7 @@ import {
   UtensilsCrossed,
   Clock,
   Plus,
+  Settings,
 } from "lucide-react";
 import {
   Card,
@@ -26,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -87,6 +90,8 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragIdRef = useRef<string | null>(null);
   const processingRef = useRef(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const isUploading = queue.some((q) => q.status === "pending" || q.status === "uploading");
 
@@ -233,8 +238,16 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
     }, 2500);
   };
 
+  const { confirm, confirmDialog } = useConfirm();
+
   const handleDelete = async (item: TvMedia | EventMediaItem) => {
-    if (!confirm(`¿Eliminar "${item.title}"?`)) return;
+    const ok = await confirm({
+      title: "Eliminar medio",
+      description: `¿Eliminar "${item.title}"? Esta acción no se puede deshacer.`,
+      confirmLabel: "Eliminar",
+      destructive: true,
+    });
+    if (!ok) return;
     const res = await deleteTvMediaAction({ id: item.id });
     if (res?.data?.success) {
       toast.success("Medio eliminado");
@@ -246,15 +259,37 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
 
   const handleDragStart = (id: string) => {
     dragIdRef.current = id;
+    setDraggedId(id);
+  };
+
+  const handleDragEnd = () => {
+    dragIdRef.current = null;
+    setDraggedId(null);
+    setDragOverId(null);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
 
+  const handleDragEnter = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    if (dragIdRef.current && dragIdRef.current !== id) {
+      setDragOverId(id);
+    }
+  };
+
+  const handleDragLeave = (id: string) => {
+    if (dragOverId === id) {
+      setDragOverId(null);
+    }
+  };
+
   const handleDrop = async (targetId: string) => {
     const sourceId = dragIdRef.current;
     dragIdRef.current = null;
+    setDraggedId(null);
+    setDragOverId(null);
     if (!sourceId || sourceId === targetId) return;
     const sourceIdx = media.findIndex((m) => m.id === sourceId);
     const targetIdx = media.findIndex((m) => m.id === targetId);
@@ -298,31 +333,36 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
 
   return (
     <div
-      className="space-y-6"
+      className="space-y-8 pb-12"
       onDragOver={handlePageDragOver}
       onDragLeave={handlePageDragLeave}
       onDrop={handlePageDrop}
     >
       {/* Drop overlay */}
       {dropActive && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/10 border-4 border-dashed border-primary pointer-events-none">
-          <div className="text-center">
-            <Upload className="h-12 w-12 text-primary mx-auto mb-3" />
-            <p className="text-xl font-semibold text-primary">Suelta los archivos aquí</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/8 backdrop-blur-md border-4 border-dashed border-primary pointer-events-none transition-all duration-300">
+          <div className="text-center p-8 bg-surface-section/90 backdrop-blur-xl rounded-3xl border border-primary/30 shadow-2xl">
+            <Upload className="h-16 w-16 text-primary mx-auto mb-4 animate-pulse" />
+            <p className="text-2xl font-bold text-primary mb-1">¡Suelta los archivos aquí!</p>
+            <p className="text-xs text-text-muted">Imágenes y videos se añadirán a la cola de subida</p>
           </div>
         </div>
       )}
 
+      {confirmDialog}
+
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-text-main">Biblioteca de medios</h1>
-          <p className="text-sm text-text-muted">
-            Gestiona todos los archivos multimedia del sistema.
-            Arrastra archivos aquí o usa el botón para subir varios a la vez.
+      <div className="flex items-center justify-between gap-6 flex-wrap bg-gradient-to-br from-surface-section/80 to-surface-section/30 p-6 md:p-8 rounded-3xl border border-border/80 shadow-md backdrop-blur-md">
+        <div className="space-y-1.5 flex-1 min-w-[280px]">
+          <h1 className="text-3xl font-extrabold tracking-tight text-text-main font-display">
+            Biblioteca de medios
+          </h1>
+          <p className="text-xs md:text-sm text-text-muted max-w-xl leading-relaxed">
+            Gestiona todos los archivos multimedia del sistema de TV.
+            Arrastra archivos a la pantalla o utiliza los controles para subir o diseñar pantallas.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <input
             ref={fileInputRef}
             type="file"
@@ -337,16 +377,18 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
             variant="outline"
             size="lg"
             onClick={() => setMenuBoardOpen(true)}
+            className="hover:bg-amber-500/10 hover:text-amber-500 hover:border-amber-500/30 transition-all font-semibold rounded-2xl h-12 shadow-sm border-border/80"
           >
-            <UtensilsCrossed className="h-4 w-4" />
+            <UtensilsCrossed className="h-4 w-4 mr-2" />
             Crear pantalla de menú
           </Button>
           <Button
             size="lg"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
+            className="bg-primary hover:bg-primary/90 text-white font-semibold rounded-2xl h-12 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.01]"
           >
-            <Upload className="h-4 w-4" />
+            <Upload className="h-4 w-4 mr-2" />
             {isUploading ? "Subiendo…" : "Subir a biblioteca"}
           </Button>
         </div>
@@ -354,83 +396,89 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
 
       {/* Upload queue */}
       {queue.length > 0 && (
-        <div className="rounded-xl border border-border bg-bg-surface p-4 space-y-2">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 space-y-3 backdrop-blur-md">
+          <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-2">
             Cola de subida — {queue.filter((q) => q.status === "done").length}/{queue.length} completados
           </p>
-          {queue.map((item) => (
-            <div key={item.uid} className="flex items-center gap-3 text-sm">
-              <span className="text-base leading-none">
-                {item.status === "done" && "✅"}
-                {item.status === "error" && "❌"}
-                {item.status === "uploading" && "⏫"}
-                {item.status === "pending" && "⏳"}
-              </span>
-              <span className="flex-1 truncate text-text-main">
-                {item.file.name}
-              </span>
-              <span className="text-xs text-text-muted shrink-0">
-                {(item.file.size / 1024 / 1024).toFixed(1)} MB
-              </span>
-              {item.status === "uploading" && (
-                <div className="w-24 h-1.5 bg-bg-app rounded overflow-hidden shrink-0">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{ width: `${item.progress}%` }}
-                  />
-                </div>
-              )}
-              {item.status === "error" && (
-                <span className="text-xs text-error shrink-0 max-w-[120px] truncate" title={item.error}>
-                  {item.error}
+          <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+            {queue.map((item) => (
+              <div key={item.uid} className="flex items-center gap-3 text-xs bg-surface-section/60 p-2.5 rounded-xl border border-border/40">
+                <span className="text-sm shrink-0 leading-none">
+                  {item.status === "done" && "✅"}
+                  {item.status === "error" && "❌"}
+                  {item.status === "uploading" && "⏫"}
+                  {item.status === "pending" && "⏳"}
                 </span>
-              )}
-            </div>
-          ))}
+                <span className="flex-1 truncate font-medium text-text-main">
+                  {item.file.name}
+                </span>
+                <span className="text-[10px] text-text-muted shrink-0 font-mono">
+                  {(item.file.size / 1024 / 1024).toFixed(1)} MB
+                </span>
+                {item.status === "uploading" && (
+                  <div className="w-28 h-2 bg-border rounded-full overflow-hidden shrink-0">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-300"
+                      style={{ width: `${item.progress}%` }}
+                    />
+                  </div>
+                )}
+                {item.status === "error" && (
+                  <span className="text-[10px] text-error shrink-0 max-w-[120px] truncate font-medium" title={item.error}>
+                    {item.error}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* ── Sección 1: Biblioteca general ── */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 px-1">
+          <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 shadow-sm shadow-primary/5">
             <Globe className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-text-main leading-none">
+            <h2 className="text-base font-bold text-text-main leading-none">
               Biblioteca general
             </h2>
-            <p className="text-xs text-text-muted mt-0.5">
-              Aparecen en el carrusel por defecto de todas las TVs. Arrastra para reordenar.
+            <p className="text-xs text-text-muted mt-1 select-none">
+              Aparecen en el carrusel por defecto de todas las TVs. Arrastra los elementos para reordenar la secuencia.
             </p>
           </div>
-          <Badge variant="secondary" className="ml-auto shrink-0">
+          <Badge variant="secondary" className="ml-auto shrink-0 bg-primary/5 border border-primary/10 text-primary font-bold px-3 py-0.5 rounded-full text-xs">
             {media.length} {media.length === 1 ? "medio" : "medios"}
           </Badge>
         </div>
 
         {media.length === 0 ? (
-          <Card className="ring-1 ring-border border-dashed">
-            <CardContent className="py-12 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-info/10 mb-4">
-                <Upload className="h-6 w-6 text-info" />
+          <Card className="ring-1 ring-border border-dashed rounded-3xl bg-surface-section/20 overflow-hidden">
+            <CardContent className="py-16 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-info/10 border border-info/20 mb-4 shadow-sm">
+                <Upload className="h-6 w-6 text-info animate-bounce-subtle" />
               </div>
-              <h3 className="text-sm font-semibold text-text-main mb-1">
+              <h3 className="text-sm font-bold text-text-main mb-1">
                 Sin medios en biblioteca general
               </h3>
-              <p className="text-xs text-text-muted max-w-xs mx-auto mb-4">
+              <p className="text-xs text-text-muted max-w-xs mx-auto mb-5 leading-normal">
                 Sube imágenes (JPG, PNG, WebP, GIF) o videos (MP4, WebM) hasta 100 MB cada uno.
               </p>
-              <Button size="sm" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-3.5 w-3.5" />
+              <Button 
+                size="sm" 
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-primary hover:bg-primary/90 text-white font-medium rounded-xl px-4 py-2 transition-all shadow-sm"
+              >
+                <Upload className="h-3.5 w-3.5 mr-1.5" />
                 Subir archivos
               </Button>
             </CardContent>
           </Card>
         ) : (
-          <Card className="ring-1 ring-border">
-            <CardContent className="pt-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <Card className="border border-border/80 shadow-sm rounded-3xl bg-surface-section/20 overflow-hidden">
+            <CardContent className="p-5 md:p-6">
+              <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
                 {media.map((item) => (
                   <MediaCard
                     key={item.id}
@@ -438,8 +486,13 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
                     onDelete={() => handleDelete(item)}
                     onEdit={() => setEditing(item)}
                     onDragStart={() => handleDragStart(item.id)}
+                    onDragEnd={handleDragEnd}
                     onDragOver={handleDragOver}
+                    onDragEnter={(e) => handleDragEnter(e, item.id)}
+                    onDragLeave={() => handleDragLeave(item.id)}
                     onDrop={() => handleDrop(item.id)}
+                    draggedId={draggedId}
+                    dragOverId={dragOverId}
                   />
                 ))}
               </div>
@@ -449,30 +502,30 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
       </div>
 
       {/* ── Sección 2: Medios de eventos ── */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-amber-500/10">
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 px-1">
+          <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-amber-500/10 border border-amber-500/20 shadow-sm shadow-amber-500/5">
             <CalendarDays className="h-4 w-4 text-amber-500" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-text-main leading-none">
+            <h2 className="text-base font-bold text-text-main leading-none">
               Medios de eventos
             </h2>
-            <p className="text-xs text-text-muted mt-0.5">
-              Subidos directamente en un evento. Solo visibles dentro de ese evento.
+            <p className="text-xs text-text-muted mt-1 select-none">
+              Subidos directamente en un evento. Solo visibles en las programaciones activas del respectivo evento.
             </p>
           </div>
-          <Badge variant="secondary" className="ml-auto shrink-0">
+          <Badge variant="secondary" className="ml-auto shrink-0 bg-amber-500/5 border border-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-3 py-0.5 rounded-full text-xs">
             {eventMedia.length} {eventMedia.length === 1 ? "medio" : "medios"}
           </Badge>
         </div>
 
         {eventMedia.length === 0 ? (
-          <Card className="ring-1 ring-border border-dashed">
-            <CardContent className="py-8 text-center">
-              <p className="text-xs text-text-muted">
+          <Card className="border border-border/60 border-dashed rounded-3xl bg-surface-section/10">
+            <CardContent className="py-12 text-center">
+              <p className="text-xs text-text-muted leading-relaxed max-w-sm mx-auto select-none">
                 Aún no hay medios subidos específicamente para eventos.
-                Se crean desde la pantalla de detalle de cada evento.
+                Se crean automáticamente desde la pantalla de detalle de cada evento.
               </p>
             </CardContent>
           </Card>
@@ -486,20 +539,20 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
               byEvent.set(item.eventId, group);
             }
             return (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {Array.from(byEvent.entries()).map(([eventId, group]) => (
-                  <Card key={eventId} className="ring-1 ring-border ring-amber-500/20 bg-amber-500/5">
-                    <CardHeader className="pb-2 pt-4 px-4">
-                      <CardTitle className="text-sm flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                        <CalendarDays className="h-4 w-4 shrink-0" />
+                  <Card key={eventId} className="border border-amber-500/15 rounded-3xl bg-amber-500/[0.01] shadow-sm overflow-hidden">
+                    <CardHeader className="pb-3 pt-4 px-5 border-b border-amber-500/10 bg-amber-500/[0.02]">
+                      <CardTitle className="text-sm font-bold flex items-center gap-2 text-amber-800 dark:text-amber-400">
+                        <CalendarDays className="h-4.5 w-4.5 shrink-0 text-amber-500" />
                         {group.eventName}
-                        <span className="ml-auto text-xs font-normal text-text-muted">
+                        <span className="ml-auto bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[10px] px-2.5 py-0.5 rounded-full">
                           {group.items.length} {group.items.length === 1 ? "archivo" : "archivos"}
                         </span>
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <CardContent className="p-5 md:p-6">
+                      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
                         {group.items.map((item) => (
                           <MediaCard
                             key={item.id}
@@ -547,6 +600,47 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
   );
 }
 
+/* ───────────────────────── Helpers ───────────────────────── */
+
+const cleanTitle = (rawTitle: string) => {
+  if (!rawTitle) return "";
+  const title = rawTitle.replace(/\.[^.]+$/, ""); // Remove extension
+  // If it's a long hash/filename with no spaces, truncate elegantly in the middle
+  if (title.length > 22 && !title.includes(" ")) {
+    return `${title.slice(0, 10)}...${title.slice(-6)}`;
+  }
+  return title;
+};
+
+/**
+ * Returns the simplified aspect ratio label ("16:9", "9:16", "4:3", etc.)
+ * and an inline style object to drive the card dimensions.
+ */
+function getAspectRatio(width: number | null, height: number | null): {
+  style: React.CSSProperties;
+  label: string;
+} {
+  if (!width || !height || width <= 0 || height <= 0) {
+    // Fallback: landscape 16:9
+    return { style: { aspectRatio: "16/9" }, label: "16:9" };
+  }
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+  const d = gcd(width, height);
+  const rw = width / d;
+  const rh = height / d;
+  // Snap common ratios
+  const ratio = width / height;
+  let label: string;
+  if (Math.abs(ratio - 16 / 9) < 0.05) label = "16:9";
+  else if (Math.abs(ratio - 9 / 16) < 0.05) label = "9:16";
+  else if (Math.abs(ratio - 4 / 3) < 0.05) label = "4:3";
+  else if (Math.abs(ratio - 3 / 4) < 0.05) label = "3:4";
+  else if (Math.abs(ratio - 1) < 0.05) label = "1:1";
+  else if (Math.abs(ratio - 21 / 9) < 0.05) label = "21:9";
+  else label = `${rw}:${rh}`;
+  return { style: { aspectRatio: `${width}/${height}` }, label };
+}
+
 /* ───────────────────────── Media Card ───────────────────────── */
 
 function MediaCard({
@@ -554,128 +648,252 @@ function MediaCard({
   onDelete,
   onEdit,
   onDragStart,
+  onDragEnd,
   onDragOver,
+  onDragEnter,
+  onDragLeave,
   onDrop,
+  draggedId,
+  dragOverId,
 }: {
   item: TvMedia;
   onDelete: () => void;
   onEdit: () => void;
   onDragStart: () => void;
+  onDragEnd?: () => void;
   onDragOver: (e: React.DragEvent) => void;
+  onDragEnter?: (e: React.DragEvent) => void;
+  onDragLeave?: () => void;
   onDrop: () => void;
+  draggedId?: string | null;
+  dragOverId?: string | null;
 }) {
   const hasDaypart =
     item.daypartStartMinutes != null ||
     item.daypartEndMinutes != null ||
     item.daypartDaysMask != null;
 
+  const displayTitle = cleanTitle(item.title);
+  const { style: aspectStyle, label: ratioLabel } = getAspectRatio(item.width, item.height);
+
+  // For menu boards, use a fixed 9:16 preview aspect ratio
+  const cardStyle = item.type === "menu_board" ? { aspectRatio: "9/16" } : aspectStyle;
+  const displayRatioLabel = item.type === "menu_board" ? "9:16" : ratioLabel;
+
+  const isDraggingThis = draggedId === item.id;
+  const isDragOverThis = dragOverId === item.id;
+
   return (
     <div
       draggable
       onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       onDragOver={onDragOver}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
       onDrop={onDrop}
-      className="group relative rounded-xl overflow-hidden bg-black ring-1 ring-border aspect-square cursor-move"
+      style={cardStyle}
+      className={`group relative rounded-2xl overflow-hidden bg-surface-section border transition-all duration-300 ease-out ${
+        isDraggingThis
+          ? "opacity-25 border-dashed border-2 border-primary/50 scale-95 cursor-grabbing ring-2 ring-primary/10"
+          : isDragOverThis
+            ? "border-primary ring-2 ring-primary/45 bg-primary/[0.02] scale-[1.03] shadow-2xl shadow-primary/15"
+            : !item.isActive
+              ? "opacity-60 grayscale-[30%] border-destructive/30 hover:border-destructive/50 hover:shadow-lg hover:shadow-destructive/5 hover:-translate-y-1 cursor-grab active:cursor-grabbing"
+              : "border-border/60 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/45 hover:ring-2 hover:ring-primary/20 cursor-grab active:cursor-grabbing"
+      }`}
     >
-      {item.type === "menu_board" ? (
-        <MenuBoardPreview item={item} />
-      ) : item.type === "image" && item.publicUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={item.publicUrl}
-          alt={item.title}
-          className="w-full h-full object-cover"
-        />
-      ) : item.type === "video" ? (
-        <>
-          {item.thumbnailUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.thumbnailUrl}
-              alt={item.title}
-              className="w-full h-full object-cover"
-            />
-          ) : item.publicUrl ? (
-            <video
-              src={item.publicUrl}
-              muted
-              playsInline
-              preload="metadata"
-              className="w-full h-full object-cover"
-            />
-          ) : null}
-          <div className="absolute top-2 left-2 inline-flex items-center gap-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
-            <Video className="h-3 w-3" />
-            VIDEO
-          </div>
-          <div
-            className={`absolute top-2 left-16 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] ${
-              item.muted
-                ? "bg-black/70 text-white/70"
-                : "bg-success/80 text-white"
-            }`}
-            title={item.muted ? "Sin audio" : "Con audio"}
-          >
-            {item.muted ? (
-              <VolumeX className="h-3 w-3" />
-            ) : (
-              <Volume2 className="h-3 w-3" />
-            )}
-          </div>
-        </>
-      ) : null}
-
-      {hasDaypart && (
-        <div
-          className="absolute top-2 right-10 inline-flex items-center gap-1 bg-amber-500/90 text-black text-[10px] font-semibold px-1.5 py-0.5 rounded"
-          title="Programación por horario activa"
-        >
-          <Clock className="h-3 w-3" />
-          HORARIO
-        </div>
-      )}
-
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <GripVertical className="h-4 w-4 text-white/80 drop-shadow" />
+      {/* Background Media */}
+      <div className="absolute inset-0 z-0 transition-transform duration-500 group-hover:scale-105">
+        {item.type === "menu_board" ? (
+          <MenuBoardPreview item={item} />
+        ) : item.type === "image" && item.publicUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.publicUrl}
+            alt={item.title}
+            className="w-full h-full object-cover"
+          />
+        ) : item.type === "video" ? (
+          <>
+            {item.thumbnailUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={item.thumbnailUrl}
+                alt={item.title}
+                className="w-full h-full object-cover"
+              />
+            ) : item.publicUrl ? (
+              <video
+                src={item.publicUrl}
+                muted
+                playsInline
+                preload="metadata"
+                className="w-full h-full object-cover"
+              />
+            ) : null}
+          </>
+        ) : null}
       </div>
 
+      {/* Top-left badge row */}
+      <div className="absolute top-2 left-2 z-20 flex flex-wrap gap-1 pointer-events-none">
+        {item.type === "video" && (
+          <>
+            <div className="backdrop-blur-md bg-surface-section/70 border border-border/50 text-text-main text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+              <Video className="h-2.5 w-2.5 text-primary" />
+              VIDEO
+            </div>
+            <div className="backdrop-blur-md bg-surface-section/70 border border-border/50 text-text-muted text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm flex items-center justify-center">
+              {item.muted ? (
+                <VolumeX className="h-2.5 w-2.5 text-text-muted" />
+              ) : (
+                <Volume2 className="h-2.5 w-2.5 text-success" />
+              )}
+            </div>
+          </>
+        )}
+        {item.type === "image" && (
+          <div className="backdrop-blur-md bg-surface-section/70 border border-border/50 text-text-main text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+            <ImageIcon className="h-2.5 w-2.5 text-info" />
+            IMAGEN
+          </div>
+        )}
+        {item.type === "menu_board" && (
+          <div className="backdrop-blur-md bg-amber-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-300 text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+            <UtensilsCrossed className="h-2.5 w-2.5" />
+            MENÚ
+          </div>
+        )}
+      </div>
+
+      {/* Top-right: aspect ratio + daypart + drag handle */}
+      <div className="absolute top-2 right-2 z-20 flex gap-1 pointer-events-none">
+        {/* Aspect ratio pill — always shown */}
+        <div
+          className={`backdrop-blur-md border text-[9px] font-mono font-bold px-2 py-0.5 rounded-full shadow-sm ${
+            item.type === "menu_board"
+              ? "bg-black/60 border-white/10 text-white/80"
+              : "bg-surface-section/70 border-border/50 text-text-muted"
+          }`}
+        >
+          {displayRatioLabel}
+        </div>
+        {hasDaypart && (
+          <div
+            className="backdrop-blur-md bg-amber-500/20 border border-amber-400/30 text-amber-700 dark:text-amber-300 text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1"
+            title="Programación por horario activa"
+          >
+            <Clock className="h-2.5 w-2.5" />
+            HORARIO
+          </div>
+        )}
+        {/* Drag handle — visible on hover */}
+        <div
+          className={`opacity-0 group-hover:opacity-100 pointer-events-auto transition-opacity duration-200 backdrop-blur-md border p-1 rounded-full shadow-sm ${
+            item.type === "menu_board"
+              ? "bg-black/60 border-white/10 text-white/70"
+              : "bg-surface-section/70 border-border/50 text-text-muted"
+          }`}
+        >
+          <GripVertical className="h-3 w-3" />
+        </div>
+      </div>
+
+      {/* Inactive overlay */}
       {!item.isActive && (
-        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-          <Badge variant="destructive">Inactivo</Badge>
+        <div
+          className={`absolute inset-0 z-10 backdrop-blur-[2px] flex items-center justify-center pointer-events-none ${
+            item.type === "menu_board" ? "bg-black/65" : "bg-surface-section/70"
+          }`}
+        >
+          <Badge
+            variant="destructive"
+            className="px-3 py-1 font-semibold tracking-wide rounded-full text-xs shadow-lg"
+          >
+            Inactivo
+          </Badge>
         </div>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2.5">
-        <div className="flex items-center justify-between gap-2 text-white">
+      {/* Bottom info bar — dynamic styling to ensure perfect dark/light contrast */}
+      <div
+        className={`absolute inset-x-0 bottom-0 z-20 pt-10 px-3 pb-2.5 bg-gradient-to-t ${
+          item.type === "menu_board"
+            ? "from-black/90 via-black/55 to-transparent"
+            : "from-surface-section/95 via-surface-section/70 to-transparent"
+        }`}
+      >
+        <div className="flex items-end justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium truncate">{item.title}</p>
-            <p className="text-[10px] opacity-70">
-              {item.durationSeconds}s
-              {item.width && item.height
-                ? ` · ${item.width}×${item.height}`
-                : ""}
+            <h3
+              className={`text-xs font-semibold truncate select-none leading-tight ${
+                item.type === "menu_board" ? "text-white" : "text-text-main"
+              }`}
+              title={item.title}
+            >
+              {displayTitle}
+            </h3>
+            <p
+              className={`text-[10px] mt-0.5 font-medium flex items-center gap-1 select-none ${
+                item.type === "menu_board" ? "text-amber-200/60" : "text-text-muted"
+              }`}
+            >
+              <span>{item.durationSeconds}s</span>
+              {(item.width && item.height) || item.type === "menu_board" ? (
+                <>
+                  <span className="opacity-40">·</span>
+                  <span className="font-mono">
+                    {item.type === "menu_board"
+                      ? "1080×1920"
+                      : `${item.width}×${item.height}`}
+                  </span>
+                </>
+              ) : null}
             </p>
           </div>
-          <div className="flex gap-1">
+
+          {/* Action buttons */}
+          <div className="flex gap-1 shrink-0 opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 z-30">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit();
               }}
-              className="p-1 rounded text-white/80 hover:text-white hover:bg-white/10 transition"
-              title="Editar"
+              className={`group/btn p-2 rounded-lg backdrop-blur-md border hover:scale-105 active:scale-95 transition-all shadow-sm ${
+                item.type === "menu_board"
+                  ? "bg-black/60 border-white/30 hover:bg-amber-500 hover:border-amber-400 text-white"
+                  : "bg-surface-section/90 border-border/80 hover:bg-primary/20 hover:border-primary text-text-main"
+              }`}
+              title="Editar detalles y horarios"
             >
-              <ImageIcon className="h-3.5 w-3.5" />
+              <Settings
+                className={`h-4 w-4 transition-colors ${
+                  item.type === "menu_board"
+                    ? "text-amber-200 group-hover/btn:text-white"
+                    : "text-text-muted group-hover/btn:text-primary"
+                }`}
+              />
             </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete();
               }}
-              className="p-1 rounded text-error/80 hover:text-error hover:bg-white/10 transition"
-              title="Eliminar"
+              className={`group/btn p-2 rounded-lg backdrop-blur-md border hover:scale-105 active:scale-95 transition-all shadow-sm ${
+                item.type === "menu_board"
+                  ? "bg-black/60 border-white/30 hover:bg-red-600 hover:border-red-500 text-white"
+                  : "bg-surface-section/90 border-border/80 hover:bg-error/15 hover:border-error/50 text-error"
+              }`}
+              title="Eliminar de la biblioteca"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2
+                className={`h-4 w-4 transition-colors ${
+                  item.type === "menu_board"
+                    ? "text-red-400 group-hover/btn:text-white"
+                    : "text-error"
+                }`}
+              />
             </button>
           </div>
         </div>
@@ -696,19 +914,15 @@ function MenuBoardPreview({ item }: { item: TvMedia }) {
         : "Todo el menú";
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-500/20 via-amber-700/30 to-black p-4 text-center">
-      <UtensilsCrossed className="h-10 w-10 text-amber-300 mb-3" />
-      <p className="text-xs font-bold text-amber-100 uppercase tracking-widest mb-1">
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2c1805] via-[#160d05] to-[#040201] p-4 pb-12 text-center select-none">
+      <UtensilsCrossed className="h-10 w-10 text-amber-500 mb-3 animate-pulse" />
+      <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1.5">
         Pantalla de menú
       </p>
       <p className="text-sm font-semibold text-white line-clamp-2 mb-1">
         {config?.title ?? item.title}
       </p>
-      <p className="text-[10px] text-amber-200/80">{sourceLabel}</p>
-      <div className="absolute top-2 left-2 inline-flex items-center gap-1 bg-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">
-        <UtensilsCrossed className="h-3 w-3" />
-        MENÚ
-      </div>
+      <p className="text-[10px] text-amber-300/80 font-medium">{sourceLabel}</p>
     </div>
   );
 }
@@ -866,31 +1080,28 @@ function EditMediaDialog({
               }
             />
           </div>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <span>Activo (incluir en el carrusel)</span>
+            <Switch
               checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="h-4 w-4"
+              onCheckedChange={setIsActive}
+              className="shrink-0"
             />
-            Activo (incluir en el carrusel)
-          </label>
+          </div>
           {item.type === "video" && (
-            <label className="flex items-start gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!muted}
-                onChange={(e) => setMuted(!e.target.checked)}
-                className="h-4 w-4 mt-0.5"
-              />
+            <div className="flex items-start justify-between gap-3 text-sm">
               <span>
                 Reproducir con audio
-                <br />
-                <span className="text-xs text-text-muted">
+                <span className="block text-xs text-text-muted">
                   Solo se oirá si la TV asignada tiene &quot;Audio habilitado&quot;.
                 </span>
               </span>
-            </label>
+              <Switch
+                checked={!muted}
+                onCheckedChange={(c) => setMuted(!c)}
+                className="mt-0.5 shrink-0"
+              />
+            </div>
           )}
 
           {/* Menu board config */}
@@ -925,13 +1136,7 @@ function EditMediaDialog({
 
           {/* Dayparting */}
           <div className="border-t border-border pt-4 space-y-3">
-            <label className="flex items-start gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={enableDaypart}
-                onChange={(e) => setEnableDaypart(e.target.checked)}
-                className="h-4 w-4 mt-0.5"
-              />
+            <div className="flex items-start justify-between gap-3 text-sm">
               <span>
                 <span className="font-semibold flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5" />
@@ -942,7 +1147,12 @@ function EditMediaDialog({
                   Hora de Caracas (UTC-04:00).
                 </span>
               </span>
-            </label>
+              <Switch
+                checked={enableDaypart}
+                onCheckedChange={setEnableDaypart}
+                className="mt-0.5 shrink-0"
+              />
+            </div>
             {enableDaypart && (
               <DaypartingFields
                 startTime={startTime}
@@ -1259,7 +1469,7 @@ function MenuBoardConfigForm({
               className={`text-xs rounded-md border px-2 py-2 transition ${
                 sourceType === opt.value
                   ? "border-primary bg-primary/10 text-primary font-semibold"
-                  : "border-border bg-bg-surface text-text-muted hover:border-primary/40"
+                  : "border-border bg-surface-section text-text-muted hover:border-primary/40"
               }`}
             >
               {opt.label}
@@ -1275,7 +1485,7 @@ function MenuBoardConfigForm({
             id="mb-cat"
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="w-full rounded-md border border-border bg-bg-surface px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border bg-surface-section px-3 py-2 text-sm"
           >
             {categories.length === 0 && <option value="">(sin categorías)</option>}
             {categories.map((c) => (
@@ -1303,7 +1513,7 @@ function MenuBoardConfigForm({
               className={`text-xs rounded-md border px-2 py-2 transition ${
                 layout === opt.value
                   ? "border-primary bg-primary/10 text-primary font-semibold"
-                  : "border-border bg-bg-surface text-text-muted hover:border-primary/40"
+                  : "border-border bg-surface-section text-text-muted hover:border-primary/40"
               }`}
             >
               {opt.label}
@@ -1329,7 +1539,7 @@ function MenuBoardConfigForm({
               className={`text-xs rounded-md border px-2 py-2 transition ${
                 currency === opt.value
                   ? "border-primary bg-primary/10 text-primary font-semibold"
-                  : "border-border bg-bg-surface text-text-muted hover:border-primary/40"
+                  : "border-border bg-surface-section text-text-muted hover:border-primary/40"
               }`}
             >
               {opt.label}
@@ -1431,7 +1641,7 @@ function DaypartingFields({
                 className={`text-xs rounded-md border px-2.5 py-1 transition ${
                   active
                     ? "border-primary bg-primary/10 text-primary font-semibold"
-                    : "border-border bg-bg-surface text-text-muted"
+                    : "border-border bg-surface-section text-text-muted"
                 }`}
                 title={d.full}
               >

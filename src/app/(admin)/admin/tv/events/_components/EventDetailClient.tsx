@@ -12,6 +12,7 @@ import {
   Video,
   GripVertical,
   Save,
+  UtensilsCrossed,
 } from "lucide-react";
 import {
   Card,
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -235,8 +237,16 @@ export function EventDetailClient({
     }, 2500);
   };
 
+  const { confirm, confirmDialog } = useConfirm();
+
   const handleRemoveMedia = async (mediaId: string) => {
-    if (!confirm("¿Quitar este medio del evento?")) return;
+    const ok = await confirm({
+      title: "Quitar medio",
+      description: "¿Quitar este medio del evento?",
+      confirmLabel: "Quitar",
+      destructive: true,
+    });
+    if (!ok) return;
     const res = await removeMediaFromEventAction({
       eventId: event.id,
       mediaId,
@@ -304,7 +314,7 @@ export function EventDetailClient({
 
   return (
     <div
-      className="space-y-6"
+      className="space-y-8 max-w-7xl mx-auto pb-10"
       onDragOver={handlePageDragOver}
       onDragLeave={handlePageDragLeave}
       onDrop={handlePageDrop}
@@ -317,25 +327,34 @@ export function EventDetailClient({
           </div>
         </div>
       )}
-      <div className="flex items-center gap-2 flex-wrap">
+
+      {confirmDialog}
+
+      <div className="flex items-center gap-3 flex-wrap">
         <Link href="/admin/tv/events">
-          <Button variant="outline" size="sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-surface-section text-primary hover:bg-surface-section/80 rounded-full font-semibold px-4 h-8 text-xs transition-all active:scale-[0.96] flex items-center gap-1.5 shadow-sm"
+          >
             <ArrowLeft className="h-4 w-4" />
-            Eventos
+            Volver a eventos
           </Button>
         </Link>
-        <h1 className="text-2xl font-bold text-text-main">{event.name}</h1>
+        <h1 className="text-3xl font-extrabold text-text-main tracking-tight font-display">{event.name}</h1>
         {event.isActive && (
-          <Badge className="bg-success/10 text-success">Activo</Badge>
+          <Badge className="bg-success/10 text-success border-0 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+            Activo
+          </Badge>
         )}
       </div>
 
       <EventInfoSection event={event} />
 
-      <Card className="ring-1 ring-border">
-        <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-base">Medios del evento</CardTitle>
+      <Card className="border border-border-ghost bg-bg-card rounded-[14px] shadow-card">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <CardTitle className="font-display font-bold text-text-main text-base">Medios del evento</CardTitle>
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
@@ -348,17 +367,20 @@ export function EventDetailClient({
                 }}
               />
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => setPickerOpen(true)}
+                className="bg-surface-section text-primary hover:bg-surface-section/80 rounded-full font-semibold px-4 h-8 text-xs transition-all active:scale-[0.96] flex items-center gap-1.5 shadow-sm"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Desde biblioteca
               </Button>
               <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
+                className="bg-gradient-to-br from-primary to-primary-hover hover:from-primary-hover hover:to-primary text-white hover:scale-[1.02] active:scale-[0.96] rounded-full font-semibold px-4 h-8 text-xs transition-all flex items-center gap-1.5 shadow-sm"
               >
                 <Upload className="h-3.5 w-3.5" />
                 {isUploading ? "Subiendo…" : "Subir archivos"}
@@ -368,21 +390,21 @@ export function EventDetailClient({
         </CardHeader>
         <CardContent>
           {queue.length > 0 && (
-            <div className="mb-4 rounded-lg border border-border bg-bg-surface p-3 space-y-1.5">
-              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
+            <div className="mb-4 rounded-xl border border-border-ghost bg-surface-section/60 p-4 space-y-2">
+              <p className="text-xs font-bold text-text-muted uppercase tracking-wide mb-2 block">
                 Subiendo — {queue.filter((q) => q.status === "done").length}/{queue.length}
               </p>
               {queue.map((item) => (
-                <div key={item.uid} className="flex items-center gap-2 text-sm">
+                <div key={item.uid} className="flex items-center gap-3 text-sm">
                   <span className="text-base leading-none">
                     {item.status === "done" && "✅"}
                     {item.status === "error" && "❌"}
                     {item.status === "uploading" && "⏫"}
                     {item.status === "pending" && "⏳"}
                   </span>
-                  <span className="flex-1 truncate text-text-main">{item.file.name}</span>
+                  <span className="flex-1 truncate text-text-main font-medium">{item.file.name}</span>
                   {item.status === "uploading" && (
-                    <div className="w-20 h-1.5 bg-bg-app rounded overflow-hidden shrink-0">
+                    <div className="w-20 h-1.5 bg-border/30 rounded-full overflow-hidden shrink-0">
                       <div
                         className="h-full bg-primary transition-all"
                         style={{ width: `${item.progress}%` }}
@@ -390,7 +412,7 @@ export function EventDetailClient({
                     </div>
                   )}
                   {item.status === "error" && (
-                    <span className="text-xs text-error shrink-0 max-w-[100px] truncate" title={item.error}>
+                    <span className="text-xs text-error shrink-0 max-w-[120px] truncate font-medium" title={item.error}>
                       {item.error}
                     </span>
                   )}
@@ -400,11 +422,11 @@ export function EventDetailClient({
           )}
 
           {media.length === 0 && queue.length === 0 ? (
-            <p className="text-sm text-text-muted py-6 text-center">
+            <p className="text-sm text-text-muted py-8 text-center leading-relaxed">
               Aún no hay medios en este evento. Sube archivos o agrégalos desde la biblioteca.
             </p>
           ) : media.length === 0 ? null : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {media.map((item) => (
                 <div
                   key={item.id}
@@ -414,10 +436,11 @@ export function EventDetailClient({
                   }}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => handleDrop(item.id)}
-                  className="group relative rounded-xl overflow-hidden bg-black ring-1 ring-border aspect-square cursor-move"
+                  className="group relative rounded-[14px] overflow-hidden bg-[#251a07]/5 border border-border-ghost aspect-square cursor-move transition-all duration-300 hover:shadow-elevated hover:-translate-y-0.5"
                 >
                   {item.type === "menu_board" ? (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-500/30 via-amber-700/30 to-black text-amber-100 text-[10px] font-bold uppercase tracking-widest">
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-surface-section/40 to-bg-card text-primary text-[10px] font-bold uppercase tracking-widest p-4 text-center">
+                      <UtensilsCrossed className="h-6 w-6 mb-2 opacity-80" />
                       Pantalla de menú
                     </div>
                   ) : item.type === "image" && item.publicUrl ? (
@@ -444,21 +467,21 @@ export function EventDetailClient({
                     />
                   ) : null}
                   {item.type === "video" && (
-                    <div className="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded inline-flex items-center gap-1">
-                      <Video className="h-3 w-3" /> VIDEO
+                    <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 shadow-sm">
+                      <Video className="h-2.5 w-2.5" /> VIDEO
                     </div>
                   )}
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100">
-                    <GripVertical className="h-4 w-4 text-white drop-shadow" />
+                  <div className="absolute top-2.5 right-2.5 bg-black/40 backdrop-blur-sm p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                    <GripVertical className="h-3.5 w-3.5 text-white" />
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-white truncate flex-1">
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent p-3 pt-6">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-white truncate font-medium flex-1">
                         {item.title}
                       </p>
                       <button
                         onClick={() => handleRemoveMedia(item.id)}
-                        className="text-error/90 hover:text-error p-1"
+                        className="text-white/80 hover:text-error transition-colors p-1"
                         title="Quitar del evento"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -529,70 +552,98 @@ function EventInfoSection({ event }: { event: TvEvent }) {
   };
 
   return (
-    <Card className="ring-1 ring-border">
-      <CardHeader>
-        <CardTitle className="text-base">Información del evento</CardTitle>
+    <Card className="border border-border-ghost bg-bg-card rounded-[14px] shadow-card">
+      <CardHeader className="pb-4">
+        <CardTitle className="font-display font-bold text-text-main text-base">Información del evento</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <Label htmlFor="ed-name">Nombre</Label>
+      <CardContent className="p-6 md:p-8 space-y-6">
+        <div className="space-y-1">
+          <Label htmlFor="ed-name" className="text-text-main font-semibold tracking-wide text-xs uppercase block">
+            Nombre
+          </Label>
           <Input
             id="ed-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={120}
+            className="border-0 border-b border-border bg-transparent hover:border-primary/50 focus:border-primary focus:border-b-2 rounded-none px-0 py-2 outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-all w-full text-text-main"
           />
         </div>
-        <div>
-          <Label htmlFor="ed-desc">Descripción</Label>
+        
+        <div className="space-y-1">
+          <Label htmlFor="ed-desc" className="text-text-main font-semibold tracking-wide text-xs uppercase block">
+            Descripción
+          </Label>
           <Input
             id="ed-desc"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            className="border-0 border-b border-border bg-transparent hover:border-primary/50 focus:border-primary focus:border-b-2 rounded-none px-0 py-2 outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-all w-full text-text-main"
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="ed-start">Inicio</Label>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="space-y-1">
+            <Label htmlFor="ed-start" className="text-text-main font-semibold tracking-wide text-xs uppercase block">
+              Inicio
+            </Label>
             <Input
               id="ed-start"
               type="datetime-local"
               value={startsAt}
               onChange={(e) => setStartsAt(e.target.value)}
+              className="border-0 border-b border-border bg-transparent hover:border-primary/50 focus:border-primary focus:border-b-2 rounded-none px-0 py-2 outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-all w-full text-text-main"
             />
           </div>
-          <div>
-            <Label htmlFor="ed-end">Fin</Label>
+          
+          <div className="space-y-1">
+            <Label htmlFor="ed-end" className="text-text-main font-semibold tracking-wide text-xs uppercase block">
+              Fin
+            </Label>
             <Input
               id="ed-end"
               type="datetime-local"
               value={endsAt}
               onChange={(e) => setEndsAt(e.target.value)}
+              className="border-0 border-b border-border bg-transparent hover:border-primary/50 focus:border-primary focus:border-b-2 rounded-none px-0 py-2 outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary transition-all w-full text-text-main"
             />
           </div>
         </div>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-3 bg-surface-section/40 border border-border-ghost rounded-[10px] hover:bg-surface-section/60 transition-all flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
+              id="ev-info-active"
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
-              className="h-4 w-4"
+              className="h-4.5 w-4.5 text-primary border-border focus:ring-primary rounded cursor-pointer accent-primary"
             />
-            Evento activo
-          </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <label htmlFor="ev-info-active" className="text-sm font-semibold text-text-main cursor-pointer select-none">
+              Evento activo
+            </label>
+          </div>
+          
+          <div className="p-3 bg-surface-section/40 border border-border-ghost rounded-[10px] hover:bg-surface-section/60 transition-all flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
+              id="ev-info-all-tvs"
               checked={appliesToAllDisplays}
               onChange={(e) => setAppliesToAllDisplays(e.target.checked)}
-              className="h-4 w-4"
+              className="h-4.5 w-4.5 text-primary border-border focus:ring-primary rounded cursor-pointer accent-primary"
             />
-            Aplicar a todas las TVs
-          </label>
+            <label htmlFor="ev-info-all-tvs" className="text-sm font-semibold text-text-main cursor-pointer select-none">
+              Aplicar a todas las TVs
+            </label>
+          </div>
         </div>
-        <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={submitting}>
+
+        <div className="flex justify-end pt-2">
+          <Button 
+            onClick={handleSave} 
+            disabled={submitting}
+            className="rounded-full bg-gradient-to-br from-primary to-primary-hover hover:from-primary-hover hover:to-primary text-white hover:scale-[1.02] active:scale-[0.96] shadow-sm transition-all font-semibold h-10 px-6 text-sm flex items-center gap-2"
+          >
             <Save className="h-4 w-4" />
             {submitting ? "Guardando…" : "Guardar cambios"}
           </Button>
@@ -642,21 +693,21 @@ function AssignmentsSection({
   };
 
   return (
-    <Card className="ring-1 ring-border">
-      <CardHeader>
-        <CardTitle className="text-base">TVs asignadas</CardTitle>
+    <Card className="border border-border-ghost bg-bg-card rounded-[14px] shadow-card">
+      <CardHeader className="pb-4">
+        <CardTitle className="font-display font-bold text-text-main text-base">TVs asignadas</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="p-6 md:p-8 space-y-4">
         {event.appliesToAllDisplays ? (
-          <p className="text-sm text-text-muted">
+          <p className="text-sm text-text-muted leading-relaxed">
             Este evento aplica a TODAS las TVs cuando está activo. Las asignaciones individuales se ignoran.
           </p>
         ) : allDisplays.length === 0 ? (
-          <p className="text-sm text-text-muted">
+          <p className="text-sm text-text-muted leading-relaxed">
             No hay TVs activas. Empareja al menos una en{" "}
             <Link
-              href="/admin/tv/displays"
-              className="text-primary hover:underline"
+              href="/admin/tv"
+              className="text-primary hover:underline font-semibold"
             >
               Pantallas
             </Link>
@@ -664,24 +715,28 @@ function AssignmentsSection({
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {allDisplays.map((d) => (
                 <label
                   key={d.id}
-                  className="flex items-center gap-2 p-2 border border-border rounded-lg cursor-pointer hover:bg-bg-app"
+                  className="p-3.5 bg-surface-section/40 hover:bg-surface-section/80 border border-border-ghost rounded-[10px] cursor-pointer transition-all flex items-center gap-2.5"
                 >
                   <input
                     type="checkbox"
                     checked={selected.has(d.id)}
                     onChange={() => toggle(d.id)}
-                    className="h-4 w-4"
+                    className="h-4.5 w-4.5 text-primary border-border focus:ring-primary rounded cursor-pointer accent-primary"
                   />
-                  <span className="text-sm">{d.name}</span>
+                  <span className="text-sm font-semibold text-text-main select-none">{d.name}</span>
                 </label>
               ))}
             </div>
-            <div className="flex justify-end">
-              <Button onClick={save} disabled={saving}>
+            <div className="flex justify-end pt-2">
+              <Button 
+                onClick={save} 
+                disabled={saving}
+                className="rounded-full bg-gradient-to-br from-primary to-primary-hover hover:from-primary-hover hover:to-primary text-white hover:scale-[1.02] active:scale-[0.96] shadow-sm transition-all font-semibold h-10 px-6 text-sm flex items-center gap-2"
+              >
                 <Save className="h-4 w-4" />
                 {saving ? "Guardando…" : "Guardar asignaciones"}
               </Button>
@@ -719,11 +774,13 @@ function MediaPickerDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Agregar medios desde la biblioteca</DialogTitle>
+      <DialogContent className="max-w-3xl border border-border-ghost bg-bg-card rounded-[14px] shadow-card">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="font-display font-bold text-text-main text-lg">
+            Agregar medios desde la biblioteca
+          </DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto p-1">
           {allMedia.map((item) => {
             const already = addedSet.has(item.id);
             const isSel = selected.has(item.id);
@@ -733,17 +790,18 @@ function MediaPickerDialog({
                 type="button"
                 onClick={() => toggle(item.id)}
                 disabled={already}
-                className={`relative rounded-lg overflow-hidden bg-black aspect-square ring-2 transition ${
+                className={`relative rounded-[12px] overflow-hidden bg-[#251a07]/5 border border-border-ghost aspect-square cursor-pointer transition-all duration-300 ${
                   isSel
-                    ? "ring-primary"
+                    ? "ring-2 ring-primary bg-primary/5 border-primary/50 shadow-md"
                     : already
-                      ? "ring-text-muted/30 opacity-40"
-                      : "ring-border hover:ring-primary/50"
+                      ? "opacity-40 cursor-not-allowed"
+                      : "hover:shadow-md hover:border-primary/40 hover:-translate-y-0.5"
                 }`}
               >
                 {item.type === "menu_board" ? (
-                  <div className="w-full h-full flex items-center justify-center bg-amber-500/15 text-[10px] font-bold text-amber-700 dark:text-amber-400">
-                    MENÚ
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-surface-section/40 to-bg-card text-primary text-[9px] font-bold uppercase tracking-widest p-2 text-center">
+                    <UtensilsCrossed className="h-5 w-5 mb-1.5 opacity-80" />
+                    Menú
                   </div>
                 ) : item.type === "image" && item.publicUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -759,30 +817,53 @@ function MediaPickerDialog({
                     alt={item.title}
                     className="w-full h-full object-cover"
                   />
+                ) : item.publicUrl ? (
+                  <div className="w-full h-full relative">
+                    <video
+                      src={item.publicUrl}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 text-white">
+                      <Video className="h-6 w-6 opacity-85" />
+                    </div>
+                  </div>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white">
-                    <Video className="h-8 w-8" />
+                  <div className="w-full h-full flex items-center justify-center bg-surface-section text-primary/60">
+                    <Video className="h-6 w-6" />
                   </div>
                 )}
-                <div className="absolute inset-x-0 bottom-0 bg-black/70 p-1.5">
-                  <p className="text-[10px] text-white truncate">{item.title}</p>
+                {item.type === "video" && (
+                  <div className="absolute top-1.5 left-1.5 bg-black/60 backdrop-blur-sm text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5 shadow-sm">
+                    <Video className="h-2 w-2" /> VIDEO
+                  </div>
+                )}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2 pt-4">
+                  <p className="text-[10px] text-white truncate font-medium">{item.title}</p>
                 </div>
                 {already && (
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white">
-                    Ya agregado
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-xs font-semibold text-white">
+                    Agregado
                   </div>
                 )}
               </button>
             );
           })}
         </div>
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex justify-end gap-2 pt-4 border-t border-border-ghost">
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            className="bg-surface-section text-primary hover:bg-surface-section/80 rounded-full font-semibold px-4 h-9 text-xs transition-all active:scale-[0.96] shadow-sm"
+          >
             Cancelar
           </Button>
           <Button
             onClick={() => onAdd(Array.from(selected))}
             disabled={selected.size === 0}
+            className="bg-gradient-to-br from-primary to-primary-hover hover:from-primary-hover hover:to-primary text-white hover:scale-[1.02] active:scale-[0.96] rounded-full font-semibold px-5 h-9 text-xs transition-all flex items-center gap-1.5 shadow-sm"
           >
             Agregar {selected.size > 0 ? `(${selected.size})` : ""}
           </Button>

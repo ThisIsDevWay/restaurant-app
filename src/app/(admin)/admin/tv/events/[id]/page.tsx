@@ -34,6 +34,14 @@ export default async function EventDetailPage({
       publicUrl: tvMedia.publicUrl,
       thumbnailUrl: tvMedia.thumbnailUrl,
       durationSeconds: tvMedia.durationSeconds,
+      width: tvMedia.width,
+      height: tvMedia.height,
+      muted: tvMedia.muted,
+      isActive: tvMedia.isActive,
+      daypartStartMinutes: tvMedia.daypartStartMinutes,
+      daypartEndMinutes: tvMedia.daypartEndMinutes,
+      daypartDaysMask: tvMedia.daypartDaysMask,
+      slideConfig: tvMedia.slideConfig,
       displayOrder: tvEventMedia.displayOrder,
     })
     .from(tvEventMedia)

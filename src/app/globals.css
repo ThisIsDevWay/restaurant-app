@@ -43,6 +43,24 @@
   --color-popover: #ffffff;
   --color-popover-foreground: #251a07;
 
+  /* shadcn/ui aliases → mapeados a la paleta Heritage.
+     Habilitan las variantes por defecto de Button/Badge/Tabs/Dialog
+     (antes referenciaban tokens inexistentes → texto oscuro sobre rojo). */
+  --color-foreground: #251a07;
+  --color-background: #ffffff;
+  --color-card: #ffffff;
+  --color-card-foreground: #251a07;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #fff2e2;
+  --color-secondary-foreground: #251a07;
+  --color-muted: #fff2e2;
+  --color-muted-foreground: #5f5e5e;
+  --color-accent: #fff2e2;
+  --color-accent-foreground: #251a07;
+  --color-destructive: #b91c1c;
+  --color-destructive-foreground: #ffffff;
+  --color-ring: #bb0005;
+
   /* Ambient Shadows (on_surface #251a07 @ 5% / 12% / 16%) */
   --shadow-card: 0 2px 8px rgba(37, 26, 7, 0.05);
   --shadow-modal: 0 8px 32px rgba(37, 26, 7, 0.12);
