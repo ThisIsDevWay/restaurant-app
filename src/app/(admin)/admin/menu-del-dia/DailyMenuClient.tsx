@@ -1,6 +1,7 @@
 "use client";
 
 import { UtensilsCrossed, Plus, Coffee } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useDailyMenuState } from "@/hooks/useDailyMenuState";
 import { useItemContornos } from "@/hooks/useItemContornos";
 import { useDailyMenuSync } from "@/hooks/useDailyMenuSync";
@@ -93,33 +94,7 @@ export function DailyMenuClient({
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <style>{`
-        .dmc-tab {
-          display: flex; align-items: center; gap: 7px;
-          padding: 9px 16px;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: 13px; font-weight: 600;
-          border-radius: 100px;
-          border: 1.5px solid transparent;
-          cursor: pointer;
-          transition: all 0.15s ease;
-          white-space: nowrap; flex-shrink: 0;
-        }
-        .dmc-tab-active {
-          background: #bb0005; color: #fff; border-color: #bb0005;
-        }
-        .dmc-tab-inactive {
-          background: #fff; color: #5f5e5e; border-color: #f0e6df;
-        }
-        .dmc-tab-inactive:hover { border-color: #d4a99f; color: #251a07; }
-        .dmc-count-badge {
-          font-size: 11px; font-weight: 700;
-          padding: 1px 7px; border-radius: 100px;
-          line-height: 1.6;
-        }
-      `}</style>
-
+    <div className="flex flex-col gap-5">
       <DailyMenuHeader
         itemCount={state.dailyItemIds.length}
         contornoCount={state.dailyContornoIds.length}
@@ -137,27 +112,32 @@ export function DailyMenuClient({
       />
 
       {/* Tab bar */}
-      <div style={{
-        display: "flex", gap: 8, flexWrap: "wrap",
-        padding: "10px 0",
-        borderBottom: "1px solid #f0e6df",
-      }}>
+      <div className="flex flex-wrap gap-2 border-b border-border py-2.5">
         {tabs.map(({ key, label, icon: Icon, count }) => {
           const isActive = state.activeTab === key;
           return (
             <button
               key={key}
-              className={`dmc-tab ${isActive ? "dmc-tab-active" : "dmc-tab-inactive"}`}
+              type="button"
               onClick={() => state.setActiveTab(key)}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2.5 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                isActive
+                  ? "bg-primary text-white"
+                  : "border border-border bg-white text-text-muted hover:border-primary/40 hover:text-text-main",
+              )}
             >
               <Icon size={14} />
               {label}
               <span
-                className="dmc-count-badge"
-                style={{
-                  background: isActive ? "rgba(255,255,255,0.22)" : count > 0 ? "#fdeaec" : "#f0e6df",
-                  color: isActive ? "#fff" : count > 0 ? "#bb0005" : "#9c8c78",
-                }}
+                className={cn(
+                  "rounded-full px-1.5 py-px text-[11px] font-bold leading-relaxed",
+                  isActive
+                    ? "bg-white/20 text-white"
+                    : count > 0
+                      ? "bg-primary/10 text-primary"
+                      : "bg-surface-section text-text-muted",
+                )}
               >
                 {count}
               </span>

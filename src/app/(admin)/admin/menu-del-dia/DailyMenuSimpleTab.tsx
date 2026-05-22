@@ -3,6 +3,7 @@
 import { LucideIcon, X } from "lucide-react";
 import { formatRef } from "@/lib/money";
 import { DateNavigator } from "@/components/shared/DateNavigator";
+import { SelectableItemRow } from "./SelectableItemRow";
 import type { SimpleItem } from "./DailyMenu.types";
 
 interface DailyMenuSimpleTabProps {
@@ -23,7 +24,6 @@ export function DailyMenuSimpleTab({
   title,
   activeLabel,
   catalogLabel,
-  activeItems,
   allItems,
   activeIds,
   onToggle,
@@ -33,192 +33,83 @@ export function DailyMenuSimpleTab({
   emptyText,
 }: DailyMenuSimpleTabProps) {
   return (
-    <>
-      <style>{`
-        .dmst-col {
-          display: flex; flex-direction: column;
-          background: #fff;
-          border: 1px solid #f0e6df;
-          border-radius: 20px;
-          overflow: hidden;
-        }
-        .dmst-col-header {
-          padding: 16px 20px 14px;
-          border-bottom: 1px solid #f0e6df;
-          flex-shrink: 0;
-          background: #fff8f3;
-        }
-        .dmst-col-title {
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: 13px; font-weight: 700; color: #251a07;
-          margin: 0;
-        }
-        .dmst-col-sub {
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: 11.5px; color: #9c8c78;
-          margin: 3px 0 0;
-        }
-        .dmst-scroll { flex: 1; overflow-y: auto; padding: 10px 12px; }
-        .dmst-active-row {
-          display: flex; align-items: center; gap: 10;
-          padding: 9px 12px;
-          background: #fff8f3; border: 1px solid #f0e6df;
-          border-radius: 10px; margin-bottom: 6px;
-          transition: border-color 0.13s ease;
-        }
-        .dmst-active-row:hover { border-color: #f5c5c8; }
-        .dmst-remove-btn {
-          width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center;
-          background: transparent; border: 1px solid #f0e6df;
-          cursor: pointer; color: #9c8c78;
-          transition: all 0.13s ease; opacity: 0;
-        }
-        .dmst-active-row:hover .dmst-remove-btn { opacity: 1; }
-        .dmst-remove-btn:hover { background: #fdeaec; border-color: #f5c5c8; color: #b00020; }
-        .dmst-catalog-btn {
-          display: flex; width: 100%; align-items: center; gap: 10px;
-          padding: 9px 12px; margin-bottom: 5px;
-          background: #fff8f3; border: 1.5px solid #ede0d8;
-          border-radius: 12px; cursor: pointer; text-align: left;
-          transition: all 0.13s ease; outline: none;
-        }
-        .dmst-catalog-btn-on {
-          background: #fff; border-color: #bb0005;
-        }
-        .dmst-catalog-btn:not(.dmst-catalog-btn-on):hover { border-color: #d4a99f; }
-      `}</style>
+    <div className="grid min-h-[520px] gap-3.5 lg:grid-cols-[1fr_1.6fr]">
+      {/* LEFT: Active */}
+      <div className="flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-border shadow-card">
+        <div className="flex-shrink-0 border-b border-border bg-bg-app px-5 py-3.5">
+          <p className="text-[13px] font-bold text-text-main">{activeLabel}</p>
+          <p className="mt-0.5 text-[11.5px] text-text-muted">
+            {activeIds.length > 0
+              ? `${activeIds.length} ${title}${activeIds.length !== 1 ? "s" : ""} seleccionado${activeIds.length !== 1 ? "s" : ""}`
+              : `Ningún ${title} seleccionado`}
+          </p>
+        </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: 14, minHeight: 520 }}>
+        <DateNavigator
+          dateLabel={dateLabel}
+          onPrev={() => onShiftDay(-1)}
+          onNext={() => onShiftDay(1)}
+        />
 
-        {/* LEFT: Active */}
-        <div className="dmst-col">
-          <div className="dmst-col-header">
-            <p className="dmst-col-title">{activeLabel}</p>
-            <p className="dmst-col-sub">
-              {activeIds.length > 0
-                ? `${activeIds.length} ${title}${activeIds.length !== 1 ? "s" : ""} seleccionado${activeIds.length !== 1 ? "s" : ""}`
-                : `Ningún ${title} seleccionado`}
-            </p>
-          </div>
-
-          <DateNavigator
-            dateLabel={dateLabel}
-            onPrev={() => onShiftDay(-1)}
-            onNext={() => onShiftDay(1)}
-          />
-
-          <div className="dmst-scroll">
-            {activeIds.length === 0 ? (
-              <div style={{
-                height: "100%", minHeight: 120,
-                display: "flex", flexDirection: "column",
-                alignItems: "center", justifyContent: "center",
-                textAlign: "center", padding: "24px 16px", gap: 10,
-              }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12,
-                  background: "#fff2e2", border: "1px solid #f0e6df",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <EmptyIcon size={20} color="#c4b09a" />
-                </div>
-                <p style={{
-                  fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  fontSize: 12, color: "#9c8c78", margin: 0, maxWidth: 150,
-                  lineHeight: 1.5,
-                }}>
-                  {emptyText}
-                </p>
+        <div className="flex-1 overflow-y-auto bg-bg-app p-3">
+          {activeIds.length === 0 ? (
+            <div className="flex h-full min-h-[120px] flex-col items-center justify-center gap-2.5 px-4 py-6 text-center">
+              <div className="flex size-11 items-center justify-center rounded-xl border border-border bg-surface-section">
+                <EmptyIcon size={20} className="text-text-muted/70" />
               </div>
-            ) : (
-              allItems
+              <p className="max-w-[150px] text-xs leading-relaxed text-text-muted">{emptyText}</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {allItems
                 .filter((item) => activeIds.includes(item.id))
                 .map((item) => (
-                  <div key={item.id} className="dmst-active-row" style={{ gap: 10 }}>
-                    <span style={{
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                      fontSize: 13, fontWeight: 600, color: "#251a07",
-                      flex: 1, minWidth: 0,
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                    }}>
+                  <div
+                    key={item.id}
+                    className="group flex items-center gap-2.5 rounded-xl border border-border bg-white px-3 py-2.5 transition-colors hover:border-error/30"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-text-main">
                       {item.name}
                     </span>
-                    <span style={{
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                      fontSize: 11, fontWeight: 700, color: "#1a7a45",
-                      flexShrink: 0,
-                    }}>
+                    <span className="shrink-0 text-[11px] font-bold text-price-green">
                       {formatRef(item.priceUsdCents)}
                     </span>
                     <button
-                      className="dmst-remove-btn"
+                      type="button"
                       onClick={() => onToggle(item.id)}
+                      aria-label={`Quitar ${item.name}`}
+                      className="flex size-6 shrink-0 items-center justify-center rounded-md border border-border text-text-muted opacity-0 transition-all hover:border-error/30 hover:bg-error/10 hover:text-error focus-visible:opacity-100 group-hover:opacity-100"
                     >
                       <X size={12} />
                     </button>
                   </div>
-                ))
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT: Catalog */}
-        <div className="dmst-col">
-          <div className="dmst-col-header">
-            <p className="dmst-col-title">{catalogLabel}</p>
-            <p className="dmst-col-sub">
-              {allItems.length} {title}s disponibles
-            </p>
-          </div>
-
-          <div className="dmst-scroll">
-            {allItems.map((item) => {
-              const isOn = activeIds.includes(item.id);
-              return (
-                <button
-                  key={item.id}
-                  className={`dmst-catalog-btn ${isOn ? "dmst-catalog-btn-on" : ""}`}
-                  onClick={() => onToggle(item.id)}
-                >
-                  {/* Checkbox */}
-                  <div style={{
-                    width: 18, height: 18, borderRadius: 6, flexShrink: 0,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: isOn ? "#bb0005" : "#fff",
-                    border: `2px solid ${isOn ? "#bb0005" : "#d4c5bc"}`,
-                    transition: "all 0.13s ease",
-                  }}>
-                    {isOn && (
-                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                        <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                      fontSize: 13, fontWeight: 600, margin: 0,
-                      color: isOn ? "#bb0005" : "#251a07",
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      transition: "color 0.13s ease",
-                    }}>
-                      {item.name}
-                    </p>
-                    <p style={{
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                      fontSize: 11, fontWeight: 700, color: "#1a7a45",
-                      margin: "2px 0 0",
-                    }}>
-                      {formatRef(item.priceUsdCents)}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                ))}
+            </div>
+          )}
         </div>
       </div>
-    </>
+
+      {/* RIGHT: Catalog */}
+      <div className="flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-border shadow-card">
+        <div className="flex-shrink-0 border-b border-border bg-bg-app px-5 py-3.5">
+          <p className="text-[13px] font-bold text-text-main">{catalogLabel}</p>
+          <p className="mt-0.5 text-[11.5px] text-text-muted">
+            {allItems.length} {title}s disponibles
+          </p>
+        </div>
+
+        <div className="flex-1 space-y-1.5 overflow-y-auto p-3">
+          {allItems.map((item) => (
+            <SelectableItemRow
+              key={item.id}
+              name={item.name}
+              priceUsdCents={item.priceUsdCents}
+              selected={activeIds.includes(item.id)}
+              onToggle={() => onToggle(item.id)}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
