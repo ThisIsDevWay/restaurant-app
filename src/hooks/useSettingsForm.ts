@@ -70,8 +70,7 @@ const DEFAULT_FORM: SettingsFormData = {
   menuItemSortMode: "custom",
   applyIgtf: false,
   igtfPercentage: "3.00",
-  ticketCopies: 2,
-  reprintCopies: 1,
+  printerTargets: [{ name: "main", copies: 1, reprintCopies: 1, enabled: true }],
 };
 
 export function useSettingsForm({ initialData }: UseSettingsFormParams): UseSettingsFormReturn {

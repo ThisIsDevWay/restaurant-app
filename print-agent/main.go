@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -24,6 +25,7 @@ type PrintJob struct {
 	RawContent string `json:"raw_content"`
 	Copies     int    `json:"copies"`
 	Status     string `json:"status"`
+	Target     string `json:"target"`
 }
 
 // --- Win32 Spooler API (winspool.drv) ---
@@ -66,8 +68,7 @@ func PrintRaw(printerName string, content string, copies int) error {
 		0x1B, 0x74, 0x02, // ESC t 2 — Select code page CP850 (Latin-1)
 	}
 	feedAndCut := []byte{ // Avanzar papel + Corte parcial
-		0x0A, 0x0A, // 2 líneas de avance (reducido de 6)
-		0x1D, 0x56, 0x41, 0x03, // GS V 65 3 = Corte parcial
+		0x1D, 0x56, 0x41, 0x00, // GS V 65 0 = Corte parcial sin avance extra
 	}
 
 	for i := 1; i <= copies; i++ {
@@ -146,8 +147,7 @@ func main() {
 	fmt.Printf("   🐹 GM App Print Agent - Go V1\n")
 	fmt.Printf("=========================================\n")
 	fmt.Printf("📡 URL:     %s\n", supabaseURL)
-	fmt.Printf("🖨️ Printer: %s\n", printerName)
-	fmt.Printf("🎯 Target:  %s\n", agentTarget)
+	fmt.Printf("🎯 Targets: %s\n", agentTarget)
 	fmt.Printf("=========================================\n\n")
 
 	if supabaseURL == "" || supabaseKey == "" {
@@ -166,10 +166,26 @@ func main() {
 		os.Exit(0)
 	}()
 
+	// Build the PostgREST target filter
+	var targetFilter string
+	parts := strings.Split(agentTarget, ",")
+	var quotedParts []string
+	for _, p := range parts {
+		trimmed := strings.TrimSpace(p)
+		if trimmed != "" {
+			quotedParts = append(quotedParts, "\""+trimmed+"\"")
+		}
+	}
+	if len(quotedParts) > 0 {
+		targetFilter = "in.(" + strings.Join(quotedParts, ",") + ")"
+	} else {
+		targetFilter = "eq.main"
+	}
+
 	fmt.Println("[System] Iniciando monitoreo...")
 
 	for {
-		url := supabaseURL + "/rest/v1/print_jobs?status=eq.pending&target=eq." + agentTarget + "&order=created_at.asc"
+		url := supabaseURL + "/rest/v1/print_jobs?status=eq.pending&target=" + targetFilter + "&order=created_at.asc"
 		
 		req, _ := http.NewRequest("GET", url, nil)
 		req.Header.Set("apikey", supabaseKey)
@@ -215,7 +231,11 @@ func main() {
 				updateStatus(client, supabaseURL, supabaseKey, job.ID, "printing")
 
 				// Imprimir
-				err := PrintRaw(printerName, job.RawContent, job.Copies)
+				targetPrinter := job.Target
+				if targetPrinter == "" {
+					targetPrinter = printerName
+				}
+				err := PrintRaw(targetPrinter, job.RawContent, job.Copies)
 				if err == nil {
 					updateStatus(client, supabaseURL, supabaseKey, job.ID, "printed")
 					fmt.Println("    ✅ Completado.")

@@ -74,8 +74,12 @@ export default async function SettingsPage() {
               menuItemSortMode: (settings.menuItemSortMode ?? "custom") as "custom" | "price_asc" | "price_desc",
               applyIgtf: settings.applyIgtf ?? false,
               igtfPercentage: settings.igtfPercentage ?? "3.00",
-              ticketCopies: settings.ticketCopies ?? 2,
-              reprintCopies: settings.reprintCopies ?? 1,
+              printerTargets: (settings.printerTargets ?? [{ name: "main", copies: 1, reprintCopies: 1, enabled: true }]).map(p => ({
+                name: p.name,
+                copies: p.copies,
+                reprintCopies: p.reprintCopies ?? 1,
+                enabled: p.enabled,
+              })),
             }
             : null
         }

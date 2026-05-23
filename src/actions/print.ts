@@ -12,6 +12,7 @@ import { getSettings } from "@/db/queries/settings";
 const reprintSchema = v.object({
   orderId: v.string(),
   target: v.optional(v.string(), "main"),
+  copies: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
 });
 
 export const reprintOrderAction = adminActionClient
@@ -34,13 +35,35 @@ export const reprintOrderAction = adminActionClient
       date: formatOrderDate(new Date(order.createdAt)),
     });
 
-    await db.insert(printJobs).values({
-      orderId: order.id,
-      copies: settings?.reprintCopies ?? 1,
-      rawContent: ticketText,
-      status: "pending",
-      target: parsedInput.target,
-    });
+    const printers = settings?.printerTargets && settings.printerTargets.length > 0
+      ? settings.printerTargets
+      : [{ name: "main", copies: 2, reprintCopies: 1, enabled: true }];
+
+    if (parsedInput.target && parsedInput.target !== "main") {
+      const printer = printers.find(p => p.name === parsedInput.target);
+      const reprintCopiesCount = parsedInput.copies ?? printer?.reprintCopies ?? 1;
+
+      await db.insert(printJobs).values({
+        orderId: order.id,
+        copies: reprintCopiesCount,
+        rawContent: ticketText,
+        status: "pending",
+        target: parsedInput.target,
+      });
+    } else {
+      const activePrinters = printers.filter(p => p.enabled && p.name.trim() !== "");
+      if (activePrinters.length > 0) {
+        await db.insert(printJobs).values(
+          activePrinters.map(p => ({
+            orderId: order.id,
+            copies: parsedInput.copies ?? p.reprintCopies ?? 1,
+            rawContent: ticketText,
+            status: "pending" as const,
+            target: p.name,
+          }))
+        );
+      }
+    }
 
     revalidatePath("/kitchen");
     revalidatePath("/admin/orders");

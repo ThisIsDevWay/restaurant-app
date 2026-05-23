@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { SettingsFormData } from "./SettingsForm.types";
 import { ORDER_MODES } from "./SettingsForm.types";
@@ -69,6 +70,29 @@ export function SettingsOperationTab({
         ),
       );
     }
+  };
+
+  const printerTargets = form.printerTargets || [{ name: "main", copies: 1, reprintCopies: 1, enabled: true }];
+
+  const addPrinter = () => {
+    updateField("printerTargets", [
+      ...printerTargets,
+      { name: "", copies: 1, reprintCopies: 1, enabled: true },
+    ]);
+  };
+
+  const removePrinter = (index: number) => {
+    updateField(
+      "printerTargets",
+      printerTargets.filter((_, i) => i !== index)
+    );
+  };
+
+  const updatePrinter = (index: number, key: "name" | "copies" | "reprintCopies" | "enabled", value: any) => {
+    updateField(
+      "printerTargets",
+      printerTargets.map((p, i) => (i === index ? { ...p, [key]: value } : p))
+    );
   };
 
   return (
@@ -296,8 +320,14 @@ export function SettingsOperationTab({
         </div>
       </Card>
 
-      <Card className="p-6 border-none shadow-sm bg-white rounded-2xl">
-        <h3 className="text-lg font-bold text-text-main mb-6">Flujo de Cobro</h3>
+      <Card className="p-6 border-none shadow-sm bg-white rounded-2xl space-y-6">
+        <div>
+          <h3 className="text-lg font-bold text-text-main mb-2">Flujo de Trabajo e Impresión Térmica</h3>
+          <p className="text-[11px] text-text-muted leading-snug">
+            Gestiona la secuencia de cobros e impresoras conectadas en esta PC.
+          </p>
+        </div>
+
         <div className="flex items-center justify-between p-4 rounded-xl bg-bg-app border border-border/40">
           <div className="space-y-1">
             <Label className="text-sm font-bold">Exigir cobro antes de enviar a cocina</Label>
@@ -310,45 +340,108 @@ export function SettingsOperationTab({
             onCheckedChange={(v) => updateField("requirePaymentBeforeKitchen", v)}
           />
         </div>
-      </Card>
 
-      <Card className="p-6 border-none shadow-sm bg-white rounded-2xl">
-        <h3 className="text-lg font-bold text-text-main mb-2">Impresión Térmica</h3>
-        <p className="text-[11px] text-text-muted mb-6 leading-snug">
-          Controla cuántas copias imprime el agente local por evento.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="ticketCopies" className="font-bold">Copias al crear / cobrar pedido</Label>
-            <Input
-              id="ticketCopies"
-              type="number"
-              min={1}
-              max={10}
-              value={form.ticketCopies}
-              onChange={(e) => updateField("ticketCopies", Math.max(1, parseInt(e.target.value) || 1))}
-              className="rounded-xl"
-            />
-            {errors.ticketCopies && <p className="text-xs text-red-500">{errors.ticketCopies}</p>}
-            <p className="text-[10px] text-text-muted">
-              Copias que se imprimen al tomar un pedido nuevo o al registrar el cobro.
-            </p>
+        <div className="h-px bg-border/40" />
+
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+            <div>
+              <h4 className="text-base font-bold text-text-main">Impresión Térmica Multi-Impresora</h4>
+              <p className="text-[11px] text-text-muted leading-snug">
+                Configura las impresoras conectadas y el número de copias por evento. Cada impresora corresponde a un nombre exacto registrado en Windows.
+              </p>
+            </div>
+            <Button
+              type="button"
+              onClick={addPrinter}
+              className="rounded-xl h-9 px-3 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              Agregar Impresora
+            </Button>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="reprintCopies" className="font-bold">Copias en reimpresión manual</Label>
-            <Input
-              id="reprintCopies"
-              type="number"
-              min={1}
-              max={10}
-              value={form.reprintCopies}
-              onChange={(e) => updateField("reprintCopies", Math.max(1, parseInt(e.target.value) || 1))}
-              className="rounded-xl"
-            />
-            {errors.reprintCopies && <p className="text-xs text-red-500">{errors.reprintCopies}</p>}
-            <p className="text-[10px] text-text-muted">
-              Copias al reimprimir manualmente desde el panel de órdenes.
-            </p>
+
+          <div className="mt-6 space-y-4">
+            {printerTargets.length === 0 ? (
+              <div className="text-center py-6 border border-dashed border-border/60 rounded-2xl bg-bg-app">
+                <p className="text-xs text-text-muted font-medium">No hay impresoras configuradas. Se usará la configuración por defecto.</p>
+              </div>
+            ) : (
+              printerTargets.map((printer, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col md:flex-row md:items-center gap-4 p-4 rounded-xl bg-bg-app border border-border/40 transition-all hover:border-border"
+                >
+                  <div className="flex-1 space-y-1.5">
+                    <Label htmlFor={`printer-name-${index}`} className="text-xs font-bold">
+                      Nombre de la Impresora (Windows)
+                    </Label>
+                    <Input
+                      id={`printer-name-${index}`}
+                      placeholder="Ej: POS-80-Caja"
+                      value={printer.name}
+                      onChange={(e) => updatePrinter(index, "name", e.target.value)}
+                      className="rounded-xl h-9 text-xs"
+                    />
+                  </div>
+
+                  <div className="w-full md:w-36 space-y-1.5">
+                    <Label htmlFor={`printer-copies-${index}`} className="text-xs font-bold">
+                      Copias (Crear/Cobrar)
+                    </Label>
+                    <Input
+                      id={`printer-copies-${index}`}
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={printer.copies}
+                      onChange={(e) =>
+                        updatePrinter(index, "copies", Math.max(1, parseInt(e.target.value) || 1))
+                      }
+                      className="rounded-xl h-9 text-xs"
+                    />
+                  </div>
+
+                  <div className="w-full md:w-36 space-y-1.5">
+                    <Label htmlFor={`printer-reprint-copies-${index}`} className="text-xs font-bold">
+                      Copias (Reimprimir)
+                    </Label>
+                    <Input
+                      id={`printer-reprint-copies-${index}`}
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={printer.reprintCopies ?? 1}
+                      onChange={(e) =>
+                        updatePrinter(index, "reprintCopies", Math.max(1, parseInt(e.target.value) || 1))
+                      }
+                      className="rounded-xl h-9 text-xs"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-6 md:pt-6 pt-2 justify-between md:justify-start">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={printer.enabled}
+                        onCheckedChange={(v) => updatePrinter(index, "enabled", v)}
+                      />
+                      <Label className="text-xs font-bold cursor-pointer">
+                        Activa
+                      </Label>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => removePrinter(index)}
+                      className="rounded-xl h-9 w-9 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </Card>

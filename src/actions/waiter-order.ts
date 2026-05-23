@@ -224,13 +224,23 @@ export const createWaiterOrderAction = authenticatedActionClient
         restaurantName: settings.restaurantName,
       });
 
-      await db.insert(printJobs).values({
-        orderId: order.id,
-        copies: settings.ticketCopies ?? 2,
-        rawContent: ticketText,
-        status: "pending",
-        target: "main",
-      });
+      const printers = settings.printerTargets && settings.printerTargets.length > 0
+        ? settings.printerTargets
+        : [{ name: "main", copies: 2, enabled: true }];
+
+      const activePrinters = printers.filter(p => p.enabled && p.name.trim() !== "");
+
+      if (activePrinters.length > 0) {
+        await db.insert(printJobs).values(
+          activePrinters.map(p => ({
+            orderId: order.id,
+            copies: p.copies,
+            rawContent: ticketText,
+            status: "pending" as const,
+            target: p.name,
+          }))
+        );
+      }
     }
 
     revalidatePath("/kitchen");
@@ -382,13 +392,23 @@ export const updateWaiterOrderAction = authenticatedActionClient
         isUpdate: true,
       });
 
-      await db.insert(printJobs).values({
-        orderId: order.id,
-        copies: settings.ticketCopies ?? 2,
-        rawContent: ticketText,
-        status: "pending",
-        target: "main",
-      });
+      const printers = settings.printerTargets && settings.printerTargets.length > 0
+        ? settings.printerTargets
+        : [{ name: "main", copies: 2, enabled: true }];
+
+      const activePrinters = printers.filter(p => p.enabled && p.name.trim() !== "");
+
+      if (activePrinters.length > 0) {
+        await db.insert(printJobs).values(
+          activePrinters.map(p => ({
+            orderId: order.id,
+            copies: p.copies,
+            rawContent: ticketText,
+            status: "pending" as const,
+            target: p.name,
+          }))
+        );
+      }
     }
 
     revalidatePath("/kitchen");
@@ -502,13 +522,23 @@ export const settleOrderAction = authenticatedActionClient
       restaurantName: settings.restaurantName,
     });
 
-    await db.insert(printJobs).values({
-      orderId: order.id,
-      copies: settings.ticketCopies ?? 2,
-      rawContent: ticketText,
-      status: "pending",
-      target: "main",
-    });
+    const printers = settings.printerTargets && settings.printerTargets.length > 0
+      ? settings.printerTargets
+      : [{ name: "main", copies: 2, enabled: true }];
+
+    const activePrinters = printers.filter(p => p.enabled && p.name.trim() !== "");
+
+    if (activePrinters.length > 0) {
+      await db.insert(printJobs).values(
+        activePrinters.map(p => ({
+          orderId: order.id,
+          copies: p.copies,
+          rawContent: ticketText,
+          status: "pending" as const,
+          target: p.name,
+        }))
+      );
+    }
 
     revalidatePath("/kitchen");
     revalidatePath("/admin/orders");
