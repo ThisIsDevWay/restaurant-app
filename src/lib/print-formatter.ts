@@ -208,7 +208,7 @@ export function generateTicketText(data: PrintData): string {
   const bsStr = formatBs(totalBs).replace("Bs. ", "Bs ");
   const totalsStr = `${bsStr} (${formatRef(totalUsd)})`;
   text += justify("TOTAL:", totalsStr) + "\n";
-  text += "\n\n"; // Minimal space for cutting
+  text += "\n"; // Minimal space for cutting
   
   return text;
 }

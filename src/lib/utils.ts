@@ -34,6 +34,7 @@ export function formatOrderDate(date: Date | string): string {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
+    timeZone: "America/Caracas",
   }).format(new Date(date));
 }
 

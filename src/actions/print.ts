@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { generateTicketText } from "@/lib/print-formatter";
 import { formatOrderDate } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { getSettings } from "@/db/queries/settings";
 
 const reprintSchema = v.object({
   orderId: v.string(),
@@ -22,6 +23,8 @@ export const reprintOrderAction = adminActionClient
 
     if (!order) throw new Error("Orden no encontrada");
 
+    const settings = await getSettings();
+
     const ticketText = generateTicketText({
       orderNumber: order.orderNumber,
       tableNumber: order.tableNumber || "N/A",
@@ -33,7 +36,7 @@ export const reprintOrderAction = adminActionClient
 
     await db.insert(printJobs).values({
       orderId: order.id,
-      copies: 1,
+      copies: settings?.reprintCopies ?? 1,
       rawContent: ticketText,
       status: "pending",
       target: parsedInput.target,

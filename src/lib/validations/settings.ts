@@ -63,6 +63,8 @@ export const settingsSchema = v.object({
   tablesDefaultZoom: v.optional(v.pipe(v.number(), v.integer(), v.minValue(10), v.maxValue(200))),
   applyIgtf: v.optional(v.boolean()),
   igtfPercentage: v.optional(v.string()),
+  ticketCopies: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+  reprintCopies: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
 });
 
 export type SettingsInput = v.InferOutput<typeof settingsSchema>;

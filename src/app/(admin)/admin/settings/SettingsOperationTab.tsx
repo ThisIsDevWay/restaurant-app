@@ -311,6 +311,47 @@ export function SettingsOperationTab({
           />
         </div>
       </Card>
+
+      <Card className="p-6 border-none shadow-sm bg-white rounded-2xl">
+        <h3 className="text-lg font-bold text-text-main mb-2">Impresión Térmica</h3>
+        <p className="text-[11px] text-text-muted mb-6 leading-snug">
+          Controla cuántas copias imprime el agente local por evento.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="ticketCopies" className="font-bold">Copias al crear / cobrar pedido</Label>
+            <Input
+              id="ticketCopies"
+              type="number"
+              min={1}
+              max={10}
+              value={form.ticketCopies}
+              onChange={(e) => updateField("ticketCopies", Math.max(1, parseInt(e.target.value) || 1))}
+              className="rounded-xl"
+            />
+            {errors.ticketCopies && <p className="text-xs text-red-500">{errors.ticketCopies}</p>}
+            <p className="text-[10px] text-text-muted">
+              Copias que se imprimen al tomar un pedido nuevo o al registrar el cobro.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="reprintCopies" className="font-bold">Copias en reimpresión manual</Label>
+            <Input
+              id="reprintCopies"
+              type="number"
+              min={1}
+              max={10}
+              value={form.reprintCopies}
+              onChange={(e) => updateField("reprintCopies", Math.max(1, parseInt(e.target.value) || 1))}
+              className="rounded-xl"
+            />
+            {errors.reprintCopies && <p className="text-xs text-red-500">{errors.reprintCopies}</p>}
+            <p className="text-[10px] text-text-muted">
+              Copias al reimprimir manualmente desde el panel de órdenes.
+            </p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

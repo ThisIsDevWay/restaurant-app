@@ -226,7 +226,7 @@ export const createWaiterOrderAction = authenticatedActionClient
 
       await db.insert(printJobs).values({
         orderId: order.id,
-        copies: 2,
+        copies: settings.ticketCopies ?? 2,
         rawContent: ticketText,
         status: "pending",
         target: "main",
@@ -384,7 +384,7 @@ export const updateWaiterOrderAction = authenticatedActionClient
 
       await db.insert(printJobs).values({
         orderId: order.id,
-        copies: 2,
+        copies: settings.ticketCopies ?? 2,
         rawContent: ticketText,
         status: "pending",
         target: "main",
@@ -504,7 +504,7 @@ export const settleOrderAction = authenticatedActionClient
 
     await db.insert(printJobs).values({
       orderId: order.id,
-      copies: 2,
+      copies: settings.ticketCopies ?? 2,
       rawContent: ticketText,
       status: "pending",
       target: "main",

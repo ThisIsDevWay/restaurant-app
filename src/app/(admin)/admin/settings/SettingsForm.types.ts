@@ -63,6 +63,8 @@ export interface SettingsFormData {
   menuItemSortMode: "custom" | "price_asc" | "price_desc";
   applyIgtf: boolean;
   igtfPercentage: string;
+  ticketCopies: number;
+  reprintCopies: number;
 }
 
 export type FormErrors = Partial<Record<keyof SettingsFormData, string>>;

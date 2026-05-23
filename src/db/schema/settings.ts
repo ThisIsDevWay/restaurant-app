@@ -79,6 +79,8 @@ export const settings = pgTable("settings", {
   tablesDefaultZoom: integer("tables_default_zoom").notNull().default(90), // in percentage (e.g. 60 for 0.6)
   applyIgtf: boolean("apply_igtf").notNull().default(false),
   igtfPercentage: numeric("igtf_percentage", { precision: 5, scale: 2 }).notNull().default("3.00"),
+  ticketCopies: integer("ticket_copies").notNull().default(2),
+  reprintCopies: integer("reprint_copies").notNull().default(1),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

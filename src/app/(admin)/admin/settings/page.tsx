@@ -74,6 +74,8 @@ export default async function SettingsPage() {
               menuItemSortMode: (settings.menuItemSortMode ?? "custom") as "custom" | "price_asc" | "price_desc",
               applyIgtf: settings.applyIgtf ?? false,
               igtfPercentage: settings.igtfPercentage ?? "3.00",
+              ticketCopies: settings.ticketCopies ?? 2,
+              reprintCopies: settings.reprintCopies ?? 1,
             }
             : null
         }
