@@ -79,14 +79,21 @@ export default async function MenuPage() {
             restaurantName={appSettings?.restaurantName}
             branchName={appSettings?.branchName}
             scheduleText={appSettings?.scheduleText}
+            businessHours={appSettings?.businessHours ?? null}
             instagramUrl={appSettings?.instagramUrl}
             showRate={!!showRate}
             rateData={rateData}
+
           />
         </Suspense>
 
         {/* Cart bottom bar + drawer */}
-        <Cart maxQuantityPerItem={maxQuantityPerItem} />
+        <Cart
+          maxQuantityPerItem={maxQuantityPerItem}
+          dailyAdicionales={dailyAdicionales}
+          dailyBebidas={dailyBebidas}
+          rate={rate}
+        />
       </div>
     );
   } catch (error) {

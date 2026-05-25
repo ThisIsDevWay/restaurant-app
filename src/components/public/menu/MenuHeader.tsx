@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Instagram } from "lucide-react";
+import { Instagram, LayoutGrid } from "lucide-react";
 import { HeaderCartButton } from "@/app/(public)/HeaderCartButton";
+import { getCategoryIcon } from "@/lib/categoryIcons";
+import { isOpenNow, type BusinessHours } from "@/lib/utils/date";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -21,6 +23,8 @@ interface MenuHeaderProps {
     branchName: string | null;
     /** From settings.schedule_text */
     scheduleText: string | null;
+    /** From settings.business_hours — drives the open/closed badge */
+    businessHours?: BusinessHours | null;
     categories: Category[];
     activeCategoryId: string | null;
     onCategoryChange: (id: string | null) => void;
@@ -33,6 +37,8 @@ interface MenuHeaderProps {
         fetchedAt: string | Date;
         currency?: string;
     } | null;
+    searchQuery: string;
+    onSearchChange: (query: string) => void;
 }
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -85,15 +91,46 @@ export function MenuHeader({
     restaurantName,
     branchName,
     scheduleText,
+    businessHours = null,
     categories,
     activeCategoryId,
     onCategoryChange,
     instagramUrl,
     showRate,
     rateData,
+    searchQuery,
+    onSearchChange,
 }: MenuHeaderProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [showFade, setShowFade] = useState(true);
+    const [greeting, setGreeting] = useState("¡Hola!");
+    const [openStatus, setOpenStatus] = useState<boolean | null>(null);
+
+    // Open/closed status — computed on the client in America/Caracas, refreshed each minute.
+    useEffect(() => {
+        const compute = () => setOpenStatus(isOpenNow(businessHours));
+        compute();
+        const id = setInterval(compute, 60_000);
+        return () => clearInterval(id);
+    }, [businessHours]);
+
+    useEffect(() => {
+        try {
+            const hour = parseInt(
+                new Intl.DateTimeFormat("en-US", {
+                    timeZone: "America/Caracas",
+                    hour: "numeric",
+                    hour12: false,
+                }).format(new Date()),
+                10
+            );
+            if (hour >= 6 && hour < 12) setGreeting("Buenos días");
+            else if (hour >= 12 && hour < 19) setGreeting("Buenas tardes");
+            else setGreeting("Buenas noches");
+        } catch (e) {
+            setGreeting("¡Hola!");
+        }
+    }, []);
 
     // Dynamically control right-fade visibility based on scroll position
     useEffect(() => {
@@ -117,8 +154,15 @@ export function MenuHeader({
     }, [categories]);
 
     const hasMetadata = branchName !== null || scheduleText !== null;
+    const showInfoCard = hasMetadata || openStatus !== null;
     const isStale =
         rateData && Date.now() - new Date(rateData.fetchedAt).getTime() > 24 * 60 * 60 * 1000;
+
+    const instagramHref = instagramUrl
+        ? instagramUrl.startsWith("http")
+            ? instagramUrl
+            : `https://instagram.com/${instagramUrl.replace(/^@/, "")}`
+        : null;
 
     return (
         <div
@@ -132,7 +176,7 @@ export function MenuHeader({
               Desktop: h-[360px]
               XL:      h-[420px]
             */}
-            <div className="relative w-full overflow-hidden h-[240px] md:h-[300px] lg:h-[360px] xl:h-[420px]">
+            <div className="hidden md:block relative w-full overflow-hidden md:h-[300px] lg:h-[360px] xl:h-[420px]">
                 {/* Background with Ken Burns effect */}
                 {coverImageUrl ? (
                     <div
@@ -268,7 +312,7 @@ export function MenuHeader({
                         <img
                             src={logoUrl}
                             alt={restaurantName}
-                            className="h-auto w-auto max-h-[85px] md:max-h-[120px] lg:max-h-[160px] xl:max-h-[200px] object-contain transition-all duration-500"
+                            className="h-auto w-auto max-h-[50px] md:max-h-[120px] lg:max-h-[160px] xl:max-h-[200px] object-contain transition-all duration-500"
                             style={{
                                 filter:
                                     "drop-shadow(0 2px 24px rgba(0,0,0,0.65)) drop-shadow(0 0 8px rgba(0,0,0,0.45))",
@@ -294,7 +338,7 @@ export function MenuHeader({
                     {/* Metadata row */}
                     {hasMetadata && (
                         <div
-                            className="mh-meta-chip mt-3 lg:mt-4 flex items-center justify-center flex-wrap"
+                            className="mh-meta-chip mt-3 lg:mt-4 hidden md:flex items-center justify-center flex-wrap"
                             style={{
                                 gap: 10,
                                 padding: "6px 16px",
@@ -344,6 +388,191 @@ export function MenuHeader({
                 </div>
             </div>
 
+            {/* ── Mobile App Header (md:hidden) — hero image + floating info card ── */}
+            <div className="md:hidden w-full bg-bg-app">
+                {/* Hero con imagen de fondo */}
+                <div className="relative w-full overflow-hidden">
+                    {/* Background */}
+                    {coverImageUrl ? (
+                        <div
+                            className="mh-ken-burns"
+                            style={{
+                                position: "absolute",
+                                inset: 0,
+                                backgroundImage: `url(${coverImageUrl})`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center center",
+                                backgroundRepeat: "no-repeat",
+                            }}
+                        />
+                    ) : (
+                        <div
+                            style={{
+                                position: "absolute",
+                                inset: 0,
+                                backgroundColor: "#0a0a0a",
+                                backgroundImage:
+                                    "radial-gradient(ellipse at 30% 50%, rgba(187,0,5,0.12) 0%, transparent 60%), radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)",
+                                backgroundSize: "100% 100%, 20px 20px",
+                            }}
+                        />
+                    )}
+
+                    {/* Cinematic overlay */}
+                    <div
+                        className="pointer-events-none absolute inset-0"
+                        style={{
+                            background: [
+                                "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.92) 100%)",
+                                "radial-gradient(ellipse at 50% 120%, rgba(187,0,5,0.18) 0%, transparent 60%)",
+                            ].join(", "),
+                        }}
+                    />
+                    {/* Warm film */}
+                    <div
+                        className="pointer-events-none absolute inset-0"
+                        style={{
+                            background:
+                                "linear-gradient(135deg, rgba(255,200,100,0.04) 0%, transparent 50%, rgba(100,10,30,0.10) 100%)",
+                            mixBlendMode: "overlay",
+                        }}
+                    />
+
+                    {/* Content over image */}
+                    <div className={`relative z-10 px-4 pt-4 ${showInfoCard ? "pb-16" : "pb-5"}`}>
+                        {/* Top row: Instagram (izq) · BCV + carrito (der) */}
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex shrink-0 items-center gap-2">
+                                {instagramHref && (
+                                    <a
+                                        href={instagramHref}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label="Instagram"
+                                        className="mh-glass-btn flex h-10 w-10 items-center justify-center rounded-full text-white"
+                                    >
+                                        <Instagram className="h-[18px] w-[18px]" />
+                                    </a>
+                                )}
+                            </div>
+
+                            <div className="flex shrink-0 items-center gap-2">
+                                {showRate && rateData && (
+                                    <div className="mh-glass-btn flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-[9px]">
+                                        <span
+                                            title={isStale ? "Tasa del día anterior" : undefined}
+                                            className={`h-1.5 w-1.5 shrink-0 rounded-full ${isStale ? "bg-amber-400" : "bg-emerald-400 mh-pulse"}`}
+                                        />
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-white/55">BCV</span>
+                                        <span className="text-[12px] font-bold tracking-tight text-white">
+                                            {rateData.rate.toLocaleString("es-VE", {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                            })}
+                                        </span>
+                                    </div>
+                                )}
+                                <HeaderCartButton
+                                    className="!p-0 flex h-10 w-10 items-center justify-center rounded-full bg-bg-card shadow-elevated"
+                                    iconClassName="text-text-main h-[18px] w-[18px]"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Brand: logo (izq) + nombre + saludo */}
+                        <div className="mt-4 flex items-center gap-3">
+                            {logoUrl && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={logoUrl}
+                                    alt={restaurantName}
+                                    className="h-18 w-18 shrink-0 rounded-full bg-bg-card object-contain p-1 shadow-lg ring-1 ring-white/20"
+                                />
+                            )}
+                            <div className="min-w-0 flex-1">
+                                <h1
+                                    className="truncate font-display text-[26px] font-extrabold leading-tight tracking-tight text-white"
+                                    style={{ textShadow: "0 2px 16px rgba(0,0,0,0.45)" }}
+                                >
+                                    {restaurantName}
+                                </h1>
+                                <p className="font-sans text-[14px] font-semibold leading-tight text-white/90">
+                                    {greeting}
+                                </p>
+                                <p className="mt-2 font-sans text-[12.5px] font-medium leading-tight text-white/80">
+                                    ¿Qué te gustaría ordenar hoy?
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tarjeta flotante — ubicación · horario · estado */}
+                {showInfoCard && (
+                    <div className="relative z-20 -mt-10 px-4">
+                        <div className="flex items-stretch gap-3 rounded-modal bg-bg-card px-4 py-3 shadow-elevated">
+                            {branchName && (
+                                <div className="flex min-w-0 flex-1 items-start gap-2">
+                                    <span className="mt-[3px] shrink-0 text-primary">
+                                        <PinIcon />
+                                    </span>
+                                    <span className="text-[12px] font-medium leading-snug text-text-main">
+                                        {branchName}
+                                    </span>
+                                </div>
+                            )}
+
+                            {branchName && (scheduleText || openStatus !== null) && (
+                                <div className="w-px shrink-0 self-stretch bg-border-ghost" />
+                            )}
+
+                            {(scheduleText || openStatus !== null) && (
+                                <div className="flex shrink-0 flex-col justify-center gap-1.5">
+                                    {scheduleText && (
+                                        <span className="flex items-center gap-1.5 text-[12px] font-semibold text-text-main">
+                                            <span className="shrink-0 text-primary">
+                                                <ClockIcon />
+                                            </span>
+                                            {scheduleText}
+                                        </span>
+                                    )}
+                                    {openStatus !== null && <OpenBadge open={openStatus} />}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Buscador full-width */}
+                <div className="px-4 pb-1 pt-4">
+                    <div className="relative w-full">
+                        <input
+                            id="menu-search-input"
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                            placeholder="Buscar un plato, ej. asado negro"
+                            className="w-full font-sans bg-bg-card border border-input rounded-xl py-3.5 px-4 pl-10 text-[13px] text-text-main placeholder:text-text-main/40 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all shadow-card"
+                        />
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-main/40 pointer-events-none">
+                            <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <circle cx="7" cy="7" r="5" />
+                                <line x1="14" y1="14" x2="10.5" y2="10.5" />
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             {/* ── Category pills ────────────────────────────────────────────── */}
             <div
                 className="relative mh-pills-bar"
@@ -369,19 +598,23 @@ export function MenuHeader({
                             active={activeCategoryId === null}
                             onClick={() => onCategoryChange(null)}
                         >
+                            <LayoutGrid className="h-[15px] w-[15px] shrink-0" strokeWidth={2.4} />
                             Todos
                         </PillButton>
 
-                        {categories.map((cat) => (
-                            <PillButton
-                                key={cat.id}
-                                active={activeCategoryId === cat.id}
-                                onClick={() => onCategoryChange(cat.id)}
-                            >
-                                {cat.emoji ? `${cat.emoji} ` : ""}
-                                {cat.name}
-                            </PillButton>
-                        ))}
+                        {categories.map((cat) => {
+                            const Icon = getCategoryIcon(cat.name);
+                            return (
+                                <PillButton
+                                    key={cat.id}
+                                    active={activeCategoryId === cat.id}
+                                    onClick={() => onCategoryChange(cat.id)}
+                                >
+                                    <Icon className="h-[15px] w-[15px] shrink-0" strokeWidth={2.2} />
+                                    {cat.name}
+                                </PillButton>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -573,7 +806,23 @@ function PillButton({
             data-active={active}
             onClick={onClick}
         >
-            {children}
+            <span className="flex items-center gap-1.5">{children}</span>
         </button>
+    );
+}
+
+// ─── Open / Closed Badge ────────────────────────────────────────────────────
+
+function OpenBadge({ open }: { open: boolean }) {
+    return open ? (
+        <span className="ml-7 inline-flex w-fit items-center gap-1 rounded-pill bg-success/15 px-2 py-0.5 text-[10px] font-bold text-success">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
+            Abierto
+        </span>
+    ) : (
+        <span className="ml-7 inline-flex w-fit items-center gap-1 rounded-pill bg-error/10 px-2 py-0.5 text-[10px] font-bold text-error">
+            <span className="h-1.5 w-1.5 rounded-full bg-error" />
+            Cerrado
+        </span>
     );
 }

@@ -43,6 +43,8 @@ interface MenuGridProps {
   maxQuantityPerItem?: number;
   menuLayout?: "modern" | "classic";
   availabilityMap?: Map<string, boolean>;
+  selectedItemId: string | null;
+  onSelectedItemIdChange: (id: string | null) => void;
 }
 
 export function MenuGrid({
@@ -56,8 +58,9 @@ export function MenuGrid({
   maxQuantityPerItem = 10,
   menuLayout = "modern",
   availabilityMap = new Map(),
+  selectedItemId,
+  onSelectedItemIdChange: setSelectedItemId,
 }: MenuGridProps) {
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [drinkWarningItem, setDrinkWarningItem] = useState<{ payload: any; categoryName: string } | null>(null);
 
   const cartItems = useCartStore((s) => s.items);
@@ -75,7 +78,7 @@ export function MenuGrid({
         setSelectedItemId(menuItem.id);
       }
     }
-  }, [editingIndex, cartItems, items]);
+  }, [editingIndex, cartItems, items, setSelectedItemId]);
 
   const handleCloseModal = () => {
     setSelectedItemId(null);
@@ -172,8 +175,8 @@ export function MenuGrid({
       className={`
         w-full max-w-7xl mx-auto
         ${gridClasses}
-        px-4 ${cartItems.length > 0 ? "pb-32" : "pb-12"}
-        md:px-6 md:pt-4
+        px-4 pb-28
+        md:px-6 md:pt-4 ${cartItems.length > 0 ? "md:pb-32" : "md:pb-12"}
         lg:px-8 lg:pt-5 ${cartItems.length > 0 ? "lg:pb-32" : "lg:pb-12"}
         xl:px-10
       `}

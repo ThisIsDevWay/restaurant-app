@@ -2,6 +2,7 @@
 
 import { Minus, Plus, X } from "lucide-react";
 import { formatBs } from "@/lib/money";
+import { Stepper } from "@/components/ui/Stepper";
 
 interface ModalFooterProps {
   quantity: number;
@@ -27,13 +28,13 @@ export function ModalFooter({
   return (
     <div className="shrink-0 border-t border-border/60 bg-bg-card px-5 py-5 shadow-[0_-8px_20px_rgba(37,26,7,0.03)]">
       <div className="mb-5 flex flex-col items-center justify-center gap-2">
-        <div className="flex items-center justify-center gap-6">
+        {/* Desktop Stepper (unchanged circular buttons) */}
+        <div className="hidden md:flex items-center justify-center gap-6">
           <button
             onClick={() => onQuantityChange((q) => Math.max(1, q - 1))}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface-section/40 text-text-main transition-all hover:bg-surface-section active:scale-90"
             aria-label="Reducir cantidad"
           >
-            <X className="hidden" /> {/* Placeholder to match plus if needed, but using icons directly */}
             <Minus className="h-4 w-4 stroke-[2.5]" />
           </button>
           <span className="w-10 text-center text-xl font-black tracking-tight text-[#251a07] font-display">
@@ -48,6 +49,17 @@ export function ModalFooter({
             <Plus className="h-4 w-4 stroke-[2.5]" />
           </button>
         </div>
+
+        {/* Mobile Stepper (Unified Pill Stepper) */}
+        <div className="md:hidden flex justify-center">
+          <Stepper
+            value={quantity}
+            min={1}
+            max={maxQuantityPerItem}
+            onChange={(val) => onQuantityChange(() => val)}
+          />
+        </div>
+
         {quantity > 1 && (
           <span className="max-w-[280px] animate-in slide-in-from-bottom-1 fade-in text-center text-[10px] font-bold uppercase tracking-wider text-text-muted/60 duration-300">
             Cada plato se añade individualmente

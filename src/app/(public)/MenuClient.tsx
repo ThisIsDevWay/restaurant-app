@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { MenuGrid } from "@/components/public/menu/MenuGrid";
 import { MenuHeader } from "@/components/public/menu/MenuHeader";
+import { PlatoDelDiaBanner } from "@/components/public/menu/PlatoDelDiaBanner";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItemWithComponents as MenuItem } from "@/types/menu.types";
 import { useMenuAvailability } from "@/hooks/useMenuAvailability";
@@ -51,6 +52,7 @@ interface MenuClientProps {
   restaurantName?: string;
   branchName?: string | null;
   scheduleText?: string | null;
+  businessHours?: { days: number[]; open: string; close: string } | null;
   instagramUrl?: string | null;
   showRate?: boolean;
   rateData?: {
@@ -76,12 +78,15 @@ export function MenuClient({
   restaurantName = "G&M",
   branchName = null,
   scheduleText = null,
+  businessHours = null,
   instagramUrl = null,
   showRate = false,
   rateData = null,
 }: MenuClientProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [availabilityMap, setAvailabilityMap] = useState<Map<string, boolean>>(new Map());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const cartItems = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const recalculateBsPrices = useCartStore((s) => s.recalculateBsPrices);
@@ -115,9 +120,20 @@ export function MenuClient({
 
   useMenuAvailability(handleAvailabilityChange);
 
-  const filteredItems = activeCategory
-    ? items.filter((i) => i.categoryId === activeCategory)
-    : items;
+  const filteredItems = items.filter((i) => {
+    const matchesCategory = !activeCategory || i.categoryId === activeCategory;
+    const matchesSearch = !searchQuery ||
+      i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (i.description && i.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
+
+  const showBanners = activeCategory === null && searchQuery === "";
+  const platoDelDiaItem =
+    items.find(item => item.isPlatoDelDia && item.isAvailable) ||
+    items.find(item => item.imageUrl && item.isAvailable) ||
+    items.find(item => item.isAvailable) ||
+    null;
 
   return (
     <>
@@ -128,14 +144,28 @@ export function MenuClient({
           restaurantName={restaurantName}
           branchName={branchName}
           scheduleText={scheduleText}
+          businessHours={businessHours}
           categories={categories}
           activeCategoryId={activeCategory}
           onCategoryChange={setActiveCategory}
           instagramUrl={instagramUrl}
           showRate={showRate}
           rateData={rateData}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
         />
       </div>
+
+      {showBanners && (
+        <>
+          <PlatoDelDiaBanner
+            item={platoDelDiaItem}
+            rate={rate}
+            onOpenDetail={setSelectedItemId}
+          />
+        </>
+      )}
+
       {items.length > 0 ? (
         <MenuGrid
           items={filteredItems}
@@ -148,6 +178,8 @@ export function MenuClient({
           maxQuantityPerItem={maxQuantityPerItem}
           menuLayout={menuLayout}
           availabilityMap={availabilityMap}
+          selectedItemId={selectedItemId}
+          onSelectedItemIdChange={setSelectedItemId}
         />
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-center px-4 animate-in fade-in zoom-in-95 duration-500">
