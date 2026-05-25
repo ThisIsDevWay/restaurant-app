@@ -29,6 +29,7 @@ export interface DailyMenuClientProps {
   dailyContornoIds: string[];
   selectedDate: string;
   today: string;
+  platoDelDiaItemId: string | null;
 }
 
 export const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];

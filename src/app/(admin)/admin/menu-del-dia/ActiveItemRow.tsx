@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { X, Settings2 } from "lucide-react";
+import { X, Settings2, Star } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type {
@@ -19,6 +19,8 @@ interface ActiveItemRowProps {
   onToggleContorno: (contornoId: string, name: string) => void;
   onUpdateContornoSettings: (contornoId: string, updates: Partial<ContornoSelection>) => void;
   onRemove: (id: string) => void;
+  isPlatoDelDia: boolean;
+  onSetPlatoDelDia: () => void;
 }
 
 export function ActiveItemRow({
@@ -30,9 +32,14 @@ export function ActiveItemRow({
   onToggleContorno,
   onUpdateContornoSettings,
   onRemove,
+  isPlatoDelDia,
+  onSetPlatoDelDia,
 }: ActiveItemRowProps) {
   return (
-    <div className="flex flex-col gap-2.5 rounded-2xl border border-border bg-white p-3">
+    <div className={cn(
+      "flex flex-col gap-2.5 rounded-2xl border bg-white p-3 transition-colors",
+      isPlatoDelDia ? "border-amber-300 bg-amber-50/40" : "border-border",
+    )}>
       {/* Top row */}
       <div className="flex items-center gap-2.5">
         {item.imageUrl ? (
@@ -49,6 +56,21 @@ export function ActiveItemRow({
         <p className="min-w-0 flex-1 truncate text-[13px] font-bold text-text-main">
           {item.name}
         </p>
+        <button
+          type="button"
+          onClick={onSetPlatoDelDia}
+          aria-label={isPlatoDelDia ? "Quitar como plato del día" : "Marcar como plato del día"}
+          title={isPlatoDelDia ? "Plato del día activo — clic para quitar" : "Marcar como plato del día"}
+          className={cn(
+            "flex shrink-0 items-center gap-1 rounded-lg border px-2 py-[3px] text-[10.5px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50",
+            isPlatoDelDia
+              ? "border-amber-400 bg-amber-50 text-amber-600 hover:bg-amber-100"
+              : "border-border text-text-muted hover:border-amber-300 hover:bg-amber-50 hover:text-amber-500",
+          )}
+        >
+          <Star size={10} className={isPlatoDelDia ? "fill-amber-500 text-amber-500" : ""} />
+          {isPlatoDelDia ? "Plato del día" : "Destacar"}
+        </button>
         <button
           type="button"
           onClick={() => onRemove(item.id)}

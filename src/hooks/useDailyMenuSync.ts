@@ -18,6 +18,7 @@ export interface UseDailyMenuSyncParams {
   dailyAdicionalIds: string[];
   dailyBebidaIds: string[];
   dailyContornoIds: string[];
+  platoDelDiaItemId: string | null;
   isDirty: boolean;
   setIsDirty: React.Dispatch<React.SetStateAction<boolean>>;
   copyDate: string;
@@ -41,6 +42,7 @@ export function useDailyMenuSync({
   dailyAdicionalIds,
   dailyBebidaIds,
   dailyContornoIds,
+  platoDelDiaItemId,
   isDirty,
   setIsDirty,
   copyDate,
@@ -57,7 +59,7 @@ export function useDailyMenuSync({
     startTransition(async () => {
       try {
         await Promise.all([
-          syncDailyMenuAction({ date: selectedDate, menuItemIds: dailyItemIds })
+          syncDailyMenuAction({ date: selectedDate, menuItemIds: dailyItemIds, platoDelDiaId: platoDelDiaItemId })
             .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación menú"); return r; }),
           syncDailyAdicionalesAction({ date: selectedDate, adicionalIds: dailyAdicionalIds })
             .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación adicionales"); return r; }),

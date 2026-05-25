@@ -23,6 +23,7 @@ export function DailyMenuClient({
   dailyContornoIds: initialDailyContornoIds,
   selectedDate: initialDate,
   today,
+  platoDelDiaItemId: initialPlatoDelDiaItemId,
 }: DailyMenuClientProps) {
   const state = useDailyMenuState({
     allItems,
@@ -31,6 +32,7 @@ export function DailyMenuClient({
     initialDailyBebidaIds,
     initialDailyContornoIds,
     initialDate,
+    initialPlatoDelDiaItemId,
   });
 
   const sync = useDailyMenuSync({
@@ -40,6 +42,7 @@ export function DailyMenuClient({
     dailyAdicionalIds: state.dailyAdicionalIds,
     dailyBebidaIds: state.dailyBebidaIds,
     dailyContornoIds: state.dailyContornoIds,
+    platoDelDiaItemId: state.platoDelDiaItemId,
     isDirty: state.isDirty,
     setIsDirty: state.setIsDirty,
     copyDate: state.copyDate,
@@ -53,9 +56,18 @@ export function DailyMenuClient({
   const { label: dateLabel, badge: dateBadge } = formatDateLabel(state.selectedDate, today);
 
   function handleToggle(id: string) {
-    state.setDailyItemIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    state.setDailyItemIds((prev) => {
+      const isRemoving = prev.includes(id);
+      if (isRemoving && state.platoDelDiaItemId === id) {
+        state.setPlatoDelDiaItemId(null);
+      }
+      return isRemoving ? prev.filter((x) => x !== id) : [...prev, id];
+    });
+    state.setIsDirty(true);
+  }
+
+  function handleSetPlatoDelDia(id: string | null) {
+    state.setPlatoDelDiaItemId((prev) => (prev === id ? null : id));
     state.setIsDirty(true);
   }
   function handleToggleAdicional(id: string) {
@@ -80,7 +92,12 @@ export function DailyMenuClient({
     const catItemsIds = allItems.filter((i) => i.categoryName === cat).map((i) => i.id);
     state.setDailyItemIds((prev) => {
       const allOn = catItemsIds.every((id) => prev.includes(id));
-      if (forceRemove || allOn) return prev.filter((id) => !catItemsIds.includes(id));
+      if (forceRemove || allOn) {
+        if (state.platoDelDiaItemId && catItemsIds.includes(state.platoDelDiaItemId)) {
+          state.setPlatoDelDiaItemId(null);
+        }
+        return prev.filter((id) => !catItemsIds.includes(id));
+      }
       return [...new Set([...prev, ...catItemsIds])];
     });
     state.setIsDirty(true);
@@ -173,6 +190,8 @@ export function DailyMenuClient({
           onCopyDateChange={state.setCopyDate}
           handleCopyFrom={sync.handleCopyFrom}
           copying={sync.copying}
+          platoDelDiaItemId={state.platoDelDiaItemId}
+          onSetPlatoDelDia={handleSetPlatoDelDia}
         />
       )}
       {state.activeTab === "adicionales" && (

@@ -41,6 +41,7 @@ export async function getDailyMenuItemsForDate(dateStr: string) {
       itemIsAvailable: dailyMenuItems.isAvailable,
       itemImageUrl: menuItems.imageUrl,
       itemIsPrepackaged: menuItems.isPrepackaged,
+      isPlatoDelDia: dailyMenuItems.isPlatoDelDia,
       categoryName: categories.name,
       categoryAllowAlone: categories.allowAlone,
       categoryIsSimple: categories.isSimple,
@@ -395,6 +396,7 @@ async function getDailyMenuWithOptionsAndComponentsRaw(dateStr?: string) {
     isPrepackaged: d.itemIsPrepackaged,
     imageUrl: d.itemImageUrl,
     sortOrder: d.sortOrder,
+    isPlatoDelDia: (d as any).isPlatoDelDia ?? false,
     optionGroups: optionsByItem.get(d.menuItemId) ?? [],
     adicionales: adicionalesByItem.get(d.menuItemId) ?? [],
     contornos: contornosByItem.get(d.menuItemId) ?? [],
@@ -459,4 +461,13 @@ export async function getDailyContornoIds(dateStr: string) {
     .from(dailyContornos)
     .where(eq(dailyContornos.date, dateStr));
   return rows.map((r) => r.contornoItemId);
+}
+
+export async function getDailyPlatoDelDiaItemId(dateStr: string): Promise<string | null> {
+  const rows = await db
+    .select({ menuItemId: dailyMenuItems.menuItemId })
+    .from(dailyMenuItems)
+    .where(and(eq(dailyMenuItems.date, dateStr), eq(dailyMenuItems.isPlatoDelDia, true)))
+    .limit(1);
+  return rows[0]?.menuItemId ?? null;
 }

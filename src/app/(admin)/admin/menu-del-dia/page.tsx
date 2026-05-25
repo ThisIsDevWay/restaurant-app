@@ -4,6 +4,7 @@ import {
   getDailyAdicionalIds,
   getDailyBebidaIds,
   getDailyContornoIds,
+  getDailyPlatoDelDiaItemId,
 } from "@/db/queries/daily-menu";
 import { getAllAdicionales } from "@/db/queries/adicionales";
 import { getAllBebidas } from "@/db/queries/bebidas";
@@ -29,6 +30,7 @@ export default async function DailyMenuPage({
     dailyBebidaIds,
     allContornos,
     dailyContornoIds,
+    platoDelDiaItemId,
   ] = await Promise.all([
     getMenuWithOptionsAndComponents(),
     getDailyMenuItemIds(selectedDate),
@@ -38,6 +40,7 @@ export default async function DailyMenuPage({
     getDailyBebidaIds(selectedDate),
     getAllContornos(),
     getDailyContornoIds(selectedDate),
+    getDailyPlatoDelDiaItemId(selectedDate),
   ]);
 
   return (
@@ -81,6 +84,7 @@ export default async function DailyMenuPage({
       dailyContornoIds={dailyContornoIds}
       selectedDate={selectedDate}
       today={today}
+      platoDelDiaItemId={platoDelDiaItemId}
     />
   );
 }

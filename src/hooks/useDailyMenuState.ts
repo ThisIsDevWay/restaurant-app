@@ -10,6 +10,7 @@ export interface UseDailyMenuStateParams {
   initialDailyBebidaIds: string[];
   initialDailyContornoIds: string[];
   initialDate: string;
+  initialPlatoDelDiaItemId: string | null;
 }
 
 export interface UseDailyMenuStateReturn {
@@ -37,6 +38,8 @@ export interface UseDailyMenuStateReturn {
   setIsDirty: React.Dispatch<React.SetStateAction<boolean>>;
   copying: boolean;
   setCopying: React.Dispatch<React.SetStateAction<boolean>>;
+  platoDelDiaItemId: string | null;
+  setPlatoDelDiaItemId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export function useDailyMenuState({
@@ -46,11 +49,13 @@ export function useDailyMenuState({
   initialDailyBebidaIds,
   initialDailyContornoIds,
   initialDate,
+  initialPlatoDelDiaItemId,
 }: UseDailyMenuStateParams): UseDailyMenuStateReturn {
   const [dailyItemIds, setDailyItemIds] = useState<string[]>(initialDailyItemIds);
   const [dailyAdicionalIds, setDailyAdicionalIds] = useState<string[]>(initialDailyAdicionalIds);
   const [dailyBebidaIds, setDailyBebidaIds] = useState<string[]>(initialDailyBebidaIds);
   const [dailyContornoIds, setDailyContornoIds] = useState<string[]>(initialDailyContornoIds);
+  const [platoDelDiaItemId, setPlatoDelDiaItemId] = useState<string | null>(initialPlatoDelDiaItemId);
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [search, setSearch] = useState("");
   const [activePill, setActivePill] = useState<string>("Todos");
@@ -67,9 +72,10 @@ export function useDailyMenuState({
       setDailyAdicionalIds(initialDailyAdicionalIds);
       setDailyBebidaIds(initialDailyBebidaIds);
       setDailyContornoIds(initialDailyContornoIds);
+      setPlatoDelDiaItemId(initialPlatoDelDiaItemId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialDailyItemIds, initialDailyAdicionalIds, initialDailyBebidaIds, initialDailyContornoIds]);
+  }, [initialDailyItemIds, initialDailyAdicionalIds, initialDailyBebidaIds, initialDailyContornoIds, initialPlatoDelDiaItemId]);
 
   return {
     dailyItemIds, setDailyItemIds,
@@ -84,5 +90,6 @@ export function useDailyMenuState({
     expandedItemId, setExpandedItemId,
     isDirty, setIsDirty,
     copying, setCopying,
+    platoDelDiaItemId, setPlatoDelDiaItemId,
   };
 }

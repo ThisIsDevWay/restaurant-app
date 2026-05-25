@@ -71,6 +71,7 @@ export interface MenuItemWithComponents {
   isPrepackaged: boolean;
   imageUrl: string | null;
   sortOrder: number;
+  isPlatoDelDia?: boolean;
   optionGroups: OptionGroupWithOptions[];
   adicionales: SimpleComponent[];
   bebidas: SimpleComponent[];

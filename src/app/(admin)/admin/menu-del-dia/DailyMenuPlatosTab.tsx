@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { UtensilsCrossed, Search, Copy } from "lucide-react";
+import { UtensilsCrossed, Search, Copy, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DateNavigator } from "@/components/shared/DateNavigator";
 import { CatalogItemRow } from "./CatalogItemRow";
@@ -38,6 +38,8 @@ interface DailyMenuPlatosTabProps {
   onCopyDateChange: (date: string) => void;
   handleCopyFrom: () => void;
   copying: boolean;
+  platoDelDiaItemId: string | null;
+  onSetPlatoDelDia: (id: string | null) => void;
 }
 
 const CAT_HEADER =
@@ -70,6 +72,8 @@ export function DailyMenuPlatosTab({
   onCopyDateChange,
   handleCopyFrom,
   copying,
+  platoDelDiaItemId,
+  onSetPlatoDelDia,
 }: DailyMenuPlatosTabProps) {
   const categories = useMemo(
     () => [...new Set(allItems.map((i) => i.categoryName))],
@@ -113,6 +117,12 @@ export function DailyMenuPlatosTab({
               ? `${dailyItemIds.length} plato${dailyItemIds.length !== 1 ? "s" : ""} seleccionado${dailyItemIds.length !== 1 ? "s" : ""}`
               : "Ningún plato seleccionado"}
           </p>
+          {platoDelDiaItemId && (
+            <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-amber-600">
+              <Star size={10} className="fill-amber-500 text-amber-500" />
+              {allItems.find(i => i.id === platoDelDiaItemId)?.name ?? "Plato del día"}
+            </p>
+          )}
         </div>
 
         <DateNavigator
@@ -171,6 +181,8 @@ export function DailyMenuPlatosTab({
                             handleUpdateContornoSettings(item.id, contornoId, updates)
                           }
                           onRemove={handleToggle}
+                          isPlatoDelDia={platoDelDiaItemId === item.id}
+                          onSetPlatoDelDia={() => onSetPlatoDelDia(item.id)}
                         />
                       );
                     })}

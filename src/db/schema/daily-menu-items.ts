@@ -23,6 +23,7 @@ export const dailyMenuItems = pgTable(
       .defaultNow(),
     isAvailable: boolean("is_available").notNull().default(true),
     soldOutAt: timestamp("sold_out_at", { withTimezone: true }),
+    isPlatoDelDia: boolean("is_plato_del_dia").notNull().default(false),
   },
   (t) => [unique().on(t.menuItemId, t.date)],
 );

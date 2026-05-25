@@ -11,8 +11,12 @@ import { adminActionClient } from "@/lib/safe-action";
 import * as v from "valibot";
 
 export const syncDailyMenuAction = adminActionClient
-  .schema(v.object({ date: v.string(), menuItemIds: v.array(v.string()) }))
-  .action(async ({ parsedInput: { date, menuItemIds } }) => {
+  .schema(v.object({
+    date: v.string(),
+    menuItemIds: v.array(v.string()),
+    platoDelDiaId: v.optional(v.nullable(v.string())),
+  }))
+  .action(async ({ parsedInput: { date, menuItemIds, platoDelDiaId } }) => {
     try {
       await db.transaction(async (tx) => {
         await tx.delete(dailyMenuItems).where(eq(dailyMenuItems.date, date));
@@ -23,6 +27,7 @@ export const syncDailyMenuAction = adminActionClient
               menuItemId: id,
               date,
               sortOrder: index,
+              isPlatoDelDia: platoDelDiaId != null && id === platoDelDiaId,
             }))
           );
         }
@@ -148,6 +153,7 @@ export const copyDailyMenuFromAction = adminActionClient
             .select({
               menuItemId: dailyMenuItems.menuItemId,
               sortOrder: dailyMenuItems.sortOrder,
+              isPlatoDelDia: dailyMenuItems.isPlatoDelDia,
             })
             .from(dailyMenuItems)
             .where(eq(dailyMenuItems.date, fromDate)),
@@ -187,6 +193,7 @@ export const copyDailyMenuFromAction = adminActionClient
               menuItemId: i.menuItemId,
               date: toDate,
               sortOrder: i.sortOrder,
+              isPlatoDelDia: i.isPlatoDelDia,
             }))
           );
         if (ads.length > 0)
