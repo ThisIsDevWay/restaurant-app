@@ -39,6 +39,13 @@ export const settingsSchema = v.object({
   coverImageUrl: v.optional(v.string()),
   branchName: v.optional(v.string()),
   scheduleText: v.optional(v.string()),
+  businessHours: v.optional(
+    v.object({
+      days: v.array(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(6))),
+      open: v.string(),
+      close: v.string(),
+    }),
+  ),
   orderModeOnSiteEnabled: v.optional(v.boolean()),
   orderModeTakeAwayEnabled: v.optional(v.boolean()),
   orderModeDeliveryEnabled: v.optional(v.boolean()),

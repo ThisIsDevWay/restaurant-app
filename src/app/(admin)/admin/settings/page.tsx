@@ -56,6 +56,7 @@ export default async function SettingsPage() {
               coverImageUrl: settings.coverImageUrl ?? "",
               branchName: settings.branchName ?? "",
               scheduleText: settings.scheduleText ?? "",
+              businessHours: settings.businessHours ?? { days: [], open: "", close: "" },
               adicionalesEnabled: settings.adicionalesEnabled ?? true,
               bebidasEnabled: settings.bebidasEnabled ?? true,
               orderModeOnSiteEnabled: settings.orderModeOnSiteEnabled ?? true,

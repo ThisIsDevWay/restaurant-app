@@ -98,6 +98,66 @@ export function SettingsDesignTab({ form, updateField, errors = {} }: SettingsDe
                         />
                     </div>
                 </div>
+
+                {/* Horario de atención — alimenta el indicador "Abierto/Cerrado" del menú */}
+                <div className="mt-6 pt-6 border-t border-border/50">
+                    <Label className="flex items-center gap-1.5 mb-1">
+                        <Clock className="h-4 w-4 text-text-muted" />
+                        Horario de atención (estado Abierto / Cerrado)
+                    </Label>
+                    <p className="text-xs text-text-muted mb-4">
+                        Marca los días que abres y la hora de apertura/cierre. Si lo dejas vacío, no se mostrará el indicador.
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map((label, idx) => {
+                            const active = form.businessHours.days.includes(idx);
+                            return (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                        const days = active
+                                            ? form.businessHours.days.filter((d) => d !== idx)
+                                            : [...form.businessHours.days, idx].sort((a, b) => a - b);
+                                        updateField("businessHours", { ...form.businessHours, days });
+                                    }}
+                                    className={cn(
+                                        "h-9 min-w-11 px-3 rounded-xl text-sm font-bold border transition-all active:scale-95",
+                                        active
+                                            ? "bg-primary text-white border-primary shadow-sm"
+                                            : "bg-bg-app text-text-muted border-border/60 hover:bg-muted",
+                                    )}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 max-w-sm">
+                        <div className="space-y-2">
+                            <Label htmlFor="openTime">Apertura</Label>
+                            <Input
+                                id="openTime"
+                                type="time"
+                                value={form.businessHours.open}
+                                onChange={(e) => updateField("businessHours", { ...form.businessHours, open: e.target.value })}
+                                className="rounded-xl border-border/60 focus-visible:ring-primary/20"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="closeTime">Cierre</Label>
+                            <Input
+                                id="closeTime"
+                                type="time"
+                                value={form.businessHours.close}
+                                onChange={(e) => updateField("businessHours", { ...form.businessHours, close: e.target.value })}
+                                className="rounded-xl border-border/60 focus-visible:ring-primary/20"
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="bg-white rounded-2xl p-6 md:p-8 shadow-card border border-border">

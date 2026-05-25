@@ -47,6 +47,7 @@ export interface SettingsFormData {
   coverImageUrl: string;
   branchName: string;
   scheduleText: string;
+  businessHours: { days: number[]; open: string; close: string };
   orderModeOnSiteEnabled: boolean;
   orderModeTakeAwayEnabled: boolean;
   orderModeDeliveryEnabled: boolean;

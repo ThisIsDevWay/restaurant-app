@@ -55,6 +55,11 @@ export const settings = pgTable("settings", {
   coverImageUrl: text("cover_image_url"),
   branchName: text("branch_name"),
   scheduleText: text("schedule_text"),
+  businessHours: jsonb("business_hours").$type<{
+    days: number[];
+    open: string;
+    close: string;
+  } | null>(),
   orderModeOnSiteEnabled: boolean("order_mode_on_site_enabled").notNull().default(true),
   orderModeTakeAwayEnabled: boolean("order_mode_take_away_enabled").notNull().default(true),
   orderModeDeliveryEnabled: boolean("order_mode_delivery_enabled").notNull().default(true),

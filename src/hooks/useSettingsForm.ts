@@ -54,6 +54,7 @@ const DEFAULT_FORM: SettingsFormData = {
   coverImageUrl: "",
   branchName: "",
   scheduleText: "",
+  businessHours: { days: [], open: "", close: "" },
   orderModeOnSiteEnabled: true,
   orderModeTakeAwayEnabled: true,
   orderModeDeliveryEnabled: true,
