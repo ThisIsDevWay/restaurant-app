@@ -23,6 +23,7 @@ export interface CartItem {
   id: string;
   name: string;
   emoji: string;
+  imageUrl?: string | null;
   baseUsdCents: number;
   baseBsCents: number;
   fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;

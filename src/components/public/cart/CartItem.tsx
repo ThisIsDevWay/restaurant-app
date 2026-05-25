@@ -24,6 +24,14 @@ const T = {
    HELPERS
 ───────────────────────────────────────────── */
 /**
+ * Strip internal category annotations like "(Contorno)", "(Adicional)",
+ * "(Bebida)" appended by the DB / menu service so they never appear in the UI.
+ */
+function cleanLabel(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
+/**
  * Compute the USD total for a single cart line.
  * Formula mirrors cartStore.computeItemUsdCents exactly:
  *   (base + fixedContornos + substitutions − removals) × quantity
@@ -478,13 +486,12 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
                 <CatLabel>Contornos</CatLabel>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                   {fixedContornos.map((c) => (
-                    <Pill key={c.id} variant="default">{c.name}</Pill>
+                    <Pill key={c.id} variant="default">{cleanLabel(c.name)}</Pill>
                   ))}
                   {substitutions.map((s, i) => (
                     <Pill key={i} variant="swap">
-                      <span style={{ textDecoration: "line-through", opacity: 0.5, fontSize: 9 }}>{s.originalName}</span>
-                      <span style={{ opacity: 0.5, fontSize: 9 }}>→</span>
-                      {s.substituteName}
+                      <span style={{ fontWeight: 700 }}>{cleanLabel(s.substituteName)}</span>
+                      <span style={{ opacity: 0.45, fontSize: 9, fontStyle: "italic", fontWeight: 500 }}>en lugar de {cleanLabel(s.originalName)}</span>
                     </Pill>
                   ))}
                 </div>
@@ -497,7 +504,7 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                   {removals.map((r) => (
                     <Pill key={r.componentId} variant="remove">
-                      <span style={{ fontStyle: "italic" }}>{r.name}</span>
+                      <span style={{ fontStyle: "italic" }}>{cleanLabel(r.name)}</span>
                     </Pill>
                   ))}
                 </div>
@@ -511,7 +518,7 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
                   {adicionales.map((ad) => (
                     <Pill key={ad.id} variant="extra">
                       <span style={{ fontFamily: T.fontDisplay, fontWeight: 800 }}>{ad.quantity ?? 1}×</span>
-                      {ad.name}
+                      {cleanLabel(ad.name)}
                       {ad.priceBsCents > 0 && (
                         <span style={{ opacity: 0.7, fontSize: 9 }}>
                           +{formatBs(ad.priceBsCents * (ad.quantity ?? 1))}
@@ -530,7 +537,7 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
                   {bebidas.map((b) => (
                     <Pill key={b.id} variant="bebida">
                       <span style={{ fontFamily: T.fontDisplay, fontWeight: 800 }}>{b.quantity ?? 1}×</span>
-                      {b.name}
+                      {cleanLabel(b.name)}
                       {b.priceBsCents > 0 && (
                         <span style={{ opacity: 0.7, fontSize: 9 }}>
                           +{formatBs(b.priceBsCents * (b.quantity ?? 1))}

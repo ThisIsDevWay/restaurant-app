@@ -69,12 +69,23 @@ function TaxRow({ label, value }: { label: string; value: string }) {
 /* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
-export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number }) {
+export function Cart({
+  maxQuantityPerItem = 10,
+  dailyAdicionales = [],
+  dailyBebidas = [],
+  rate = null,
+}: {
+  maxQuantityPerItem?: number;
+  dailyAdicionales?: any[];
+  dailyBebidas?: any[];
+  rate?: number | null;
+}) {
   const items = useCartStore((s) => s.items);
   const mounted = useCartStore((s) => s.mounted);
   const setMounted = useCartStore((s) => s.setMounted);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
+  const addItem = useCartStore((s) => s.addItem);
   const totalBsCents = useCartStore((s) => s.totalBsCents());
   const totalUsdCents = useCartStore((s) => s.totalUsdCents());
   const isDrawerOpen = useCartStore((s) => s.isDrawerOpen);
@@ -123,7 +134,7 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
       {/* ────────────────────────────────────────
           BOTTOM BAR
       ──────────────────────────────────────── */}
-      <div className={`fixed z-40 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+      <div className={`hidden md:block fixed z-40 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
         bottom-0 left-0 right-0 p-[10px_16px_16px] rounded-none
         lg:bottom-6 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:w-[420px] lg:rounded-2xl lg:p-[12px_16px] lg:border lg:border-primary/10
         ${barVisible ? 'translate-y-0 lg:translate-y-0' : 'translate-y-full lg:translate-y-[150%]'}
@@ -339,6 +350,100 @@ export function Cart({ maxQuantityPerItem = 10 }: { maxQuantityPerItem?: number 
                 onEdit={handleEdit}
               />
             ))}
+
+            {/* Upsell list when cart has 1-2 items */}
+            {items.length >= 1 && items.length <= 2 && (dailyAdicionales.length > 0 || dailyBebidas.length > 0) && (
+              <div style={{
+                marginTop: 16,
+                padding: "16px 12px",
+                background: T.cream,
+                borderRadius: 16,
+                border: `1.5px dashed ${T.creamLow}`,
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+              }}>
+                <p style={{
+                  fontFamily: T.fontDisplay,
+                  fontSize: 13,
+                  fontWeight: 900,
+                  color: T.ink,
+                  letterSpacing: "-0.01em",
+                }}>
+                  Súmale algo a tu pedido 😋
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[...dailyBebidas.filter(b => b.isAvailable).slice(0, 2), ...dailyAdicionales.filter(a => a.isAvailable).slice(0, 2)].map((opt) => {
+                    const isDrink = dailyBebidas.some(b => b.id === opt.id);
+                    const optPriceBs = rate ? Math.round(opt.priceUsdCents * rate) : 0;
+                    
+                    // Check if already in cart
+                    const inCart = items.some(i => i.id === opt.id);
+                    if (inCart) return null;
+
+                    return (
+                      <div
+                        key={opt.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          background: T.surface,
+                          padding: "10px 12px",
+                          borderRadius: 12,
+                          boxShadow: "0 1px 3px rgba(37,26,7,0.04)",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 18 }}>{isDrink ? "🥤" : "🍟"}</span>
+                          <div style={{ display: "flex", flexDirection: "column" }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: T.ink }}>{opt.name}</span>
+                            <span style={{ fontSize: 10, color: T.muted, fontWeight: 500 }}>
+                              {formatBs(optPriceBs)} / {formatRef(opt.priceUsdCents)}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const payload = {
+                              id: opt.id,
+                              name: opt.name,
+                              baseUsdCents: opt.priceUsdCents,
+                              baseBsCents: optPriceBs,
+                              isPrepackaged: opt.isPrepackaged,
+                              emoji: isDrink ? "🥤" : "🍟",
+                              fixedContornos: [],
+                              contornoSubstitutions: [],
+                              selectedAdicionales: [],
+                              selectedBebidas: [],
+                              removedComponents: [],
+                              categoryAllowAlone: true,
+                              categoryIsSimple: true,
+                              categoryName: isDrink ? "Bebidas" : "Adicionales",
+                            };
+                            addItem(payload);
+                            if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
+                          }}
+                          style={{
+                            background: "transparent",
+                            border: `1.5px solid ${T.primary}`,
+                            color: T.primary,
+                            borderRadius: 20,
+                            padding: "4px 12px",
+                            fontSize: 11,
+                            fontWeight: 800,
+                            cursor: "pointer",
+                            fontFamily: T.fontDisplay,
+                          }}
+                        >
+                          Agregar
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── STICKY FOOTER ── */}
