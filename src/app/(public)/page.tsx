@@ -1,3 +1,10 @@
+// La página del menú es dinámica: los settings (portada, logo, nombre) y el menú
+// del día cambian en tiempo real. Los queries individuales usan unstable_cache con
+// tags propios — la DB solo se consulta cada 300 s o cuando se invalidan los tags.
+// NO usar static pre-render porque los settings bakeados en build time quedan
+// desactualizados y el usuario ve header vacío hasta hacer "Guardar" en settings.
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { getDailyMenuWithOptionsAndComponents } from "@/db/queries/daily-menu";
 import { getCategories } from "@/db/queries/menu";
