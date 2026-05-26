@@ -427,6 +427,19 @@ export function getDailyMenuWithOptionsAndComponents(dateStr?: string) {
   return getDailyMenuCached(today);
 }
 
+/**
+ * Uncached variant for the internal POS (waiter/caja). Bypasses the 300s
+ * unstable_cache so the staff always renders the live daily menu; realtime
+ * pushes subsequent changes. Never use this for the public catalog.
+ */
+export function getDailyMenuWithOptionsAndComponentsFresh(dateStr?: string) {
+  const today = dateStr ?? new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Caracas",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  return getDailyMenuWithOptionsAndComponentsRaw(today);
+}
+
 export function invalidateDailyMenuCache() {
   revalidateTag("daily-menu");
 }

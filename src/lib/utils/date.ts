@@ -3,9 +3,17 @@
  * Vercel servers run UTC; without this, dates flip at 8:00 PM VET.
  */
 export function todayCaracas(): string {
-    return new Intl.DateTimeFormat("en-CA", {
+    const formatter = new Intl.DateTimeFormat("en-US", {
         timeZone: "America/Caracas",
-    }).format(new Date());
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
+    const parts = formatter.formatToParts(new Date());
+    const year = parts.find((p) => p.type === "year")?.value;
+    const month = parts.find((p) => p.type === "month")?.value;
+    const day = parts.find((p) => p.type === "day")?.value;
+    return `${year}-${month}-${day}`;
 }
 
 const WEEKDAY_INDEX: Record<string, number> = {

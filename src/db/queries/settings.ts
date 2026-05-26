@@ -27,6 +27,11 @@ export function invalidateSettingsCache() {
   revalidatePath("/");
 }
 
+/** Uncached settings read for the internal POS (waiter/caja). */
+export function getSettingsFresh() {
+  return getSettingsRaw();
+}
+
 export async function getActiveRate(): Promise<{ rate: number; fetchedAt: string; currency: string } | null> {
   const s = await getSettings();
   if (!s) return null;

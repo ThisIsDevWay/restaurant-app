@@ -1,11 +1,12 @@
-import { getDailyMenuWithOptionsAndComponents } from "@/db/queries/daily-menu";
+import { getDailyMenuWithOptionsAndComponentsFresh } from "@/db/queries/daily-menu";
 import { getCategories } from "@/db/queries/menu";
-import { getAllContornos } from "@/db/queries/contornos";
-import { getActiveRate, getSettings } from "@/db/queries/settings";
+import { getActiveRate, getSettingsFresh } from "@/db/queries/settings";
 import { getAllTables } from "@/db/queries/restaurant-tables";
 import { getAllFixtures } from "@/db/queries/floor-fixtures";
 import { getKitchenOrdersSimple } from "@/db/queries/orders";
-import { WaiterOrderClient } from "@/components/waiter/WaiterOrderClient";
+import { WaiterClient } from "@/components/waiter/WaiterClient";
+
+export const dynamic = "force-dynamic";
 
 export default async function WaiterPage({
   searchParams,
@@ -18,24 +19,23 @@ export default async function WaiterPage({
   const todayCaracas = new Date().toLocaleDateString("en-CA", { timeZone: "America/Caracas" }); // YYYY-MM-DD
   const todayStart = new Date(`${todayCaracas}T00:00:00-04:00`);
 
-  const [dailyMenuData, categories, rateData, allContornos, settings, tables, fixtures, activeOrders] = await Promise.all([
-    getDailyMenuWithOptionsAndComponents().catch(() => ({ items: [], dailyAdicionales: [], dailyBebidas: [] })),
+  const [dailyMenuData, categories, rateData, settings, tables, fixtures, activeOrders] = await Promise.all([
+    getDailyMenuWithOptionsAndComponentsFresh().catch(() => ({ items: [], dailyAdicionales: [], dailyBebidas: [], dailyContornos: [] })),
     getCategories().catch(() => []),
     getActiveRate().catch(() => null),
-    getAllContornos().catch(() => []),
-    getSettings().catch(() => null),
+    getSettingsFresh().catch(() => null),
     getAllTables().catch(() => []),
     getAllFixtures().catch(() => []),
     getKitchenOrdersSimple(todayStart, true).catch(() => []),
   ]);
 
   return (
-    <WaiterOrderClient
+    <WaiterClient
       items={dailyMenuData.items}
       categories={categories.filter(c => c.isAvailable)}
       dailyAdicionales={dailyMenuData.dailyAdicionales}
       dailyBebidas={dailyMenuData.dailyBebidas}
-      allContornos={allContornos}
+      allContornos={dailyMenuData.dailyContornos ?? []}
       rate={rateData?.rate ?? 0}
       settings={settings}
       prefilledTable={prefilledTable}

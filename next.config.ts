@@ -16,7 +16,18 @@ function getSupabaseDomain(): string {
   }
 }
 
+function getSupabaseRealtimeDomain(): string {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  try {
+    const parsed = new URL(url);
+    return `wss://${parsed.host}`;
+  } catch {
+    return "";
+  }
+}
+
 const supabaseDomain = getSupabaseDomain();
+const supabaseRealtimeDomain = getSupabaseRealtimeDomain();
 
 const nextConfig: NextConfig = {
   images: {
@@ -34,8 +45,9 @@ const nextConfig: NextConfig = {
     const cspMediaSrc = supabaseDomain
       ? `'self' data: blob: ${supabaseDomain}`
       : "'self' data: blob:";
+    const realtimeDomainStr = supabaseRealtimeDomain ? ` ${supabaseRealtimeDomain}` : "";
     const cspConnectSrc = supabaseDomain
-      ? `'self' ${supabaseDomain} https://*.sentry.io wss://38.171.255.120`
+      ? `'self' ${supabaseDomain}${realtimeDomainStr} https://*.sentry.io wss://38.171.255.120`
       : "'self' https://*.sentry.io wss://38.171.255.120";
 
     return [

@@ -9,12 +9,15 @@ async function fetchActiveOrders(): Promise<any[]> {
 /**
  * Órdenes activas del día con refresco automático, para que los paneles de
  * /waiter y /caja muestren los pedidos de los meseros casi en tiempo real.
+ *
+ * When `realtimeEnabled` is true, polling is disabled — refetches are driven
+ * by the `useOrdersRealtime` hook calling `refetch()` on demand.
  */
-export function useActiveOrders(initialData: any[]) {
+export function useActiveOrders(initialData: any[], realtimeEnabled = false) {
   return useQuery({
     queryKey: ["active-orders"],
     queryFn: fetchActiveOrders,
-    refetchInterval: 8000,
+    refetchInterval: realtimeEnabled ? false : 8000,
     initialData,
   });
 }

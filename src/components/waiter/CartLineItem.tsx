@@ -45,11 +45,16 @@ interface CartLineItemProps {
   item: CartItem;
   index: number;
   onEdit: () => void;
+  /** POS screens pass their own store actions; public cart falls back to useCartStore. */
+  onUpdateQuantity?: (index: number, quantity: number) => void;
+  onRemove?: (index: number) => void;
 }
 
-export function CartLineItem({ item, index, onEdit }: CartLineItemProps) {
-  const updateQuantity = useCartStore((s) => s.updateQuantity);
-  const removeItem = useCartStore((s) => s.removeItem);
+export function CartLineItem({ item, index, onEdit, onUpdateQuantity, onRemove }: CartLineItemProps) {
+  const storeUpdateQuantity = useCartStore((s) => s.updateQuantity);
+  const storeRemoveItem = useCartStore((s) => s.removeItem);
+  const updateQuantity = onUpdateQuantity ?? storeUpdateQuantity;
+  const removeItem = onRemove ?? storeRemoveItem;
 
   const fixedContornos = item.fixedContornos ?? [];
   const substitutions = item.contornoSubstitutions ?? [];
