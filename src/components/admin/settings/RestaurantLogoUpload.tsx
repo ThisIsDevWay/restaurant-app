@@ -2,14 +2,17 @@
 
 import { useRef, useState } from "react";
 import { ImageIcon, Upload, Trash2, Loader2 } from "lucide-react";
-import { uploadLogoAction } from "@/actions/settings";
+import { getImagekitAuthAction, deleteImagekitFileAction } from "@/actions/imagekit";
+import { toOriginalUrl } from "@/lib/imagekit/utils";
+import { IMAGEKIT_FOLDERS } from "@/lib/imagekit/folders";
 
 interface RestaurantLogoUploadProps {
     logoUrl: string;
-    onLogoChange: (url: string) => void;
+    logoImagekitFileId: string;
+    onLogoChange: (url: string, fileId: string) => void;
 }
 
-export function RestaurantLogoUpload({ logoUrl, onLogoChange }: RestaurantLogoUploadProps) {
+export function RestaurantLogoUpload({ logoUrl, logoImagekitFileId, onLogoChange }: RestaurantLogoUploadProps) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -30,30 +33,39 @@ export function RestaurantLogoUpload({ logoUrl, onLogoChange }: RestaurantLogoUp
                 quality: 0.9,
             });
 
-            // 1. Get signed upload URL from action
-            const result = await uploadLogoAction({ fileName: optimizedFile.name });
+            // Delete old logo from ImageKit before uploading new one
+            if (logoImagekitFileId) {
+                deleteImagekitFileAction({ fileId: logoImagekitFileId }).catch(() => {});
+            }
 
-            if (!result?.data?.success) {
+            const authResult = await getImagekitAuthAction({});
+            if (!authResult?.data) {
                 setError("No se pudo generar la URL de subida");
                 return;
             }
+            const { token, expire, signature, publicKey } = authResult.data;
 
-            const { signedUrl, publicUrl } = result.data;
+            const formData = new FormData();
+            formData.append("file", optimizedFile);
+            formData.append("fileName", optimizedFile.name);
+            formData.append("folder", IMAGEKIT_FOLDERS.branding);
+            formData.append("useUniqueFileName", "true");
+            formData.append("publicKey", publicKey);
+            formData.append("signature", signature);
+            formData.append("expire", String(expire));
+            formData.append("token", token);
 
-            // 2. Upload file directly via signed URL
-            const uploadRes = await fetch(signedUrl, {
-                method: "PUT",
-                headers: { "Content-Type": optimizedFile.type },
-                body: optimizedFile,
+            const uploadRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+                method: "POST",
+                body: formData,
             });
 
             if (!uploadRes.ok) {
                 setError("Error al subir el archivo");
                 return;
             }
-
-            // 3. Propagate public URL to parent form
-            onLogoChange(publicUrl);
+            const uploadData = (await uploadRes.json()) as { url: string; fileId: string };
+            onLogoChange(toOriginalUrl(uploadData.url), uploadData.fileId);
         } catch {
             setError("Error inesperado al subir el logo");
         } finally {
@@ -64,7 +76,7 @@ export function RestaurantLogoUpload({ logoUrl, onLogoChange }: RestaurantLogoUp
     }
 
     function handleRemove() {
-        onLogoChange("");
+        onLogoChange("", "");
         if (fileInputRef.current) fileInputRef.current.value = "";
     }
 

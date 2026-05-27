@@ -76,7 +76,7 @@ function DesktopSidebar({ restaurantName, logoUrl }: { restaurantName: string; l
               )}
             </Link>
           </TooltipTrigger>
-          <TooltipContent side="right">{restaurantName} Restaurante</TooltipContent>
+          <TooltipContent side="right">{restaurantName}</TooltipContent>
         </Tooltip>
 
         {/* Main Nav */}

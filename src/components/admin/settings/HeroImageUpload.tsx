@@ -2,14 +2,17 @@
 
 import { useRef, useState } from "react";
 import { ImageIcon, Upload, Trash2, Loader2, ImagePlus } from "lucide-react";
-import { uploadHeroImageAction } from "@/actions/settings";
+import { getImagekitAuthAction, deleteImagekitFileAction } from "@/actions/imagekit";
+import { toOriginalUrl } from "@/lib/imagekit/utils";
+import { IMAGEKIT_FOLDERS } from "@/lib/imagekit/folders";
 
 interface HeroImageUploadProps {
     coverImageUrl: string;
-    onImageChange: (url: string) => void;
+    coverImagekitFileId: string;
+    onImageChange: (url: string, fileId: string) => void;
 }
 
-export function HeroImageUpload({ coverImageUrl, onImageChange }: HeroImageUploadProps) {
+export function HeroImageUpload({ coverImageUrl, coverImagekitFileId, onImageChange }: HeroImageUploadProps) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -30,30 +33,39 @@ export function HeroImageUpload({ coverImageUrl, onImageChange }: HeroImageUploa
                 quality: 0.85,
             });
 
-            // 1. Get signed upload URL from action
-            const result = await uploadHeroImageAction({ fileName: optimizedFile.name });
+            // Delete old cover image from ImageKit before uploading new one
+            if (coverImagekitFileId) {
+                deleteImagekitFileAction({ fileId: coverImagekitFileId }).catch(() => {});
+            }
 
-            if (!result?.data?.success) {
+            const authResult = await getImagekitAuthAction({});
+            if (!authResult?.data) {
                 setError("No se pudo generar la URL de subida");
                 return;
             }
+            const { token, expire, signature, publicKey } = authResult.data;
 
-            const { signedUrl, publicUrl } = result.data;
+            const formData = new FormData();
+            formData.append("file", optimizedFile);
+            formData.append("fileName", optimizedFile.name);
+            formData.append("folder", IMAGEKIT_FOLDERS.branding);
+            formData.append("useUniqueFileName", "true");
+            formData.append("publicKey", publicKey);
+            formData.append("signature", signature);
+            formData.append("expire", String(expire));
+            formData.append("token", token);
 
-            // 2. Upload file directly via signed URL
-            const uploadRes = await fetch(signedUrl, {
-                method: "PUT",
-                headers: { "Content-Type": optimizedFile.type },
-                body: optimizedFile,
+            const uploadRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+                method: "POST",
+                body: formData,
             });
 
             if (!uploadRes.ok) {
                 setError("Error al subir el archivo");
                 return;
             }
-
-            // 3. Propagate public URL to parent form
-            onImageChange(publicUrl);
+            const uploadData = (await uploadRes.json()) as { url: string; fileId: string };
+            onImageChange(toOriginalUrl(uploadData.url), uploadData.fileId);
         } catch {
             setError("Error inesperado al subir la imagen");
         } finally {
@@ -64,7 +76,7 @@ export function HeroImageUpload({ coverImageUrl, onImageChange }: HeroImageUploa
     }
 
     function handleRemove() {
-        onImageChange("");
+        onImageChange("", "");
         if (fileInputRef.current) fileInputRef.current.value = "";
     }
 

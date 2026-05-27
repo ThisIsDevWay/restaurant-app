@@ -29,7 +29,11 @@ export function SettingsDesignTab({ form, updateField, errors = {} }: SettingsDe
                     <div className="mb-6">
                         <RestaurantLogoUpload
                             logoUrl={form.logoUrl}
-                            onLogoChange={(url) => updateField("logoUrl", url)}
+                            logoImagekitFileId={form.logoImagekitFileId}
+                            onLogoChange={(url, fileId) => {
+                                updateField("logoUrl", url);
+                                updateField("logoImagekitFileId", fileId);
+                            }}
                         />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -67,7 +71,11 @@ export function SettingsDesignTab({ form, updateField, errors = {} }: SettingsDe
 
                 <HeroImageUpload
                     coverImageUrl={form.coverImageUrl}
-                    onImageChange={(url) => updateField("coverImageUrl", url)}
+                    coverImagekitFileId={form.coverImagekitFileId}
+                    onImageChange={(url, fileId) => {
+                        updateField("coverImageUrl", url);
+                        updateField("coverImagekitFileId", fileId);
+                    }}
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">

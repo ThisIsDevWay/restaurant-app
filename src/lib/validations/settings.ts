@@ -36,7 +36,9 @@ export const settingsSchema = v.object({
   bebidasEnabled: v.optional(v.boolean()),
   instagramUrl: v.optional(v.string()),
   logoUrl: v.optional(v.string()),
+  logoImagekitFileId: v.optional(v.nullable(v.string())),
   coverImageUrl: v.optional(v.string()),
+  coverImagekitFileId: v.optional(v.nullable(v.string())),
   branchName: v.optional(v.string()),
   scheduleText: v.optional(v.string()),
   businessHours: v.optional(

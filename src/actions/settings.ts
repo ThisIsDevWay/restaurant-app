@@ -9,7 +9,7 @@ import { exchangeRates, settings } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { db } from "@/db";
 import { adminActionClient } from "@/lib/safe-action";
-import { supabase } from "@/lib/supabase";
+import { deleteFile } from "@/lib/imagekit/server";
 import { logger } from "@/lib/logger";
 import * as Sentry from "@sentry/nextjs";
 
@@ -31,6 +31,23 @@ export const saveSettingsAction = adminActionClient
         const latestRate = await getLatestRateByCurrency(updatePayload.rateCurrency);
         if (latestRate) {
           updatePayload.currentRateId = latestRate.id;
+        }
+      }
+
+      // Delete orphaned ImageKit files when logo or hero image changes
+      const current = await getSettings();
+      if (current) {
+        if (
+          current.logoImagekitFileId &&
+          current.logoImagekitFileId !== parsedInput.logoImagekitFileId
+        ) {
+          await deleteFile(current.logoImagekitFileId);
+        }
+        if (
+          current.coverImagekitFileId &&
+          current.coverImagekitFileId !== parsedInput.coverImagekitFileId
+        ) {
+          await deleteFile(current.coverImagekitFileId);
         }
       }
 
@@ -120,57 +137,4 @@ export const fetchCheckoutSettings = async () => {
   };
 }
 
-export const uploadLogoAction = adminActionClient
-  .schema(v.object({ fileName: v.string() }))
-  .action(async ({ parsedInput: { fileName } }) => {
-    const ext = fileName.split(".").pop() ?? "png";
-    const path = `branding/logo-${Date.now()}.${ext}`;
-
-    try {
-      const { data, error } = await supabase.storage
-        .from("menu")
-        .createSignedUploadUrl(path);
-
-      if (error || !data) {
-        return { success: false as const, error: "Error al generar URL de subida" };
-      }
-
-      const { data: publicData } = supabase.storage.from("menu").getPublicUrl(path);
-
-      return {
-        success: true as const,
-        signedUrl: data.signedUrl,
-        publicUrl: publicData.publicUrl,
-      };
-    } catch {
-      return { success: false as const, error: "Error al subir logo" };
-    }
-  });
-
-export const uploadHeroImageAction = adminActionClient
-  .schema(v.object({ fileName: v.string() }))
-  .action(async ({ parsedInput: { fileName } }) => {
-    const ext = fileName.split(".").pop() ?? "jpg";
-    const path = `branding/hero-${Date.now()}.${ext}`;
-
-    try {
-      const { data, error } = await supabase.storage
-        .from("menu")
-        .createSignedUploadUrl(path);
-
-      if (error || !data) {
-        return { success: false as const, error: "Error al generar URL de subida" };
-      }
-
-      const { data: publicData } = supabase.storage.from("menu").getPublicUrl(path);
-
-      return {
-        success: true as const,
-        signedUrl: data.signedUrl,
-        publicUrl: publicData.publicUrl,
-      };
-    } catch {
-      return { success: false as const, error: "Error al subir imagen" };
-    }
-  });
 

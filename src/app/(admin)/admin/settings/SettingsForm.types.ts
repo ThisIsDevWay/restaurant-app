@@ -44,7 +44,9 @@ export interface SettingsFormData {
   whatsappMicroserviceUrl: string;
   instagramUrl: string;
   logoUrl: string;
+  logoImagekitFileId: string;
   coverImageUrl: string;
+  coverImagekitFileId: string;
   branchName: string;
   scheduleText: string;
   businessHours: { days: number[]; open: string; close: string };
