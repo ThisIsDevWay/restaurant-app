@@ -7,15 +7,6 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
-function getSupabaseDomain(): string {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  try {
-    return new URL(url).origin;
-  } catch {
-    return "";
-  }
-}
-
 function getSupabaseRealtimeDomain(): string {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   try {
@@ -26,29 +17,31 @@ function getSupabaseRealtimeDomain(): string {
   }
 }
 
-const supabaseDomain = getSupabaseDomain();
+function getImagekitDomain(): string {
+  const endpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT ?? "";
+  try {
+    return new URL(endpoint).origin;
+  } catch {
+    return "https://ik.imagekit.io";
+  }
+}
+
 const supabaseRealtimeDomain = getSupabaseRealtimeDomain();
+const imagekitDomain = getImagekitDomain();
 
 const nextConfig: NextConfig = {
   images: {
-    // Bypass Vercel Image Optimization entirely — images are served directly
-    // from Supabase Storage CDN. This eliminates /_next/image proxy overhead
-    // and avoids 403s from path whitelist mismatches.
-    // If Supabase Image Transformations (Pro plan) are enabled in the future,
-    // remove this flag and use supabase-image-loader.ts with /render/image/.
+    // Bypass Vercel Image Optimization — images served directly from ImageKit CDN.
     unoptimized: true,
   },
   async headers() {
-    const cspImgSrc = supabaseDomain
-      ? `'self' data: blob: ${supabaseDomain}`
-      : "'self' data: blob:";
-    const cspMediaSrc = supabaseDomain
-      ? `'self' data: blob: ${supabaseDomain}`
-      : "'self' data: blob:";
+    const cspImgSrc = `'self' data: blob: ${imagekitDomain}`;
+    const cspMediaSrc = `'self' data: blob: ${imagekitDomain}`;
     const realtimeDomainStr = supabaseRealtimeDomain ? ` ${supabaseRealtimeDomain}` : "";
-    const cspConnectSrc = supabaseDomain
-      ? `'self' ${supabaseDomain}${realtimeDomainStr} https://*.sentry.io wss://38.171.255.120`
-      : "'self' https://*.sentry.io wss://38.171.255.120";
+    const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL
+      ? ` ${process.env.NEXT_PUBLIC_SUPABASE_URL}`
+      : "";
+    const cspConnectSrc = `'self'${supabaseOrigin}${realtimeDomainStr} https://upload.imagekit.io ${imagekitDomain} https://*.sentry.io wss://38.171.255.120`;
 
     return [
       {

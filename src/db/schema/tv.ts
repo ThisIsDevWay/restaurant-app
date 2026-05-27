@@ -170,6 +170,10 @@ export const tvMedia = pgTable(
     storageBucket: text("storage_bucket").notNull().default("tv-media"),
     /** Path within bucket. NULL for menu_board slides (no file). */
     storagePath: text("storage_path"),
+    /** ImageKit fileId for the main file — used for deletion. */
+    imagekitFileId: text("imagekit_file_id"),
+    /** ImageKit fileId for the thumbnail — used for deletion. */
+    thumbnailFileId: text("thumbnail_file_id"),
     /** Public URL. NULL for menu_board slides. */
     publicUrl: text("public_url"),
     thumbnailUrl: text("thumbnail_url"),

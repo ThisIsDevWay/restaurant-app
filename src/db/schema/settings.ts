@@ -52,7 +52,9 @@ export const settings = pgTable("settings", {
   maxQuantityPerItem: integer("max_quantity_per_item").notNull().default(10),
   instagramUrl: text("instagram_url"),
   logoUrl: text("logo_url"),
+  logoImagekitFileId: text("logo_imagekit_file_id"),
   coverImageUrl: text("cover_image_url"),
+  coverImagekitFileId: text("cover_imagekit_file_id"),
   branchName: text("branch_name"),
   scheduleText: text("schedule_text"),
   businessHours: jsonb("business_hours").$type<{
