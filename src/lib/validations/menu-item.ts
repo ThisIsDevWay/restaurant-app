@@ -21,6 +21,7 @@ const menuItemBaseSchema = v.object({
   isAvailable: v.boolean(),
   isPrepackaged: v.optional(v.boolean(), false),
   imageUrl: v.optional(v.string()),
+  imagekitFileId: v.optional(v.string()),
   sortOrder: v.optional(v.pipe(v.number(), v.integer())),
 });
 

@@ -1,21 +1,20 @@
 "use server";
 
-import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db";
 import { menuItems, optionGroups, options, menuItemContornos } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { invalidateMenuCache } from "@/db/queries/menu";
-import { supabase } from "@/lib/supabase";
+import { invalidateDailyMenuCache } from "@/db/queries/daily-menu";
 import { menuItemSchema, optionGroupSchema } from "@/lib/validations/menu-item";
 import * as v from "valibot";
 import { adminActionClient } from "@/lib/safe-action";
+import { deleteFile } from "@/lib/imagekit/server";
 
 export const createMenuItemAction = adminActionClient
   .schema(menuItemSchema)
   .action(async ({ parsedInput }) => {
     try {
-      // Separate relational fields from the menu_items columns
       const { contornos = [], sortOrder, ...rest } = parsedInput;
 
       let resolvedSortOrder = sortOrder;
@@ -59,8 +58,22 @@ export const updateMenuItemAction = adminActionClient
   .schema(v.object({ id: v.string(), data: menuItemSchema }))
   .action(async ({ parsedInput: { id, data } }) => {
     try {
-      // Separate relational fields from the menu_items columns
       const { contornos = [], ...menuItemData } = data;
+
+      // Read the current row to find the old imagekitFileId
+      const [current] = await db
+        .select({ imageUrl: menuItems.imageUrl, imagekitFileId: menuItems.imagekitFileId })
+        .from(menuItems)
+        .where(eq(menuItems.id, id))
+        .limit(1);
+
+      // If the image changed, delete the old ImageKit file (best-effort)
+      if (
+        current?.imagekitFileId &&
+        current.imagekitFileId !== menuItemData.imagekitFileId
+      ) {
+        await deleteFile(current.imagekitFileId);
+      }
 
       const updateData = {
         ...menuItemData,
@@ -87,6 +100,7 @@ export const updateMenuItemAction = adminActionClient
       }
 
       invalidateMenuCache();
+      invalidateDailyMenuCache();
       revalidatePath("/admin");
       revalidatePath("/admin/catalogo");
       return { success: true, item };
@@ -101,6 +115,16 @@ export const deleteMenuItemAction = adminActionClient
   .schema(v.object({ id: v.string() }))
   .action(async ({ parsedInput: { id } }) => {
     try {
+      const [row] = await db
+        .select({ imagekitFileId: menuItems.imagekitFileId })
+        .from(menuItems)
+        .where(eq(menuItems.id, id))
+        .limit(1);
+
+      if (row?.imagekitFileId) {
+        await deleteFile(row.imagekitFileId);
+      }
+
       await db.delete(menuItems).where(eq(menuItems.id, id));
       invalidateMenuCache();
       revalidatePath("/admin");
@@ -143,33 +167,4 @@ export const createOptionGroupAction = adminActionClient
     } catch {
       return { success: false, error: "Error al crear grupo de opciones" };
     }
-  });
-
-
-
-export const generateUploadUrlAction = adminActionClient
-  .schema(v.object({ fileName: v.string() }))
-  .action(async ({ parsedInput: { fileName } }) => {
-    const path = `menu/${Date.now()}-${fileName}`;
-
-    try {
-      const { data, error } = await supabase.storage
-        .from("menu")
-        .createSignedUploadUrl(path);
-
-      if (error || !data) {
-        return { success: false as const, error: "Error al generar URL de subida" };
-      }
-
-      return { success: true as const, url: data.signedUrl, path };
-    } catch {
-      return { success: false as const, error: "Error al generar URL de subida" };
-    }
-  });
-
-export const getPublicUrlAction = adminActionClient
-  .schema(v.object({ path: v.string() }))
-  .action(async ({ parsedInput: { path } }) => {
-    const { data } = supabase.storage.from("menu").getPublicUrl(path);
-    return data.publicUrl;
   });

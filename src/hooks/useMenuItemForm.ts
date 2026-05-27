@@ -9,9 +9,10 @@ import {
   createMenuItemAction,
   updateMenuItemAction,
   deleteMenuItemAction,
-  generateUploadUrlAction,
-  getPublicUrlAction,
 } from "@/actions/menu";
+import { getImagekitAuthAction, deleteImagekitFileAction } from "@/actions/imagekit";
+import { toOriginalUrl } from "@/lib/imagekit/utils";
+import { IMAGEKIT_FOLDERS } from "@/lib/imagekit/folders";
 import type { MenuItemFormProps } from "@/components/admin/menu/MenuItemForm.types";
 
 const menuItemFormSchema = v.object({
@@ -41,6 +42,7 @@ const menuItemFormSchema = v.object({
     }, "Costo inválido"),
   )),
   imageUrl: v.optional(v.string()),
+  imagekitFileId: v.optional(v.string()),
   isAvailable: v.boolean(),
   isPrepackaged: v.boolean(),
 });
@@ -95,6 +97,8 @@ export function useMenuItemForm({
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.imageUrl ?? null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // fileId of an image uploaded in this session but not yet persisted to DB
+  const pendingFileIdRef = useRef<string | null>(null);
 
   // Contornos are managed separately (relational, not a column on menu_items)
   const [contornos, setContornos] = useState<ContornoEntry[]>(initialData?.contornos ?? []);
@@ -128,6 +132,7 @@ export function useMenuItemForm({
       priceUsdDollars: initialData ? String((initialData.priceUsdCents / 100).toFixed(2)) : "",
       costUsdDollars: initialData?.costUsdCents ? String((initialData.costUsdCents / 100).toFixed(2)) : "",
       imageUrl: initialData?.imageUrl ?? "",
+      imagekitFileId: initialData?.imagekitFileId ?? "",
       isAvailable: initialData?.isAvailable ?? true,
       isPrepackaged: initialData?.isPrepackaged ?? false,
     },
@@ -152,7 +157,13 @@ export function useMenuItemForm({
   }
 
   function handleRemoveImage() {
+    // If there's a pending (unsaved) upload, delete it from ImageKit immediately
+    if (pendingFileIdRef.current) {
+      deleteImagekitFileAction({ fileId: pendingFileIdRef.current }).catch(() => {});
+      pendingFileIdRef.current = null;
+    }
     setValue("imageUrl", "");
+    setValue("imagekitFileId", "");
     setPreviewUrl(null);
   }
 
@@ -186,22 +197,39 @@ export function useMenuItemForm({
         quality: 0.8,
       });
 
-      const result = await generateUploadUrlAction({ fileName: optimizedFile.name });
-      if (result?.serverError) throw new Error(result.serverError);
-      if (result?.validationErrors) throw new Error("Datos inválidos al generar URL");
-      if (!result?.data?.success) throw new Error(result?.data?.error || "Error");
+      // If replacing an image uploaded in this session, delete the previous one
+      if (pendingFileIdRef.current) {
+        deleteImagekitFileAction({ fileId: pendingFileIdRef.current }).catch(() => {});
+        pendingFileIdRef.current = null;
+      }
 
-      await fetch(result.data.url, {
-        method: "PUT",
-        body: optimizedFile,
-        headers: { "Content-Type": optimizedFile.type }
+      const authResult = await getImagekitAuthAction({});
+      if (authResult?.serverError) throw new Error(authResult.serverError);
+      if (!authResult?.data) throw new Error("Error obteniendo auth de subida");
+      const { token, expire, signature, publicKey } = authResult.data;
+
+      const formData = new FormData();
+      formData.append("file", optimizedFile);
+      formData.append("fileName", optimizedFile.name);
+      formData.append("folder", IMAGEKIT_FOLDERS.menu);
+      formData.append("useUniqueFileName", "true");
+      formData.append("publicKey", publicKey);
+      formData.append("signature", signature);
+      formData.append("expire", String(expire));
+      formData.append("token", token);
+
+      const uploadRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+        method: "POST",
+        body: formData,
       });
-      const publicUrlResult = await getPublicUrlAction({ path: result.data.path });
-      if (publicUrlResult?.serverError) throw new Error(publicUrlResult.serverError);
-      if (!publicUrlResult?.data) throw new Error("Error obteniendo URL pública");
+      if (!uploadRes.ok) throw new Error("Error al subir la imagen");
+      const uploadData = (await uploadRes.json()) as { url: string; fileId: string };
 
-      setPreviewUrl(publicUrlResult.data);
-      setValue("imageUrl", publicUrlResult.data);
+      pendingFileIdRef.current = uploadData.fileId;
+      const finalUrl = toOriginalUrl(uploadData.url);
+      setPreviewUrl(finalUrl);
+      setValue("imageUrl", finalUrl);
+      setValue("imagekitFileId", uploadData.fileId);
     } catch {
       setError("Error al subir la imagen");
     } finally {
@@ -220,43 +248,36 @@ export function useMenuItemForm({
       let itemId: string;
       const contornoPayload = contornos.map((c) => ({ id: c.id, removable: c.removable }));
 
+      const sharedPayload = {
+        priceUsdCents,
+        costUsdCents,
+        imageUrl: data.imageUrl ?? "",
+        imagekitFileId: data.imagekitFileId ?? undefined,
+        portionNote: data.portionNote ?? null,
+        hideAdicionales: data.hideAdicionales ?? false,
+        hideBebidas: data.hideBebidas ?? false,
+        isPrepackaged: data.isPrepackaged ?? false,
+        contornos: contornoPayload,
+      };
+
       if (isEdit) {
         const updateResult = await updateMenuItemAction({
           id: initialData.id,
-          data: {
-            ...data,
-            priceUsdCents,
-            costUsdCents,
-            imageUrl: data.imageUrl ?? "",
-            portionNote: data.portionNote ?? null,
-            hideAdicionales: data.hideAdicionales ?? false,
-            hideBebidas: data.hideBebidas ?? false,
-            isPrepackaged: data.isPrepackaged ?? false,
-            contornos: contornoPayload,
-          },
+          data: { ...data, ...sharedPayload },
         });
         if (updateResult?.serverError) throw new Error(updateResult.serverError);
         if (updateResult?.validationErrors) throw new Error("Error de validación al actualizar");
         itemId = initialData.id;
       } else {
-        const createResult = await createMenuItemAction({
-          ...data,
-          priceUsdCents,
-          costUsdCents,
-          imageUrl: data.imageUrl ?? "",
-          portionNote: data.portionNote ?? null,
-          hideAdicionales: data.hideAdicionales ?? false,
-          hideBebidas: data.hideBebidas ?? false,
-          isPrepackaged: data.isPrepackaged ?? false,
-          contornos: contornoPayload,
-        });
+        const createResult = await createMenuItemAction({ ...data, ...sharedPayload });
         if (createResult?.serverError) throw new Error(createResult.serverError);
         if (createResult?.validationErrors) throw new Error("Error de validación al crear");
         if (!createResult?.data?.success || !createResult?.data?.item) throw new Error(createResult?.data?.error ?? "Error al crear");
         itemId = createResult.data.item.id;
       }
 
-
+      // Image is now persisted in DB — no longer pending
+      pendingFileIdRef.current = null;
 
       router.push("/admin/catalogo");
       router.refresh();

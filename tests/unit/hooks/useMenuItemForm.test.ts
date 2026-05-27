@@ -12,15 +12,21 @@ import { renderHook, act } from "@testing-library/react";
 
 // ─── Mocks BEFORE importing the hook ─────────────────────────────────────────
 
-const mockGenerateUploadUrl = vi.fn();
-const mockGetPublicUrl = vi.fn();
+const mockGetImagekitAuth = vi.fn();
+
+// optimizeImage uses canvas APIs not available in jsdom — return the file unchanged.
+vi.mock("@/lib/utils/image-optimization", () => ({
+  optimizeImage: (file: File) => Promise.resolve(file),
+}));
 
 vi.mock("@/actions/menu", () => ({
   createMenuItemAction: vi.fn(),
   updateMenuItemAction: vi.fn(),
   deleteMenuItemAction: vi.fn(),
-  generateUploadUrlAction: (...args: unknown[]) => mockGenerateUploadUrl(...args),
-  getPublicUrlAction: (...args: unknown[]) => mockGetPublicUrl(...args),
+}));
+
+vi.mock("@/actions/imagekit", () => ({
+  getImagekitAuthAction: (...args: unknown[]) => mockGetImagekitAuth(...args),
 }));
 
 vi.mock("@/actions/adicionales", () => ({
@@ -59,13 +65,20 @@ function createMockFile(name: string, type: string, sizeBytes: number): File {
 }
 
 function setupUploadMocks() {
-  mockGenerateUploadUrl.mockResolvedValue({
-    data: { success: true, url: "https://example.com/upload", path: "menu/test.jpg" },
+  mockGetImagekitAuth.mockResolvedValue({
+    data: {
+      token: "test-token",
+      expire: Date.now() + 3600,
+      signature: "test-signature",
+      publicKey: "public_test",
+      urlEndpoint: "https://ik.imagekit.io/test",
+    },
   });
-  mockGetPublicUrl.mockResolvedValue({
-    data: "https://example.com/menu/test.jpg",
+  // First fetch call is the ImageKit upload
+  mockFetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({ url: "https://ik.imagekit.io/test/menu/test.webp" }),
   });
-  mockFetch.mockResolvedValue({ ok: true });
 }
 
 describe("useMenuItemForm — image validation", () => {
@@ -85,7 +98,7 @@ describe("useMenuItemForm — image validation", () => {
       });
 
       expect(result.current.error).toBe("Formato no soportado. Usa JPG, PNG o WebP.");
-      expect(mockGenerateUploadUrl).not.toHaveBeenCalled();
+      expect(mockGetImagekitAuth).not.toHaveBeenCalled();
     });
 
     it("rechaza archivos con tipo no soportado (image/bmp)", async () => {
@@ -98,7 +111,7 @@ describe("useMenuItemForm — image validation", () => {
       });
 
       expect(result.current.error).toBe("Formato no soportado. Usa JPG, PNG o WebP.");
-      expect(mockGenerateUploadUrl).not.toHaveBeenCalled();
+      expect(mockGetImagekitAuth).not.toHaveBeenCalled();
     });
 
     it("rechaza archivos con tipo no soportado (image/svg+xml)", async () => {
@@ -111,7 +124,7 @@ describe("useMenuItemForm — image validation", () => {
       });
 
       expect(result.current.error).toBe("Formato no soportado. Usa JPG, PNG o WebP.");
-      expect(mockGenerateUploadUrl).not.toHaveBeenCalled();
+      expect(mockGetImagekitAuth).not.toHaveBeenCalled();
     });
 
     it("acepta archivos JPEG (image/jpeg)", async () => {
@@ -124,7 +137,7 @@ describe("useMenuItemForm — image validation", () => {
       });
 
       expect(result.current.error).toBeNull();
-      expect(mockGenerateUploadUrl).toHaveBeenCalled();
+      expect(mockGetImagekitAuth).toHaveBeenCalled();
     });
 
     it("acepta archivos PNG (image/png)", async () => {
@@ -137,7 +150,7 @@ describe("useMenuItemForm — image validation", () => {
       });
 
       expect(result.current.error).toBeNull();
-      expect(mockGenerateUploadUrl).toHaveBeenCalled();
+      expect(mockGetImagekitAuth).toHaveBeenCalled();
     });
 
     it("acepta archivos WebP (image/webp)", async () => {
@@ -150,7 +163,7 @@ describe("useMenuItemForm — image validation", () => {
       });
 
       expect(result.current.error).toBeNull();
-      expect(mockGenerateUploadUrl).toHaveBeenCalled();
+      expect(mockGetImagekitAuth).toHaveBeenCalled();
     });
   });
 
@@ -166,7 +179,7 @@ describe("useMenuItemForm — image validation", () => {
       });
 
       expect(result.current.error).toBe("Imagen demasiado grande. Máximo 5MB.");
-      expect(mockGenerateUploadUrl).not.toHaveBeenCalled();
+      expect(mockGetImagekitAuth).not.toHaveBeenCalled();
     });
 
     it("acepta archivos de exactamente 5MB", async () => {
@@ -179,7 +192,7 @@ describe("useMenuItemForm — image validation", () => {
       });
 
       expect(result.current.error).toBeNull();
-      expect(mockGenerateUploadUrl).toHaveBeenCalled();
+      expect(mockGetImagekitAuth).toHaveBeenCalled();
     });
 
     it("acepta archivos menores a 5MB", async () => {
@@ -192,7 +205,7 @@ describe("useMenuItemForm — image validation", () => {
       });
 
       expect(result.current.error).toBeNull();
-      expect(mockGenerateUploadUrl).toHaveBeenCalled();
+      expect(mockGetImagekitAuth).toHaveBeenCalled();
     });
   });
 
@@ -241,7 +254,7 @@ describe("useMenuItemForm — image validation", () => {
         await result.current.handleImageUpload(mockEvent);
       });
 
-      expect(mockGenerateUploadUrl).not.toHaveBeenCalled();
+      expect(mockGetImagekitAuth).not.toHaveBeenCalled();
       expect(result.current.error).toBeNull();
     });
   });

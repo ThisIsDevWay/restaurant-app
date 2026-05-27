@@ -25,6 +25,7 @@ export interface MenuItemFormProps {
     costUpdatedAt?: string | Date | null;
     sortOrder?: number | null;
     imageUrl?: string | null;
+    imagekitFileId?: string | null;
     isAvailable: boolean;
     isPrepackaged: boolean;
     /** Contornos already assigned to this item (edit mode only). */
