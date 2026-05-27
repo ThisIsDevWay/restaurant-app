@@ -7,6 +7,7 @@ import { PlatoDelDiaBanner } from "@/components/public/menu/PlatoDelDiaBanner";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItemWithComponents as MenuItem } from "@/types/menu.types";
 import { useMenuAvailability } from "@/hooks/useMenuAvailability";
+import { useMenuRefresh } from "@/hooks/useMenuRefresh";
 import { toast } from "sonner";
 import { useCallback } from "react";
 
@@ -119,6 +120,7 @@ export function MenuClient({
   }, [cartItems, removeItem]);
 
   useMenuAvailability(handleAvailabilityChange);
+  useMenuRefresh();
 
   const filteredItems = items.filter((i) => {
     const matchesCategory = !activeCategory || i.categoryId === activeCategory;

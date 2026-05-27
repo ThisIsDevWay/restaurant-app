@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useOrdersRealtime } from "@/hooks/useOrdersRealtime";
 import type { KitchenOrder } from "@/types/kitchen.types";
 
 async function fetchKitchenOrders(): Promise<KitchenOrder[]> {
@@ -9,11 +10,14 @@ async function fetchKitchenOrders(): Promise<KitchenOrder[]> {
 }
 
 export function useKitchenOrders() {
+  const queryClient = useQueryClient();
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["kitchen-orders"],
     queryFn: fetchKitchenOrders,
-    refetchInterval: 15000,
-    staleTime: 10000,
+  });
+
+  useOrdersRealtime(() => {
+    void queryClient.invalidateQueries({ queryKey: ["kitchen-orders"] });
   });
 
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());

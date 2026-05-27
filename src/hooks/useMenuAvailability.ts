@@ -1,4 +1,5 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useCallback } from "react";
+import { supabaseBrowser } from "@/lib/supabase-client";
 
 type AvailabilityMap = Map<string, boolean>;
 
@@ -11,10 +12,7 @@ interface AvailabilityResponse {
 
 export function useMenuAvailability(
   onAvailabilityChange: (map: AvailabilityMap) => void,
-  intervalMs = 45_000
 ) {
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const fetchAndNotify = useCallback(async () => {
     try {
       const res = await fetch("/api/menu/availability", { cache: "no-store" });
@@ -22,43 +20,65 @@ export function useMenuAvailability(
       const data: AvailabilityResponse = await res.json();
 
       const map: AvailabilityMap = new Map();
-      
-      const allItems = [
+      [
         ...data.platos,
         ...data.adicionales,
         ...data.bebidas,
-        ...data.contornos
-      ];
-
-      allItems.forEach((item) => {
+        ...data.contornos,
+      ].forEach((item) => {
         map.set(item.id, item.isAvailable);
       });
 
       onAvailabilityChange(map);
-    } catch (error) {
+    } catch {
       // silently fail — don't interrupt UX
     }
   }, [onAvailabilityChange]);
 
   useEffect(() => {
-    // Initial fetch
     fetchAndNotify();
-    
-    // Set up interval
-    timerRef.current = setInterval(fetchAndNotify, intervalMs);
 
-    // Refresh when tab becomes visible
+    // Refresh when tab becomes visible after being hidden
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        fetchAndNotify();
-      }
+      if (document.visibilityState === "visible") fetchAndNotify();
     };
-    
     document.addEventListener("visibilitychange", handleVisibility);
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      document.removeEventListener("visibilitychange", handleVisibility);
+    // Push-based updates: re-fetch whenever any daily availability row changes
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => void fetchAndNotify(), 300);
     };
-  }, [fetchAndNotify, intervalMs]);
+
+    const channel = supabaseBrowser
+      .channel("menu-availability")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "daily_menu_items" },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "daily_bebidas" },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "daily_contornos" },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "daily_adicionales" },
+        scheduleRefresh,
+      )
+      .subscribe();
+
+    return () => {
+      if (debounce) clearTimeout(debounce);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      supabaseBrowser.removeChannel(channel);
+    };
+  }, [fetchAndNotify]);
 }

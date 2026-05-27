@@ -3,9 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PairingScreen } from "./PairingScreen";
 import { DisplayScreen, type ContentResponse } from "./DisplayScreen";
+import { useTvRealtime } from "@/hooks/useTvRealtime";
+import { supabaseBrowser } from "@/lib/supabase-client";
 
 const STORAGE_KEY = "tv_token";
-const CONTENT_POLL_MS = 5000;
+// Daypart transitions happen when time crosses a boundary — no DB row changes,
+// so Realtime can't catch them. This timer re-evaluates content every 60s as
+// a fallback so scheduled slides activate/deactivate on time.
+const DAYPART_TICK_MS = 60_000;
 
 type Phase = "boot" | "pairing" | "displaying";
 
@@ -161,7 +166,7 @@ export function TvController() {
         versionRef.current = data.version;
         setContent(data);
       } else {
-        // Settings (orientation/rotation/audio) may have changed even if items didn't.
+        // Settings (orientation/rotation/audio/branding) may have changed even if items didn't.
         setContent((prev) =>
           prev
             ? {
@@ -171,6 +176,8 @@ export function TvController() {
                 audioEnabled: data.audioEnabled,
                 volumePercent: data.volumePercent,
                 name: data.name,
+                restaurantName: data.restaurantName,
+                logoUrl: data.logoUrl,
               }
             : data,
         );
@@ -181,19 +188,45 @@ export function TvController() {
     }
   }, []);
 
-  // Polling loop while in displaying phase.
+  // Initial fetch when entering displaying phase.
   useEffect(() => {
     if (phase !== "displaying" || !token) return;
-    let cancelled = false;
     void pollContent(token);
-    const id = window.setInterval(() => {
-      if (!cancelled) void pollContent(token);
-    }, CONTENT_POLL_MS);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
   }, [phase, token, pollContent]);
+
+  // Realtime push: re-fetch when any content-related table changes.
+  useTvRealtime(
+    content?.displayId ?? null,
+    () => { if (token) void pollContent(token); },
+    (connected) => {
+      // If the WebSocket drops, surface reconnecting after a short grace period
+      // so the TV shows the indicator — the Supabase client auto-reconnects.
+      if (!connected) setReconnecting(true);
+      else { setReconnecting(false); failureCountRef.current = 0; }
+    },
+  );
+
+  // 60s daypart tick: re-evaluate content at scheduled time boundaries.
+  useEffect(() => {
+    if (phase !== "displaying" || !token) return;
+    const id = window.setInterval(() => void pollContent(token), DAYPART_TICK_MS);
+    return () => window.clearInterval(id);
+  }, [phase, token, pollContent]);
+
+  // Presence: announce this TV on the shared tracker channel so the admin
+  // dashboard can show online/offline status without polling the DB.
+  useEffect(() => {
+    if (phase !== "displaying" || !content?.displayId) return;
+    const presenceChannel = supabaseBrowser.channel("tv-presence-tracker");
+    presenceChannel.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        await presenceChannel.track({ displayId: content.displayId });
+      }
+    });
+    return () => {
+      supabaseBrowser.removeChannel(presenceChannel);
+    };
+  }, [phase, content?.displayId]);
 
   const handlePaired = useCallback((newToken: string) => {
     try {

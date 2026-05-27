@@ -26,6 +26,8 @@ export type ContentResponse = {
   eventName: string | null;
   items: ContentItem[];
   version: string;
+  restaurantName?: string | null;
+  logoUrl?: string | null;
 };
 
 type Props = {
@@ -61,11 +63,32 @@ export function DisplayScreen({
   const [currentIdx, setCurrentIdx] = useState(0);
   const audioEnabled = content?.audioEnabled ?? false;
   const volumePercent = content?.volumePercent ?? 80;
+
+  const [introDone, setIntroDone] = useState(false);
+  const hasStartedIntro = useRef(false);
+
+  useEffect(() => {
+    if (items.length === 0) {
+      setIntroDone(false);
+      hasStartedIntro.current = false;
+      return;
+    }
+
+    if (!hasStartedIntro.current) {
+      hasStartedIntro.current = true;
+      const timer = setTimeout(() => {
+        setIntroDone(true);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [items.length]);
+
   // Should the CURRENT item play with sound?
   const currentItem = items[currentIdx];
   const wantsSound =
     audioEnabled &&
     audioUnlocked &&
+    introDone &&
     !!currentItem &&
     currentItem.type === "video" &&
     !currentItem.muted;
@@ -100,7 +123,7 @@ export function DisplayScreen({
   // Advance images & menu boards on a timer. Videos also have a fallback timer
   // (durationSeconds + 5s grace) in case `onEnded` never fires.
   useEffect(() => {
-    if (items.length === 0) return;
+    if (items.length === 0 || !introDone) return;
     const item = items[currentIdx];
     if (!item) return;
     const advance = () =>
@@ -113,7 +136,7 @@ export function DisplayScreen({
     const fallbackMs = (Math.max(1, item.durationSeconds) + 5) * 1000;
     const id = window.setTimeout(advance, fallbackMs);
     return () => window.clearTimeout(id);
-  }, [currentIdx, items]);
+  }, [currentIdx, items, introDone]);
 
   const wrapperStyle = useMemo<React.CSSProperties>(() => {
     return computeRotationWrapper(
@@ -122,6 +145,7 @@ export function DisplayScreen({
       viewport,
     );
   }, [content?.orientation, content?.rotationDegrees, viewport]);
+
 
   return (
     <div
@@ -134,18 +158,51 @@ export function DisplayScreen({
     >
       {/* Rotated wrapper: explicit width/height/top/left, no `inset` here */}
       <div style={{ position: "absolute", ...wrapperStyle }}>
-        {items.length === 0 ? (
-          <EmptyState reconnecting={reconnecting} />
-        ) : (
-          <Carousel
-            items={items}
-            currentIdx={currentIdx}
-            wantsSound={wantsSound}
-            volume={volumePercent / 100}
-            onAdvance={() =>
-              setCurrentIdx((i) => (i + 1) % items.length)
-            }
-          />
+        {!content ? null : (
+          <>
+            {/* EmptyState (Intro/Bienvenidos) */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                opacity: (items.length === 0 || !introDone) ? 1 : 0,
+                transition: "opacity 800ms ease-in-out",
+                pointerEvents: (items.length === 0 || !introDone) ? "auto" : "none",
+                zIndex: (items.length === 0 || !introDone) ? 2 : 1,
+              }}
+            >
+              <EmptyState
+                reconnecting={reconnecting}
+                restaurantName={content.restaurantName}
+                logoUrl={content.logoUrl}
+              />
+            </div>
+
+            {/* Carousel (Media) */}
+            {items.length > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: introDone ? 1 : 0,
+                  transition: "opacity 800ms ease-in-out",
+                  pointerEvents: introDone ? "auto" : "none",
+                  zIndex: introDone ? 2 : 1,
+                }}
+              >
+                <Carousel
+                  items={items}
+                  currentIdx={currentIdx}
+                  wantsSound={wantsSound}
+                  volume={volumePercent / 100}
+                  introDone={introDone}
+                  onAdvance={() =>
+                    setCurrentIdx((i) => (i + 1) % items.length)
+                  }
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -206,12 +263,14 @@ function Carousel({
   currentIdx,
   wantsSound,
   volume,
+  introDone,
   onAdvance,
 }: {
   items: ContentItem[];
   currentIdx: number;
   wantsSound: boolean;
   volume: number;
+  introDone: boolean;
   onAdvance: () => void;
 }) {
   return (
@@ -253,7 +312,7 @@ function Carousel({
               ) : item.type === "video" && item.url ? (
                 <VideoSlide
                   src={item.url}
-                  active={isCurrent}
+                  active={isCurrent && introDone}
                   muted={!isCurrent || item.muted || !wantsSound}
                   volume={volume}
                   onEnded={onAdvance}
@@ -269,55 +328,185 @@ function Carousel({
 
 /* ───────────────────────── Empty State ───────────────────────── */
 
-function EmptyState({ reconnecting }: { reconnecting?: boolean }) {
+function EmptyState({
+  reconnecting,
+  restaurantName,
+  logoUrl,
+}: {
+  reconnecting?: boolean;
+  restaurantName?: string | null;
+  logoUrl?: string | null;
+}) {
+  // Measure our OWN box. Because we live inside the rotation wrapper (which is
+  // sized + rotated per the display's ORIENTACIÓN FÍSICA), clientWidth/Height
+  // already reflect the true visual area — no viewport math, no double-rotation.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  const [logoLoaded, setLogoLoaded] = useState(false);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const measure = () => setBox({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!logoUrl) {
+      setLogoLoaded(true);
+      return;
+    }
+    setLogoLoaded(false);
+    const img = new Image();
+    img.src = logoUrl;
+    img.onload = () => setLogoLoaded(true);
+    img.onerror = () => setLogoLoaded(true);
+  }, [logoUrl]);
+
+  const w = box?.w ?? 0;
+  const h = box?.h ?? 0;
+  const ready = w > 0 && h > 0;
+  const isPortrait = h > w;
+  const short = Math.min(w, h);
+
+  // px helpers relative to the measured box
+  const px = (n: number) => `${n.toFixed(1)}px`;
+  const S = (pct: number) => px(short * pct / 100); // % of short side
+  const W = (pct: number) => px(w * pct / 100);     // % of width
+  const H = (pct: number) => px(h * pct / 100);     // % of height
+
+  const name = restaurantName?.trim() || null;
+  // The name is the hero when present; otherwise "Bienvenidos" takes the lead.
+  // Scale the hero down for longer names so it never breaks mid-word awkwardly.
+  const heroLen = (name ?? "Bienvenidos").length;
+  const heroBase = isPortrait ? 10 : 12;
+  const heroFontPct = heroLen > 14 ? heroBase * 0.7 : heroLen > 9 ? heroBase * 0.85 : heroBase;
+  const subFontPct = isPortrait ? 3.6 : 3;
+
   return (
     <div
+      ref={rootRef}
       style={{
         position: "absolute",
         inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#000",
-        color: "#fff",
-        fontFamily: "system-ui, sans-serif",
-        textAlign: "center",
-        padding: "5vh 5vw",
+        overflow: "hidden",
+        background:
+          "radial-gradient(ellipse at 50% 42%, #15110a 0%, #0a0809 45%, #060507 100%)",
+        fontFamily: "'Georgia', 'Times New Roman', serif",
       }}
     >
-      <div>
-        <div
-          style={{
-            fontSize: "clamp(2.5rem, 6vw, 6rem)",
-            fontWeight: 800,
-            color: "#f59e0b",
-            marginBottom: "2vh",
-            letterSpacing: "0.04em",
-          }}
-        >
-          Restaurante G y M
-        </div>
-        <div
-          style={{
-            fontSize: "clamp(1.5rem, 3vw, 3rem)",
-            opacity: 0.85,
-            fontWeight: 300,
-          }}
-        >
-          Bienvenidos
-        </div>
-        {reconnecting && (
-          <div
-            style={{
-              marginTop: "5vh",
-              fontSize: "clamp(0.9rem, 1.5vw, 1.2rem)",
-              opacity: 0.4,
-            }}
-          >
-            Reconectando…
+      <style>{`
+        @keyframes tv-shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+        @keyframes tv-fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes tv-glow { 0%,100% { opacity: .10; transform: scale(1); } 50% { opacity: .18; transform: scale(1.08); } }
+      `}</style>
+
+      {ready && logoLoaded && (
+        <>
+          {/* Ambient glow */}
+          <div style={{
+            position: "absolute",
+            top: "50%", left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: S(110), height: S(110),
+            borderRadius: "50%",
+            background: "radial-gradient(circle, #9c6a08 0%, transparent 62%)",
+            animation: "tv-glow 9s ease-in-out infinite",
+            pointerEvents: "none",
+          }} />
+
+          {/* Content */}
+          <div style={{
+            position: "absolute", inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            gap: isPortrait ? H(3.5) : H(5),
+            padding: isPortrait ? `${H(8)} ${W(8)}` : `${H(8)} ${W(10)}`,
+          }}>
+
+            {/* Logo */}
+            {logoUrl && (
+              <div style={{ animation: "tv-fade 1s ease both", opacity: 0, marginBottom: S(1) }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={logoUrl} alt="" draggable={false} style={{
+                  height: S(isPortrait ? 24 : 32),
+                  maxWidth: W(isPortrait ? 85 : 55),
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 0 24px rgba(200,150,12,0.35))",
+                }} />
+              </div>
+            )}
+
+            {/* Hero: restaurant name, or Bienvenidos if no name */}
+            <div style={{
+              fontSize: S(heroFontPct),
+              fontWeight: 700,
+              letterSpacing: "0.05em",
+              lineHeight: 1.08,
+              maxWidth: W(86),
+              overflowWrap: "break-word",
+              background: "linear-gradient(135deg, #fbf0cf 0%, #d6a416 28%, #fbf0cf 55%, #b8860b 80%, #fbf0cf 100%)",
+              backgroundSize: "200% auto",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              animation: "tv-fade 1.1s ease both, tv-shimmer 7s linear 1.4s infinite",
+              animationDelay: "0.25s",
+              opacity: 0,
+              textTransform: name ? "none" : "uppercase",
+            }}>
+              {name ?? "Bienvenidos"}
+            </div>
+
+            {/* Divider with diamond */}
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              gap: S(2),
+              width: isPortrait ? W(64) : W(34),
+              animation: "tv-fade 1.1s ease both",
+              animationDelay: "0.55s",
+              opacity: 0,
+            }}>
+              <span style={{ flex: 1, height: "1px", background: "linear-gradient(to right, transparent, rgba(214,164,22,0.55))" }} />
+              <span style={{ fontSize: S(2), color: "rgba(214,164,22,0.7)", lineHeight: 1, flexShrink: 0 }}>✦</span>
+              <span style={{ flex: 1, height: "1px", background: "linear-gradient(to left, transparent, rgba(214,164,22,0.55))" }} />
+            </div>
+
+            {/* Tagline — only shown when the name is the hero (avoids duplication) */}
+            {name && (
+              <div style={{
+                fontSize: S(subFontPct),
+                fontWeight: 300,
+                color: "rgba(255,255,255,0.62)",
+                letterSpacing: "0.32em",
+                textTransform: "uppercase",
+                fontFamily: "system-ui, sans-serif",
+                animation: "tv-fade 1.1s ease both",
+                animationDelay: "0.8s",
+                opacity: 0,
+              }}>Bienvenidos</div>
+            )}
+
           </div>
-        )}
-      </div>
+
+          {reconnecting && (
+            <div style={{
+              position: "absolute", bottom: H(3), left: 0, right: 0,
+              textAlign: "center",
+              fontSize: S(1.4),
+              color: "rgba(255,255,255,0.22)",
+              letterSpacing: "0.12em",
+              fontFamily: "system-ui, sans-serif",
+            }}>Reconectando…</div>
+          )}
+        </>
+      )}
     </div>
   );
 }
