@@ -17,7 +17,7 @@ async function getTvData() {
   const [mediaCount] = await db
     .select({ count: count() })
     .from(tvMedia)
-    .where(eq(tvMedia.isActive, true));
+    .where(eq(tvMedia.isGlobal, true));
 
   const [activeEventsCount] = await db
     .select({ count: count() })

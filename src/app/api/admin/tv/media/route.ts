@@ -6,6 +6,7 @@ import { asc, desc, eq } from "drizzle-orm";
 import {
   TV_MEDIA_ALLOWED_MIMES,
   TV_MEDIA_MAX_BYTES,
+  TV_MEDIA_MAX_IMAGE_BYTES,
   buildStoragePath,
   inferMediaType,
   uploadTvMediaBuffer,
@@ -35,6 +36,8 @@ export async function GET() {
       type: tvMedia.type,
       storageBucket: tvMedia.storageBucket,
       storagePath: tvMedia.storagePath,
+      imagekitFileId: tvMedia.imagekitFileId,
+      thumbnailFileId: tvMedia.thumbnailFileId,
       publicUrl: tvMedia.publicUrl,
       thumbnailUrl: tvMedia.thumbnailUrl,
       mimeType: tvMedia.mimeType,
@@ -101,9 +104,11 @@ export async function POST(req: Request) {
   if (!title) {
     return NextResponse.json({ error: "Título requerido" }, { status: 400 });
   }
-  if (file.size > TV_MEDIA_MAX_BYTES) {
+  const mediaType = inferMediaType(file.type);
+  const maxBytes = mediaType === "image" ? TV_MEDIA_MAX_IMAGE_BYTES : TV_MEDIA_MAX_BYTES;
+  if (file.size > maxBytes) {
     return NextResponse.json(
-      { error: `Archivo excede el máximo de ${Math.floor(TV_MEDIA_MAX_BYTES / 1024 / 1024)} MB` },
+      { error: `Archivo excede el máximo de ${Math.floor(maxBytes / 1024 / 1024)} MB para ${mediaType === "image" ? "imágenes" : "videos"}` },
       { status: 413 },
     );
   }
@@ -114,7 +119,6 @@ export async function POST(req: Request) {
     );
   }
 
-  const mediaType = inferMediaType(file.type);
   if (!mediaType) {
     return NextResponse.json(
       { error: "Tipo de archivo no permitido" },
@@ -150,15 +154,19 @@ export async function POST(req: Request) {
 
   // Optional thumbnail (only relevant for videos, but accept always).
   let thumbnailUrl: string | null = null;
+  let thumbnailFileId: string | null = null;
   if (thumbnail instanceof File && thumbnail.size > 0 && thumbnail.size < 5_000_000) {
     const thumbBuffer = Buffer.from(await thumbnail.arrayBuffer());
-    const thumbPath = `${storagePath.replace(/\.[^.]+$/, "")}.thumb.jpg`;
+    const thumbFileName = `${storagePath.replace(/\.[^.]+$/, "")}.thumb.jpg`;
     const thumbResult = await uploadTvMediaBuffer({
       buffer: thumbBuffer,
-      path: thumbPath,
+      path: thumbFileName,
       contentType: thumbnail.type || "image/jpeg",
     });
-    if (thumbResult.ok) thumbnailUrl = thumbResult.publicUrl;
+    if (thumbResult.ok) {
+      thumbnailUrl = thumbResult.publicUrl;
+      thumbnailFileId = thumbResult.fileId;
+    }
   }
 
   // Compute next displayOrder.
@@ -176,6 +184,8 @@ export async function POST(req: Request) {
       type: mediaType,
       storageBucket: "tv-media",
       storagePath,
+      imagekitFileId: upload.fileId,
+      thumbnailFileId,
       publicUrl: upload.publicUrl,
       thumbnailUrl,
       mimeType: file.type,

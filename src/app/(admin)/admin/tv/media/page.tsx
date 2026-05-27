@@ -22,6 +22,8 @@ export default async function MediaPage() {
       type: tvMedia.type,
       storageBucket: tvMedia.storageBucket,
       storagePath: tvMedia.storagePath,
+      imagekitFileId: tvMedia.imagekitFileId,
+      thumbnailFileId: tvMedia.thumbnailFileId,
       publicUrl: tvMedia.publicUrl,
       thumbnailUrl: tvMedia.thumbnailUrl,
       mimeType: tvMedia.mimeType,

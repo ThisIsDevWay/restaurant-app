@@ -48,7 +48,8 @@ import {
   parseMinuteOfDay,
 } from "@/lib/services/tv-dayparting";
 
-const MAX_BYTES = 100 * 1024 * 1024;       // 100 MB por archivo
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;  // 10 MB por imagen
+const MAX_BYTES = 100 * 1024 * 1024;       // 100 MB por video
 const MAX_VIDEO_SECONDS = 300;             // 5 min — suficiente para promos
 const ACCEPTED =
   "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm";
@@ -148,9 +149,11 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
       );
 
       try {
-        if (item.file.size > MAX_BYTES) {
+        const isImage = item.file.type.startsWith("image/");
+        const fileMaxBytes = isImage ? MAX_IMAGE_BYTES : MAX_BYTES;
+        if (item.file.size > fileMaxBytes) {
           throw new Error(
-            `Excede 100 MB (${(item.file.size / 1024 / 1024).toFixed(1)} MB)`,
+            `Excede ${isImage ? "10" : "100"} MB (${(item.file.size / 1024 / 1024).toFixed(1)} MB)`,
           );
         }
 
@@ -350,6 +353,21 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
       )}
 
       {confirmDialog}
+
+      {/* Upload limits info */}
+      <div className="flex flex-wrap items-center gap-2 px-1">
+        <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mr-1">Formatos aceptados</span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/8 border border-blue-500/20 text-[11px] font-semibold text-blue-600">
+          <ImageIcon className="h-3 w-3" />
+          JPG · PNG · WebP · GIF
+          <span className="text-blue-400 font-normal">· máx 10 MB</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-500/8 border border-purple-500/20 text-[11px] font-semibold text-purple-600">
+          <Video className="h-3 w-3" />
+          MP4 · WebM
+          <span className="text-purple-400 font-normal">· máx 5 min · 100 MB</span>
+        </span>
+      </div>
 
       {/* Header */}
       <div className="flex items-center justify-between gap-6 flex-wrap bg-gradient-to-br from-surface-section/80 to-surface-section/30 p-6 md:p-8 rounded-3xl border border-border/80 shadow-md backdrop-blur-md">

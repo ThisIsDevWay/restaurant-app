@@ -236,21 +236,19 @@ export const deleteTvMediaAction = adminActionClient
   .action(async ({ parsedInput }) => {
     try {
       const [row] = await db
-        .select({ storagePath: tvMedia.storagePath, thumbnailUrl: tvMedia.thumbnailUrl })
+        .select({
+          imagekitFileId: tvMedia.imagekitFileId,
+          thumbnailFileId: tvMedia.thumbnailFileId,
+        })
         .from(tvMedia)
         .where(eq(tvMedia.id, parsedInput.id))
         .limit(1);
 
-      if (row?.storagePath) {
-        // Delete main file — best-effort, never blocks the DB delete.
-        await deleteTvMediaFromStorage(row.storagePath);
-
-        // Delete thumbnail. The thumbnail path is always:
-        //   {storagePath without extension}.thumb.jpg
-        // Supabase returns ok:false for non-existent files — silently ignored.
-        const thumbPath =
-          row.storagePath.replace(/\.[^.]+$/, "") + ".thumb.jpg";
-        await deleteTvMediaFromStorage(thumbPath);
+      if (row?.imagekitFileId) {
+        await deleteTvMediaFromStorage(row.imagekitFileId);
+      }
+      if (row?.thumbnailFileId) {
+        await deleteTvMediaFromStorage(row.thumbnailFileId);
       }
 
       await db.delete(tvMedia).where(eq(tvMedia.id, parsedInput.id));

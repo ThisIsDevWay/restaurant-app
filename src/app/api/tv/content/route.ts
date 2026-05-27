@@ -4,6 +4,7 @@ import {
   resolveContentForDisplay,
   updateDisplayHeartbeat,
 } from "@/lib/services/tv-content";
+import { getSettings } from "@/db/queries/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,10 @@ export async function GET(req: Request) {
     reportedSize: reportedSize ? reportedSize.slice(0, 32) : null,
   });
 
-  const playlist = await resolveContentForDisplay(display.id);
+  const [playlist, settings] = await Promise.all([
+    resolveContentForDisplay(display.id),
+    getSettings(),
+  ]);
 
   return NextResponse.json({
     displayId: display.id,
@@ -63,5 +67,7 @@ export async function GET(req: Request) {
     eventName: playlist.eventName,
     items: playlist.items,
     version: playlist.version,
+    restaurantName: settings?.restaurantName ?? null,
+    logoUrl: settings?.logoUrl ?? null,
   });
 }

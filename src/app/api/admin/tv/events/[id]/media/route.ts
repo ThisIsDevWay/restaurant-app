@@ -9,6 +9,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import {
   TV_MEDIA_ALLOWED_MIMES,
   TV_MEDIA_MAX_BYTES,
+  TV_MEDIA_MAX_IMAGE_BYTES,
   buildStoragePath,
   inferMediaType,
   uploadTvMediaBuffer,
@@ -86,9 +87,11 @@ export async function POST(
   if (!title) {
     return NextResponse.json({ error: "Título requerido" }, { status: 400 });
   }
-  if (file.size > TV_MEDIA_MAX_BYTES) {
+  const mediaType = inferMediaType(file.type);
+  const maxBytes = mediaType === "image" ? TV_MEDIA_MAX_IMAGE_BYTES : TV_MEDIA_MAX_BYTES;
+  if (file.size > maxBytes) {
     return NextResponse.json(
-      { error: `Archivo excede el máximo de ${Math.floor(TV_MEDIA_MAX_BYTES / 1024 / 1024)} MB` },
+      { error: `Archivo excede el máximo de ${Math.floor(maxBytes / 1024 / 1024)} MB para ${mediaType === "image" ? "imágenes" : "videos"}` },
       { status: 413 },
     );
   }
@@ -98,7 +101,6 @@ export async function POST(
       { status: 415 },
     );
   }
-  const mediaType = inferMediaType(file.type);
   if (!mediaType) {
     return NextResponse.json({ error: "Tipo no soportado" }, { status: 415 });
   }
@@ -125,15 +127,19 @@ export async function POST(
   }
 
   let thumbnailUrl: string | null = null;
+  let thumbnailFileId: string | null = null;
   if (thumbnail instanceof File && thumbnail.size > 0 && thumbnail.size < 5_000_000) {
     const thumbBuffer = Buffer.from(await thumbnail.arrayBuffer());
-    const thumbPath = `${storagePath.replace(/\.[^.]+$/, "")}.thumb.jpg`;
+    const thumbFileName = `${storagePath.replace(/\.[^.]+$/, "")}.thumb.jpg`;
     const thumbResult = await uploadTvMediaBuffer({
       buffer: thumbBuffer,
-      path: thumbPath,
+      path: thumbFileName,
       contentType: thumbnail.type || "image/jpeg",
     });
-    if (thumbResult.ok) thumbnailUrl = thumbResult.publicUrl;
+    if (thumbResult.ok) {
+      thumbnailUrl = thumbResult.publicUrl;
+      thumbnailFileId = thumbResult.fileId;
+    }
   }
 
   const last = await db
@@ -151,6 +157,8 @@ export async function POST(
       type: mediaType,
       storagePath,
       storageBucket: "tv-media",
+      imagekitFileId: upload.fileId,
+      thumbnailFileId,
       publicUrl: upload.publicUrl,
       thumbnailUrl,
       mimeType: file.type,

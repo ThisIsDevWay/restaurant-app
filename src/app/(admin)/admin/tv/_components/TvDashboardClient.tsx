@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { supabaseBrowser } from "@/lib/supabase-client";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -74,6 +75,7 @@ type Props = {
 
 export function TvDashboardClient({ initialDisplays, initialStats }: Props) {
   const [displays, setDisplays] = useState<TvDisplay[]>(initialDisplays);
+  const [onlineDisplayIds, setOnlineDisplayIds] = useState<Set<string>>(new Set());
   const [pairOpen, setPairOpen] = useState(false);
   const [provisionOpen, setProvisionOpen] = useState(false);
   const [editing, setEditing] = useState<TvDisplay | null>(null);
@@ -106,19 +108,28 @@ export function TvDashboardClient({ initialDisplays, initialStats }: Props) {
     }
   };
 
-  // Auto-refresh every 10s to keep online statuses fresh
+  // Presence: subscribe to the shared TV tracker channel to get real-time
+  // online/offline status for each display without polling the DB.
   useEffect(() => {
-    const id = window.setInterval(refresh, 10_000);
-    return () => window.clearInterval(id);
+    const channel = supabaseBrowser.channel("tv-presence-tracker");
+    channel
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState<{ displayId: string }>();
+        const ids = new Set<string>();
+        Object.values(state).forEach((presences) => {
+          presences.forEach((p) => { if (p.displayId) ids.add(p.displayId); });
+        });
+        setOnlineDisplayIds(ids);
+      })
+      .subscribe();
+    return () => { supabaseBrowser.removeChannel(channel); };
   }, []);
 
   // Compute live client-side stats
   const registeredCount = displays.filter((d) => d.isActive).length;
-  const onlineCount = displays.filter((d) => {
-    if (!d.isActive || !d.lastSeenAt) return false;
-    const lastSeenMs = Date.now() - new Date(d.lastSeenAt).getTime();
-    return lastSeenMs < 30_000;
-  }).length;
+  const onlineCount = displays.filter(
+    (d) => d.isActive && onlineDisplayIds.has(d.id),
+  ).length;
 
   const cards = [
     {
@@ -302,6 +313,7 @@ export function TvDashboardClient({ initialDisplays, initialStats }: Props) {
                     <DisplayRow
                       key={d.id}
                       display={d}
+                      isOnline={d.isActive && onlineDisplayIds.has(d.id)}
                       onEdit={() => setEditing(d)}
                       onConfigureMedia={() => setMediaConfig(d)}
                       onChange={refresh}
@@ -379,7 +391,7 @@ export function TvDashboardClient({ initialDisplays, initialStats }: Props) {
               <div className="border-t border-border/50 pt-4 flex flex-wrap gap-1.5 font-medium text-[10px]">
                 <Badge variant="secondary" className="px-2 font-medium">Multi-Resolución</Badge>
                 <Badge variant="secondary" className="px-2 font-medium">Caché offline</Badge>
-                <Badge variant="secondary" className="px-2 font-medium">Sincronización 5s</Badge>
+                <Badge variant="secondary" className="px-2 font-medium">Tiempo Real</Badge>
               </div>
             </CardContent>
           </Card>
@@ -500,18 +512,20 @@ function EmptyState({ onPair }: { onPair: () => void }) {
 
 function DisplayRow({
   display,
+  isOnline,
   onEdit,
   onConfigureMedia,
   onChange,
 }: {
   display: TvDisplay;
+  isOnline: boolean;
   onEdit: () => void;
   onConfigureMedia: () => void;
   onChange: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
   const { confirm, confirmDialog } = useConfirm();
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -519,7 +533,6 @@ function DisplayRow({
   const lastSeenMs = display.lastSeenAt
     ? Date.now() - new Date(display.lastSeenAt).getTime()
     : Infinity;
-  const isOnline = display.isActive && lastSeenMs < 30_000;
   
   const lastSeenText = !mounted
     ? "Cargando..."
