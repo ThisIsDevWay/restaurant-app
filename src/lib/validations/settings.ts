@@ -1,5 +1,11 @@
 import * as v from "valibot";
 
+// HH:MM (24h) or empty string (schedule not yet fully configured).
+const hhmm = v.union([
+  v.literal(""),
+  v.pipe(v.string(), v.regex(/^([01]?\d|2[0-3]):[0-5]\d$/, "Hora inválida (HH:MM)")),
+]);
+
 export const settingsSchema = v.object({
   bankName: v.pipe(v.string(), v.minLength(1)),
   bankCode: v.pipe(v.string(), v.minLength(1)),
@@ -42,12 +48,29 @@ export const settingsSchema = v.object({
   branchName: v.optional(v.string()),
   scheduleText: v.optional(v.string()),
   businessHours: v.optional(
-    v.object({
-      days: v.array(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(6))),
-      open: v.string(),
-      close: v.string(),
-    }),
+    v.union([
+      v.object({
+        days: v.array(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(6))),
+        open: hhmm,
+        close: hhmm,
+      }),
+      v.record(
+        v.pipe(v.string(), v.regex(/^[0-6]$/)),
+        v.object({
+          isOpen: v.boolean(),
+          intervals: v.array(
+            v.object({
+              open: hhmm,
+              close: hhmm,
+            })
+          ),
+        })
+      ),
+    ])
   ),
+  statusOverride: v.optional(v.picklist(["auto", "open", "closed"])),
+  hideMenuWhenClosed: v.optional(v.boolean()),
+  preOpenVisibilityMinutes: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
   orderModeOnSiteEnabled: v.optional(v.boolean()),
   orderModeTakeAwayEnabled: v.optional(v.boolean()),
   orderModeDeliveryEnabled: v.optional(v.boolean()),
@@ -67,6 +90,15 @@ export const settingsSchema = v.object({
   requirePaymentBeforeKitchen: v.optional(v.boolean()),
   paymentPagoMovilEnabled: v.optional(v.boolean()),
   paymentTransferEnabled: v.optional(v.boolean()),
+  paymentEfectivoEnabled: v.optional(v.boolean()),
+  paymentZelleEnabled: v.optional(v.boolean()),
+  zelleEmail: v.optional(v.string()),
+  zelleName: v.optional(v.string()),
+  paymentBinanceEnabled: v.optional(v.boolean()),
+  binanceEmail: v.optional(v.string()),
+  binancePayId: v.optional(v.string()),
+  efectivoAskCashAmount: v.optional(v.boolean()),
+  efectivoAskChangeBs: v.optional(v.boolean()),
   menuLayout: v.optional(v.picklist(["modern", "classic"])),
   menuItemSortMode: v.optional(v.picklist(["custom", "price_asc", "price_desc"])),
   tablesDefaultZoom: v.optional(v.pipe(v.number(), v.integer(), v.minValue(10), v.maxValue(200))),

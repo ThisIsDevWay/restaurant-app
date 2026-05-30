@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Instagram, LayoutGrid } from "lucide-react";
 import { HeaderCartButton } from "@/app/(public)/HeaderCartButton";
 import { getCategoryIcon } from "@/lib/categoryIcons";
-import { isOpenNow, type BusinessHours } from "@/lib/utils/date";
+import { resolveOpenState, formatBusinessHours, type BusinessHours, type StatusOverride } from "@/lib/utils/date";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -25,6 +25,8 @@ interface MenuHeaderProps {
     scheduleText: string | null;
     /** From settings.business_hours — drives the open/closed badge */
     businessHours?: BusinessHours | null;
+    /** From settings.status_override — manual open/closed override */
+    statusOverride?: StatusOverride;
     categories: Category[];
     activeCategoryId: string | null;
     onCategoryChange: (id: string | null) => void;
@@ -90,8 +92,9 @@ export function MenuHeader({
     logoUrl,
     restaurantName,
     branchName,
-    scheduleText,
+    scheduleText: scheduleTextProp,
     businessHours = null,
+    statusOverride = "auto",
     categories,
     activeCategoryId,
     onCategoryChange,
@@ -106,13 +109,17 @@ export function MenuHeader({
     const [greeting, setGreeting] = useState("¡Hola!");
     const [openStatus, setOpenStatus] = useState<boolean | null>(null);
 
+    // Texto de horario: usa el override manual o, si está vacío, el autogenerado
+    // desde businessHours.
+    const scheduleText = scheduleTextProp?.trim() || formatBusinessHours(businessHours) || null;
+
     // Open/closed status — computed on the client in America/Caracas, refreshed each minute.
     useEffect(() => {
-        const compute = () => setOpenStatus(isOpenNow(businessHours));
+        const compute = () => setOpenStatus(resolveOpenState(businessHours, statusOverride));
         compute();
         const id = setInterval(compute, 60_000);
         return () => clearInterval(id);
-    }, [businessHours]);
+    }, [businessHours, statusOverride]);
 
     useEffect(() => {
         try {
@@ -306,37 +313,32 @@ export function MenuHeader({
                         animation: "mh-logo-in 700ms 180ms cubic-bezier(0.16,1,0.3,1) both",
                     }}
                 >
-                    {/* Logo or restaurant name */}
-                    {logoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                            src={logoUrl}
-                            alt={restaurantName}
-                            className="h-auto w-auto max-h-[50px] md:max-h-[120px] lg:max-h-[160px] xl:max-h-[200px] object-contain transition-all duration-500"
+                    {/* Logo & Restaurant Name stacked beautifully */}
+                    <div className="flex flex-col items-center justify-center gap-2 lg:gap-3 transition-all duration-500">
+                        {logoUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={logoUrl}
+                                alt={restaurantName}
+                                className="h-auto w-auto max-h-[70px] md:max-h-[130px] lg:max-h-[160px] xl:max-h-[180px] object-contain"
+                                style={{
+                                    filter:
+                                        "drop-shadow(0 2px 18px rgba(0,0,0,0.55)) drop-shadow(0 0 6px rgba(0,0,0,0.35))",
+                                }}
+                            />
+                        )}
+                        <h1
+                            className="font-display text-[24px] md:text-[32px] lg:text-[40px] font-extrabold leading-tight tracking-tight text-white text-center"
                             style={{
-                                filter:
-                                    "drop-shadow(0 2px 24px rgba(0,0,0,0.65)) drop-shadow(0 0 8px rgba(0,0,0,0.45))",
-                            }}
-                        />
-                    ) : (
-                        <span
-                            style={{
-                                fontFamily: "Georgia, serif",
-                                fontStyle: "italic",
-                                fontSize: "clamp(24px, 8vw, 42px)",
-                                color: "#FFFFFF",
-                                textShadow:
-                                    "0 2px 24px rgba(0,0,0,0.65), 0 0 8px rgba(0,0,0,0.45), 2px 2px 0 #D91F26",
-                                letterSpacing: "0.02em",
-                                lineHeight: 1.2,
+                                textShadow: "0 2px 24px rgba(0,0,0,0.75), 0 0 8px rgba(0,0,0,0.55)",
                             }}
                         >
                             {restaurantName}
-                        </span>
-                    )}
+                        </h1>
+                    </div>
 
                     {/* Metadata row */}
-                    {hasMetadata && (
+                    {(hasMetadata || openStatus !== null) && (
                         <div
                             className="mh-meta-chip mt-3 lg:mt-4 hidden md:flex items-center justify-center flex-wrap"
                             style={{
@@ -356,7 +358,7 @@ export function MenuHeader({
                                 </span>
                             )}
 
-                            {branchName && scheduleText && (
+                            {branchName && (scheduleText || openStatus !== null) && (
                                 <span
                                     aria-hidden="true"
                                     style={{
@@ -376,8 +378,58 @@ export function MenuHeader({
                                     {scheduleText}
                                 </span>
                             )}
+
+                            {scheduleText && openStatus !== null && (
+                                <span
+                                    aria-hidden="true"
+                                    style={{
+                                        width: 3,
+                                        height: 3,
+                                        borderRadius: "50%",
+                                        background: "rgba(255,255,255,0.35)",
+                                        display: "inline-block",
+                                        flexShrink: 0,
+                                    }}
+                                />
+                            )}
+
+                            {openStatus !== null && (
+                                <span className="flex items-center gap-1.5 font-semibold">
+                                    <span className={`h-1.5 w-1.5 rounded-full ${openStatus ? "bg-emerald-400 mh-pulse" : "bg-rose-500"}`} />
+                                    {openStatus ? "Abierto" : "Cerrado"}
+                                </span>
+                            )}
                         </div>
                     )}
+
+                    {/* Centered Search Bar for Desktop */}
+                    <div className="mt-4 lg:mt-5 w-full max-w-md hidden md:block px-4">
+                        <div className="relative w-full">
+                            <input
+                                id="menu-search-input-desktop"
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => onSearchChange(e.target.value)}
+                                placeholder="Buscar un plato, ej. asado negro"
+                                className="w-full font-sans bg-black/35 backdrop-blur-md border border-white/10 hover:border-white/20 focus:border-white/30 rounded-xl py-2.5 px-4 pl-10 text-[13px] text-white placeholder:text-white/45 outline-none focus:ring-1 focus:ring-white/10 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+                            />
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/45 pointer-events-none">
+                                <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 16 16"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <circle cx="7" cy="7" r="5" />
+                                    <line x1="14" y1="14" x2="10.5" y2="10.5" />
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
 
                     {/* ── Desktop category count — editorial detail ─────────────── */}
                     {categories.length > 0 && (
@@ -510,13 +562,13 @@ export function MenuHeader({
                 {/* Tarjeta flotante — ubicación · horario · estado */}
                 {showInfoCard && (
                     <div className="relative z-20 -mt-10 px-4">
-                        <div className="flex items-stretch gap-3 rounded-modal bg-bg-card px-4 py-3 shadow-elevated">
+                        <div className="flex items-center gap-3 rounded-modal bg-bg-card px-4 py-3 shadow-elevated">
                             {branchName && (
-                                <div className="flex min-w-0 flex-1 items-start gap-2">
-                                    <span className="mt-[3px] shrink-0 text-primary">
+                                <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 text-center">
+                                    <span className="shrink-0 text-primary">
                                         <PinIcon />
                                     </span>
-                                    <span className="text-[12px] font-medium leading-snug text-text-main">
+                                    <span className="text-[12px] font-medium leading-snug text-text-main text-center">
                                         {branchName}
                                     </span>
                                 </div>
@@ -527,15 +579,35 @@ export function MenuHeader({
                             )}
 
                             {(scheduleText || openStatus !== null) && (
-                                <div className="flex shrink-0 flex-col justify-center gap-1.5">
-                                    {scheduleText && (
-                                        <span className="flex items-center gap-1.5 text-[12px] font-semibold text-text-main">
-                                            <span className="shrink-0 text-primary">
-                                                <ClockIcon />
+                                <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 text-center">
+                                    {scheduleText && (() => {
+                                        const match = /^([^\d]+)\s+(\d.*)$/.exec(scheduleText.trim());
+                                        if (match) {
+                                            const dayPart = match[1].replace(/\s*-\s*De\s*$/i, "").trim();
+                                            const hourPart = match[2];
+                                            return (
+                                                <div className="flex flex-col items-center justify-center gap-0.5">
+                                                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                                                        <span className="shrink-0 text-primary">
+                                                            <ClockIcon />
+                                                        </span>
+                                                        {dayPart}
+                                                    </span>
+                                                    <span className="text-[12px] font-bold text-text-main">
+                                                        {hourPart}
+                                                    </span>
+                                                </div>
+                                            );
+                                        }
+                                        return (
+                                            <span className="flex items-center justify-center gap-1.5 text-[12px] font-semibold text-text-main text-center">
+                                                <span className="shrink-0 text-primary">
+                                                    <ClockIcon />
+                                                </span>
+                                                {scheduleText}
                                             </span>
-                                            {scheduleText}
-                                        </span>
-                                    )}
+                                        );
+                                    })()}
                                     {openStatus !== null && <OpenBadge open={openStatus} />}
                                 </div>
                             )}
@@ -815,12 +887,12 @@ function PillButton({
 
 function OpenBadge({ open }: { open: boolean }) {
     return open ? (
-        <span className="ml-7 inline-flex w-fit items-center gap-1 rounded-pill bg-success/15 px-2 py-0.5 text-[10px] font-bold text-success">
+        <span className="inline-flex w-fit items-center gap-1 rounded-pill bg-success/15 px-2 py-0.5 text-[10px] font-bold text-success">
             <span className="h-1.5 w-1.5 rounded-full bg-success" />
             Abierto
         </span>
     ) : (
-        <span className="ml-7 inline-flex w-fit items-center gap-1 rounded-pill bg-error/10 px-2 py-0.5 text-[10px] font-bold text-error">
+        <span className="inline-flex w-fit items-center gap-1 rounded-pill bg-error/10 px-2 py-0.5 text-[10px] font-bold text-error">
             <span className="h-1.5 w-1.5 rounded-full bg-error" />
             Cerrado
         </span>

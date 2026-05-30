@@ -62,6 +62,12 @@ export const settings = pgTable("settings", {
     open: string;
     close: string;
   } | null>(),
+  // Manual open/closed override over the automatic schedule: auto | open | closed
+  statusOverride: text("status_override").notNull().default("auto"),
+  // When true, the public menu and checkout are hidden while the restaurant is closed
+  hideMenuWhenClosed: boolean("hide_menu_when_closed").notNull().default(false),
+  // How many minutes before opening the menu becomes visible (pre-open window)
+  preOpenVisibilityMinutes: integer("pre_open_visibility_minutes").notNull().default(0),
   orderModeOnSiteEnabled: boolean("order_mode_on_site_enabled").notNull().default(true),
   orderModeTakeAwayEnabled: boolean("order_mode_take_away_enabled").notNull().default(true),
   orderModeDeliveryEnabled: boolean("order_mode_delivery_enabled").notNull().default(true),
@@ -79,6 +85,15 @@ export const settings = pgTable("settings", {
     .default(false),
   paymentPagoMovilEnabled: boolean("payment_pago_movil_enabled").notNull().default(true),
   paymentTransferEnabled: boolean("payment_transfer_enabled").notNull().default(true),
+  paymentEfectivoEnabled: boolean("payment_efectivo_enabled").notNull().default(false),
+  paymentZelleEnabled: boolean("payment_zelle_enabled").notNull().default(false),
+  zelleEmail: text("zelle_email"),
+  zelleName: text("zelle_name"),
+  paymentBinanceEnabled: boolean("payment_binance_enabled").notNull().default(false),
+  binanceEmail: text("binance_email"),
+  binancePayId: text("binance_pay_id"),
+  efectivoAskCashAmount: boolean("efectivo_ask_cash_amount").notNull().default(true),
+  efectivoAskChangeBs: boolean("efectivo_ask_change_bs").notNull().default(true),
   menuLayout: text("menu_layout").notNull().default("modern"),
   menuItemSortMode: text("menu_item_sort_mode").notNull().default("custom"),
   tablesGridCols: integer("tables_grid_cols").notNull().default(20),

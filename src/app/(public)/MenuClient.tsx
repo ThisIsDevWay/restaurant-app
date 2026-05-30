@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MenuGrid } from "@/components/public/menu/MenuGrid";
 import { MenuHeader } from "@/components/public/menu/MenuHeader";
 import { PlatoDelDiaBanner } from "@/components/public/menu/PlatoDelDiaBanner";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItemWithComponents as MenuItem } from "@/types/menu.types";
 import { useMenuAvailability } from "@/hooks/useMenuAvailability";
-import { useMenuRefresh } from "@/hooks/useMenuRefresh";
+import { useMenuRefresh, type MenuItemUpdatePayload } from "@/hooks/useMenuRefresh";
+import { isMenuVisible, type StatusOverride } from "@/lib/utils/date";
+import { ClosedScreen } from "@/components/public/menu/ClosedScreen";
 import { toast } from "sonner";
-import { useCallback } from "react";
 
 interface Category {
   id: string;
@@ -54,6 +55,11 @@ interface MenuClientProps {
   branchName?: string | null;
   scheduleText?: string | null;
   businessHours?: { days: number[]; open: string; close: string } | null;
+  statusOverride?: StatusOverride;
+  hideMenuWhenClosed?: boolean;
+  preOpenVisibilityMinutes?: number;
+  /** Server-computed initial visibility, prevents a flash before the client recomputes. */
+  initialVisible?: boolean;
   instagramUrl?: string | null;
   showRate?: boolean;
   rateData?: {
@@ -64,7 +70,7 @@ interface MenuClientProps {
 }
 
 export function MenuClient({
-  items,
+  items: initialItems,
   categories,
   rate,
   allContornos,
@@ -80,10 +86,44 @@ export function MenuClient({
   branchName = null,
   scheduleText = null,
   businessHours = null,
+  statusOverride = "auto",
+  hideMenuWhenClosed = false,
+  preOpenVisibilityMinutes = 0,
+  initialVisible = true,
   instagramUrl = null,
   showRate = false,
   rateData = null,
 }: MenuClientProps) {
+  // ─── Estado local de items ─────────────────────────────────────────────────
+  // Inicializado con los props del RSC. Se actualiza de dos formas:
+  //  1. router.refresh() (cambios estructurales) → llega nueva prop initialItems
+  //  2. handleItemUpdate (precio/nombre) → merge en estado sin round-trip a DB
+  const [items, setItems] = useState<MenuItem[]>(initialItems);
+
+  // Sincronizar cuando el RSC pasa props frescos (después de router.refresh())
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
+
+  // Visibilidad del menú según horario/estado. Valor inicial calculado en el
+  // servidor (sin parpadeo); se recalcula en cliente cada 60 s para captar la
+  // transición por reloj. Los cambios de configuración llegan vía useMenuRefresh
+  // (realtime de settings → router.refresh() → nuevos props → recálculo).
+  const [visible, setVisible] = useState(initialVisible);
+  useEffect(() => {
+    const compute = () =>
+      setVisible(
+        isMenuVisible(businessHours, {
+          hideWhenClosed: hideMenuWhenClosed,
+          preOpenMinutes: preOpenVisibilityMinutes,
+          statusOverride,
+        }),
+      );
+    compute();
+    const id = setInterval(compute, 60_000);
+    return () => clearInterval(id);
+  }, [businessHours, hideMenuWhenClosed, preOpenVisibilityMinutes, statusOverride]);
+
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [availabilityMap, setAvailabilityMap] = useState<Map<string, boolean>>(new Map());
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,7 +134,6 @@ export function MenuClient({
   const syncWithMenu = useCartStore((s) => s.syncWithMenu);
 
   useEffect(() => {
-    // Sincronizar items del carrito con el catálogo activo
     syncWithMenu(items);
   }, [items, syncWithMenu]);
 
@@ -106,36 +145,62 @@ export function MenuClient({
 
   const handleAvailabilityChange = useCallback((map: Map<string, boolean>) => {
     setAvailabilityMap(map);
-    
-    // Check if any item in cart became unavailable
+
     cartItems.forEach((cartItem, index) => {
       if (map.has(cartItem.id) && map.get(cartItem.id) === false) {
         removeItem(index);
         toast.error(`"${cartItem.name}" se agotó y fue removido de tu pedido.`, {
           duration: 5000,
-          id: `sold-out-${cartItem.id}`, // Avoid multiple toasts for same item
+          id: `sold-out-${cartItem.id}`,
         });
       }
     });
   }, [cartItems, removeItem]);
 
+  /**
+   * Recibe el payload de un UPDATE en menu_items vía Realtime y hace merge
+   * en el estado local sin necesitar router.refresh() ni una query a la DB.
+   * Solo se aplica si el item está en el menú de hoy (filtrado por id).
+   */
+  const handleItemUpdate = useCallback((updated: MenuItemUpdatePayload) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === updated.id ? { ...item, ...updated } : item,
+      ),
+    );
+  }, []);
+
   useMenuAvailability(handleAvailabilityChange);
-  useMenuRefresh();
+  useMenuRefresh(handleItemUpdate);
 
   const filteredItems = items.filter((i) => {
     const matchesCategory = !activeCategory || i.categoryId === activeCategory;
-    const matchesSearch = !searchQuery ||
+    const matchesSearch =
+      !searchQuery ||
       i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (i.description && i.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      (i.description &&
+        i.description.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
 
   const showBanners = activeCategory === null && searchQuery === "";
   const platoDelDiaItem =
-    items.find(item => item.isPlatoDelDia && item.isAvailable) ||
-    items.find(item => item.imageUrl && item.isAvailable) ||
-    items.find(item => item.isAvailable) ||
+    items.find((item) => item.isPlatoDelDia && item.isAvailable) ||
+    items.find((item) => item.imageUrl && item.isAvailable) ||
+    items.find((item) => item.isAvailable) ||
     null;
+
+  if (!visible) {
+    return (
+      <ClosedScreen
+        restaurantName={restaurantName}
+        logoUrl={logoUrl}
+        scheduleText={scheduleText}
+        businessHours={businessHours}
+        statusOverride={statusOverride}
+      />
+    );
+  }
 
   return (
     <>
@@ -147,6 +212,7 @@ export function MenuClient({
           branchName={branchName}
           scheduleText={scheduleText}
           businessHours={businessHours}
+          statusOverride={statusOverride}
           categories={categories}
           activeCategoryId={activeCategory}
           onCategoryChange={setActiveCategory}

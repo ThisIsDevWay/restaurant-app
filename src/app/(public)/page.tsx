@@ -10,6 +10,7 @@ import { getDailyMenuWithOptionsAndComponents } from "@/db/queries/daily-menu";
 import { getCategories } from "@/db/queries/menu";
 import { getAllContornos } from "@/db/queries/contornos";
 import { getActiveRate, getSettings } from "@/db/queries/settings";
+import { isMenuVisible, type StatusOverride } from "@/lib/utils/date";
 import { MenuGridSkeleton } from "@/components/customer/MenuGridSkeleton";
 import { MenuClient } from "./MenuClient";
 import { Cart } from "@/components/public/cart/Cart";
@@ -57,6 +58,17 @@ export default async function MenuPage() {
     const bebidasEnabled = appSettings?.bebidasEnabled ?? true;
     const maxQuantityPerItem = appSettings?.maxQuantityPerItem ?? 10;
 
+    // Open/closed gating (computed in Caracas time on the server for the initial paint)
+    const businessHours = appSettings?.businessHours ?? null;
+    const statusOverride = (appSettings?.statusOverride ?? "auto") as StatusOverride;
+    const hideMenuWhenClosed = appSettings?.hideMenuWhenClosed ?? false;
+    const preOpenVisibilityMinutes = appSettings?.preOpenVisibilityMinutes ?? 0;
+    const initialVisible = isMenuVisible(businessHours, {
+      hideWhenClosed: hideMenuWhenClosed,
+      preOpenMinutes: preOpenVisibilityMinutes,
+      statusOverride,
+    });
+
     // Filter categories to only those that have items in today's menu
     const usedCategoryIds = new Set(items.map((i) => i.categoryId));
     const menuCategories = availableCategories.filter((c) =>
@@ -65,10 +77,11 @@ export default async function MenuPage() {
 
     return (
       <div className="min-h-screen bg-bg-app">
-        {/* Active order banner */}
-        <ActiveOrdersBanner />
+        {/* Active order banner — oculto cuando el restaurante está cerrado */}
+        {initialVisible && <ActiveOrdersBanner />}
 
-        {/* Categories + Menu */}
+        {/* Categories + Menu — MenuClient se mantiene montado siempre para conservar
+            la suscripción realtime de settings (reabre el menú sin recargar). */}
         <Suspense fallback={<MenuGridSkeleton />}>
           <MenuClient
             items={items}
@@ -86,7 +99,11 @@ export default async function MenuPage() {
             restaurantName={appSettings?.restaurantName}
             branchName={appSettings?.branchName}
             scheduleText={appSettings?.scheduleText}
-            businessHours={appSettings?.businessHours ?? null}
+            businessHours={businessHours}
+            statusOverride={statusOverride}
+            hideMenuWhenClosed={hideMenuWhenClosed}
+            preOpenVisibilityMinutes={preOpenVisibilityMinutes}
+            initialVisible={initialVisible}
             instagramUrl={appSettings?.instagramUrl}
             showRate={!!showRate}
             rateData={rateData}
@@ -94,13 +111,15 @@ export default async function MenuPage() {
           />
         </Suspense>
 
-        {/* Cart bottom bar + drawer */}
-        <Cart
-          maxQuantityPerItem={maxQuantityPerItem}
-          dailyAdicionales={dailyAdicionales}
-          dailyBebidas={dailyBebidas}
-          rate={rate}
-        />
+        {/* Cart bottom bar + drawer — oculto cuando el restaurante está cerrado */}
+        {initialVisible && (
+          <Cart
+            maxQuantityPerItem={maxQuantityPerItem}
+            dailyAdicionales={dailyAdicionales}
+            dailyBebidas={dailyBebidas}
+            rate={rate}
+          />
+        )}
       </div>
     );
   } catch (error) {
