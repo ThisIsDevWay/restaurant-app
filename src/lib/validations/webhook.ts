@@ -1,8 +1,8 @@
 import * as v from "valibot";
 
 export const webhookSchema = v.object({
-  amount: v.number(),
-  reference: v.string(),
+  amount: v.optional(v.number()),
+  reference: v.optional(v.string()),
   phone: v.optional(v.string()),
   timestamp: v.optional(v.number()),
 });

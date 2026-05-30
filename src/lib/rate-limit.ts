@@ -52,6 +52,8 @@ export const rateLimiters = {
   orderStatus: createLimiter(30, 60_000),  // 30 req/min
   checkout: createLimiter(10, 60_000),  // 10 req/min
   lookup: createLimiter(20, 60_000),  // 20 req/min
+  imagekitUpload: createLimiter(5, 60_000),   // 5 uploads/min per IP
+  tvPairCheck: createLimiter(10, 60_000),     // 10 checks/min per IP (backoff against brute-force)
 };
 
 export function getIP(request: Request): string {

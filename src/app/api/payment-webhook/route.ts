@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
+import * as v from "valibot";
 import { verifyWebhookSignature } from "@/lib/crypto";
 import { rateLimiters, getIP } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { processWebhookPayload } from "@/services/payment.service";
+import { webhookSchema } from "@/lib/validations/webhook";
 
 export async function POST(req: Request) {
   try {
@@ -36,7 +38,22 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Delegate to provider via service
+    // 3. Validate payload shape before delegating
+    let parsedBody: unknown;
+    try {
+      parsedBody = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+    const parsed = v.safeParse(webhookSchema, parsedBody);
+    if (!parsed.success) {
+      logger.warn("Webhook payload schema validation failed", {
+        issues: parsed.issues.map((i) => i.message),
+      });
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    // 4. Delegate to provider via service
     const result = await processWebhookPayload(rawBody, undefined, signature);
 
     if (result.success) {

@@ -44,6 +44,14 @@ export async function POST(req: Request) {
       );
     }
 
+    // Reject expired orders — prevents using a stale token to confirm a timed-out order.
+    if (order.expiresAt < new Date()) {
+      return NextResponse.json(
+        { success: false, error: "Orden expirada" },
+        { status: 410 },
+      );
+    }
+
     // Verify the caller owns this order — compare tokens with constant-time equality
     // to prevent timing attacks. Reject if token is missing (already-paid orders have null token).
     if (!order.checkoutToken) {
