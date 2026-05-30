@@ -103,6 +103,7 @@ describe("checkoutSchema — validación de entrada", () => {
         phone: "04121234567",
         paymentMethod: "pago_movil" as const,
         items: [{ id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", quantity: 1 }],
+        checkoutToken: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
     };
 
     it("acepta un payload válido", () => {

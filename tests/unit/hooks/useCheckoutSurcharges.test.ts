@@ -41,6 +41,9 @@ const settings = {
   transferAccountRif: "",
   paymentPagoMovilEnabled: true,
   paymentTransferEnabled: true,
+  paymentEfectivoEnabled: true,
+  paymentZelleEnabled: true,
+  paymentBinanceEnabled: true,
 };
 
 describe("useCheckoutSurcharges", () => {

@@ -23,6 +23,9 @@ const mockSettings: CheckoutSettings = {
   transferAccountRif: "J-12345678-9",
   paymentPagoMovilEnabled: true,
   paymentTransferEnabled: true,
+  paymentEfectivoEnabled: true,
+  paymentZelleEnabled: true,
+  paymentBinanceEnabled: true,
 };
 
 const defaultProps = {
@@ -205,6 +208,12 @@ describe("useCheckoutForm", () => {
         vi.advanceTimersByTime(400);
       });
 
+      // Set name and cedula (required fields)
+      act(() => {
+        result.current.setName("Carlos Perez");
+        result.current.setCedula("V-12345678");
+      });
+
       act(() => {
         result.current.handleSubmit();
       });
@@ -212,11 +221,12 @@ describe("useCheckoutForm", () => {
       expect(onSubmit).toHaveBeenCalledWith(
         "04141234567",
         "pago_movil",
-        undefined,
-        undefined,
+        "Carlos Perez",
+        "V-12345678",
         "take_away",
         undefined,
         undefined, // surcharges
+        null, // gpsCoords
       );
     });
   });
