@@ -6,6 +6,7 @@ import {
   jsonb,
   timestamp,
   unique,
+  index,
 } from "drizzle-orm/pg-core";
 
 export const paymentsLog = pgTable("payments_log", {
@@ -27,4 +28,6 @@ export const paymentsLog = pgTable("payments_log", {
   uniqueReference: unique("payments_log_reference_unique")
     .on(table.reference)
     .nullsNotDistinct(),
+  orderIdIdx: index("payments_log_order_id_idx").on(table.orderId),
+  orderIdCreatedIdx: index("payments_log_order_id_created_idx").on(table.orderId, table.createdAt),
 }));

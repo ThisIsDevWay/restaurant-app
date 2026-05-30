@@ -139,4 +139,8 @@ export const orders = pgTable("orders", {
   createdAtIdx: index("orders_created_at_idx").on(table.createdAt),
   orderNumberIdx: index("orders_order_number_idx").on(table.orderNumber),
   customerPhoneIdx: index("orders_customer_phone_idx").on(table.customerPhone),
+  // Composite indexes for common query patterns
+  phoneCreatedIdx: index("orders_phone_created_idx").on(table.customerPhone, table.createdAt),
+  statusCreatedIdx: index("orders_status_created_idx").on(table.status, table.createdAt),
+  providerCreatedIdx: index("orders_provider_created_idx").on(table.paymentProvider, table.createdAt),
 }));
