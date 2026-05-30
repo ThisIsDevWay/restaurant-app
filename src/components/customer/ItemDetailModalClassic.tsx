@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -238,20 +238,29 @@ export function ItemDetailModalClassic({
                     "md:rounded-[24px]",
                     "md:rounded-l-none md:rounded-r-[24px]",
                 )}>
-                    {/* Close button */}
+                    {/* Mobile back button (mobile only) */}
                     <button
                         onClick={modal.handleClose}
-                        className="absolute right-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-bg-card/90 text-text-main shadow-md backdrop-blur-md transition-colors active:bg-surface-section"
+                        className="md:hidden absolute left-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-bg-card/90 text-text-main shadow-md backdrop-blur-md transition-colors active:bg-surface-section"
+                        aria-label="Volver"
+                    >
+                        <ArrowLeft className="h-5 w-5 stroke-[2.5]" />
+                    </button>
+
+                    {/* Desktop close button (desktop only) */}
+                    <button
+                        onClick={modal.handleClose}
+                        className="hidden md:flex absolute right-4 top-4 z-50 h-9 w-9 items-center justify-center rounded-full bg-bg-card/90 text-text-main shadow-md backdrop-blur-md transition-colors active:bg-surface-section"
                         aria-label="Cerrar"
                     >
-                        <X className="h-5 w-5" />
+                        <X className="h-5 w-5 stroke-[2.5]" />
                     </button>
 
                     {/* ── Scrollable body ──────────────────────────────────────── */}
                     <div className="flex-1 overflow-y-auto pb-4">
 
                         {/* MOBILE/TABLET: Top image banner */}
-                        {hasImage ? (
+                        {hasImage && (
                             <div
                                 className="relative w-full bg-bg-image flex items-center justify-center border-b border-border/50 md:hidden"
                                 style={{ height: "clamp(200px, 35vh, 280px)" }}
@@ -266,14 +275,13 @@ export function ItemDetailModalClassic({
                                     priority
                                 />
                             </div>
-                        ) : (
-                            <div className="relative w-full aspect-[4/3] sm:aspect-video bg-bg-image flex items-center justify-center border-b border-border md:hidden">
-                                <span className="text-6xl opacity-40">🍽️</span>
-                            </div>
                         )}
 
                         {/* MOBILE/TABLET: Dish info block */}
-                        <div className="md:hidden px-5 pt-5 pb-2">
+                        <div className={cn(
+                            "md:hidden px-5 pb-2",
+                            hasImage ? "pt-5" : "pt-14"
+                        )}>
                             <h2
                                 className="font-display font-black leading-tight text-text-main"
                                 style={{ fontSize: "clamp(1.4rem, 6vw, 1.7rem)" }}

@@ -331,27 +331,17 @@ export function ItemDetailModalModern({
       <div
         ref={modal.dialogRef}
         className={cn(
-          "absolute bottom-0 left-0 right-0 flex max-h-[95svh] md:max-h-[88vh] flex-col overflow-hiddenRoundedRounded rounded-t-[24px] overflow-hidden md:rounded-none",
+          "absolute bottom-0 left-0 right-0 flex max-h-[95svh] md:max-h-[88vh] flex-col",
           "transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          "bg-transparent md:bg-bg-card md:shadow-[0_-8px_40px_rgba(37,26,7,0.14),_0_0_0_0.5px_rgba(37,26,7,0.06)] md:rounded-[28px] md:overflow-hidden",
           hasImage
-            ? "md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[740px] md:flex-row md:max-h-[88vh] md:rounded-[28px] md:overflow-hidden lg:w-[880px]"
-            : "md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[520px] md:max-h-[88vh] md:rounded-[28px] md:overflow-hidden lg:w-[580px]",
+            ? "md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[740px] md:flex-row md:max-h-[88vh] lg:w-[880px]"
+            : "md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[520px] md:max-h-[88vh] lg:w-[580px]",
           modal.closing
             ? "translate-y-full md:opacity-0 md:-translate-y-[45%]"
             : "translate-y-0 md:opacity-100 md:-translate-y-1/2",
         )}
-        style={{
-          /* Override Tailwind bg-bg-card on outer — set explicitly */
-          background: "var(--bg-card, #fff)",
-          boxShadow: "0 -8px 40px rgba(37,26,7,0.14), 0 0 0 0.5px rgba(37,26,7,0.06)",
-        }}
       >
-        {/* Drag handle (mobile only, absolute at top of sheet) */}
-        <div className="md:hidden absolute top-2 left-1/2 -translate-x-1/2 z-40" style={{
-          width: 36, height: 4,
-          borderRadius: 99,
-          background: hasImage ? "rgba(255,255,255,0.4)" : "rgba(37,26,7,0.12)",
-        }} />
 
         {/* ── LEFT PANEL (md+) ─────────────────────────────────────────── */}
         {hasImage && (
@@ -462,31 +452,64 @@ export function ItemDetailModalModern({
           {/* ── SCROLLABLE CONTENT ── */}
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto"
+            className="flex-1 overflow-y-auto animate-in fade-in duration-300"
             style={{ overscrollBehavior: "contain" }}
           >
-            {/* Mobile Hero (mobile only) */}
-            <MobileHero
-              item={item}
-              imageLoaded={imageLoaded}
-              onImageLoad={() => setImageLoaded(true)}
-              onClose={modal.handleClose}
-              categoryName={item.categoryName}
-            />
+            {/* Mobile-only spacer to allow suspended image to float */}
+            {hasImage && <div className="h-32 md:hidden w-full shrink-0" />}
 
-            {/* ── SCROLL SPY TAB BAR (mobile only) — sticky right after hero ── */}
-            <StickyTabBar
-              tabs={tabs}
-              activeId={activeSection}
-              onTabClick={scrollToSection}
-            />
+            {/* Mobile-only card wrapper / Desktop-only pass-through */}
+            <div className="relative flex flex-col bg-bg-card rounded-t-[28px] shadow-[0_-8px_40px_rgba(37,26,7,0.12)] md:p-0 md:bg-transparent md:shadow-none md:rounded-none">
+              
+              {/* Drag handle (mobile only) */}
+              <div className="md:hidden absolute top-2.5 left-1/2 -translate-x-1/2 z-40" style={{
+                width: 36, height: 4,
+                borderRadius: 99,
+                background: "rgba(37,26,7,0.12)",
+              }} />
 
-            {/* ── DETALLE SECTION (mobile) — description + INCLUYE ── */}
-            <div
-              id={`${uid}-detalle`}
-              className="md:hidden px-5 pt-4 pb-5 scroll-mt-12 animate-in fade-in"
-              style={{ background: "var(--bg-card, #fff)" }}
-            >
+              {/* Mobile suspended close button */}
+              <button
+                onClick={modal.handleClose}
+                className="md:hidden absolute left-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-[#251a07]/10 bg-[#fff2e2]/90 text-[#251a07] shadow-sm backdrop-blur-md transition-all active:scale-95"
+                aria-label="Volver"
+              >
+                <ArrowLeft className="h-5 w-5 stroke-[2.5]" />
+              </button>
+
+              {/* Suspended image for mobile (Responsive clamp + Contain to prevent cutting) */}
+              {hasImage && (
+                <div 
+                  className={cn(
+                    "md:hidden absolute -top-[clamp(115px,30vw,145px)] left-1/2 z-20 -translate-x-1/2 pointer-events-none transition-all duration-700 ease-out",
+                    imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-90"
+                  )}
+                  style={{ 
+                    width: "clamp(230px, 62vw, 275px)", 
+                    height: "clamp(230px, 62vw, 275px)" 
+                  }}
+                >
+                  <Image
+                    src={item.imageUrl!}
+                    alt={item.name}
+                    fill
+                    className="object-cover rounded-3xl drop-shadow-[0_15px_25px_rgba(0,0,0,0.15)] transition-all duration-500"
+                    sizes="(max-width: 500px) 240px, 280px"
+                    quality={90}
+                    priority
+                    onLoad={() => setImageLoaded(true)}
+                  />
+                </div>
+              )}
+
+              {/* ── DETALLE SECTION (mobile) — description + INCLUYE ── */}
+              <div
+                id={`${uid}-detalle`}
+                className={cn(
+                  "md:hidden px-5 pb-5 scroll-mt-12 animate-in fade-in bg-transparent",
+                  hasImage ? "pt-[110px]" : "pt-14"
+                )}
+              >
               {/* Name + price */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -558,6 +581,13 @@ export function ItemDetailModalModern({
               )}
             </div>
 
+            {/* ── SCROLL SPY TAB BAR (mobile only) — sticky right after hero ── */}
+            <StickyTabBar
+              tabs={tabs}
+              activeId={activeSection}
+              onTabClick={scrollToSection}
+            />
+
             {/* Spacer after hero on md+ when no image */}
             <div className="hidden md:block h-0" />
 
@@ -621,7 +651,8 @@ export function ItemDetailModalModern({
 
             {/* Bottom spacer */}
             <div className="h-28 md:h-2" />
-          </div>
+          </div> {/* end of card wrapper */}
+        </div> {/* end of scroll view */}
 
           {/* ── STICKY CTA FOOTER ── */}
           <ModalFooter
