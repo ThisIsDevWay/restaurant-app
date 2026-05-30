@@ -120,6 +120,23 @@ export function useMenuRefresh(
         { event: "DELETE", schema: "public", table: "daily_bebidas" },
         scheduleRefresh,
       )
+      // Contornos añadidos / removidos del día
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "daily_contornos" },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "daily_contornos" },
+        scheduleRefresh,
+      )
+      // Relación plato <-> contorno modificada (acompañamientos de un plato)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "menu_item_contornos" },
+        scheduleRefresh,
+      )
       // Cambio de precio / nombre / descripción en catálogo
       // → merge en estado local; NO dispara router.refresh()
       .on(

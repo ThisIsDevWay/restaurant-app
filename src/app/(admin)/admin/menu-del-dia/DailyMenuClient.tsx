@@ -35,6 +35,8 @@ export function DailyMenuClient({
     initialPlatoDelDiaItemId,
   });
 
+  const contornos = useItemContornos({ allItems, setIsDirty: state.setIsDirty });
+
   const sync = useDailyMenuSync({
     selectedDate: state.selectedDate,
     setSelectedDate: state.setSelectedDate,
@@ -49,9 +51,11 @@ export function DailyMenuClient({
     setCopyDate: state.setCopyDate,
     copying: state.copying,
     setCopying: state.setCopying,
+    itemContornoSelections: contornos.itemContornoSelections,
+    modifiedItemIds: contornos.modifiedItemIds,
+    clearModifiedItems: contornos.clearModifiedItems,
   });
 
-  const contornos = useItemContornos({ allItems });
   const pdf = useMenuPdfDownload(state.selectedDate);
   const { label: dateLabel, badge: dateBadge } = formatDateLabel(state.selectedDate, today);
 

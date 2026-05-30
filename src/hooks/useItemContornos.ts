@@ -1,31 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback, useTransition } from "react";
-import { saveMenuItemContornosAction } from "@/actions/contornos";
+import { useState, useEffect, useCallback } from "react";
 import type { ContornoSelection, CatalogItem } from "@/app/(admin)/admin/menu-del-dia/DailyMenu.types";
 
 export interface UseItemContornosParams {
   allItems: CatalogItem[];
+  setIsDirty?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export interface UseItemContornosReturn {
   itemContornoSelections: Record<string, ContornoSelection[]>;
   handleToggleContorno: (itemId: string, contornoId: string, name: string) => void;
   handleUpdateContornoSettings: (itemId: string, contornoId: string, updates: Partial<ContornoSelection>) => void;
+  modifiedItemIds: string[];
+  clearModifiedItems: () => void;
 }
 
 /**
- * Manages per-item contorno selections with auto-save.
- *
- * The original code used setTimeout(0) to defer the save because the new selections
- * were captured in a local variable inside the setState updater — making them
- * unavailable synchronously. This hook eliminates that by computing the new selections
- * independently of setState, then passing the computed value to both setState and the
- * save action via startTransition.
+ * Manages per-item contorno selections with manual save and dirty tracking.
+ * Changes are kept in local state, mark the form as dirty, and record which items changed.
  */
-export function useItemContornos({ allItems }: UseItemContornosParams): UseItemContornosReturn {
+export function useItemContornos({ allItems, setIsDirty }: UseItemContornosParams): UseItemContornosReturn {
   const [itemContornoSelections, setItemContornoSelections] = useState<Record<string, ContornoSelection[]>>({});
-  const [_isPending, startTransition] = useTransition();
+  const [modifiedItemIds, setModifiedItemIds] = useState<Set<string>>(new Set());
 
   // Initialize item contorno selections from allItems
   useEffect(() => {
@@ -42,60 +39,46 @@ export function useItemContornos({ allItems }: UseItemContornosParams): UseItemC
   }, [allItems]);
 
   const handleToggleContorno = useCallback((itemId: string, contornoId: string, name: string) => {
-    // Compute new selections BEFORE setState — eliminates the need for setTimeout(0)
     const currentSelections = itemContornoSelections[itemId] || [];
     const isAlreadySelected = currentSelections.some(c => c.id === contornoId);
 
     const newSelections: ContornoSelection[] = isAlreadySelected
       ? currentSelections.filter(c => c.id !== contornoId)
-      : [...currentSelections, { id: contornoId, name, removable: true, substituteContornoIds: [] }];
+      : [...currentSelections, { id: contornoId, name, removable: false, substituteContornoIds: [] }];
 
     setItemContornoSelections(prev => ({ ...prev, [itemId]: newSelections }));
-
-    // Save immediately — newSelections is captured in closure, no setTimeout needed
-    startTransition(async () => {
-      const result = await saveMenuItemContornosAction({
-        menuItemId: itemId,
-        items: newSelections.map(c => ({
-          contornoId: c.id,
-          removable: c.removable,
-          substituteContornoIds: c.substituteContornoIds,
-        })),
-      });
-      if (result?.serverError || result?.validationErrors) {
-        console.error(result.serverError || "Error validando contornos");
-      }
+    setModifiedItemIds((prev) => {
+      const next = new Set(prev);
+      next.add(itemId);
+      return next;
     });
-  }, [itemContornoSelections, startTransition]);
+    setIsDirty?.(true);
+  }, [itemContornoSelections, setIsDirty]);
 
   const handleUpdateContornoSettings = useCallback((itemId: string, contornoId: string, updates: Partial<ContornoSelection>) => {
-    // Compute new selections BEFORE setState
     const currentSelections = itemContornoSelections[itemId] || [];
     const newSelections = currentSelections.map(c =>
       c.id === contornoId ? { ...c, ...updates } : c
     );
 
     setItemContornoSelections(prev => ({ ...prev, [itemId]: newSelections }));
-
-    // Save immediately — newSelections is captured in closure
-    startTransition(async () => {
-      const result = await saveMenuItemContornosAction({
-        menuItemId: itemId,
-        items: newSelections.map(c => ({
-          contornoId: c.id,
-          removable: c.removable,
-          substituteContornoIds: c.substituteContornoIds,
-        })),
-      });
-      if (result?.serverError || result?.validationErrors) {
-        console.error(result.serverError || "Error validando contornos");
-      }
+    setModifiedItemIds((prev) => {
+      const next = new Set(prev);
+      next.add(itemId);
+      return next;
     });
-  }, [itemContornoSelections, startTransition]);
+    setIsDirty?.(true);
+  }, [itemContornoSelections, setIsDirty]);
+
+  const clearModifiedItems = useCallback(() => {
+    setModifiedItemIds(new Set());
+  }, []);
 
   return {
     itemContornoSelections,
     handleToggleContorno,
     handleUpdateContornoSettings,
+    modifiedItemIds: Array.from(modifiedItemIds),
+    clearModifiedItems,
   };
 }

@@ -15,7 +15,7 @@ import {
 import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import { getSettings } from "./settings";
 import { sortDailyMenuItems, type MenuItemSortMode } from "./sort-utils";
-import { unstable_cache, revalidateTag } from "next/cache";
+import { unstable_cache, revalidateTag, revalidatePath } from "next/cache";
 
 function formatLocalDate(date: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -442,6 +442,7 @@ export function getDailyMenuWithOptionsAndComponentsFresh(dateStr?: string) {
 
 export function invalidateDailyMenuCache() {
   revalidateTag("daily-menu");
+  revalidatePath("/");
 }
 
 export async function getDailyMenuItemIds(dateStr: string) {

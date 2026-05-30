@@ -3,6 +3,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { invalidateMenuCache } from "@/db/queries/menu";
+import { invalidateDailyMenuCache } from "@/db/queries/daily-menu";
 import {
   setMenuItemContornos as setMenuItemContornosDb,
 } from "@/db/queries/contornos";
@@ -29,12 +30,12 @@ export const saveMenuItemContornosAction = adminActionClient
         })),
       );
       invalidateMenuCache();
+      invalidateDailyMenuCache();
       revalidatePath("/admin/catalogo");
+      revalidatePath("/");
       return { success: true };
     } catch (error) {
       console.error("Error saving contornos:", error);
       return { success: false, error: "Error al guardar contornos del plato" };
     }
   });
-
-
