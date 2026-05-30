@@ -70,13 +70,15 @@
                 -e url "https://your-domain.com/tv?token=tv_abc123"
           The URL is persisted to SharedPreferences and the WebView reloads.
         -->
+        <!--
+          exported="false": only shell (ADB) and same-app components can send this broadcast.
+          Use explicit component targeting from ADB:
+            adb shell am broadcast -n com.losportillos.tv/.UrlReceiver -e url "https://..."
+        -->
         <receiver
             android:name=".UrlReceiver"
             android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.restaurantgm.tv.SET_URL" />
-            </intent-filter>
+            android:exported="false">
         </receiver>
 
     </application>

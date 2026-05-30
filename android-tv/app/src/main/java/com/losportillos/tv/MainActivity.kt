@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var lastErrorAt = 0L
     private var menuPressedAt = 0L
+    private var retryDelayMs = 5000L
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
@@ -156,6 +157,13 @@ class MainActivity : AppCompatActivity() {
                 if (request.isForMainFrame) showOfflineAndRetry(error.description?.toString() ?: "error")
             }
 
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                if (!isShowingError) {
+                    retryDelayMs = 5000L
+                }
+            }
+
             override fun onRenderProcessGone(
                 view: WebView,
                 detail: RenderProcessGoneDetail
@@ -212,9 +220,12 @@ class MainActivity : AppCompatActivity() {
         isShowingError = true
         binding.errorOverlay.visibility = View.VISIBLE
         binding.errorReason.text = reason
-        Log.w(TAG, "WebView load failed: $reason. Retrying in 5s.")
+        Log.w(TAG, "WebView load failed: $reason. Retrying in ${retryDelayMs / 1000}s.")
         handler.removeCallbacksAndMessages(RETRY_TOKEN)
-        handler.postAtTime({ reload() }, RETRY_TOKEN, android.os.SystemClock.uptimeMillis() + 5_000)
+        handler.postAtTime({ reload() }, RETRY_TOKEN, android.os.SystemClock.uptimeMillis() + retryDelayMs)
+
+        // Exponential backoff: double retry delay up to 60 seconds.
+        retryDelayMs = (retryDelayMs * 2).coerceAtMost(60_000L)
     }
 
     /* ───────────────────────── Kiosk lock-down ───────────────────────── */

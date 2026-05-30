@@ -12,9 +12,10 @@
 3. Aritmética monetaria: SOLO enteros en cents. Nunca floats. Nunca string "36.50".
 4. Tasa BCV: SOLO `getActiveRate()`. Nunca hardcodear un número.
 5. DB operations: SOLO Supabase MCP (`apply_migration`, `execute_sql`). Nunca `pnpm db:migrate` ni `drizzle-kit push`.
+   EXCEPCIÓN: índices con CONCURRENTLY deben aplicarse con `execute_sql` (no con apply_migration — falla dentro de tx).
 6. Autenticación en rutas admin: verificar `session.user.role === "admin"` server-side SIEMPRE, aunque el middleware ya proteja.
 7. Logging: SOLO `logger` de `@/lib/logger`. Nunca `console.log` en producción.
-8. Cron jobs: SOLO `pg_cron` + `pg_net` de Supabase. Nunca Vercel Cron.
+8. Cron jobs: Supabase pg_cron + pg_net Y/O Vercel Cron (`vercel.json`). Ambos están en uso.
 9. Pagos: SOLO factory pattern `getActiveProvider(settings)`. Nunca hardcodear un provider.
 10. BANESCO_API_MOCK: DEBE estar ausente o `false` en producción. Verificar ANTES de tocar pagos.
 ```
@@ -45,7 +46,7 @@
 | UI Primitives | `@base-ui/react` | — | **NO es Radix UI** — Todos los `ui/` components usan `@base-ui` |
 | Styling | Tailwind CSS | ^4.1.8 | Variables CSS en `globals.css` via `@theme` |
 | Icons | `lucide-react` | — | Único set de iconos |
-| Image upload | Supabase Storage | — | `@/lib/supabase.ts` y `@/lib/services/comprobante-upload.ts` |
+| Image upload | ImageKit | — | `@/lib/imagekit/server.ts` (uploads server-side) y `GET /api/imagekit/auth` (checkout anónimo) |
 
 ---
 
@@ -116,8 +117,10 @@ src/
 │   ├── logger.ts             — logger.{info,warn,error}(msg, ctx)
 │   ├── crypto.ts             — utilidades de idempotencia (tokens de checkout)
 │   ├── utils.ts              — cn, obfuscatePhone, maskPhone, formatPhone, formatOrderDate, formatRate
-│   ├── supabase.ts           — cliente Supabase JS (solo para Storage)
-│   ├── supabase-image-loader.ts — loader para next/image con Supabase Storage
+│   ├── supabase.ts           — cliente Supabase JS (Realtime, auth helpers)
+│   ├── imagekit/
+│   │   ├── server.ts         — uploadBuffer, deleteFile, getUploadAuth (server-only)
+│   │   └── utils.ts          — toOriginalUrl
 │   ├── clipboard-pago-movil.ts — buildPagoMovilClipboard(opts)
 │   ├── constants/
 │   │   └── order-status.ts   — type OrderStatus
@@ -132,7 +135,9 @@ src/
 │   ├── payments/
 │   │   └── format-provider.ts  — formatProvider(slug)
 │   ├── services/
-│   │   └── comprobante-upload.ts — uploadComprobante(file, orderId): UploadResult
+│   │   ├── tv-content.ts     — getPlaylistForDisplay, updateDisplayHeartbeat (throttled 60s)
+│   │   ├── tv-broadcast.ts   — broadcastDisplayRefresh
+│   │   └── tv-pairing.ts     — generatePairingCode (6-char alphanumeric), validatePairingCode, generateDisplayToken
 │   ├── types/
 │   │   └── checkout.ts       — CheckoutItem type (la forma que entra al action)
 │   ├── utils/
@@ -151,21 +156,22 @@ src/
 │       ├── client.ts         — cliente WhatsApp (instancia/sessión)
 │       └── messages.ts       — sendOrderMessage(orderId, settings, customer)
 │
-├── hooks/                    ← React hooks — solo usar en Client Components
-│   ├── useCartCalculation.ts
-│   ├── useCheckoutForm.ts
-│   ├── useCheckoutSurcharges.ts  — UseCheckoutSurchargesReturn (surcharges, grandTotalBsCents, etc.)
-│   ├── useComprobanteUpload.ts   — UseComprobanteUploadReturn
-│   ├── useDailyMenuState.ts
-│   ├── useDailyMenuSync.ts
-│   ├── useItemContornos.ts
-│   ├── useItemDetailModal.ts     — UseItemDetailModalReturn (maneja toda la lógica modal del menú)
-│   ├── useMenuItemForm.ts        — UseMenuItemFormReturn (admin form para items)
-│   ├── useOnlineStatus.ts
-│   └── useSettingsForm.ts
+├── hooks/                    ← React hooks — solo usar en Client Components (27 hooks total)
+│   ├── useCartCalculation.ts / useCheckoutForm.ts / useCheckoutSurcharges.ts / useSettingsForm.ts
+│   ├── useComprobanteUpload.ts / useItemContornos.ts / useItemDetailModal.ts / useMenuItemForm.ts
+│   ├── useDailyMenuState.ts / useDailyMenuSync.ts / useOnlineStatus.ts / useScrollSpy.ts
+│   ├── useMenuAvailability.ts    — realtime availability via Supabase channel (mount-only, ref pattern)
+│   ├── useMenuRefresh.ts         — realtime structural refresh + in-place item UPDATE merge
+│   ├── useOrdersRealtime.ts / usePOSRealtime.ts / usePOSMenuSync.ts
+│   ├── useTvRealtime.ts          — realtime para TV display (displayId-scoped channel)
+│   ├── useActiveOrders.ts / useTvController.ts / useTvDisplays.ts
+│   └── (+ checkout wizard hooks)
 │
-├── store/
-│   └── cartStore.ts          — CartItem, CartState, useCartStore (Zustand persist)
+├── store/                    ← Zustand stores (4 stores total)
+│   ├── cartStore.ts          — CartItem, CartState, useCartStore (persist)
+│   ├── posCartStore.ts       — POS cart (no persist)
+│   ├── tableLayoutStore.ts   — salon grid layout (detecta colisiones)
+│   └── fixtureLayoutStore.ts — fixture layout
 │
 ├── types/
 │   ├── index.ts              — Order, NewOrder, Customer, DailyMenuItem, SystemSettings, etc. (inferidos de schema)
@@ -342,7 +348,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Demasiadas solicitudes" }, { status: 429 });
   }
 }
-// Limiters disponibles: checkout (10/min), paymentWebhook (100/min), orderStatus (30/min), lookup (20/min)
+// Limiters: checkout(10/min), paymentWebhook(100/min), orderStatus(30/min), lookup(20/min), imagekitUpload(5/min), tvPairCheck(10/min)
 ```
 
 ### 3.6 Logging y Sentry
@@ -517,10 +523,15 @@ UPSTASH_REDIS_REST_TOKEN=
 SENTRY_DSN=
 SENTRY_AUTH_TOKEN=
 
-# Supabase Storage (comprobantes, imágenes)
+# Supabase (Realtime + Auth helpers)
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+
+# ImageKit (imágenes de menú, comprobantes, TV media, branding)
+NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY=
+NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT=
+IMAGEKIT_PRIVATE_KEY=
 
 # Pagos
 BANESCO_API_URL=

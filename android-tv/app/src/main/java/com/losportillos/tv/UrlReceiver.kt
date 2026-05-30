@@ -18,7 +18,7 @@ class UrlReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != "com.restaurantgm.tv.SET_URL") return
         val url = intent.getStringExtra("url")?.trim().orEmpty()
-        if (url.isBlank() || !url.startsWith("http")) return
+        if (url.isBlank() || !url.startsWith("https://")) return
 
         Prefs.setUrl(context, url)
 

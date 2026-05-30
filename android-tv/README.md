@@ -9,7 +9,7 @@ App nativa para Android TV que carga `/tv` del servidor en modo kiosk fullscreen
 - **Bloquea BACK** y retoma el foco cuando se presiona HOME
 - **Pantalla siempre encendida** mientras la app está en primer plano
 - **Audio automático** — detecta que está en modo kiosk y desbloquea sonido sin requerir toque
-- **Auto-recuperación** — recarga ante crash del render, reintenta cada 5s en error de red
+- **Auto-recuperación** — recarga ante crash del render, reintenta con backoff exponencial (5s a 60s) en error de red
 - **Video con aceleración hardware** (`LAYER_TYPE_HARDWARE`) — fix para `<video>` rotado en negro
 - **Long-press MENU 3s** en el control para abrir la pantalla de configuración
 - **Configuración remota vía ADB** para batch-configurar todas las TVs desde un laptop
@@ -21,6 +21,7 @@ App nativa para Android TV que carga `/tv` del servidor en modo kiosk fullscreen
 | `applicationId` (visible en dispositivo / Play Store) | `com.restaurantgm.tv` |
 | `namespace` (paquete Java interno) | `com.losportillos.tv` |
 | Broadcast action | `com.restaurantgm.tv.SET_URL` |
+| Broadcast component | `com.losportillos.tv/.UrlReceiver` (requerido por exported="false") |
 
 > El namespace se actualizará cuando se complete el rebranding.
 
@@ -114,6 +115,7 @@ adb -s 192.168.1.XX:5555 install app/build/outputs/apk/release/app-release.apk
 
 # Configurar token (generar desde /admin/tv → Pre-provisionar TV)
 adb -s 192.168.1.XX:5555 shell am broadcast \
+    -n com.losportillos.tv/.UrlReceiver \
     -a com.restaurantgm.tv.SET_URL \
     --es url "https://tu-dominio.com/tv?token=tv_XXXXXXXX"
 
@@ -137,6 +139,7 @@ while read ip token; do
   adb connect "$ip:5555"
   adb -s "$ip:5555" install -r app/build/outputs/apk/release/app-release.apk
   adb -s "$ip:5555" shell am broadcast \
+      -n com.losportillos.tv/.UrlReceiver \
       -a com.restaurantgm.tv.SET_URL \
       --es url "https://tu-dominio.com/tv?token=$token"
   adb -s "$ip:5555" shell cmd package set-home-activity \
@@ -156,6 +159,7 @@ adb -s 192.168.1.XX:5555 install -r app/build/outputs/apk/release/app-release.ap
 ### Cambiar la URL / rotar token (sin reinstalar)
 ```bash
 adb -s 192.168.1.XX:5555 shell am broadcast \
+    -n com.losportillos.tv/.UrlReceiver \
     -a com.restaurantgm.tv.SET_URL \
     --es url "https://tu-dominio.com/tv?token=tv_NUEVO"
 ```
@@ -189,9 +193,11 @@ Run → Run 'app'   (Shift+F10)
 pnpm dev --hostname 0.0.0.0
 
 # Configurar el emulador (10.0.2.2 = tu PC desde el emulador)
+# Nota: La app ahora exige protocolo seguro https:// para configurar la URL.
 adb shell am broadcast \
+    -n com.losportillos.tv/.UrlReceiver \
     -a com.restaurantgm.tv.SET_URL \
-    --es url "http://10.0.2.2:3000/tv"
+    --es url "https://10.0.2.2:3000/tv"
 ```
 
 ### LDPlayer (validación rápida)
@@ -199,8 +205,9 @@ adb shell am broadcast \
 adb connect localhost:5555
 adb -s localhost:5555 install app\build\outputs\apk\debug\app-debug.apk
 adb -s localhost:5555 shell am broadcast ^
+    -n com.losportillos.tv/.UrlReceiver ^
     -a com.restaurantgm.tv.SET_URL ^
-    --es url "http://10.0.2.2:3000/tv"
+    --es url "https://10.0.2.2:3000/tv"
 ```
 
 ## Troubleshooting
