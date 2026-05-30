@@ -1,5 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from "react";
-import { Store, Package, MapPin, ChevronLeft, Loader2, CheckCircle2, AlertCircle, Home } from "lucide-react";
+"use client";
+
+import { useState, useCallback } from "react";
+import { Store, Package, MapPin, Loader2, CheckCircle2, AlertCircle, Home } from "lucide-react";
 import { formatRef } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { OrderMode, GpsCoords } from "./CheckoutForm.types";
@@ -18,7 +20,7 @@ interface OrderModeSelectorProps {
   onSetOrderMode: (mode: OrderMode) => void;
   deliveryAddress: string;
   onSetDeliveryAddress: (address: string) => void;
-  settings: { deliveryCoverage: string | null } | null;
+  settings: { deliveryCoverage: string | null; deliveryFeeUsdCents?: number } | null;
   isSubmitting: boolean;
   surcharges: { deliveryUsdCents: number };
   gpsCoords: GpsCoords | null;
@@ -58,7 +60,6 @@ export function OrderModeSelector({
   const [isGeolocating, setIsGeolocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [usedGps, setUsedGps] = useState(false);
-  const addressRef = useRef<HTMLDivElement>(null);
 
   const handleGetLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -77,22 +78,20 @@ export function OrderModeSelector({
           accuracy: pos.coords.accuracy,
         };
         onSetGpsCoords(coords);
-        
+
         try {
           const { reverseGeocodeAction } = await import("@/actions/geocoding");
           const result = await reverseGeocodeAction(coords.lat, coords.lng);
-          
+
           if (result.success && result.address) {
             onSetDeliveryAddress(result.address);
             setUsedGps(true);
           } else {
-            // Mostrar error para debug en mobile
             onSetDeliveryAddress(
               `Error: ${result.error || "No se encontró dirección"}. GPS: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`
             );
           }
-        } catch (err) {
-          console.error("Geocoding failed:", err);
+        } catch {
           onSetDeliveryAddress(
             `GPS: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)} (±${Math.round(coords.accuracy)}m)`
           );
@@ -113,144 +112,139 @@ export function OrderModeSelector({
   }, [onSetGpsCoords, onSetDeliveryAddress]);
 
   return (
-    <div className="bg-bg-card rounded-[20px] p-5 border border-border shadow-sm">
-      {/* ✅ M1: Header */}
-      <div className="text-[11px] font-display font-black tracking-[0.1em] text-text-muted uppercase mb-4 flex items-center gap-2 opacity-80">
-        <span className="w-4 h-[1px] bg-border" />
-        ¿Cómo prefieres tu pedido?
-      </div>
-
-      {/* ✅ M1: Selector Cards */}
-      <div className={cn(
-        "grid gap-3",
-        availableModes.length === 3 ? "grid-cols-3" : "grid-cols-2"
-      )}>
-        {availableModes.map((mode) => {
-          const Icon = MODE_ICONS[mode.id];
-          const selected = orderMode === mode.id;
-          return (
+    <div className="flex flex-col gap-2.5">
+      {availableModes.map((mode) => {
+        const Icon = MODE_ICONS[mode.id];
+        const selected = orderMode === mode.id;
+        const isDelivery = mode.id === "delivery";
+        return (
+          <div key={mode.id}>
             <button
-              key={mode.id}
               type="button"
               onClick={() => onSetOrderMode(mode.id)}
+              disabled={isSubmitting}
               className={cn(
-                "relative flex flex-col items-center justify-center rounded-[18px] p-4 transition-all duration-300 border-[1.5px] group",
-                selected 
-                  ? "bg-[#FAF5F2] border-[#7B2D2D] shadow-md scale-[1.02]" 
-                  : "bg-surface-section border-transparent hover:bg-border/10 active:scale-95"
+                "w-full flex items-center gap-3.5 p-4 rounded-[18px] border transition-all duration-200 text-left",
+                selected
+                  ? "bg-bg-card border-2 border-primary shadow-[0_8px_22px_rgba(187,0,5,0.12)]"
+                  : "bg-bg-card border border-border shadow-card"
               )}
             >
-              <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-all duration-500",
-                selected ? "bg-[#7B2D2D] text-white shadow-lg shadow-[#7B2D2D]/20 scale-110" : "bg-bg-card text-text-muted group-hover:scale-110"
-              )}>
-                <Icon className="w-7 h-7" strokeWidth={selected ? 2.5 : 2} />
+              {/* Icon */}
+              <div
+                className={cn(
+                  "w-[52px] h-[52px] rounded-[14px] flex items-center justify-center shrink-0 transition-colors duration-200",
+                  selected ? "bg-primary text-white" : "bg-surface-section text-text-main"
+                )}
+              >
+                <Icon className="w-6 h-6" strokeWidth={selected ? 2.5 : 2} />
               </div>
-              
-              <span className={cn(
-                "text-[clamp(11px,3vw,13px)] font-display font-black tracking-tight transition-colors text-center uppercase",
-                selected ? "text-[#7B2D2D]" : "text-text-main"
-              )}>
-                {MODE_LABELS[mode.id]}
-              </span>
-              <span className="text-[9px] font-bold text-text-muted/60 uppercase tracking-widest mt-1 text-center leading-tight">
-                {MODE_DESCRIPTIONS[mode.id]}
-              </span>
 
-              {/* Selection Dot */}
-              {selected && (
-                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#7B2D2D] animate-in zoom-in" />
-              )}
+              {/* Labels */}
+              <div className="flex-1 min-w-0">
+                <p className="font-display text-[22px] leading-none text-text-main">
+                  {MODE_LABELS[mode.id]}
+                </p>
+                <p className="font-sans text-[13px] text-text-muted mt-0.5">
+                  {MODE_DESCRIPTIONS[mode.id]}
+                </p>
+                {isDelivery && surcharges.deliveryUsdCents > 0 && (
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-surface-section text-text-muted font-sans text-[10px] font-semibold">
+                    +{formatRef(surcharges.deliveryUsdCents)}
+                  </span>
+                )}
+              </div>
+
+              {/* Radio */}
+              <div
+                className={cn(
+                  "w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors duration-200",
+                  selected ? "bg-primary border-primary" : "border-border"
+                )}
+              >
+                {selected && (
+                  <div className="w-2 h-2 rounded-full bg-white" />
+                )}
+              </div>
             </button>
-          );
-        })}
-      </div>
 
-      {/* ✅ M1: Delivery Address with max-h transition */}
-      <div 
-        ref={addressRef}
-        className={cn(
-          "overflow-hidden transition-all duration-500 ease-in-out",
-          orderMode === "delivery" ? "max-h-[400px] opacity-100 mt-5 pt-5 border-t border-border/40" : "max-h-0 opacity-0 mt-0 pt-0 border-t-0"
-        )}
-      >
-        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[13px] font-display font-black text-text-main tracking-tight uppercase">
-                <MapPin className="w-4 h-4 text-[#7B2D2D]" />
-                Dirección de entrega
-              </div>
-              
-              {surcharges.deliveryUsdCents > 0 && (
-                <div className="text-[11px] font-black text-[#7B2D2D] bg-[#7B2D2D]/5 px-3 py-1 rounded-full border border-[#7B2D2D]/10 shadow-sm">
-                  + {formatRef(surcharges.deliveryUsdCents)} envío
+            {/* Delivery address — only shown under delivery card */}
+            {isDelivery && orderMode === "delivery" && (
+              <div className="mt-2 px-1 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                {settings?.deliveryCoverage && (
+                  <div className="bg-amber-50/80 border border-amber-200/50 rounded-[12px] px-4 py-2.5 flex items-start gap-2.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-[10px] leading-tight font-bold text-amber-900/70 uppercase tracking-wider">
+                      {settings.deliveryCoverage}
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleGetLocation}
+                  disabled={isGeolocating || isSubmitting}
+                  className={cn(
+                    "w-full flex items-center justify-center gap-2.5 rounded-[14px] py-3.5 text-[13px] font-sans font-semibold transition-all active:scale-[0.98]",
+                    gpsCoords
+                      ? "bg-[#E8EFE3] border border-[rgba(63,107,74,0.4)] text-[#3F6B4A]"
+                      : "bg-bg-card border border-border text-text-main"
+                  )}
+                >
+                  {isGeolocating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Localizando...
+                    </>
+                  ) : gpsCoords ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      Ubicación GPS activada
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="w-4 h-4 text-primary" />
+                      Usar mi ubicación actual
+                    </>
+                  )}
+                </button>
+
+                {geoError && (
+                  <p className="text-[11px] text-primary font-semibold px-1">
+                    ⚠️ {geoError}
+                  </p>
+                )}
+
+                {usedGps && (
+                  <div className="bg-amber-50 border border-amber-200/60 rounded-[12px] px-4 py-2 flex items-center gap-2">
+                    <span className="text-[14px]">✍️</span>
+                    <p className="text-[11px] font-bold text-amber-900 uppercase tracking-tight">
+                      Completa o corrige tu dirección
+                    </p>
+                  </div>
+                )}
+
+                <div
+                  className={cn(
+                    "flex items-center gap-2.5 px-3.5 py-3 rounded-[14px] border",
+                    "bg-bg-card border-border"
+                  )}
+                >
+                  <Home className="w-4 h-4 text-text-muted shrink-0" />
+                  <input
+                    type="text"
+                    value={deliveryAddress}
+                    onChange={(e) => onSetDeliveryAddress(e.target.value)}
+                    placeholder="Av. Principal, Edif. Torre, Piso 3..."
+                    className="flex-1 bg-transparent outline-none text-[14px] text-text-main font-sans placeholder:text-text-muted/40"
+                    disabled={isSubmitting}
+                  />
                 </div>
-              )}
-            </div>
-
-            {settings?.deliveryCoverage && (
-              <div className="bg-amber-50/50 border border-amber-200/30 rounded-xl px-4 py-2.5 flex items-start gap-2.5">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-[10px] leading-tight font-bold text-amber-900/70 uppercase tracking-wider">
-                  {settings.deliveryCoverage}
-                </p>
               </div>
             )}
           </div>
-
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={handleGetLocation}
-              disabled={isGeolocating}
-              className={cn(
-                "w-full flex items-center justify-center gap-3 rounded-[14px] py-3.5 text-[13px] font-display font-black transition-all active:scale-[0.98] shadow-sm",
-                gpsCoords 
-                  ? "bg-[#2A7A4A] text-white shadow-[#2A7A4A]/20" 
-                  : "bg-white text-text-main border border-border hover:bg-surface-section"
-              )}
-            >
-              {isGeolocating ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Localizando...</>
-              ) : gpsCoords ? (
-                <><CheckCircle2 className="w-4 h-4" /> Ubicación GPS activada</>
-              ) : (
-                <><MapPin className="w-4 h-4 text-[#7B2D2D]" /> Usar mi ubicación actual</>
-              )}
-            </button>
-
-            {geoError && (
-              <div className="text-[11px] text-[#7B2D2D] font-bold px-1 bg-[#7B2D2D]/5 p-2 rounded-lg border border-[#7B2D2D]/10 animate-in shake">
-                ⚠️ {geoError}
-              </div>
-            )}
-
-            {usedGps && (
-              <div className="bg-amber-100 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center gap-2.5 animate-in slide-in-from-top-2">
-                <span className="text-[14px]">✍️</span>
-                <p className="text-[11px] font-black text-amber-900 uppercase tracking-tight">
-                  Completa o corrige tu dirección
-                </p>
-              </div>
-            )}
-
-            <div className="relative group">
-              <input
-                type="text"
-                value={deliveryAddress}
-                onChange={(e) => onSetDeliveryAddress(e.target.value)}
-                placeholder="Ej: Av. Principal, Edif. Torre, Piso 3..."
-                className="w-full bg-surface-section rounded-xl px-4 py-3.5 border border-border/40 outline-none text-[14px] text-text-main font-sans placeholder:text-text-muted/30 focus:border-[#7B2D2D]/40 focus:bg-white transition-all shadow-sm"
-                disabled={isSubmitting}
-              />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted/20 group-focus-within:text-[#7B2D2D]/40 transition-colors">
-                <Home className="w-5 h-5" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
 }

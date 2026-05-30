@@ -17,9 +17,18 @@ export interface CheckoutSettings {
   transferAccountRif: string;
   paymentPagoMovilEnabled: boolean;
   paymentTransferEnabled: boolean;
+  paymentEfectivoEnabled: boolean;
+  efectivoAskCashAmount?: boolean;
+  efectivoAskChangeBs?: boolean;
+  paymentZelleEnabled: boolean;
+  zelleEmail?: string | null;
+  zelleName?: string | null;
+  paymentBinanceEnabled: boolean;
+  binanceEmail?: string | null;
+  binancePayId?: string | null;
 }
 
-export type PaymentMethod = "pago_movil" | "transfer";
+export type PaymentMethod = "pago_movil" | "transfer" | "efectivo" | "zelle" | "binance";
 export type OrderMode = "on_site" | "take_away" | "delivery";
 
 export interface CheckoutFormProps {

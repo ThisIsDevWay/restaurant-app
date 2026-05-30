@@ -63,16 +63,18 @@ export function useCheckoutForm({
 
   // ✅ M2: Expand by default if first time
   useEffect(() => {
-    const seen = localStorage.getItem("checkout_summary_seen");
-    if (!seen) {
-      setSummaryExpanded(true);
+    if (typeof window !== "undefined" && window.localStorage && typeof window.localStorage.getItem === "function") {
+      const seen = localStorage.getItem("checkout_summary_seen");
+      if (!seen) {
+        setSummaryExpanded(true);
+      }
     }
   }, []);
 
   // ✅ M2: Save "seen" flag when collapsing
   const toggleSummary = useCallback(() => {
     setSummaryExpanded((prev) => {
-      if (prev === true) {
+      if (prev === true && typeof window !== "undefined" && window.localStorage && typeof window.localStorage.setItem === "function") {
         localStorage.setItem("checkout_summary_seen", "true");
       }
       return !prev;

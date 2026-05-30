@@ -1,70 +1,86 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { processCheckoutAction, type CheckoutResult } from "@/actions/checkout";
 import { type CheckoutItem } from "@/lib/types/checkout";
-import { formatBs } from "@/lib/money";
-import { Loader2, AlertCircle, ChevronLeft } from "lucide-react";
-import { ReferenceEntry } from "@/components/public/checkout/ReferenceEntry";
-import { WhatsAppPayment } from "@/components/public/checkout/WhatsAppPayment";
-import { WaitingPayment } from "@/components/public/checkout/WaitingPayment";
-import { PaymentSuccess } from "@/components/public/checkout/PaymentSuccess";
-import { CheckoutForm } from "@/components/public/checkout/CheckoutForm";
-import { PagoMovilScreen } from "@/components/public/checkout/PagoMovilScreen";
 import { useCheckoutSurcharges } from "@/hooks/useCheckoutSurcharges";
-import type { PaymentInitResult, BankDetails } from "@/lib/payment-providers";
-import type { GpsCoords } from "@/components/public/checkout/CheckoutForm.types";
+import type { PaymentInitResult } from "@/lib/payment-providers/types";
+import type { GpsCoords, OrderMode } from "@/components/public/checkout/CheckoutForm.types";
+import { AlertCircle } from "lucide-react";
 
-type CheckoutState =
-  | { type: "form" }
-  | { type: "enter_reference"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: BankDetails }
-  | { type: "whatsapp"; orderId: string; waLink: string; prefilledMessage: string }
-  | {
-    type: "comprobante";
-    orderId: string;
-    totalBsCents: number;
-    totalUsdCents: number;
-    serverPrefilledMessage: string;
-    serverWaLink: string;
-    bankDetails: { bankName: string; bankCode: string; accountPhone: string; accountRif: string; };
-    orderMode: string;
-    deliveryAddress: string;
-    gpsCoords: GpsCoords | null;
-  }
-  | { type: "waiting_auto"; orderId: string; expiresAt: string; totalBsCents: number; bankDetails: BankDetails }
-  | { type: "success"; orderId: string; totalBsCents: number }
-  | { type: "error"; message: string };
+// New wizard chrome
+import { WizardHeader } from "@/components/public/checkout/WizardHeader";
+import { WizardProgress } from "@/components/public/checkout/WizardProgress";
+import { WizardCartChip } from "@/components/public/checkout/WizardCartChip";
+import { StickyCta } from "@/components/public/checkout/StickyCta";
+
+// Step components
+import { OrderModeSelector } from "@/components/public/checkout/OrderModeSelector";
+import { CheckoutForm } from "@/components/public/checkout/CheckoutForm";
+import { PaymentMethodSelector } from "@/components/public/checkout/PaymentMethodSelector";
+import { Step4BankDetails } from "@/components/public/checkout/Step4BankDetails";
+import { Step5Success } from "@/components/public/checkout/Step5Success";
+
+type WizardStep = 1 | 2 | 3 | 4 | 5;
+type PaymentMethod = "pago_movil" | "transfer" | "efectivo" | "zelle" | "binance";
+
+interface WizardState {
+  step: WizardStep;
+  submitting: boolean;
+  error: string | null;
+
+  // Step 1
+  orderMode: OrderMode | null;
+
+  // Step 2
+  phone: string;
+  name: string;
+  cedula: string;
+  address: string;
+  gpsCoords: GpsCoords | null;
+  isReturning: boolean;
+  customerFieldsVisible: boolean;
+
+  // Step 3
+  payment: PaymentMethod | null;
+  cashAmountUsd: string;
+  acceptChangeBs: boolean | null;
+
+  // Step 4-5 (post-order)
+  orderId: string | null;
+  expiresAt: string | null;
+  initResult: PaymentInitResult | null;
+}
 
 /* ── sessionStorage persistence ── */
 const CHECKOUT_STORAGE_KEY = "gm_checkout_state";
-const CHECKOUT_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const CHECKOUT_TTL_MS = 30 * 60 * 1000;
 
 interface PersistedCheckout {
-  state: CheckoutState;
+  state: Partial<WizardState>;
   savedAt: number;
 }
 
-function persistCheckout(checkoutState: CheckoutState) {
+function persistCheckout(state: WizardState) {
   try {
-    const payload: PersistedCheckout = { state: checkoutState, savedAt: Date.now() };
+    if (state.step < 4) return; // Only persist post-order states
+    const payload: PersistedCheckout = { state, savedAt: Date.now() };
     sessionStorage.setItem(CHECKOUT_STORAGE_KEY, JSON.stringify(payload));
-  } catch { /* quota exceeded or SSR — ignore */ }
+  } catch {}
 }
 
-function restoreCheckout(): CheckoutState | null {
+function restoreCheckout(): Partial<WizardState> | null {
   try {
     const raw = sessionStorage.getItem(CHECKOUT_STORAGE_KEY);
     if (!raw) return null;
     const { state, savedAt } = JSON.parse(raw) as PersistedCheckout;
-    // Expire stale sessions
     if (Date.now() - savedAt > CHECKOUT_TTL_MS) {
       sessionStorage.removeItem(CHECKOUT_STORAGE_KEY);
       return null;
     }
-    // Only restore post-order states (not form/success/error)
-    if (state.type === "form" || state.type === "success" || state.type === "error") {
+    if (!state.step || state.step < 4) {
       sessionStorage.removeItem(CHECKOUT_STORAGE_KEY);
       return null;
     }
@@ -75,7 +91,7 @@ function restoreCheckout(): CheckoutState | null {
 }
 
 function clearPersistedCheckout() {
-  try { sessionStorage.removeItem(CHECKOUT_STORAGE_KEY); } catch { /* ignore */ }
+  try { sessionStorage.removeItem(CHECKOUT_STORAGE_KEY); } catch {}
 }
 
 interface CheckoutSettings {
@@ -94,6 +110,15 @@ interface CheckoutSettings {
   transferAccountRif: string;
   paymentPagoMovilEnabled: boolean;
   paymentTransferEnabled: boolean;
+  paymentEfectivoEnabled: boolean;
+  efectivoAskCashAmount?: boolean;
+  efectivoAskChangeBs?: boolean;
+  paymentZelleEnabled: boolean;
+  zelleEmail?: string | null;
+  zelleName?: string | null;
+  paymentBinanceEnabled: boolean;
+  binanceEmail?: string | null;
+  binancePayId?: string | null;
   whatsappNumber: string;
   bankName: string;
   bankCode: string;
@@ -103,7 +128,30 @@ interface CheckoutSettings {
   orderExpirationMinutes: number;
 }
 
+const INITIAL_STATE: WizardState = {
+  step: 1,
+  submitting: false,
+  error: null,
+  orderMode: null,
+  phone: "",
+  name: "",
+  cedula: "",
+  address: "",
+  gpsCoords: null,
+  isReturning: false,
+  customerFieldsVisible: false,
+  payment: null,
+  cashAmountUsd: "",
+  acceptChangeBs: null,
+  orderId: null,
+  expiresAt: null,
+  initResult: null,
+};
+
 export default function CheckoutClient({ initialSettings }: { initialSettings: CheckoutSettings }) {
+  const router = useRouter();
+
+  // Cart
   const items = useCartStore((s) => s.items);
   const cartTotalBsCents = useCartStore((s) => s.totalBsCents());
   const totalBsCentsFromRate = useCartStore((s) => s.totalBsCentsFromRate);
@@ -112,93 +160,120 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
   const checkoutToken = useCartStore((s) => s.checkoutToken);
   const ensureCheckoutToken = useCartStore((s) => s.ensureCheckoutToken);
   const clearCheckoutToken = useCartStore((s) => s.clearCheckoutToken);
-  const router = useRouter();
-  const [state, setStateRaw] = useState<CheckoutState>({ type: "form" });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Wrapper: persist post-order states to sessionStorage
-  const setState = useCallback((next: CheckoutState) => {
-    setStateRaw(next);
-    if (next.type === "form" || next.type === "success" || next.type === "error") {
-      clearPersistedCheckout();
-    } else {
-      persistCheckout(next);
-    }
+  const [state, setStateRaw] = useState<WizardState>(INITIAL_STATE);
+  const [cartOpen, setCartOpen] = useState(false);
+
+  // Persist post-order state
+  const setState = useCallback((next: WizardState | ((prev: WizardState) => WizardState)) => {
+    setStateRaw((prev) => {
+      const resolved = typeof next === "function" ? next(prev) : next;
+      if (resolved.step >= 4) persistCheckout(resolved);
+      else clearPersistedCheckout();
+      return resolved;
+    });
   }, []);
-
-  // Clears persistence + cart WITHOUT transitioning state (for PagoMovil's "Orden Notificada" screen)
-  const handleCleanup = useCallback(() => {
-    clearPersistedCheckout();
-    clearCart();
-    clearCheckoutToken();
-  }, [clearCart, clearCheckoutToken]);
 
   // Restore persisted state on mount
   useEffect(() => {
     const restored = restoreCheckout();
     if (restored) {
-      setStateRaw(restored);
+      setStateRaw((prev) => ({ ...prev, ...restored }));
     }
-  }, []);
-
-  const [totalBsCents, setTotalBsCents] = useState(() =>
-    initialSettings.rate ? totalBsCentsFromRate(initialSettings.rate) : cartTotalBsCents
-  );
-  const [settings, setSettings] = useState<CheckoutSettings>(initialSettings);
-
-  // Ensure token on mount
-  useEffect(() => {
     ensureCheckoutToken();
   }, [ensureCheckoutToken]);
 
-  // Compute surcharges from cart items + settings
-  const { surcharges } = useCheckoutSurcharges({
-    items,
-    orderMode: null, // Will be set by form; we compute here for display
-    settings,
-    totalBsCents: cartTotalBsCents,
-    totalUsdCents,
-  });
+  // Customer lookup with debounce
+  const lookupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  if (items.length === 0 && state.type === "form") {
-    return (
-      <div className="flex min-h-[100dvh] flex-col items-center justify-center px-6 text-center bg-bg-app">
-        <div className="w-20 h-20 rounded-full bg-border/30 flex items-center justify-center mb-6 animate-pulse">
-            <AlertCircle className="w-10 h-10 text-primary/40" strokeWidth={1} />
-        </div>
-        <h2 className="text-[22px] font-display font-black text-text-main mb-2">
-          Tu carrito está vacío
-        </h2>
-        <p className="text-[15px] text-text-muted mb-8 max-w-[280px] font-medium leading-relaxed">
-          Explora nuestro menú y agrega tus platos favoritos para continuar.
-        </p>
-        <button
-          onClick={() => router.push("/")}
-          className="w-full max-w-[240px] rounded-2xl bg-primary px-6 py-4 text-[15px] font-display font-bold text-white shadow-xl shadow-primary/20 active:scale-[0.98] transition-all"
-        >
-          Explorar menú
-        </button>
-      </div>
-    );
-  }
+  const lookupCustomer = useCallback(async (phoneNumber: string) => {
+    try {
+      const res = await fetch(`/api/customers/lookup?phone=${phoneNumber}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setStateRaw((prev) => ({
+        ...prev,
+        name: data.found ? (data.name ?? "") : "",
+        cedula: data.found ? (data.cedula ?? "") : "",
+        isReturning: data.found,
+        customerFieldsVisible: true,
+      }));
+    } catch {
+      setStateRaw((prev) => ({ ...prev, customerFieldsVisible: true }));
+    }
+  }, []);
 
-  const handleSubmit = async (
-    phone: string,
-    paymentMethod: "pago_movil" | "transfer",
-    name?: string,
-    cedula?: string,
-    orderMode?: "on_site" | "take_away" | "delivery",
-    deliveryAddress?: string,
-    clientSurcharges?: typeof surcharges,
-    gpsCoords?: GpsCoords | null,
-  ) => {
-    setIsSubmitting(true);
-    setError(null);
+  const handlePhoneChange = useCallback((raw: string) => {
+    setStateRaw((prev) => ({ ...prev, phone: raw }));
+
+    if (lookupTimeoutRef.current) clearTimeout(lookupTimeoutRef.current);
+
+    if (raw.length === 11 && /^(0414|0424|0412|0416|0426)\d{7}$/.test(raw)) {
+      lookupTimeoutRef.current = setTimeout(() => lookupCustomer(raw), 400);
+      setState((prev) => ({ ...prev, customerFieldsVisible: false, isReturning: false }));
+    } else {
+      setState((prev) => ({
+        ...prev,
+        customerFieldsVisible: false,
+        isReturning: false,
+        name: "",
+        cedula: "",
+      }));
+    }
+  }, [lookupCustomer, setState]);
+
+  // Surcharges
+  const totalBsCents = initialSettings.rate
+    ? totalBsCentsFromRate(initialSettings.rate)
+    : cartTotalBsCents;
+
+  const { surcharges, grandTotalBsCents, grandTotalUsdCents, itemCount } =
+    useCheckoutSurcharges({
+      items,
+      orderMode: state.orderMode,
+      settings: initialSettings,
+      totalBsCents,
+      totalUsdCents,
+    });
+
+  // Derive phone validity
+  const phoneValid =
+    state.phone.length === 11 &&
+    /^(0414|0424|0412|0416|0426)\d{7}$/.test(state.phone);
+
+  // Step 2 ready
+  const step2Ready =
+    phoneValid &&
+    state.name.trim().length >= 2 &&
+    state.cedula.trim().length >= 4 &&
+    (state.orderMode !== "delivery" || state.address.trim().length > 3);
+
+  // Step 3 ready
+  const step3Ready = state.payment !== null;
+
+  // ── Navigation ──────────────────────────────────────────────
+  const goBack = () => {
+    setState((prev) => ({
+      ...prev,
+      step: Math.max(1, prev.step - 1) as WizardStep,
+      error: null,
+    }));
+  };
+
+  const goNext = () => {
+    setState((prev) => ({
+      ...prev,
+      step: Math.min(5, prev.step + 1) as WizardStep,
+    }));
+  };
+
+  // ── Submit order (step 3 → step 4) ──────────────────────────
+  const handleSubmitOrder = async () => {
+    if (!state.payment || !state.orderMode) return;
+
+    setState((prev) => ({ ...prev, submitting: true, error: null }));
 
     const checkoutItems: CheckoutItem[] = items.map((item) => {
-      // Build adicionales array, converting contornoSubstitution back
-      // to the old format the backend/DB expects
       const adicionales = item.selectedAdicionales.map((a) => ({
         id: a.id,
         name: a.name,
@@ -207,7 +282,6 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
         quantity: a.quantity ?? 1,
       }));
 
-      // If there are contorno substitutions, add them as adicionales with substitutesComponentId
       (item.contornoSubstitutions ?? []).forEach((s) => {
         adicionales.unshift({
           id: s.substituteId,
@@ -220,7 +294,6 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
         } as any);
       });
 
-      // Extract selected bebidas
       const bebidas = (item.selectedBebidas ?? []).map((b) => ({
         id: b.id,
         name: b.name,
@@ -245,254 +318,351 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
     try {
       const token = checkoutToken ?? ensureCheckoutToken();
       const actionResult = await processCheckoutAction({
-        input: { phone, paymentMethod, name, cedula, orderMode, deliveryAddress, gpsCoords, items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })), clientSurcharges, checkoutToken: token },
+        input: {
+          phone: state.phone,
+          paymentMethod: state.payment,
+          name: state.name.trim(),
+          cedula: state.cedula.trim() || undefined,
+          orderMode: state.orderMode,
+          deliveryAddress: state.orderMode === "delivery" ? state.address.trim() : undefined,
+          gpsCoords: state.gpsCoords,
+          items: checkoutItems.map((i) => ({ id: i.id, quantity: i.quantity })),
+          clientSurcharges: surcharges,
+          checkoutToken: token,
+          cashAmountUsd: state.cashAmountUsd || undefined,
+          acceptChangeBs: state.acceptChangeBs ?? undefined,
+        },
         items: checkoutItems,
       });
 
       if (actionResult?.serverError || actionResult?.validationErrors) {
-        setError(actionResult.serverError || "Error validando los datos del checkout");
-        setIsSubmitting(false);
+        setState((prev) => ({
+          ...prev,
+          submitting: false,
+          error: actionResult?.serverError || "Error al validar los datos",
+        }));
         return;
       }
 
       const result = actionResult?.data as CheckoutResult | undefined;
 
-      if (!result) {
-        setError(actionResult?.serverError || "Error validando datos");
-        setIsSubmitting(false);
+      if (!result?.success) {
+        setState((prev) => ({
+          ...prev,
+          submitting: false,
+          error: result?.error || "Error al procesar el pedido",
+        }));
         return;
       }
 
-      if (result.success) {
-        const init = result.initResult;
+      const init = result.initResult;
 
-        if (paymentMethod === "pago_movil" && settings.activePaymentProvider === "whatsapp_manual") {
-          const finalSurchargesUsdTotal = clientSurcharges?.totalSurchargeUsdCents ?? 0;
-          const finalGrandTotalUsdCents = totalUsdCents + finalSurchargesUsdTotal;
-          const finalGrandTotalBsCents = totalBsCents + (settings.rate ? Math.round(finalSurchargesUsdTotal * settings.rate) : 0);
-
-          setState({
-            type: "comprobante",
-            orderId: result.orderId,
-            totalBsCents: finalGrandTotalBsCents,
-            totalUsdCents: finalGrandTotalUsdCents,
-            serverPrefilledMessage: init.screen === "whatsapp" ? init.prefilledMessage : "",
-            serverWaLink: init.screen === "whatsapp" ? init.waLink : "",
-            bankDetails: {
-              bankName: settings.bankName,
-              bankCode: settings.bankCode,
-              accountPhone: settings.accountPhone,
-              accountRif: settings.accountRif,
-            },
-            orderMode: orderMode ?? "on_site",
-            deliveryAddress: deliveryAddress ?? "",
-            gpsCoords: gpsCoords ?? null,
-          });
-          setIsSubmitting(false);
-          return;
-        }
-
-        if (init.screen === "enter_reference") {
-          setState({
-            type: "enter_reference",
-            orderId: result.orderId,
-            expiresAt: result.expiresAt,
-            totalBsCents: init.totalBsCents,
-            bankDetails: init.bankDetails,
-          });
-        } else if (init.screen === "whatsapp") {
-          setState({
-            type: "whatsapp",
-            orderId: result.orderId,
-            waLink: init.waLink,
-            prefilledMessage: init.prefilledMessage,
-          });
-        } else if (init.screen === "waiting_auto" || init.screen === "c2p_pending") {
-          setState({
-            type: "waiting_auto",
-            orderId: result.orderId,
-            expiresAt: result.expiresAt,
-            totalBsCents: "totalBsCents" in init ? init.totalBsCents : 0,
-            bankDetails: "bankDetails" in init ? init.bankDetails : { bankName: "", bankCode: "", accountPhone: "", accountRif: "" } as BankDetails,
-          });
-        } else {
-          setError("Método de pago no soportado por el momento.");
-          setIsSubmitting(false);
-        }
-      } else {
-        setError(result.error);
-        setIsSubmitting(false);
-      }
+      setState((prev) => ({
+        ...prev,
+        step: 4,
+        submitting: false,
+        error: null,
+        orderId: result.orderId,
+        expiresAt: result.expiresAt,
+        initResult: init,
+      }));
     } catch (err) {
       console.error("Checkout submit error:", err);
-      setError("Ocurrió un error inesperado al procesar tu pedido. Intenta nuevamente.");
-      setIsSubmitting(false);
+      setState((prev) => ({
+        ...prev,
+        submitting: false,
+        error: "Ocurrió un error inesperado. Intenta nuevamente.",
+      }));
     }
   };
 
-  const handlePaid = () => {
+  // ── Post-payment confirmed ───────────────────────────────────
+  const handlePaid = useCallback(() => {
     if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate([100, 50, 200]);
     }
-
-    // Get orderId from current state
-    let orderId = "";
-    if (state.type === "enter_reference" || state.type === "waiting_auto") {
-      orderId = state.orderId;
-    } else if (state.type === "whatsapp") {
-      orderId = state.orderId;
-    }
-
-    // Store order in localStorage
-    if (orderId && typeof window !== "undefined") {
+    if (state.orderId && typeof window !== "undefined") {
       const orders = JSON.parse(localStorage.getItem("gm_orders") || "[]");
-      orders.unshift({
-        id: orderId,
-        totalBsCents,
-        createdAt: Date.now(),
-      });
-      // Keep only last 10 orders
+      orders.unshift({ id: state.orderId, totalBsCents, createdAt: Date.now() });
       localStorage.setItem("gm_orders", JSON.stringify(orders.slice(0, 10)));
     }
-
-    const bs =
-      state.type === "enter_reference" || state.type === "waiting_auto"
-        ? state.totalBsCents
-        : totalBsCents;
-    setState({ type: "success", orderId, totalBsCents: bs });
+    setState((prev) => ({ ...prev, step: 5 }));
     clearPersistedCheckout();
     clearCart();
     clearCheckoutToken();
-  };
+  }, [state.orderId, totalBsCents, setState, clearCart, clearCheckoutToken]);
 
+  // ── New order / reset ────────────────────────────────────────
+  const handleNewOrder = useCallback(() => {
+    clearCart();
+    clearCheckoutToken();
+    clearPersistedCheckout();
+    router.push("/");
+  }, [clearCart, clearCheckoutToken, router]);
 
-  const handleError = (message: string) => {
-    setError(message);
-  };
+  // ── Empty cart ───────────────────────────────────────────────
+  if (items.length === 0 && state.step === 1) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center px-6 text-center bg-bg-app">
+        <div className="w-20 h-20 rounded-full bg-border/30 flex items-center justify-center mb-6 animate-pulse">
+          <AlertCircle className="w-10 h-10 text-primary/40" strokeWidth={1} />
+        </div>
+        <h2 className="text-[22px] font-display font-black text-text-main mb-2">
+          Tu carrito está vacío
+        </h2>
+        <p className="text-[15px] text-text-muted mb-8 max-w-[280px] font-medium leading-relaxed">
+          Explora nuestro menú y agrega tus platos favoritos para continuar.
+        </p>
+        <button
+          onClick={() => router.push("/")}
+          className="w-full max-w-[240px] rounded-full bg-primary px-6 py-4 text-[15px] font-semibold text-white shadow-elevated active:scale-[0.98] transition-all"
+        >
+          Explorar menú
+        </button>
+      </div>
+    );
+  }
 
-  const handleRetry = () => {
-    setState({ type: "form" });
-    setError(null);
-  };
+  // ── Available order modes ────────────────────────────────────
+  const availableModes = [
+    { id: "on_site" as OrderMode, label: "En sitio", icon: null as any, enabled: initialSettings.orderModeOnSiteEnabled !== false, description: "Para comer en el local" },
+    { id: "take_away" as OrderMode, label: "Para llevar", icon: null as any, enabled: initialSettings.orderModeTakeAwayEnabled !== false, description: "Retira en el local" },
+    { id: "delivery" as OrderMode, label: "Delivery", icon: null as any, enabled: initialSettings.orderModeDeliveryEnabled !== false, description: "A domicilio" },
+  ].filter((m) => m.enabled);
+
+  const showChip = state.step >= 1 && state.step <= 4;
+  const showBack = state.step > 1 && state.step < 5;
 
   return (
-    <div className={`min-h-[100dvh] pb-safe ${state.type === "form" ? "bg-bg-app" : "bg-bg-app"}`}>
-      {/* Header for non-form states */}
-      {state.type !== "form" && state.type !== "success" && (
-        <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-bg-card px-5 py-4 shadow-sm">
-          <button
-            onClick={() => {
-              // Go back to form from payment screens
-              setState({ type: "form" });
-              setError(null);
-            }}
-            className="w-9 h-9 rounded-full bg-bg-card border border-border flex items-center justify-center cursor-pointer active:bg-surface-section transition-colors"
-            aria-label="Volver"
-          >
-            <ChevronLeft className="w-4 h-4 text-text-main" strokeWidth={2.5} />
-          </button>
-          <h1 className="text-[17px] font-display font-bold text-text-main">
-            Finalizar pedido
-          </h1>
-        </header>
-      )}
-
-      {state.type === "form" && (
-        <CheckoutForm
-          items={items}
-          totalBsCents={totalBsCents}
-          totalUsdCents={totalUsdCents}
-          isSubmitting={isSubmitting}
-          error={error}
-          onSubmit={handleSubmit}
-          settings={settings}
+    <div className="min-h-[100dvh] bg-bg-app flex flex-col">
+      {/* Cart chip (steps 1-4) */}
+      {showChip && (
+        <WizardCartChip
+          cartItems={items}
+          totalPlatos={itemCount}
+          grandTotalUsdCents={grandTotalUsdCents}
+          grandTotalBsCents={grandTotalBsCents}
+          surcharges={surcharges}
+          cartOpen={cartOpen}
+          onOpenCart={() => setCartOpen(true)}
+          onCloseCart={() => setCartOpen(false)}
         />
       )}
 
-      {state.type === "enter_reference" && (
-        <ReferenceEntry
-          orderId={state.orderId}
-          checkoutToken={checkoutToken ?? ""}
-          expiresAt={state.expiresAt}
-          totalBsCents={state.totalBsCents}
-          bankDetails={state.bankDetails}
-          items={items}
-          onPaid={handlePaid}
-          onError={handleError}
+      {/* Wizard header */}
+      {state.step < 5 && (
+        <WizardHeader
+          step={state.step}
+          onBack={showBack ? goBack : undefined}
+          backDisabled={state.submitting}
+          hideBack={!showBack}
+          onClose={() => router.push("/")}
         />
       )}
 
-      {state.type === "whatsapp" && (
-        <WhatsAppPayment
-          orderId={state.orderId}
-          waLink={state.waLink}
-          prefilledMessage={state.prefilledMessage}
-          items={items}
-          totalBsCents={totalBsCents}
-          onPaid={handlePaid}
-        />
-      )}
+      {/* Progress dots */}
+      {state.step < 5 && <WizardProgress step={state.step} />}
 
-      {state.type === "comprobante" && (
-        <PagoMovilScreen
-          orderId={state.orderId}
-          totalBsCents={state.totalBsCents}
-          totalUsdCents={state.totalUsdCents}
-          bankDetails={state.bankDetails}
-          serverPrefilledMessage={state.serverPrefilledMessage}
-          serverWaLink={state.serverWaLink}
-          gpsCoords={state.gpsCoords}
-          deliveryAddress={state.deliveryAddress}
-          onVolver={() => setState({ type: "form" })}
-          onCleanup={handleCleanup}
-        />
-      )}
-
-      {state.type === "waiting_auto" && (
-        <WaitingPayment
-          orderId={state.orderId}
-          expiresAt={state.expiresAt}
-          totalBsCents={state.totalBsCents}
-          bankDetails={state.bankDetails}
-          items={items}
-          onPaid={handlePaid}
-        />
-      )}
-
-      {state.type === "success" && (
-        <PaymentSuccess
-          orderId={state.orderId}
-          exactAmountBsCents={state.totalBsCents}
-          items={items}
-        />
-      )}
-
-      {state.type === "error" && (
-        <div className="flex flex-col items-center px-6 pt-24 text-center bg-bg-app min-h-screen">
-          <div className="w-16 h-16 rounded-3xl bg-error/10 flex items-center justify-center mb-6">
-            <AlertCircle className="h-8 w-8 text-error" />
-          </div>
-          <h2 className="text-[22px] font-display font-black text-text-main mb-2">
-            Algo salió mal
-          </h2>
-          <p className="text-[15px] text-text-muted mb-10 max-w-[280px] font-medium leading-relaxed">
-            {state.message || "Ocurrió un error inesperado al procesar tu pedido."}
-          </p>
-          <div className="flex flex-col w-full max-w-[280px] gap-3">
-            <button
-              onClick={handleRetry}
-              className="w-full rounded-2xl bg-primary px-6 py-4 text-[15px] font-display font-bold text-white shadow-xl shadow-primary/20 active:scale-[0.98] transition-all"
-            >
-              Intentar de nuevo
-            </button>
-            <button
-              onClick={() => router.push("/")}
-              className="w-full rounded-2xl border-2 border-border bg-bg-card px-6 py-4 text-[15px] font-display font-bold text-text-main active:bg-surface-section transition-all"
-            >
-              Volver al menú
-            </button>
-          </div>
+      {/* Error banner */}
+      {state.error && (
+        <div className="mx-5 mt-3 px-4 py-3 bg-primary/10 border border-primary/20 text-primary text-[13px] rounded-[14px] animate-in fade-in">
+          {state.error}
         </div>
+      )}
+
+      {/* ── STEP CONTENT ── */}
+      <div className={`flex-1 px-5 pt-4 ${state.step < 5 ? "pb-36" : "pb-10"}`}>
+
+        {/* Step 1 — Order mode */}
+        {state.step === 1 && (
+          <>
+            <div className="mb-6">
+              <p className="font-sans text-[10px] uppercase tracking-[0.14em] text-text-muted mb-1">
+                EMPECEMOS
+              </p>
+              <h1 className="font-display text-3xl font-bold text-text-main leading-tight">
+                ¿Cómo lo <em className="not-italic text-primary">recibes</em>?
+              </h1>
+              <p className="font-sans text-[13px] text-text-muted mt-1">
+                Elige cómo quieres recibir tu pedido
+              </p>
+            </div>
+
+            <OrderModeSelector
+              availableModes={availableModes}
+              orderMode={state.orderMode}
+              onSetOrderMode={(mode) => setState((prev) => ({ ...prev, orderMode: mode }))}
+              deliveryAddress={state.address}
+              onSetDeliveryAddress={(addr) => setState((prev) => ({ ...prev, address: addr }))}
+              settings={initialSettings}
+              isSubmitting={state.submitting}
+              surcharges={surcharges}
+              gpsCoords={state.gpsCoords}
+              onSetGpsCoords={(coords) => setState((prev) => ({ ...prev, gpsCoords: coords }))}
+            />
+          </>
+        )}
+
+        {/* Step 2 — Customer data */}
+        {state.step === 2 && (
+          <>
+            <div className="mb-6">
+              <p className="font-sans text-[10px] uppercase tracking-[0.14em] text-text-muted mb-1">
+                {state.orderMode ? `${state.orderMode === "on_site" ? "En sitio" : state.orderMode === "take_away" ? "Para llevar" : "Delivery"} · datos del cliente` : "Tus datos"}
+              </p>
+              <h1 className="font-display text-3xl font-bold text-text-main leading-tight">
+                ¿Quién <em className="not-italic text-primary">recibe</em>?
+              </h1>
+            </div>
+
+            <CheckoutForm
+              orderMode={state.orderMode!}
+              phone={state.phone}
+              onPhoneChange={handlePhoneChange}
+              name={state.name}
+              onNameChange={(n) => setState((prev) => ({ ...prev, name: n }))}
+              cedula={state.cedula}
+              onCedulaChange={(c) => setState((prev) => ({ ...prev, cedula: c }))}
+              address={state.address}
+              onAddressChange={(a) => setState((prev) => ({ ...prev, address: a }))}
+              gpsCoords={state.gpsCoords}
+              onGpsCoordsChange={(g) => setState((prev) => ({ ...prev, gpsCoords: g }))}
+              isReturning={state.isReturning}
+              phoneValid={phoneValid}
+              customerFieldsVisible={state.customerFieldsVisible}
+              isSubmitting={state.submitting}
+            />
+          </>
+        )}
+
+        {/* Step 3 — Payment method */}
+        {state.step === 3 && (
+          <>
+            <div className="mb-6">
+              <p className="font-sans text-[10px] uppercase tracking-[0.14em] text-text-muted mb-1">
+                MÉTODO DE PAGO
+              </p>
+              <h1 className="font-display text-3xl font-bold text-text-main leading-tight">
+                ¿Cómo <em className="not-italic text-primary">pagas</em>?
+              </h1>
+            </div>
+
+            <PaymentMethodSelector
+              paymentPagoMovilEnabled={initialSettings.paymentPagoMovilEnabled !== false}
+              paymentTransferEnabled={initialSettings.paymentTransferEnabled !== false}
+              paymentEfectivoEnabled={initialSettings.paymentEfectivoEnabled === true}
+              paymentZelleEnabled={initialSettings.paymentZelleEnabled === true}
+              paymentBinanceEnabled={initialSettings.paymentBinanceEnabled === true}
+              paymentMethod={state.payment}
+              onSetPaymentMethod={(m) => setState((prev) => ({ ...prev, payment: m }))}
+              grandTotalUsdCents={grandTotalUsdCents}
+              cashAmountUsd={state.cashAmountUsd}
+              onCashAmountUsdChange={(v) => setState((prev) => ({ ...prev, cashAmountUsd: v }))}
+              acceptChangeBs={state.acceptChangeBs}
+              onAcceptChangeBsChange={(v) => setState((prev) => ({ ...prev, acceptChangeBs: v }))}
+              efectivoAskCashAmount={initialSettings.efectivoAskCashAmount !== false}
+              efectivoAskChangeBs={initialSettings.efectivoAskChangeBs !== false}
+            />
+          </>
+        )}
+
+        {/* Step 4 — Bank details + OTP/comprobante */}
+        {state.step === 4 && state.initResult && state.orderId && (
+          <>
+            <div className="mb-5">
+              <p className="font-sans text-[10px] uppercase tracking-[0.14em] text-text-muted mb-1">
+                REALIZA EL PAGO
+              </p>
+              <h1 className="font-display text-3xl font-bold text-text-main leading-tight">
+                Datos <em className="not-italic text-primary">bancarios</em>
+              </h1>
+            </div>
+
+            <Step4BankDetails
+              orderId={state.orderId}
+              checkoutToken={checkoutToken ?? ""}
+              expiresAt={state.expiresAt}
+              initResult={state.initResult}
+              grandTotalBsCents={grandTotalBsCents}
+              grandTotalUsdCents={grandTotalUsdCents}
+              onConfirmed={handlePaid}
+              onError={(msg) => setState((prev) => ({ ...prev, error: msg }))}
+              paymentMethod={state.payment}
+              cashAmountUsd={state.cashAmountUsd || null}
+              acceptChangeBs={state.acceptChangeBs}
+              fallbackBankDetails={{
+                bankName: initialSettings.bankName,
+                bankCode: initialSettings.bankCode,
+                accountPhone: initialSettings.accountPhone,
+                accountRif: initialSettings.accountRif,
+                transferBankName: initialSettings.transferBankName,
+                transferAccountName: initialSettings.transferAccountName,
+                transferAccountNumber: initialSettings.transferAccountNumber,
+                transferAccountRif: initialSettings.transferAccountRif,
+                zelleEmail: initialSettings.zelleEmail,
+                zelleName: initialSettings.zelleName,
+                binanceEmail: initialSettings.binanceEmail,
+                binancePayId: initialSettings.binancePayId,
+              }}
+            />
+          </>
+        )}
+
+        {/* Step 5 — Success + tracker */}
+        {state.step === 5 && state.initResult && state.orderId && (
+          <Step5Success
+            orderId={state.orderId}
+            initResult={state.initResult}
+            orderMode={state.orderMode}
+            onNewOrder={handleNewOrder}
+            onPaid={handlePaid}
+          />
+        )}
+      </div>
+
+      {/* ── STICKY CTA (steps 1-3) ── */}
+      {state.step === 1 && (
+        <StickyCta
+          label="Continuar →"
+          onClick={goNext}
+          disabled={state.orderMode === null}
+          showTotal
+          grandTotalUsdCents={grandTotalUsdCents}
+          grandTotalBsCents={grandTotalBsCents}
+        />
+      )}
+
+      {state.step === 2 && (
+        <StickyCta
+          label="Continuar al pago →"
+          onClick={goNext}
+          disabled={!step2Ready}
+          showTotal
+          grandTotalUsdCents={grandTotalUsdCents}
+          grandTotalBsCents={grandTotalBsCents}
+        />
+      )}
+
+      {state.step === 3 && (
+        <StickyCta
+          label="Ver instrucciones de pago →"
+          onClick={handleSubmitOrder}
+          disabled={!step3Ready}
+          loading={state.submitting}
+          loadingLabel="Procesando..."
+          showTotal
+          grandTotalUsdCents={grandTotalUsdCents}
+          grandTotalBsCents={grandTotalBsCents}
+        />
+      )}
+
+      {/* Step 4: CTA only for waiting_auto */}
+      {state.step === 4 && state.initResult?.screen === "waiting_auto" && (
+        <StickyCta
+          label="Ya realicé el pago →"
+          onClick={() => setState((prev) => ({ ...prev, step: 5 }))}
+          showTotal={false}
+        />
       )}
     </div>
   );

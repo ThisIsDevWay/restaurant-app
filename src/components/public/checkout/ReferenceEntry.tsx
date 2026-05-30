@@ -1,69 +1,67 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { formatBs } from "@/lib/money";
-import { Copy, Check, Loader2, Clock, ArrowLeft, ClipboardCopy } from "lucide-react";
-import type { CartItem } from "@/store/cartStore";
-import type { BankDetails } from "@/lib/payment-providers/types";
-import { buildPagoMovilClipboard } from "@/lib/clipboard-pago-movil";
-import { CopyAllButton } from "./CopyAllButton";
-import { CopyButton } from "./CopyButton";
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ReferenceEntryProps {
   orderId: string;
   checkoutToken: string;
-  expiresAt: string;
-  totalBsCents: number;
-  bankDetails: BankDetails;
-  items: CartItem[];
-  onPaid: () => void;
+  onConfirmed: () => void;
   onError: (message: string) => void;
 }
-
-
 
 export function ReferenceEntry({
   orderId,
   checkoutToken,
-  expiresAt,
-  totalBsCents,
-  bankDetails,
-  items,
-  onPaid,
+  onConfirmed,
   onError,
 }: ReferenceEntryProps) {
-  const router = useRouter();
-  const [reference, setReference] = useState("");
+  const [digits, setDigits] = useState<string[]>(["", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
-  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [allValid, setAllValid] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
 
-  // Countdown
-  const [secondsLeft, setSecondsLeft] = useState(() =>
-    Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)),
-  );
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const diff = Math.floor(
-        (new Date(expiresAt).getTime() - Date.now()) / 1000,
-      );
-      setSecondsLeft(Math.max(0, diff));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [expiresAt]);
+  const reference = digits.join("");
+  const isComplete = digits.every((d) => d.length === 1);
 
   useEffect(() => {
-    if (secondsLeft === 0) router.push("/checkout/expired");
-  }, [secondsLeft, router]);
+    setAllValid(isComplete);
+  }, [isComplete]);
+
+  const handleDigitChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const newDigits = [...digits];
+    newDigits[index] = digit;
+    setDigits(newDigits);
+    setVerifyError(null);
+
+    if (digit && index < 3) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !digits[index] && index > 0) {
+      const newDigits = [...digits];
+      newDigits[index - 1] = "";
+      setDigits(newDigits);
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4);
+    if (pasted.length === 4) {
+      setDigits(pasted.split(""));
+    }
+  };
 
   const handleVerify = async () => {
-    if (reference.trim().length < 8) {
-      setVerifyError("La referencia debe tener al menos 8 caracteres");
-      return;
-    }
-
+    if (!isComplete) return;
     setIsVerifying(true);
     setVerifyError(null);
 
@@ -71,15 +69,17 @@ export function ReferenceEntry({
       const res = await fetch("/api/payment-confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, reference: reference.trim(), checkoutToken }),
+        body: JSON.stringify({ orderId, reference, checkoutToken }),
       });
 
       const data = await res.json();
 
       if (data.success) {
-        onPaid();
+        onConfirmed();
       } else {
-        setVerifyError(data.message || "No se pudo verificar el pago");
+        const msg = data.message || "No se pudo verificar el pago";
+        setVerifyError(msg);
+        onError(msg);
       }
     } catch {
       setVerifyError("Error de conexión. Intenta de nuevo.");
@@ -89,234 +89,72 @@ export function ReferenceEntry({
   };
 
   return (
-    <div className="px-4 pb-8 bg-bg-app min-h-screen">
-      {/* Back button */}
-      <button
-        onClick={() => setShowLeaveDialog(true)}
-        className="mt-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-section text-[13px] font-bold text-text-main border border-border/50 active:scale-95 transition-all"
-      >
-        <ArrowLeft size={16} />
-        Volver
-      </button>
-
-      {/* Hero amount */}
-      <div className="pt-8 pb-6 text-center animate-in fade-in slide-in-from-top-4 duration-500">
-        <p className="text-[11px] font-display font-bold tracking-[0.1em] text-text-muted uppercase mb-1">Monto de la transferencia</p>
-        <p className="text-[42px] font-display font-black text-text-main leading-tight">
-          {formatBs(totalBsCents)}
+    <div className="space-y-4">
+      <div>
+        <p className="font-sans text-[10px] uppercase tracking-[0.12em] text-text-muted pl-1 mb-3">
+          Últimos 4 dígitos de la referencia
         </p>
-      </div>
 
-      {/* Bank details */}
-      <div className="mt-2 rounded-2xl border border-border bg-bg-card p-5 shadow-sm">
-        {bankDetails.transferAccountNumber ? (
-          <>
-            <p className="mb-4 text-[11px] font-display font-bold tracking-[0.08em] text-text-muted uppercase">
-              🏦 Datos para Transferencia
-            </p>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
-                <div>
-                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Banco</p>
-                  <p className="text-[14px] font-bold text-text-main">
-                    {bankDetails.transferBankName || bankDetails.bankName}
-                  </p>
-                </div>
-                <CopyButton value={bankDetails.transferBankName || bankDetails.bankName} />
-              </div>
-
-              <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
-                <div>
-                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Número de Cuenta</p>
-                  <p className="text-[14px] font-bold text-text-main tracking-wide">
-                    {bankDetails.transferAccountNumber}
-                  </p>
-                </div>
-                <CopyButton value={bankDetails.transferAccountNumber!} />
-              </div>
-
-              <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
-                <div>
-                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Titular</p>
-                  <p className="text-[14px] font-bold text-text-main">
-                    {bankDetails.transferAccountName}
-                  </p>
-                </div>
-                <CopyButton value={bankDetails.transferAccountName!} />
-              </div>
-
-              <div className="flex items-center justify-between py-1">
-                <div>
-                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">RIF / Cédula</p>
-                  <p className="text-[14px] font-bold text-text-main tracking-wide">
-                    {bankDetails.transferAccountRif}
-                  </p>
-                </div>
-                <CopyButton value={bankDetails.transferAccountRif!} />
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="mb-4 text-[11px] font-display font-bold tracking-[0.08em] text-text-muted uppercase">
-              💳 Datos para Pago Móvil
-            </p>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
-                <div>
-                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Banco</p>
-                  <p className="text-[14px] font-bold text-text-main">
-                    {bankDetails.bankName} <span className="text-text-muted/70 font-medium">({bankDetails.bankCode})</span>
-                  </p>
-                </div>
-                <CopyButton value={`${bankDetails.bankName} (${bankDetails.bankCode})`} />
-              </div>
-
-              <div className="flex items-center justify-between py-1 border-b border-border/40 pb-3">
-                <div>
-                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">Teléfono</p>
-                  <p className="text-[14px] font-bold text-text-main tracking-wide">
-                    {bankDetails.accountPhone}
-                  </p>
-                </div>
-                <CopyButton value={bankDetails.accountPhone} />
-              </div>
-
-              <div className="flex items-center justify-between py-1">
-                <div>
-                  <p className="text-[11px] text-text-muted/60 uppercase font-bold tracking-wider mb-0.5">RIF / Cédula</p>
-                  <p className="text-[14px] font-bold text-text-main tracking-wide">
-                    {bankDetails.accountRif}
-                  </p>
-                </div>
-                <CopyButton value={bankDetails.accountRif} />
-              </div>
-            </div>
-
-            {/* Copy all for Pago Móvil */}
-            {!bankDetails.transferAccountNumber && (
-              <div className="mt-5 border-t border-border pt-2">
-                <CopyAllButton
-                  bankName={bankDetails.bankName!}
-                  bankCode={bankDetails.bankCode!}
-                  phone={bankDetails.accountPhone!}
-                  rifOrCedula={bankDetails.accountRif!}
-                  amountBsCents={totalBsCents}
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-
-      <div className="mt-6 rounded-2xl border border-border bg-bg-card p-6 shadow-sm">
-        <p className="mb-4 text-[11px] font-display font-bold tracking-[0.08em] text-text-muted uppercase">
-          Ingresa la referencia del pago
-        </p>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={reference}
-          onChange={(e) => {
-            setReference(e.target.value);
-            setVerifyError(null);
-          }}
-          placeholder="Ej: 01234567"
-          className={`w-full rounded-xl border px-4 py-4 text-[15px] font-bold outline-none transition-all placeholder:font-medium placeholder:text-text-muted/40 ${verifyError ? "border-error bg-error/5" : "border-border bg-surface-section focus:border-primary focus:bg-primary/5"
-            }`}
-          disabled={isVerifying}
-        />
-        {verifyError && (
-          <p className="mt-2 text-[12px] font-bold text-error flex items-center gap-1">
-            <span className="text-[14px]">⚠️</span> {verifyError}
-          </p>
-        )}
-        <button
-          onClick={handleVerify}
-          disabled={isVerifying || reference.trim().length < 8}
-          className="mt-4 w-full rounded-xl bg-primary py-4 text-[15px] font-display font-bold text-white shadow-lg shadow-primary/20 disabled:opacity-60 transition-all active:scale-[0.98]"
-        >
-          {isVerifying ? (
-            <span className="flex items-center justify-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Verificando...
-            </span>
-          ) : (
-            "Verificar pago"
-          )}
-        </button>
-      </div>
-
-      {/* Items summary */}
-      <div className="mt-4 rounded-2xl border border-border bg-bg-card p-6 shadow-sm">
-        <p className="mb-4 text-[11px] font-display font-bold tracking-[0.08em] text-text-muted uppercase">📦 Resumen del pedido</p>
-        <div className="space-y-1">
-          {items.map((item, idx) => (
-            <div key={idx} className="flex justify-between items-center py-2 border-b border-border/30 last:border-b-0">
-              <span className="text-[14px] font-medium text-text-main">
-                {item.quantity}× {item.name}
-              </span>
-              <span className="text-[14px] font-bold text-text-main">
-                {formatBs(item.itemTotalBsCents)}
-              </span>
-            </div>
+        <div className="flex gap-2.5 justify-center" onPaste={handlePaste}>
+          {digits.map((digit, i) => (
+            <input
+              key={i}
+              ref={(el) => { inputRefs.current[i] = el; }}
+              type="text"
+              inputMode="numeric"
+              value={digit}
+              maxLength={1}
+              onChange={(e) => handleDigitChange(i, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(i, e)}
+              disabled={isVerifying}
+              className={cn(
+                "w-[56px] h-[64px] rounded-[14px] border-2 text-center font-sans text-[28px] font-bold tabular-nums outline-none transition-all duration-150",
+                !digit
+                  ? "bg-surface-section border-border text-text-muted"
+                  : allValid && !verifyError
+                  ? "bg-[#E8EFE3] border-[#3F6B4A] text-[#3F6B4A]"
+                  : verifyError
+                  ? "bg-surface-section border-primary text-primary"
+                  : "bg-bg-card border-text-main text-text-main",
+                "focus:border-primary focus:shadow-[0_0_0_4px_rgba(187,0,5,0.2)] focus:bg-bg-card"
+              )}
+            />
           ))}
         </div>
+
+        {/* Placeholder dots for empty cells */}
+        {digits.every((d) => !d) && (
+          <p className="text-center text-[11px] text-text-muted mt-2">
+            Ingresa los 4 dígitos de la referencia
+          </p>
+        )}
+
+        {verifyError && (
+          <p className="text-center text-[12px] text-primary font-semibold mt-2">
+            {verifyError}
+          </p>
+        )}
       </div>
 
-      {/* Expiration countdown */}
-      {secondsLeft > 0 && (
-        <div className={`mt-8 flex items-center justify-center gap-2 text-[13px] py-3 px-4 rounded-xl border ${
-          secondsLeft < 300 
-            ? "bg-warning/5 border-warning/20 text-warning font-bold animate-pulse" 
-            : "bg-surface-section border-border text-text-muted font-medium"
-          }`}>
-          <Clock size={16} />
-          {secondsLeft < 300
-            ? `¡Tu orden expira pronto! ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`
-            : `Esta orden expira en ${Math.floor(secondsLeft / 60)} minutos`}
-        </div>
-      )}
-
-      {/* Leave confirmation dialog */}
-      {showLeaveDialog && (
-        <div
-          className="fixed inset-0 z-[200] flex items-end justify-center p-4 bg-black/40 backdrop-blur-[2px]"
-          onClick={() => setShowLeaveDialog(false)}
-        >
-          <div
-            className="flex w-full max-w-sm flex-col gap-5 rounded-[28px] bg-bg-card p-7 shadow-2xl animate-in slide-in-from-bottom-8 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex flex-col gap-2 text-center">
-              <p className="text-[18px] font-display font-black text-text-main">
-                ¿Seguro que deseas salir?
-              </p>
-              <p className="text-[14px] text-text-muted leading-relaxed">
-                Tu pedido seguirá activo por{" "}
-                <b className="text-text-main">{Math.ceil(secondsLeft / 60)} min</b>. No pierdas tu reserva si ya transferiste.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => setShowLeaveDialog(false)}
-                className="flex h-[56px] items-center justify-center rounded-xl bg-primary text-[15px] font-display font-bold text-white shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
-              >
-                Continuar con el pago
-              </button>
-              <button
-                onClick={() => router.push("/")}
-                className="flex h-[56px] items-center justify-center rounded-xl bg-surface-section border border-border text-[15px] font-display font-bold text-text-main transition-all active:scale-[0.98]"
-              >
-                Volver al menú
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <button
+        onClick={handleVerify}
+        disabled={!isComplete || isVerifying}
+        className={cn(
+          "w-full h-14 rounded-full font-semibold text-base transition-all active:scale-[0.98]",
+          isComplete && !isVerifying
+            ? "bg-primary text-white shadow-elevated"
+            : "bg-surface-section text-text-muted cursor-not-allowed"
+        )}
+      >
+        {isVerifying ? (
+          <span className="flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Verificando...
+          </span>
+        ) : (
+          "Confirmar pago →"
+        )}
+      </button>
     </div>
   );
 }

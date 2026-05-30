@@ -39,7 +39,7 @@ export function useCheckoutSurcharges({
   totalUsdCents,
 }: UseCheckoutSurchargesParams): UseCheckoutSurchargesReturn {
   const itemCount = useMemo(
-    () => items.reduce((acc, i) => acc + i.quantity, 0),
+    () => items.filter((i) => !i.categoryIsSimple).reduce((acc, i) => acc + i.quantity, 0),
     [items],
   );
 
