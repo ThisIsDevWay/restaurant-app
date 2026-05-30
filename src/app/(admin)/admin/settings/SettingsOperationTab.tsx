@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Store, Package, MapPin, Plus, Trash2 } from "lucide-react";
+import { Store, Package, MapPin, Plus, Trash2, ShieldAlert, Cpu, Truck, Printer, Info } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -96,10 +96,18 @@ export function SettingsOperationTab({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in-50 duration-300">
-      <Card className="p-6 border-none shadow-sm bg-white rounded-2xl">
-        <h3 className="text-lg font-bold text-text-main mb-6">Modos de Pedido Activos</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      
+      <Card className="p-6 border border-border/40 shadow-sm bg-white rounded-2xl hover:border-border/60 transition-all duration-200">
+        <h3 className="text-lg font-bold text-text-main mb-2 flex items-center gap-2">
+          <Store className="h-5 w-5 text-primary" />
+          Canales de Venta Activos
+        </h3>
+        <p className="text-text-muted text-xs mb-6">
+          Activa o desactiva los modos de pedido disponibles para tus clientes en el menú digital y el punto de venta.
+        </p>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {ORDER_MODES.map((mode) => {
             const Icon = ORDER_MODE_ICONS[mode.id];
             const isEnabled = form[mode.id];
@@ -108,79 +116,113 @@ export function SettingsOperationTab({
                 key={mode.id}
                 onClick={() => updateField(mode.id, !isEnabled)}
                 className={cn(
-                  "flex flex-col items-center gap-4 p-8 rounded-2xl border-2 cursor-pointer transition-all hover:shadow-md",
-                  isEnabled ? "border-primary bg-primary/5 shadow-sm" : "border-border/40 opacity-60 grayscale hover:grayscale-0"
+                  "flex flex-col sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-border select-none relative",
+                  isEnabled 
+                    ? "border-primary bg-primary/5/10 shadow-sm" 
+                    : "border-border/40 bg-bg-app/10 opacity-70 grayscale hover:grayscale-0 hover:opacity-100"
                 )}
               >
-                <div className={cn(
-                  "p-4 rounded-full transition-colors",
-                  isEnabled ? "bg-primary text-white" : "bg-bg-app text-text-muted"
-                )}>
-                  <Icon className="h-8 w-8" />
+                <div className="flex items-center sm:flex-col gap-3 sm:gap-4 w-full">
+                  <div className={cn(
+                    "p-3 rounded-xl transition-colors shrink-0",
+                    isEnabled ? "bg-primary text-white" : "bg-bg-app text-text-muted"
+                  )}>
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1 sm:text-center">
+                    <span className="font-bold text-sm text-text-main block">{mode.label}</span>
+                    <span className="text-[10px] text-text-muted hidden sm:block mt-1">
+                      {isEnabled ? "Activo" : "Inactivo"}
+                    </span>
+                  </div>
+                  
+                  <div className="shrink-0 sm:absolute sm:top-4 sm:right-4">
+                    <Switch
+                      checked={isEnabled}
+                      onCheckedChange={(v) => updateField(mode.id, v)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
                 </div>
-                <span className="font-bold text-base text-center">{mode.label}</span>
-                <Switch
-                  checked={isEnabled}
-                  onCheckedChange={(v) => updateField(mode.id, v)}
-                  onClick={(e) => e.stopPropagation()}
-                />
               </div>
             );
           })}
         </div>
       </Card>
 
-      <Card className="p-6 border-none shadow-sm bg-white rounded-2xl">
-        <h3 className="text-lg font-bold text-text-main mb-6">Restricciones y Límites</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="maxQuantityPerItem">Items por Pedido</Label>
+      <Card className="p-6 border border-border/40 shadow-sm bg-white rounded-2xl hover:border-border/60 transition-all duration-200">
+        <h3 className="text-lg font-bold text-text-main mb-2 flex items-center gap-2">
+          <ShieldAlert className="h-5 w-5 text-primary" />
+          Restricciones y Capacidad
+        </h3>
+        <p className="text-text-muted text-xs mb-6">
+          Establece los límites operacionales para el procesamiento de pedidos, controlando la saturación de la cocina.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="maxQuantityPerItem" className="text-xs font-bold text-text-muted uppercase tracking-wider">
+              Límite de Items por Plato
+            </Label>
             <Input
               id="maxQuantityPerItem"
               type="number"
               value={form.maxQuantityPerItem}
               onChange={(e) => updateField("maxQuantityPerItem", parseInt(e.target.value))}
-              className="rounded-xl"
+              className="rounded-xl focus-visible:ring-primary/20 h-10 text-sm font-semibold font-mono"
             />
-            {errors.maxQuantityPerItem && <p className="text-xs text-red-500">{errors.maxQuantityPerItem}</p>}
-            <p className="text-[10px] text-text-muted">Máx. productos de un mismo tipo.</p>
+            {errors.maxQuantityPerItem && <p className="text-xs text-red-500 font-medium">{errors.maxQuantityPerItem}</p>}
+            <p className="text-[10px] text-text-muted leading-tight">Cantidad máxima permitida por plato individual.</p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="orderExpirationMinutes">Expiración (Minutos)</Label>
+          
+          <div className="space-y-1.5">
+            <Label htmlFor="orderExpirationMinutes" className="text-xs font-bold text-text-muted uppercase tracking-wider">
+              Expiración de Pedido (Minutos)
+            </Label>
             <Input
               id="orderExpirationMinutes"
               type="number"
               value={form.orderExpirationMinutes}
               onChange={(e) => updateField("orderExpirationMinutes", parseInt(e.target.value))}
-              className="rounded-xl"
+              className="rounded-xl focus-visible:ring-primary/20 h-10 text-sm font-semibold font-mono"
             />
-            {errors.orderExpirationMinutes && <p className="text-xs text-red-500">{errors.orderExpirationMinutes}</p>}
-            <p className="text-[10px] text-text-muted">Tiempo para pagar antes de cancelar.</p>
+            {errors.orderExpirationMinutes && <p className="text-xs text-red-500 font-medium">{errors.orderExpirationMinutes}</p>}
+            <p className="text-[10px] text-text-muted leading-tight">Tiempo para pagar el pedido antes de expirar.</p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="maxPendingOrders">Órdenes Pendientes Máx.</Label>
+          
+          <div className="space-y-1.5">
+            <Label htmlFor="maxPendingOrders" className="text-xs font-bold text-text-muted uppercase tracking-wider">
+              Cola Máxima de Pendientes
+            </Label>
             <Input
               id="maxPendingOrders"
               type="number"
               value={form.maxPendingOrders}
               onChange={(e) => updateField("maxPendingOrders", parseInt(e.target.value))}
-              className="rounded-xl"
+              className="rounded-xl focus-visible:ring-primary/20 h-10 text-sm font-semibold font-mono"
             />
-            {errors.maxPendingOrders && <p className="text-xs text-red-500">{errors.maxPendingOrders}</p>}
-            <p className="text-[10px] text-text-muted">Límite de pedidos en cola.</p>
+            {errors.maxPendingOrders && <p className="text-xs text-red-500 font-medium">{errors.maxPendingOrders}</p>}
+            <p className="text-[10px] text-text-muted leading-tight">Límite de órdenes pendientes toleradas en simultáneo.</p>
           </div>
         </div>
       </Card>
 
-      <Card className="p-6 border-none shadow-sm bg-white rounded-2xl">
-        <h3 className="text-lg font-bold text-text-main mb-6">Configuración de Inventario y Empaque</h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-xl bg-bg-app border border-border/40">
-              <div className="space-y-1">
-                <Label className="text-sm font-bold">Habilitar Adicionales (Extras / Toppings)</Label>
-                <p className="text-[11px] text-text-muted leading-snug">
-                  Permite a los clientes agregar ingredientes extra directamente desde el detalle de su plato con un costo adicional.
+      <Card className="p-6 border border-border/40 shadow-sm bg-white rounded-2xl hover:border-border/60 transition-all duration-200">
+        <h3 className="text-lg font-bold text-text-main mb-2 flex items-center gap-2">
+          <Cpu className="h-5 w-5 text-primary" />
+          Ingredientes y Cargos de Empaque
+        </h3>
+        <p className="text-text-muted text-xs mb-6">
+          Habilita los pools de ingredientes y configura las tarifas para el costo de los recipientes y el empaquetado.
+        </p>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-bg-app/40 border border-border/20 hover:border-border/40 transition-colors">
+              <div className="space-y-0.5 pr-2">
+                <Label className="text-sm font-bold text-text-main cursor-pointer">Habilitar Adicionales</Label>
+                <p className="text-[10px] text-text-muted leading-snug">
+                  Permite ingredientes extra directamente en el detalle de compra del plato.
                 </p>
               </div>
               <Switch
@@ -188,11 +230,12 @@ export function SettingsOperationTab({
                 onCheckedChange={(v) => updateField("adicionalesEnabled", v)}
               />
             </div>
-            <div className="flex items-center justify-between p-4 rounded-xl bg-bg-app border border-border/40">
-              <div className="space-y-1">
-                <Label className="text-sm font-bold">Habilitar Bebidas e Hidratación</Label>
-                <p className="text-[11px] text-text-muted leading-snug">
-                  Muestra la sección de bebidas dentro del plato seleccionado, ideal para combos o compras rápidas de refrescos.
+            
+            <div className="flex items-center justify-between p-4 rounded-xl bg-bg-app/40 border border-border/20 hover:border-border/40 transition-colors">
+              <div className="space-y-0.5 pr-2">
+                <Label className="text-sm font-bold text-text-main cursor-pointer">Habilitar Bebidas</Label>
+                <p className="text-[10px] text-text-muted leading-snug">
+                  Muestra la sección de bebidas dentro del plato, ideal para combos de comida rápida.
                 </p>
               </div>
               <Switch
@@ -202,28 +245,33 @@ export function SettingsOperationTab({
             </div>
           </div>
 
-          <div className="space-y-4">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-text-muted pl-1">Cargos por Empaquetado ($)</Label>
+          <div className="lg:col-span-3 space-y-3.5 bg-bg-app/30 p-4 rounded-2xl border border-border/20">
+            <Label className="text-xs font-bold text-text-muted uppercase tracking-wider block mb-1">
+              Cargos por Empaquetado ($ USD)
+            </Label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
-                { field: "packagingFeePerPlateUsdCents" as const, label: "Por Plato" },
-                { field: "packagingFeePerAdicionalUsdCents" as const, label: "Adicional" },
-                { field: "packagingFeePerBebidaUsdCents" as const, label: "Bebida" },
+                { field: "packagingFeePerPlateUsdCents" as const, label: "Por Plato Base" },
+                { field: "packagingFeePerAdicionalUsdCents" as const, label: "Por Adicional" },
+                { field: "packagingFeePerBebidaUsdCents" as const, label: "Por Bebida" },
               ].map(({ field, label }) => (
-                <div key={field} className="space-y-2">
-                  <Label className="text-[11px] font-bold">{label}</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={decimalInputs[field]}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setDecimalInputs((prev) => ({ ...prev, [field]: val }));
-                      const cents = Math.round(parseFloat(val) * 100);
-                      if (!isNaN(cents)) updateField(field, cents);
-                    }}
-                    className="rounded-xl h-9 text-sm"
-                  />
+                <div key={field} className="space-y-1.5 bg-white p-3 rounded-xl border border-border/20 hover:border-border/40 transition-colors">
+                  <Label className="text-[11px] font-bold text-text-main">{label}</Label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted text-[11px] font-bold">$</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={decimalInputs[field]}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDecimalInputs((prev) => ({ ...prev, [field]: val }));
+                        const cents = Math.round(parseFloat(val) * 100);
+                        if (!isNaN(cents)) updateField(field, cents);
+                      }}
+                      className="pl-5 rounded-lg h-8 text-xs font-mono font-semibold"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -231,13 +279,20 @@ export function SettingsOperationTab({
         </div>
       </Card>
 
-      <Card className="p-6 border-none shadow-sm bg-white rounded-2xl">
-        <h3 className="text-lg font-bold text-text-main mb-6">Delivery y Cobertura</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-2">
-            <Label htmlFor="deliveryFeeUsdCents" className="font-bold">Costo de Delivery ($)</Label>
+      <Card className="p-6 border border-border/40 shadow-sm bg-white rounded-2xl hover:border-border/60 transition-all duration-200">
+        <h3 className="text-lg font-bold text-text-main mb-2 flex items-center gap-2">
+          <Truck className="h-5 w-5 text-primary" />
+          Delivery y Cobertura de Entrega
+        </h3>
+        <p className="text-text-muted text-xs mb-6">
+          Establece los costos de envío a domicilio generales, zonas con recargo especial y la descripción de tu alcance.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="deliveryFeeUsdCents" className="text-xs font-bold text-text-muted uppercase tracking-wider">Costo General de Delivery ($)</Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-bold">$</span>
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted text-sm font-bold">$</span>
               <Input
                 id="deliveryFeeUsdCents"
                 type="number"
@@ -249,70 +304,77 @@ export function SettingsOperationTab({
                   const cents = Math.round(parseFloat(val) * 100);
                   if (!isNaN(cents)) updateField("deliveryFeeUsdCents", cents);
                 }}
-                className="pl-7 rounded-xl h-10 text-lg font-mono"
+                className="pl-7 rounded-xl h-10 text-sm font-semibold font-mono"
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="deliveryCoverage" className="font-bold">Cobertura de Delivery</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="deliveryCoverage" className="text-xs font-bold text-text-muted uppercase tracking-wider">Descripción de Cobertura</Label>
             <Input
               id="deliveryCoverage"
               value={form.deliveryCoverage}
               onChange={(e) => updateField("deliveryCoverage", e.target.value)}
-              placeholder="Zonas cubiertas..."
-              className="rounded-xl h-10"
+              placeholder="Ej. Zonas Centro, Norte, Av. Bolívar..."
+              className="rounded-xl h-10 text-sm"
             />
           </div>
         </div>
 
-        <div className="mt-8 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label className="font-bold">Zonas de Delivery (Mesero)</Label>
-              <p className="text-[11px] text-text-muted leading-snug">
-                Tarifas por zona que el mesero elige al tomar un pedido a domicilio. El costo de delivery fijo de arriba se mantiene para el checkout público.
+        <div className="mt-8 pt-6 border-t border-border/40 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-bold text-text-main">Zonas de Entrega Especiales (Uso del Mesero)</Label>
+              <p className="text-[11px] text-text-muted leading-tight">
+                Permite al personal seleccionar zonas personalizadas con tarifas de delivery diferentes al tomar un pedido.
               </p>
             </div>
-            <button
+            <Button
               type="button"
               onClick={addZone}
-              className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-primary/90"
+              className="flex items-center gap-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-xs font-bold text-primary px-4 h-9 active:scale-95 transition-all self-start sm:self-auto"
             >
-              <Plus className="h-4 w-4" /> Agregar zona
-            </button>
+              <Plus className="h-4 w-4" /> Agregar Zona
+            </Button>
           </div>
+
           {form.deliveryZones.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border/60 py-4 text-center text-xs text-text-muted">
-              Sin zonas configuradas.
-            </p>
+            <div className="rounded-2xl border border-dashed border-border/60 py-8 text-center bg-bg-app/10">
+              <Info className="h-5 w-5 text-text-muted mx-auto mb-2 opacity-50" />
+              <p className="text-xs text-text-muted font-medium">Sin zonas de entrega adicionales configuradas.</p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
               {form.deliveryZones.map((zone, index) => (
-                <div key={index} className="flex items-center gap-2">
+                <div 
+                  key={index} 
+                  className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 p-3 rounded-xl bg-bg-app/40 border border-border/20 hover:border-border/40 hover:bg-bg-app/60 transition-all duration-200"
+                >
                   <Input
                     value={zone.label}
                     onChange={(e) => updateZoneLabel(index, e.target.value)}
-                    placeholder="Nombre de la zona (ej: Delivery 1)"
-                    className="rounded-xl h-10 flex-1"
+                    placeholder="Nombre de la zona (ej: Zona 1)"
+                    className="rounded-lg h-9 text-xs flex-1"
                   />
-                  <div className="relative w-32">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-bold">$</span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={zonePrices[index] ?? ""}
-                      onChange={(e) => updateZonePrice(index, e.target.value)}
-                      className="pl-7 rounded-xl h-10 font-mono"
-                    />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="relative w-24">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted text-xs font-bold">$</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={zonePrices[index] ?? ""}
+                        onChange={(e) => updateZonePrice(index, e.target.value)}
+                        className="pl-5 rounded-lg h-9 text-xs font-mono font-semibold"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeZone(index)}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/40 text-text-muted hover:border-red-300 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 cursor-pointer"
+                      title="Eliminar zona"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeZone(index)}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/60 text-text-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500"
-                    title="Eliminar zona"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
               ))}
             </div>
@@ -320,19 +382,24 @@ export function SettingsOperationTab({
         </div>
       </Card>
 
-      <Card className="p-6 border-none shadow-sm bg-white rounded-2xl space-y-6">
+      <Card className="p-6 border border-border/40 shadow-sm bg-white rounded-2xl hover:border-border/60 transition-all duration-200 space-y-6">
         <div>
-          <h3 className="text-lg font-bold text-text-main mb-2">Flujo de Trabajo e Impresión Térmica</h3>
-          <p className="text-[11px] text-text-muted leading-snug">
-            Gestiona la secuencia de cobros e impresoras conectadas en esta PC.
+          <h3 className="text-lg font-bold text-text-main mb-2 flex items-center gap-2">
+            <Printer className="h-5 w-5 text-primary" />
+            Flujo de Cocina e Impresoras Térmicas
+          </h3>
+          <p className="text-text-muted text-xs">
+            Configura si los pedidos requieren confirmación de pago antes de ir a cocina, y gestiona las impresoras térmicas.
           </p>
         </div>
 
-        <div className="flex items-center justify-between p-4 rounded-xl bg-bg-app border border-border/40">
-          <div className="space-y-1">
-            <Label className="text-sm font-bold">Exigir cobro antes de enviar a cocina</Label>
+        <div className="flex items-center justify-between p-4 rounded-xl bg-bg-app/40 border border-border/20 hover:border-border/40 transition-colors">
+          <div className="space-y-0.5 pr-2">
+            <Label className="text-sm font-bold text-text-main cursor-pointer flex items-center gap-2">
+              Exigir cobro antes de enviar a cocina
+            </Label>
             <p className="text-[11px] text-text-muted leading-snug">
-              Si está activo, los pedidos del mesero quedan pendientes hasta cobrarse en caja y solo entonces pasan a cocina. Si está inactivo, el pedido va a cocina de inmediato y el cobro se registra después.
+              Si está activo, los pedidos quedan pendientes en caja y solo pasan a cocina al confirmarse el cobro.
             </p>
           </div>
           <Switch
@@ -341,103 +408,106 @@ export function SettingsOperationTab({
           />
         </div>
 
-        <div className="h-px bg-border/40" />
+        <div className="h-px bg-border/20" />
 
-        <div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h4 className="text-base font-bold text-text-main">Impresión Térmica Multi-Impresora</h4>
-              <p className="text-[11px] text-text-muted leading-snug">
-                Configura las impresoras conectadas y el número de copias por evento. Cada impresora corresponde a un nombre exacto registrado en Windows.
+              <h4 className="text-sm font-bold text-text-main">Administrador de Impresoras Locales</h4>
+              <p className="text-[10px] text-text-muted leading-snug">
+                Configura los nombres de las impresoras térmicas tal cual se registran en tu sistema operativo Windows.
               </p>
             </div>
             <Button
               type="button"
               onClick={addPrinter}
-              className="rounded-xl h-9 px-3 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 self-start sm:self-auto"
+              className="flex items-center gap-1.5 rounded-xl bg-primary px-4 h-9 text-xs font-bold text-white shadow-sm hover:bg-primary/95 transition-all self-start sm:self-auto"
             >
-              <Plus className="w-4 h-4" />
-              Agregar Impresora
+              <Plus className="w-4 h-4" /> Agregar Impresora
             </Button>
           </div>
 
-          <div className="mt-6 space-y-4">
+          <div className="space-y-3">
             {printerTargets.length === 0 ? (
-              <div className="text-center py-6 border border-dashed border-border/60 rounded-2xl bg-bg-app">
-                <p className="text-xs text-text-muted font-medium">No hay impresoras configuradas. Se usará la configuración por defecto.</p>
+              <div className="text-center py-8 border border-dashed border-border/60 rounded-2xl bg-bg-app/10">
+                <Info className="h-5 w-5 text-text-muted mx-auto mb-2 opacity-50" />
+                <p className="text-xs text-text-muted font-medium">No hay impresoras conectadas. Se usará la configuración por defecto.</p>
               </div>
             ) : (
               printerTargets.map((printer, index) => (
                 <div
                   key={index}
-                  className="flex flex-col md:flex-row md:items-center gap-4 p-4 rounded-xl bg-bg-app border border-border/40 transition-all hover:border-border"
+                  className="p-4 rounded-2xl bg-bg-app/20 border border-border/20 hover:border-border/50 hover:bg-bg-app/30 transition-all duration-200 flex flex-col md:flex-row md:items-center gap-4"
                 >
-                  <div className="flex-1 space-y-1.5">
-                    <Label htmlFor={`printer-name-${index}`} className="text-xs font-bold">
-                      Nombre de la Impresora (Windows)
+                  <div className="flex-1 space-y-1">
+                    <Label htmlFor={`printer-name-${index}`} className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+                      Nombre de la Impresora en Windows
                     </Label>
                     <Input
                       id={`printer-name-${index}`}
                       placeholder="Ej: POS-80-Caja"
                       value={printer.name}
                       onChange={(e) => updatePrinter(index, "name", e.target.value)}
-                      className="rounded-xl h-9 text-xs"
+                      className="rounded-lg h-9 text-xs font-semibold"
                     />
                   </div>
 
-                  <div className="w-full md:w-36 space-y-1.5">
-                    <Label htmlFor={`printer-copies-${index}`} className="text-xs font-bold">
-                      Copias (Crear/Cobrar)
-                    </Label>
-                    <Input
-                      id={`printer-copies-${index}`}
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={printer.copies}
-                      onChange={(e) =>
-                        updatePrinter(index, "copies", Math.max(1, parseInt(e.target.value) || 1))
-                      }
-                      className="rounded-xl h-9 text-xs"
-                    />
+                  <div className="grid grid-cols-2 md:flex md:items-center gap-3">
+                    <div className="space-y-1 w-full md:w-28">
+                      <Label htmlFor={`printer-copies-${index}`} className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
+                        Copias (Caja)
+                      </Label>
+                      <Input
+                        id={`printer-copies-${index}`}
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={printer.copies}
+                        onChange={(e) =>
+                          updatePrinter(index, "copies", Math.max(1, parseInt(e.target.value) || 1))
+                        }
+                        className="rounded-lg h-9 text-xs font-semibold font-mono text-center"
+                      />
+                    </div>
+
+                    <div className="space-y-1 w-full md:w-28">
+                      <Label htmlFor={`printer-reprint-copies-${index}`} className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
+                        Copias (Reimpr.)
+                      </Label>
+                      <Input
+                        id={`printer-reprint-copies-${index}`}
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={printer.reprintCopies ?? 1}
+                        onChange={(e) =>
+                          updatePrinter(index, "reprintCopies", Math.max(1, parseInt(e.target.value) || 1))
+                        }
+                        className="rounded-lg h-9 text-xs font-semibold font-mono text-center"
+                      />
+                    </div>
                   </div>
 
-                  <div className="w-full md:w-36 space-y-1.5">
-                    <Label htmlFor={`printer-reprint-copies-${index}`} className="text-xs font-bold">
-                      Copias (Reimprimir)
-                    </Label>
-                    <Input
-                      id={`printer-reprint-copies-${index}`}
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={printer.reprintCopies ?? 1}
-                      onChange={(e) =>
-                        updatePrinter(index, "reprintCopies", Math.max(1, parseInt(e.target.value) || 1))
-                      }
-                      className="rounded-xl h-9 text-xs"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-6 md:pt-6 pt-2 justify-between md:justify-start">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between md:justify-start gap-4 md:pt-4">
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-border/20">
                       <Switch
                         checked={printer.enabled}
                         onCheckedChange={(v) => updatePrinter(index, "enabled", v)}
+                        className="scale-90"
                       />
-                      <Label className="text-xs font-bold cursor-pointer">
+                      <Label className="text-xs font-bold text-text-main cursor-pointer select-none">
                         Activa
                       </Label>
                     </div>
 
-                    <Button
+                    <button
                       type="button"
-                      variant="ghost"
                       onClick={() => removePrinter(index)}
-                      className="rounded-xl h-9 w-9 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-all"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/40 text-text-muted hover:border-red-300 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
+                      title="Eliminar impresora"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))

@@ -1,5 +1,5 @@
 "use client";
-
+ 
 import {
   Settings,
   Package,
@@ -15,10 +15,9 @@ import { SettingsOperationTab } from "./SettingsOperationTab";
 import { SettingsPaymentsTab } from "./SettingsPaymentsTab";
 import { SettingsMessagingTab } from "./SettingsMessagingTab";
 import { SettingsDesignTab } from "./SettingsDesignTab";
-import { Button } from "@/components/ui/button";
-import { Loader2, Save, RotateCcw } from "lucide-react";
+import { SettingsSaveBar } from "./SettingsSaveBar";
 import type { SettingsFormProps } from "./SettingsForm.types";
-
+ 
 export function SettingsForm({ initialData, templates = [] }: SettingsFormProps) {
   const {
     form,
@@ -30,96 +29,67 @@ export function SettingsForm({ initialData, templates = [] }: SettingsFormProps)
     setDecimalInputs,
     handleSubmit,
   } = useSettingsForm({ initialData });
-
+ 
   return (
-    <div className="relative">
+    <div className="relative pb-28">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 bg-surface-section/50 p-4 rounded-2xl border border-border/40">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Settings className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-black text-text-main leading-none mb-1">Editor de Configuración</p>
-              <p className="text-[11px] text-text-muted font-medium">Gestiona el comportamiento global</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => window.location.reload()}
-              className="h-10 px-4 rounded-xl border-border/60 font-bold hover:bg-muted text-xs transition-all active:scale-95"
-              disabled={isSaving}
-            >
-              <RotateCcw className="w-3.5 h-3.5 mr-2" />
-              Descartar
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSaving}
-              className="px-6 h-10 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all font-bold text-xs active:scale-95"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Guardar Cambios
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
         {message && (
           <div className={cn(
-            "rounded-xl p-4 text-sm font-semibold animate-in fade-in slide-in-from-top-2 mb-6",
+            "rounded-xl p-4 text-sm font-semibold animate-in fade-in slide-in-from-top-2 mb-6 shadow-sm",
             message.type === "success" ? "bg-success/10 text-success border border-success/20" : "bg-error/10 text-error border border-error/20"
           )}>
             {message.text}
           </div>
         )}
-
+ 
         <Tabs defaultValue="general" className="w-full flex flex-col gap-0">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 gap-2 mb-10 bg-muted/50 p-1 rounded-2xl h-auto border-none !w-full">
-            <TabsTrigger value="general" className="rounded-xl py-3.5 data-active:bg-white data-active:text-primary data-active:shadow-md transition-all">
-              <Settings className="h-4 w-4 mr-2" />
-              General
+          <TabsList className="flex items-center gap-1.5 p-1 bg-muted/50 rounded-2xl w-full overflow-x-auto whitespace-nowrap no-scrollbar snap-x mb-8 border border-border/10">
+            <TabsTrigger 
+              value="general" 
+              className="flex-1 min-w-[105px] md:min-w-0 rounded-xl py-3 px-3 transition-all data-active:bg-white data-active:text-primary data-active:shadow-md flex items-center justify-center gap-2 select-none snap-center"
+            >
+              <Settings className="h-4 w-4 shrink-0" />
+              <span className="text-xs md:text-sm">General</span>
             </TabsTrigger>
-            <TabsTrigger value="design" className="rounded-xl py-3.5 data-active:bg-white data-active:text-primary data-active:shadow-md transition-all hidden md:flex">
-              <ListFilter className="h-4 w-4 mr-2" />
-              Diseño
+            <TabsTrigger 
+              value="design" 
+              className="flex-1 min-w-[105px] md:min-w-0 rounded-xl py-3 px-3 transition-all data-active:bg-white data-active:text-primary data-active:shadow-md flex items-center justify-center gap-2 select-none snap-center"
+            >
+              <ListFilter className="h-4 w-4 shrink-0" />
+              <span className="text-xs md:text-sm">Diseño</span>
             </TabsTrigger>
-            <TabsTrigger value="operation" className="rounded-xl py-3.5 data-active:bg-white data-active:text-primary data-active:shadow-md transition-all">
-              <Package className="h-4 w-4 mr-2" />
-              Operación
+            <TabsTrigger 
+              value="operation" 
+              className="flex-1 min-w-[105px] md:min-w-0 rounded-xl py-3 px-3 transition-all data-active:bg-white data-active:text-primary data-active:shadow-md flex items-center justify-center gap-2 select-none snap-center"
+            >
+              <Package className="h-4 w-4 shrink-0" />
+              <span className="text-xs md:text-sm">Operación</span>
             </TabsTrigger>
-            <TabsTrigger value="payments" className="rounded-xl py-3.5 data-active:bg-white data-active:text-primary data-active:shadow-md transition-all">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Pagos
+            <TabsTrigger 
+              value="payments" 
+              className="flex-1 min-w-[105px] md:min-w-0 rounded-xl py-3 px-3 transition-all data-active:bg-white data-active:text-primary data-active:shadow-md flex items-center justify-center gap-2 select-none snap-center"
+            >
+              <CreditCard className="h-4 w-4 shrink-0" />
+              <span className="text-xs md:text-sm">Pagos</span>
             </TabsTrigger>
-            <TabsTrigger value="messaging" className="rounded-xl py-3.5 data-active:bg-white data-active:text-primary data-active:shadow-md transition-all">
-              <Smartphone className="h-4 w-4 mr-2" />
-              Mensajería
-            </TabsTrigger>
-            <TabsTrigger value="design" className="rounded-xl py-3.5 data-active:bg-white data-active:text-primary data-active:shadow-md transition-all md:hidden">
-              <ListFilter className="h-4 w-4" />
+            <TabsTrigger 
+              value="messaging" 
+              className="flex-1 min-w-[105px] md:min-w-0 rounded-xl py-3 px-3 transition-all data-active:bg-white data-active:text-primary data-active:shadow-md flex items-center justify-center gap-2 select-none snap-center"
+            >
+              <Smartphone className="h-4 w-4 shrink-0" />
+              <span className="text-xs md:text-sm">Mensajería</span>
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="design">
+ 
+          <TabsContent value="design" className="outline-none">
             <SettingsDesignTab form={form} updateField={updateField} errors={errors} />
           </TabsContent>
-
-          <TabsContent value="general">
+ 
+          <TabsContent value="general" className="outline-none">
             <SettingsGeneralTab form={form} updateField={updateField} errors={errors} />
           </TabsContent>
-
-          <TabsContent value="operation">
+ 
+          <TabsContent value="operation" className="outline-none">
             <SettingsOperationTab
               form={form}
               updateField={updateField}
@@ -128,16 +98,19 @@ export function SettingsForm({ initialData, templates = [] }: SettingsFormProps)
               setDecimalInputs={setDecimalInputs}
             />
           </TabsContent>
-
-          <TabsContent value="payments">
+ 
+          <TabsContent value="payments" className="outline-none">
             <SettingsPaymentsTab form={form} updateField={updateField} />
           </TabsContent>
-
-          <TabsContent value="messaging">
+ 
+          <TabsContent value="messaging" className="outline-none">
             <SettingsMessagingTab form={form} updateField={updateField} templates={templates} />
           </TabsContent>
         </Tabs>
+ 
+        <SettingsSaveBar isSaving={isSaving} onDiscard={() => window.location.reload()} />
       </form>
     </div>
   );
 }
+

@@ -49,7 +49,10 @@ export interface SettingsFormData {
   coverImagekitFileId: string;
   branchName: string;
   scheduleText: string;
-  businessHours: { days: number[]; open: string; close: string };
+  businessHours: any;
+  statusOverride: "auto" | "open" | "closed";
+  hideMenuWhenClosed: boolean;
+  preOpenVisibilityMinutes: number;
   orderModeOnSiteEnabled: boolean;
   orderModeTakeAwayEnabled: boolean;
   orderModeDeliveryEnabled: boolean;
@@ -62,6 +65,15 @@ export interface SettingsFormData {
   requirePaymentBeforeKitchen: boolean;
   paymentPagoMovilEnabled: boolean;
   paymentTransferEnabled: boolean;
+  paymentEfectivoEnabled: boolean;
+  paymentZelleEnabled: boolean;
+  zelleEmail: string;
+  zelleName: string;
+  paymentBinanceEnabled: boolean;
+  binanceEmail: string;
+  binancePayId: string;
+  efectivoAskCashAmount: boolean;
+  efectivoAskChangeBs: boolean;
   menuLayout: "modern" | "classic";
   menuItemSortMode: "custom" | "price_asc" | "price_desc";
   applyIgtf: boolean;

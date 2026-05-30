@@ -81,7 +81,7 @@ export function HeroImageUpload({ coverImageUrl, coverImagekitFileId, onImageCha
     }
 
     return (
-        <div className="flex flex-col items-center gap-4 pb-6 border-b border-border/30 mb-6">
+        <div className="flex flex-col items-center gap-4 w-full">
             <div className="relative w-full max-w-sm">
                 {/* Hero preview / placeholder */}
                 <div

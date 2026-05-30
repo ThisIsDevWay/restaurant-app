@@ -35,7 +35,7 @@ export function RestaurantLogoUpload({ logoUrl, logoImagekitFileId, onLogoChange
 
             // Delete old logo from ImageKit before uploading new one
             if (logoImagekitFileId) {
-                deleteImagekitFileAction({ fileId: logoImagekitFileId }).catch(() => {});
+                deleteImagekitFileAction({ fileId: logoImagekitFileId }).catch(() => { });
             }
 
             const authResult = await getImagekitAuthAction({});
@@ -81,7 +81,7 @@ export function RestaurantLogoUpload({ logoUrl, logoImagekitFileId, onLogoChange
     }
 
     return (
-        <div className="flex flex-col items-center gap-4 pb-6 border-b border-border/30 mb-6">
+        <div className="flex flex-col items-center gap-4 w-full">
             <div className="relative">
                 {/* Logo preview / placeholder */}
                 <div
