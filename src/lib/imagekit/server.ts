@@ -34,6 +34,7 @@ export async function deleteFile(fileId: string): Promise<void> {
   }
 }
 
-export function getUploadAuth(): { token: string; expire: number; signature: string } {
-  return ik.getAuthenticationParameters();
+export function getUploadAuth(options?: { expirySeconds?: number }): { token: string; expire: number; signature: string } {
+  const expire = Math.floor(Date.now() / 1000) + (options?.expirySeconds ?? 3600);
+  return ik.getAuthenticationParameters(undefined, expire);
 }
