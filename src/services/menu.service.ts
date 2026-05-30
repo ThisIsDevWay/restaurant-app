@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { dailyAdicionales, dailyBebidas, dailyContornos, menuItems } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { dailyAdicionales, dailyBebidas, dailyContornos, dailyMenuItems, menuItems } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 
 export async function generateDailyMenuSnapshot(date: string) {
     // Daily adicionales pool
@@ -51,8 +51,21 @@ export async function generateDailyMenuSnapshot(date: string) {
     return { dailyAdicionalMap, dailyBebidaMap, globalContornoMap };
 }
 
-export async function validateItemAvailability(itemId: string, date: string) {
-    // Stub implementation if not fully defined in the previous design
-    // In theory, checks if a menuItem is explicitly restricted or available in the daily snapshot
-    return true;
+/**
+ * Returns true only if the item exists in today's daily menu AND is marked available.
+ * Items not present in daily_menu_items are treated as unavailable.
+ */
+export async function validateItemAvailability(itemId: string, date: string): Promise<boolean> {
+    const [row] = await db
+        .select({ isAvailable: dailyMenuItems.isAvailable })
+        .from(dailyMenuItems)
+        .where(
+            and(
+                eq(dailyMenuItems.menuItemId, itemId),
+                eq(dailyMenuItems.date, date),
+            ),
+        )
+        .limit(1);
+
+    return row?.isAvailable === true;
 }

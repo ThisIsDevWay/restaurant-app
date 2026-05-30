@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { supabaseBrowser } from "@/lib/supabase-client";
 
 type AvailabilityMap = Map<string, boolean>;
@@ -13,38 +13,41 @@ interface AvailabilityResponse {
 export function useMenuAvailability(
   onAvailabilityChange: (map: AvailabilityMap) => void,
 ) {
-  const fetchAndNotify = useCallback(async () => {
-    try {
-      const res = await fetch("/api/menu/availability", { cache: "no-store" });
-      if (!res.ok) return;
-      const data: AvailabilityResponse = await res.json();
-
-      const map: AvailabilityMap = new Map();
-      [
-        ...data.platos,
-        ...data.adicionales,
-        ...data.bebidas,
-        ...data.contornos,
-      ].forEach((item) => {
-        map.set(item.id, item.isAvailable);
-      });
-
-      onAvailabilityChange(map);
-    } catch {
-      // silently fail — don't interrupt UX
-    }
-  }, [onAvailabilityChange]);
+  // Stable ref so the mount-only effect always calls the latest callback without
+  // recreating the Supabase channel on every render (previous leak source).
+  const onChangeRef = useRef(onAvailabilityChange);
+  onChangeRef.current = onAvailabilityChange;
 
   useEffect(() => {
+    const fetchAndNotify = async () => {
+      try {
+        const res = await fetch("/api/menu/availability", { cache: "no-store" });
+        if (!res.ok) return;
+        const data: AvailabilityResponse = await res.json();
+
+        const map: AvailabilityMap = new Map();
+        [
+          ...data.platos,
+          ...data.adicionales,
+          ...data.bebidas,
+          ...data.contornos,
+        ].forEach((item) => {
+          map.set(item.id, item.isAvailable);
+        });
+
+        onChangeRef.current(map);
+      } catch {
+        // silently fail — don't interrupt UX
+      }
+    };
+
     fetchAndNotify();
 
-    // Refresh when tab becomes visible after being hidden
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") fetchAndNotify();
+      if (document.visibilityState === "visible") void fetchAndNotify();
     };
     document.addEventListener("visibilitychange", handleVisibility);
 
-    // Push-based updates: re-fetch whenever any daily availability row changes
     let debounce: ReturnType<typeof setTimeout> | null = null;
     const scheduleRefresh = () => {
       if (debounce) clearTimeout(debounce);
@@ -53,26 +56,10 @@ export function useMenuAvailability(
 
     const channel = supabaseBrowser
       .channel("menu-availability")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "daily_menu_items" },
-        scheduleRefresh,
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "daily_bebidas" },
-        scheduleRefresh,
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "daily_contornos" },
-        scheduleRefresh,
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "daily_adicionales" },
-        scheduleRefresh,
-      )
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_menu_items" }, scheduleRefresh)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_bebidas" }, scheduleRefresh)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_contornos" }, scheduleRefresh)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_adicionales" }, scheduleRefresh)
       .subscribe();
 
     return () => {
@@ -80,5 +67,5 @@ export function useMenuAvailability(
       document.removeEventListener("visibilitychange", handleVisibility);
       supabaseBrowser.removeChannel(channel);
     };
-  }, [fetchAndNotify]);
+  }, []); // mount-only: ref pattern keeps callback stable
 }
