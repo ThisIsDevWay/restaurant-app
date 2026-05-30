@@ -3,27 +3,46 @@ import { auth } from '@/lib/auth'
 
 import * as Sentry from "@sentry/nextjs";
 
+/**
+ * Throw this inside a server action to surface a structured error code to the
+ * client without leaking internal details. The `message` is shown to users;
+ * `code` lets the client branch on the error type.
+ *
+ * Example:
+ *   throw new ActionError("Sesión expirada.", "SESSION_EXPIRED")
+ */
+export class ActionError extends Error {
+    constructor(
+        message: string,
+        public readonly code: string = "ACTION_ERROR",
+    ) {
+        super(message);
+        this.name = "ActionError";
+    }
+}
+
 // Cliente público (sin autenticación requerida)
 export const actionClient = createSafeActionClient({
     handleServerError(e, utils) {
-        // Captura en Sentry con contexto de la action
-        Sentry.captureException(e, {
-            tags: {
-                actionName: (utils as any)?.metadata?.actionName ?? "unknown_action",
-            },
-            extra: {
-                clientInput: (utils as any)?.clientInput,
-            },
-        });
-
-        // Log local existente — mantener
-        console.error('Action error:', e)
-        
-        // Devolver mensaje al cliente — mantener el comportamiento actual
-        if (e instanceof Error) {
-            return e.message
+        // Captura en Sentry con contexto de la action (non-ActionError only)
+        if (!(e instanceof ActionError)) {
+            Sentry.captureException(e, {
+                tags: {
+                    actionName: (utils as any)?.metadata?.actionName ?? "unknown_action",
+                },
+                extra: {
+                    clientInput: (utils as any)?.clientInput,
+                },
+            });
         }
-        return 'Error inesperado. Intenta de nuevo.'
+
+        // ActionError: trusted, user-facing message, structured code
+        if (e instanceof ActionError) {
+            return `[${e.code}] ${e.message}`;
+        }
+
+        // Any other error: generic message — never expose e.message to the client
+        return 'Error inesperado. Intenta de nuevo.';
     },
 })
 
