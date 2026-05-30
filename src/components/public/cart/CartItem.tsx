@@ -9,15 +9,15 @@ import { type CartItem as CartItemType } from "@/store/cartStore";
    DESIGN TOKENS
 ───────────────────────────────────────────── */
 const T = {
-  primary:     "#bb0005",
+  primary: "#bb0005",
   primaryDeep: "#e2231a",
-  ink:         "#251a07",
-  cream:       "#fff8f3",
-  creamLow:    "#fff2e2",
-  muted:       "#9e8e7e",
-  surface:     "#ffffff",
+  ink: "#251a07",
+  cream: "#fff8f3",
+  creamLow: "#fff2e2",
+  muted: "#9e8e7e",
+  surface: "#ffffff",
   fontDisplay: "'Epilogue', sans-serif",
-  fontBody:    "'Plus Jakarta Sans', sans-serif",
+  fontBody: "'Plus Jakarta Sans', sans-serif",
 } as const;
 
 /* ─────────────────────────────────────────────
@@ -42,11 +42,11 @@ function cleanLabel(name: string): string {
  * ⚠️  Removals are SUBTRACTED (priceUsdCents is stored positive).
  */
 function computeItemUsdCents(item: CartItemType): number {
-  const fixedUsd  = (item.fixedContornos       ?? []).reduce((s, c) => s + c.priceUsdCents, 0);
-  const subUsd    = (item.contornoSubstitutions ?? []).reduce((s, c) => s + c.priceUsdCents, 0);
-  const adUsd     = (item.selectedAdicionales   ?? []).reduce((s, a) => s + a.priceUsdCents * (a.quantity ?? 1), 0);
-  const bebUsd    = (item.selectedBebidas       ?? []).reduce((s, b) => s + b.priceUsdCents * (b.quantity ?? 1), 0);
-  const remUsd    = (item.removedComponents     ?? []).reduce((s, r) => s + r.priceUsdCents, 0);
+  const fixedUsd = (item.fixedContornos ?? []).reduce((s, c) => s + c.priceUsdCents, 0);
+  const subUsd = (item.contornoSubstitutions ?? []).reduce((s, c) => s + c.priceUsdCents, 0);
+  const adUsd = (item.selectedAdicionales ?? []).reduce((s, a) => s + a.priceUsdCents * (a.quantity ?? 1), 0);
+  const bebUsd = (item.selectedBebidas ?? []).reduce((s, b) => s + b.priceUsdCents * (b.quantity ?? 1), 0);
+  const remUsd = (item.removedComponents ?? []).reduce((s, r) => s + r.priceUsdCents, 0);
   // Per-unit components × quantity, then add flat extras/drinks
   return (item.baseUsdCents + fixedUsd + subUsd - remUsd) * item.quantity + adUsd + bebUsd;
 }
@@ -58,25 +58,25 @@ type PillVariant = "default" | "swap" | "remove" | "extra" | "bebida";
 
 function Pill({ children, variant = "default" }: { children: React.ReactNode; variant?: PillVariant }) {
   const styles: Record<PillVariant, React.CSSProperties> = {
-    default: { background: T.surface,   color: T.muted,      border: `1px solid ${T.creamLow}` },
-    swap:    { background: T.creamLow,  color: T.ink,        border: "none" },
-    remove:  { background: "#fff0f0",   color: "#c0392b",    border: "none" },
-    extra:   { background: "rgba(187,0,5,0.06)", color: T.primary, border: "none" },
-    bebida:  { background: "rgba(37,26,7,0.05)", color: T.ink,   border: "none" },
+    default: { background: "#ffffff", color: T.muted, border: "1px solid rgba(37, 26, 7, 0.08)" },
+    swap: { background: "rgba(255, 242, 226, 0.7)", color: T.ink, border: "1px solid rgba(255, 178, 89, 0.2)" },
+    remove: { background: "rgba(255, 240, 240, 0.8)", color: "#c0392b", border: "1px solid rgba(192, 57, 43, 0.12)" },
+    extra: { background: "rgba(187, 0, 5, 0.05)", color: T.primary, border: "1px solid rgba(187, 0, 5, 0.1)" },
+    bebida: { background: "rgba(37, 26, 7, 0.04)", color: T.ink, border: "1px solid rgba(37, 26, 7, 0.06)" },
   };
 
   return (
     <span style={{
-      display:       "inline-flex",
-      alignItems:    "center",
-      gap:           4,
-      padding:       "3px 9px",
-      borderRadius:  99,
-      fontSize:      10,
-      fontWeight:    600,
-      lineHeight:    1.4,
-      whiteSpace:    "nowrap",
-      fontFamily:    T.fontBody,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 4,
+      padding: "3px 9px",
+      borderRadius: 99,
+      fontSize: 10,
+      fontWeight: 600,
+      lineHeight: 1.4,
+      whiteSpace: "nowrap",
+      fontFamily: T.fontBody,
       ...styles[variant],
     }}>
       {children}
@@ -93,7 +93,7 @@ function CatLabel({ children }: { children: React.ReactNode }) {
       width: 64,
       flexShrink: 0,
       fontSize: 9,
-      fontWeight: 900,
+      fontWeight: 950,
       textTransform: "uppercase",
       letterSpacing: "0.12em",
       color: T.muted,
@@ -121,21 +121,21 @@ function IconBtn({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        width:          28, height: 28,
-        borderRadius:   8,
-        border:         "none",
-        cursor:         "pointer",
-        display:        "flex",
-        alignItems:     "center",
+        width: 28, height: 28,
+        borderRadius: 8,
+        border: "none",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
         justifyContent: "center",
-        background:     danger
-          ? (hovered ? "#fff0f0" : T.cream)
-          : (hovered ? T.creamLow : T.cream),
+        background: danger
+          ? (hovered ? "#fff0f0" : "rgba(37, 26, 7, 0.03)")
+          : (hovered ? "rgba(187, 0, 5, 0.06)" : "rgba(37, 26, 7, 0.03)"),
         color: danger
           ? (hovered ? "#c0392b" : T.muted)
           : (hovered ? T.primary : T.muted),
         transition: "background .15s, color .15s, transform .12s",
-        transform: hovered ? "scale(1.1)" : "scale(1)",
+        transform: hovered ? "scale(1.06)" : "scale(1)",
       }}
     >
       {children}
@@ -159,41 +159,41 @@ function RemoveModal({
     <div
       onClick={onCancel}
       style={{
-        position:       "fixed",
-        inset:          0,
-        zIndex:         200,
-        display:        "flex",
-        alignItems:     "flex-end",
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "flex-end",
         justifyContent: "center",
-        padding:        "0 0 16px",
-        background:     "rgba(37,26,7,0.52)",
+        padding: "0 0 16px",
+        background: "rgba(37,26,7,0.52)",
         backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)",
-        animation:      "rm-bg-in .18s ease",
+        animation: "rm-bg-in .18s ease",
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width:        "100%",
-          maxWidth:     360,
-          margin:       "0 16px",
-          background:   T.surface,
+          width: "100%",
+          maxWidth: 360,
+          margin: "0 16px",
+          background: T.surface,
           borderRadius: 20,
-          overflow:     "hidden",
-          boxShadow:    "0 20px 60px rgba(37,26,7,0.2)",
-          animation:    "rm-panel-in .22s cubic-bezier(0.34,1.56,0.64,1)",
+          overflow: "hidden",
+          boxShadow: "0 20px 60px rgba(37,26,7,0.2)",
+          animation: "rm-panel-in .22s cubic-bezier(0.34,1.56,0.64,1)",
         }}
       >
         {/* Icon header */}
         <div style={{
-          display:        "flex",
-          flexDirection:  "column",
-          alignItems:     "center",
-          gap:            10,
-          padding:        "28px 24px 20px",
-          background:     T.cream,
-          borderBottom:   `1px solid ${T.creamLow}`,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 10,
+          padding: "28px 24px 20px",
+          background: T.cream,
+          borderBottom: `1px solid ${T.creamLow}`,
         }}>
           <div style={{
             width: 48, height: 48, borderRadius: 14,
@@ -203,20 +203,20 @@ function RemoveModal({
             <AlertTriangle style={{ width: 22, height: 22, color: "#c0392b" }} />
           </div>
           <p style={{
-            fontFamily:    T.fontDisplay,
-            fontSize:      15,
-            fontWeight:    900,
-            color:         T.ink,
+            fontFamily: T.fontDisplay,
+            fontSize: 15,
+            fontWeight: 900,
+            color: T.ink,
             letterSpacing: "-0.02em",
-            textAlign:     "center",
+            textAlign: "center",
           }}>
             ¿Eliminar este ítem?
           </p>
           <p style={{
-            fontSize:   12,
-            color:      T.muted,
+            fontSize: 12,
+            color: T.muted,
             fontWeight: 500,
-            textAlign:  "center",
+            textAlign: "center",
             lineHeight: 1.5,
           }}>
             <strong style={{ color: T.ink }}>{itemName}</strong> será removido de tu pedido.
@@ -228,41 +228,41 @@ function RemoveModal({
           <button
             onClick={onConfirm}
             style={{
-              height:         50,
-              borderRadius:   13,
-              border:         "none",
-              cursor:         "pointer",
-              background:     "#c0392b",
-              color:          "#fff",
-              fontFamily:     T.fontDisplay,
-              fontSize:       13,
-              fontWeight:     900,
-              letterSpacing:  "0.06em",
-              textTransform:  "uppercase",
-              boxShadow:      "0 4px 14px rgba(192,57,43,0.3)",
-              transition:     "transform .15s",
+              height: 50,
+              borderRadius: 13,
+              border: "none",
+              cursor: "pointer",
+              background: "#c0392b",
+              color: "#fff",
+              fontFamily: T.fontDisplay,
+              fontSize: 13,
+              fontWeight: 900,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              boxShadow: "0 4px 14px rgba(192,57,43,0.3)",
+              transition: "transform .15s",
             }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.transform = "scale(1.02)")}
             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.transform = "scale(1)")}
-            onMouseDown={(e)  => ((e.currentTarget as HTMLElement).style.transform = "scale(0.97)")}
+            onMouseDown={(e) => ((e.currentTarget as HTMLElement).style.transform = "scale(0.97)")}
           >
             Sí, eliminar
           </button>
           <button
             onClick={onCancel}
             style={{
-              height:         44,
-              borderRadius:   13,
-              border:         "none",
-              cursor:         "pointer",
-              background:     T.creamLow,
-              color:          T.ink,
-              fontFamily:     T.fontDisplay,
-              fontSize:       12,
-              fontWeight:     800,
-              letterSpacing:  "0.05em",
-              textTransform:  "uppercase",
-              transition:     "background .15s",
+              height: 44,
+              borderRadius: 13,
+              border: "none",
+              cursor: "pointer",
+              background: T.creamLow,
+              color: T.ink,
+              fontFamily: T.fontDisplay,
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+              transition: "background .15s",
             }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "#ffe4d4")}
             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = T.creamLow)}
@@ -291,30 +291,29 @@ function Stepper({
   const atMax = value >= maxValue;
   return (
     <div style={{
-      display:      "flex",
-      alignItems:   "center",
+      display: "flex",
+      alignItems: "center",
       borderRadius: 99,
-      background:   T.surface,
-      border:       `1.5px solid ${T.creamLow}`,
-      overflow:     "hidden",
-      height:       30,
+      background: "#ffffff",
+      border: "1px solid rgba(187, 0, 5, 0.2)",
+      overflow: "hidden",
+      height: 28,
     }}>
       {[
-        { icon: <Minus style={{ width: 11, height: 11 }} />, fn: onDecrement, label: "Reducir",  disabled: false },
+        { icon: <Minus style={{ width: 10, height: 10 }} />, fn: onDecrement, label: "Reducir", disabled: false },
         null,
-        { icon: <Plus  style={{ width: 11, height: 11 }} />, fn: onIncrement, label: "Aumentar", disabled: atMax },
+        { icon: <Plus style={{ width: 10, height: 10 }} />, fn: onIncrement, label: "Aumentar", disabled: atMax },
       ].map((item, idx) => {
         if (!item) {
           return (
             <span key="val" style={{
-              minWidth:      24,
-              textAlign:     "center",
-              fontFamily:    T.fontDisplay,
-              fontSize:      13,
-              fontWeight:    900,
-              color:         T.ink,
-              padding:       "0 2px",
-              letterSpacing: "-0.01em",
+              minWidth: 20,
+              textAlign: "center",
+              fontFamily: T.fontDisplay,
+              fontSize: 12,
+              fontWeight: 900,
+              color: T.ink,
+              padding: "0 2px",
             }}>
               {value}
             </span>
@@ -327,16 +326,16 @@ function Stepper({
             aria-label={item.label}
             disabled={item.disabled}
             style={{
-              width:          28, height: "100%",
-              border:         "none",
-              background:     "transparent",
-              color:          item.disabled ? T.muted : T.primary,
-              opacity:        item.disabled ? 0.35 : 1,
-              cursor:         item.disabled ? "not-allowed" : "pointer",
-              display:        "flex",
-              alignItems:     "center",
+              width: 24, height: "100%",
+              border: "none",
+              background: "transparent",
+              color: item.disabled ? T.muted : T.primary,
+              opacity: item.disabled ? 0.3 : 1,
+              cursor: item.disabled ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
               justifyContent: "center",
-              transition:     "background .12s",
+              transition: "background .12s",
             }}
             onMouseEnter={(e) => { if (!item.disabled) (e.currentTarget as HTMLElement).style.background = "rgba(187,0,5,0.06)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
@@ -364,16 +363,16 @@ interface CartItemProps {
 export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantity, onRemove, onEdit }: CartItemProps) {
   const [pendingRemove, setPendingRemove] = useState(false);
 
-  const fixedContornos = item.fixedContornos       ?? [];
-  const substitutions  = item.contornoSubstitutions ?? [];
-  const adicionales    = item.selectedAdicionales   ?? [];
-  const bebidas        = item.selectedBebidas       ?? [];
-  const removals       = item.removedComponents     ?? [];
-  const includedNote   = item.includedNote          ?? null;
+  const fixedContornos = item.fixedContornos ?? [];
+  const substitutions = item.contornoSubstitutions ?? [];
+  const adicionales = item.selectedAdicionales ?? [];
+  const bebidas = item.selectedBebidas ?? [];
+  const removals = item.removedComponents ?? [];
+  const includedNote = item.includedNote ?? null;
 
-  const hasContornos      = fixedContornos.length > 0 || substitutions.length > 0;
+  const hasContornos = fixedContornos.length > 0 || substitutions.length > 0;
   const hasCustomizations = hasContornos || adicionales.length > 0 || bebidas.length > 0 || removals.length > 0 || !!includedNote;
-  const lineUsdCents      = computeItemUsdCents(item); // quantity already applied inside
+  const lineUsdCents = computeItemUsdCents(item);
 
   function handleDecrement() {
     if (item.quantity === 1) setPendingRemove(true);
@@ -383,49 +382,72 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
   return (
     <>
       <div style={{
-        borderRadius: 14,
-        background:   T.cream,
-        overflow:     "hidden",
-        /* Layered depth: sit slightly above canvas */
-        boxShadow:    "0 1px 4px rgba(37,26,7,0.05)",
+        borderRadius: 16,
+        background: T.surface,
+        overflow: "hidden",
+        border: "1px solid rgba(37, 26, 7, 0.08)",
+        boxShadow: "0 4px 16px rgba(37, 26, 7, 0.03)",
+        fontFamily: T.fontBody,
+        flexShrink: 0,
+        minHeight: "fit-content",
       }}>
 
         {/* ── HEADER ROW ── */}
         <div style={{
-          display:    "flex",
+          display: "flex",
           alignItems: "center",
-          gap:        10,
-          padding:    "11px 12px 10px",
+          gap: 12,
+          padding: "12px 12px 10px",
         }}>
-          {/* Emoji tile */}
-          <div style={{
-            width:          40, height: 40,
-            borderRadius:   11,
-            background:     T.surface,
-            border:         `1.5px solid ${T.creamLow}`,
-            display:        "flex",
-            alignItems:     "center",
-            justifyContent: "center",
-            fontSize:       20,
-            flexShrink:     0,
-            boxShadow:      "0 1px 3px rgba(37,26,7,0.06)",
-          }}>
-            {item.emoji}
-          </div>
+          {/* Thumbnail Image or Emoji fallback */}
+          {item.imageUrl ? (
+            <div style={{
+              width: 44, height: 44,
+              borderRadius: 10,
+              position: "relative",
+              overflow: "hidden",
+              flexShrink: 0,
+              border: "1px solid rgba(37, 26, 7, 0.06)",
+            }}>
+              <img
+                src={item.imageUrl}
+                alt={item.name}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
+            </div>
+          ) : (
+            <div style={{
+              width: 44, height: 44,
+              borderRadius: 10,
+              background: T.creamLow,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 22,
+              flexShrink: 0,
+              boxShadow: "0 1px 3px rgba(37,26,7,0.04)",
+            }}>
+              {item.emoji || "🍽️"}
+            </div>
+          )}
 
           {/* Name + unit price */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{
-              fontFamily:   T.fontBody,
-              fontSize:     "clamp(12px, 3.5vw, 14px)",
-              fontWeight:   700,
-              color:        T.ink,
-              lineHeight:   1.3,
-              marginBottom: 2,
-              display:      "-webkit-box",
+              fontFamily: T.fontBody,
+              fontSize: "clamp(13px, 3.8vw, 14px)",
+              fontWeight: 700,
+              color: T.ink,
+              lineHeight: 1.25,
+              marginBottom: 1,
+              display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
-              overflow:     "hidden",
+              overflow: "hidden",
             }}>
               {item.quantity > 1 ? (
                 <>
@@ -463,12 +485,12 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
           <div style={{
             display: "flex",
             flexDirection: "column",
-            gap: 9,
-            padding: "8px 12px 12px",
-            borderTop:     `1px solid ${T.creamLow}`,
-            background:    T.surface,
+            gap: 8,
+            padding: "10px 12px 12px",
+            borderTop: "1px dashed rgba(37, 26, 7, 0.08)",
+            background: "transparent",
           }}>
-            {/* Included note (fixed, non-interactive) */}
+            {/* Included note */}
             {includedNote && (
               <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
                 <CatLabel>Incluye</CatLabel>
@@ -491,7 +513,7 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
                   {substitutions.map((s, i) => (
                     <Pill key={i} variant="swap">
                       <span style={{ fontWeight: 700 }}>{cleanLabel(s.substituteName)}</span>
-                      <span style={{ opacity: 0.45, fontSize: 9, fontStyle: "italic", fontWeight: 500 }}>en lugar de {cleanLabel(s.originalName)}</span>
+                      <span style={{ opacity: 0.5, fontSize: 9, fontStyle: "italic", fontWeight: 500 }}>en lugar de {cleanLabel(s.originalName)}</span>
                     </Pill>
                   ))}
                 </div>
@@ -520,7 +542,7 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
                       <span style={{ fontFamily: T.fontDisplay, fontWeight: 800 }}>{ad.quantity ?? 1}×</span>
                       {cleanLabel(ad.name)}
                       {ad.priceBsCents > 0 && (
-                        <span style={{ opacity: 0.7, fontSize: 9 }}>
+                        <span style={{ opacity: 0.8, fontSize: 9 }}>
                           +{formatBs(ad.priceBsCents * (ad.quantity ?? 1))}
                         </span>
                       )}
@@ -539,7 +561,7 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
                       <span style={{ fontFamily: T.fontDisplay, fontWeight: 800 }}>{b.quantity ?? 1}×</span>
                       {cleanLabel(b.name)}
                       {b.priceBsCents > 0 && (
-                        <span style={{ opacity: 0.7, fontSize: 9 }}>
+                        <span style={{ opacity: 0.8, fontSize: 9 }}>
                           +{formatBs(b.priceBsCents * (b.quantity ?? 1))}
                         </span>
                       )}
@@ -553,36 +575,36 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
 
         {/* ── SUBTOTAL FOOTER ── */}
         <div style={{
-          display:        "flex",
-          alignItems:     "center",
+          display: "flex",
+          alignItems: "center",
           justifyContent: "space-between",
-          padding:        "7px 12px 9px",
-          borderTop:      `1px solid ${T.creamLow}`,
-          background:     T.cream,
+          padding: "8px 12px 10px",
+          borderTop: "1px dashed rgba(37, 26, 7, 0.08)",
+          background: "transparent",
         }}>
-          <span style={{ fontSize: 10, color: T.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: T.fontDisplay }}>
+          <span style={{ fontSize: 10, color: T.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: T.fontDisplay }}>
             Subtotal{item.quantity > 1 ? ` × ${item.quantity}` : ""}
           </span>
-          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {/* USD reference chip */}
             <span style={{
-              fontSize:     10,
-              color:        T.muted,
-              background:   T.surface,
-              border:       `1px solid ${T.creamLow}`,
-              padding:      "2px 7px",
-              borderRadius: 6,
-              fontFamily:   T.fontDisplay,
-              fontWeight:   600,
+              fontSize: 10,
+              color: T.muted,
+              background: "rgba(37, 26, 7, 0.03)",
+              border: "1px solid rgba(37, 26, 7, 0.06)",
+              padding: "1.5px 6px",
+              borderRadius: 5,
+              fontFamily: T.fontDisplay,
+              fontWeight: 600,
             }}>
               {formatRef(lineUsdCents)}
             </span>
             {/* Bs amount — display emphasis */}
             <span style={{
-              fontFamily:    T.fontDisplay,
-              fontSize:      "clamp(13px, 4vw, 15px)",
-              fontWeight:    900,
-              color:         T.ink,
+              fontFamily: T.fontDisplay,
+              fontSize: "clamp(13px, 4.2vw, 15px)",
+              fontWeight: 900,
+              color: T.ink,
               letterSpacing: "-0.02em",
             }}>
               {formatBs(item.itemTotalBsCents)}

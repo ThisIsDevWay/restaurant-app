@@ -101,6 +101,7 @@ export function Cart({
   const router = useRouter();
   const isOnline = useOnlineStatus();
   const [taxOpen, setTaxOpen] = useState(false);
+  const [upsellExpanded, setUpsellExpanded] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
   const [barVisible, setBarVisible] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -262,7 +263,7 @@ export function Cart({
         <div
           onClick={(e) => e.stopPropagation()}
           className={`absolute flex flex-col overflow-hidden isolate z-10 bg-white transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_-12px_48px_rgba(37,26,7,0.14),0_-2px_8px_rgba(37,26,7,0.06)]
-            bottom-0 left-0 right-0 max-h-[88vh] rounded-t-[22px]
+            bottom-0 left-0 right-0 max-h-[88dvh] rounded-t-[22px]
             md:top-0 md:bottom-0 md:right-0 md:left-auto md:w-[420px] md:max-h-none md:rounded-l-[22px] md:rounded-tr-none md:border-l md:border-border/40
             ${isDrawerOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}
           `}
@@ -355,93 +356,167 @@ export function Cart({
             {items.length >= 1 && items.length <= 2 && (dailyAdicionales.length > 0 || dailyBebidas.length > 0) && (
               <div style={{
                 marginTop: 16,
-                padding: "16px 12px",
+                padding: "12px",
                 background: T.cream,
                 borderRadius: 16,
                 border: `1.5px dashed ${T.creamLow}`,
                 display: "flex",
                 flexDirection: "column",
-                gap: 12,
+                gap: upsellExpanded ? 10 : 0,
+                transition: "gap 0.2s ease",
               }}>
-                <p style={{
-                  fontFamily: T.fontDisplay,
-                  fontSize: 13,
-                  fontWeight: 900,
-                  color: T.ink,
-                  letterSpacing: "-0.01em",
-                }}>
-                  Súmale algo a tu pedido 😋
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {[...dailyBebidas.filter(b => b.isAvailable).slice(0, 2), ...dailyAdicionales.filter(a => a.isAvailable).slice(0, 2)].map((opt) => {
-                    const isDrink = dailyBebidas.some(b => b.id === opt.id);
-                    const optPriceBs = rate ? Math.round(opt.priceUsdCents * rate) : 0;
-                    
-                    // Check if already in cart
-                    const inCart = items.some(i => i.id === opt.id);
-                    if (inCart) return null;
+                <button
+                  onClick={() => setUpsellExpanded(!upsellExpanded)}
+                  style={{
+                    width: "100%",
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <span style={{
+                    fontFamily: T.fontDisplay,
+                    fontSize: 13,
+                    fontWeight: 900,
+                    color: T.ink,
+                    letterSpacing: "-0.01em",
+                  }}>
+                    Súmale algo a tu pedido 😋
+                  </span>
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: T.primary,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}>
+                    {upsellExpanded ? "Ocultar" : "Ver opciones"}
+                    <ChevronDown style={{
+                      width: 14,
+                      height: 14,
+                      transform: upsellExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 0.2s",
+                    }} />
+                  </span>
+                </button>
 
-                    return (
-                      <div
-                        key={opt.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          background: T.surface,
-                          padding: "10px 12px",
-                          borderRadius: 12,
-                          boxShadow: "0 1px 3px rgba(37,26,7,0.04)",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 18 }}>{isDrink ? "🥤" : "🍟"}</span>
-                          <div style={{ display: "flex", flexDirection: "column" }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: T.ink }}>{opt.name}</span>
-                            <span style={{ fontSize: 10, color: T.muted, fontWeight: 500 }}>
-                              {formatBs(optPriceBs)} / {formatRef(opt.priceUsdCents)}
-                            </span>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            const payload = {
-                              id: opt.id,
-                              name: opt.name,
-                              baseUsdCents: opt.priceUsdCents,
-                              baseBsCents: optPriceBs,
-                              isPrepackaged: opt.isPrepackaged,
-                              emoji: isDrink ? "🥤" : "🍟",
-                              fixedContornos: [],
-                              contornoSubstitutions: [],
-                              selectedAdicionales: [],
-                              selectedBebidas: [],
-                              removedComponents: [],
-                              categoryAllowAlone: true,
-                              categoryIsSimple: true,
-                              categoryName: isDrink ? "Bebidas" : "Adicionales",
-                            };
-                            addItem(payload);
-                            if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
-                          }}
+                {upsellExpanded && (
+                  <div
+                    className="no-scrollbar"
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: 10,
+                      overflowX: "auto",
+                      paddingBottom: 4,
+                      scrollSnapType: "x mandatory",
+                      WebkitOverflowScrolling: "touch",
+                      animation: "tax-in 0.2s ease",
+                    }}
+                  >
+                    {[...dailyBebidas.filter(b => b.isAvailable).slice(0, 2), ...dailyAdicionales.filter(a => a.isAvailable).slice(0, 2)].map((opt) => {
+                      const isDrink = dailyBebidas.some(b => b.id === opt.id);
+                      const optPriceBs = rate ? Math.round(opt.priceUsdCents * rate) : 0;
+
+                      // Check if already in cart
+                      const inCart = items.some(i => i.id === opt.id);
+                      if (inCart) return null;
+
+                      return (
+                        <div
+                          key={opt.id}
                           style={{
-                            background: "transparent",
-                            border: `1.5px solid ${T.primary}`,
-                            color: T.primary,
-                            borderRadius: 20,
-                            padding: "4px 12px",
-                            fontSize: 11,
-                            fontWeight: 800,
-                            cursor: "pointer",
-                            fontFamily: T.fontDisplay,
+                            flex: "0 0 150px",
+                            scrollSnapAlign: "start",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                            background: T.surface,
+                            padding: "10px",
+                            borderRadius: 12,
+                            boxShadow: "0 2px 6px rgba(37,26,7,0.04)",
+                            border: "1px solid rgba(37,26,7,0.04)",
                           }}
                         >
-                          Agregar
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8, minWidth: 0 }}>
+                            <span style={{ fontSize: 20, alignSelf: "flex-start", lineHeight: 1 }}>{isDrink ? "🥤" : "🍟"}</span>
+                            <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                              <span style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: T.ink,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                lineHeight: 1.2
+                              }} title={opt.name}>
+                                {opt.name}
+                              </span>
+                              <span style={{ fontSize: 9, color: T.muted, fontWeight: 500, marginTop: 2 }}>
+                                {formatRef(opt.priceUsdCents)}
+                              </span>
+                              <span style={{ fontSize: 9, color: T.primary, fontWeight: 700, marginTop: 1 }}>
+                                {formatBs(optPriceBs)}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const payload = {
+                                id: opt.id,
+                                name: opt.name,
+                                baseUsdCents: opt.priceUsdCents,
+                                baseBsCents: optPriceBs,
+                                isPrepackaged: opt.isPrepackaged,
+                                emoji: isDrink ? "🥤" : "🍟",
+                                fixedContornos: [],
+                                contornoSubstitutions: [],
+                                selectedAdicionales: [],
+                                selectedBebidas: [],
+                                removedComponents: [],
+                                categoryAllowAlone: true,
+                                categoryIsSimple: true,
+                                categoryName: isDrink ? "Bebidas" : "Adicionales",
+                              };
+                              addItem(payload);
+                              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
+                            }}
+                            style={{
+                              background: "transparent",
+                              border: `1.5px solid ${T.primary}`,
+                              color: T.primary,
+                              borderRadius: 20,
+                              padding: "4px 0",
+                              width: "100%",
+                              textAlign: "center",
+                              fontSize: 10,
+                              fontWeight: 800,
+                              cursor: "pointer",
+                              fontFamily: T.fontDisplay,
+                              transition: "background 0.15s, color 0.15s",
+                            }}
+                            onMouseEnter={(e) => {
+                              (e.currentTarget as HTMLElement).style.background = T.primary;
+                              (e.currentTarget as HTMLElement).style.color = "#fff";
+                            }}
+                            onMouseLeave={(e) => {
+                              (e.currentTarget as HTMLElement).style.background = "transparent";
+                              (e.currentTarget as HTMLElement).style.color = T.primary;
+                            }}
+                          >
+                            Agregar
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -633,6 +708,15 @@ export function Cart({
         @keyframes tax-in {
           from { opacity: 0; transform: translateY(-4px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
         }
       `}</style>
     </>
