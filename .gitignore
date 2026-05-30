@@ -89,3 +89,7 @@ print-agent/*.zip
 
 # MCP Server Config
 .mcp.json
+
+# PWA sw files
+public/sw.js
+public/sw.js.map

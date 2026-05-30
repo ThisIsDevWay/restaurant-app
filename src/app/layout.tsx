@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Epilogue, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
+import { QueryProvider } from "@/providers/QueryProvider";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -47,12 +48,14 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${plusJakartaSans.variable} ${epilogue.variable}`} suppressHydrationWarning>
       <body className="bg-bg-app text-text-main antialiased" suppressHydrationWarning>
-        {children}
-        <Toaster 
-          position="bottom-center" 
-          richColors 
-          toastOptions={{ style: { marginBottom: "80px" } }} 
-        />
+        <QueryProvider>
+          {children}
+          <Toaster
+            position="bottom-center"
+            richColors
+            toastOptions={{ style: { marginBottom: "80px" } }}
+          />
+        </QueryProvider>
       </body>
     </html>
   );
