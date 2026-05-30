@@ -584,15 +584,15 @@ export function SettingsDesignTab({ form, updateField, errors = {} }: SettingsDe
                             </div>
                         </div>
 
-                        {/* Columna Derecha: Oclusión de Catálogo y Vista Previa */}
+                        {/* Columna Derecha: Mostrar/ocultar menú del día y Vista Previa */}
                         <div className="space-y-6">
-                            {/* Oclusión de Catálogo */}
+                            {/* Mostrar/ocultar menú del día */}
                             <div className="rounded-2xl border border-neutral-200 bg-neutral-50/50 p-5 space-y-4 shadow-sm">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="space-y-1">
                                         <Label className="flex items-center gap-1.5 text-xs font-bold text-text-main uppercase tracking-wider">
                                             <EyeOff className="h-3.5 w-3.5 text-primary" />
-                                            Oclusión de Catálogo
+                                            Mostrar/ocultar menú del día
                                         </Label>
                                         <p className="text-[10px] text-text-muted leading-relaxed">
                                             Cuando el restaurante se encuentre cerrado:
