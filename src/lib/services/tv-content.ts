@@ -298,15 +298,34 @@ export async function findActiveDisplayByToken(token: string) {
   return display;
 }
 
+const HEARTBEAT_THROTTLE_MS = 60_000; // 1 minute
+
 /**
  * Updates lastSeenAt and reported screen info. Best-effort - does not throw.
+ *
+ * Pass `currentLastSeenAt` (already available from findActiveDisplayByToken) to
+ * skip the UPDATE when a heartbeat was written less than 60 s ago — this avoids
+ * ~47k unnecessary UPDATEs/day (one per TV poll) without an extra SELECT query.
  */
 export async function updateDisplayHeartbeat(params: {
   displayId: string;
+  currentLastSeenAt?: Date | null;
   reportedOrientation?: string | null;
   reportedSize?: string | null;
 }): Promise<void> {
-  const { displayId, reportedOrientation, reportedSize } = params;
+  const { displayId, currentLastSeenAt, reportedOrientation, reportedSize } =
+    params;
+
+  // Skip if a heartbeat was already written recently
+  const lastSeenDate = currentLastSeenAt ? new Date(currentLastSeenAt) : null;
+  if (
+    lastSeenDate &&
+    !isNaN(lastSeenDate.getTime()) &&
+    Date.now() - lastSeenDate.getTime() < HEARTBEAT_THROTTLE_MS
+  ) {
+    return;
+  }
+
   try {
     await db
       .update(tvDisplays)

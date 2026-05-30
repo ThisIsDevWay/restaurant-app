@@ -2,7 +2,7 @@ import * as v from "valibot";
 
 export const pairCodeSchema = v.pipe(
   v.string(),
-  v.regex(/^[0-9]{4}$/, "El código debe tener 4 dígitos"),
+  v.regex(/^[A-Z2-9]{6}$/, "El código debe tener 6 caracteres alfanuméricos"),
 );
 
 export const pairTvDisplaySchema = v.object({

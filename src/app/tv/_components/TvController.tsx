@@ -10,7 +10,9 @@ const STORAGE_KEY = "tv_token";
 // Daypart transitions happen when time crosses a boundary — no DB row changes,
 // so Realtime can't catch them. This timer re-evaluates content every 60s as
 // a fallback so scheduled slides activate/deactivate on time.
-const DAYPART_TICK_MS = 60_000;
+// 2-minute fallback for daypart transitions (no DB row changes at boundary).
+// Realtime handles actual content changes; this is just a safety net.
+const DAYPART_TICK_MS = 120_000;
 
 type Phase = "boot" | "pairing" | "displaying";
 
@@ -133,11 +135,23 @@ export function TvController() {
             ? "landscape-primary"
             : "portrait-primary";
       const size = `${window.innerWidth}x${window.innerHeight}`;
-      // _t is a cache-buster against any intermediate caching layer.
+      // _t keeps the URL unique so no CDN/browser layer caches it;
+      // If-None-Match lets the server skip the body when version is unchanged.
+      const headers: Record<string, string> = {};
+      if (versionRef.current) {
+        headers["If-None-Match"] = `"${versionRef.current}"`;
+      }
       const resp = await fetch(
         `/api/tv/content?token=${encodeURIComponent(currentToken)}&orientation=${encodeURIComponent(orientation)}&size=${encodeURIComponent(size)}&_t=${Date.now()}`,
-        { cache: "no-store" },
+        { cache: "no-store", headers },
       );
+
+      // 304 Not Modified — content unchanged, just a heartbeat round-trip
+      if (resp.status === 304) {
+        failureCountRef.current = 0;
+        setReconnecting(false);
+        return;
+      }
 
       if (resp.status === 403) {
         try {

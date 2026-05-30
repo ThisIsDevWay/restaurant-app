@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { tvPairingSessions } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { rateLimiters, getIP } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/tv/pair/check?code=4812
+ * GET /api/tv/pair/check?code=AB3X7Q
  * Public endpoint polled by the TV every ~3 seconds while waiting to be paired.
  * Returns the current status of the pairing session.
  *
@@ -17,10 +18,16 @@ export const dynamic = "force-dynamic";
  *   - "not_found": no such code exists
  */
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const code = (url.searchParams.get("code") ?? "").trim();
+  const ip = getIP(req);
+  const { success } = await rateLimiters.tvPairCheck.limit(ip);
+  if (!success) {
+    return NextResponse.json({ status: "not_found" as const }, { status: 429 });
+  }
 
-  if (!/^[0-9]{4}$/.test(code)) {
+  const url = new URL(req.url);
+  const code = (url.searchParams.get("code") ?? "").trim().toUpperCase();
+
+  if (!/^[A-Z2-9]{6}$/.test(code)) {
     return NextResponse.json(
       { status: "not_found" as const },
       { status: 200 },

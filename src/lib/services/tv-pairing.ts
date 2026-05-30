@@ -3,20 +3,22 @@ import { db } from "@/db";
 import { tvPairingSessions, tvDisplays } from "@/db/schema";
 import { and, eq, lt, sql } from "drizzle-orm";
 
-export const PAIRING_CODE_LENGTH = 4;
+export const PAIRING_CODE_LENGTH = 6;
 export const PAIRING_TTL_MS = 5 * 60 * 1000; // 5 minutes
 export const DISPLAY_TOKEN_PREFIX = "tv_";
 
+// Alphanumeric charset excluding visually ambiguous characters (0, 1, I, O)
+const PAIRING_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
 /**
- * Generates a unique 4-digit pairing code that doesn't collide with any
- * currently-pending session. Up to 10 retries, then throws.
+ * Generates a unique 4-digit numeric pairing code that
+ * doesn't collide with any currently-pending session. Up to 10 retries, then throws.
  */
 export async function generatePairingCode(): Promise<string> {
   for (let attempt = 0; attempt < 10; attempt++) {
-    // 4 digits, zero-padded so codes like "0042" are valid.
-    const code = Math.floor(Math.random() * 10000)
-      .toString()
-      .padStart(PAIRING_CODE_LENGTH, "0");
+    const code = Array.from({ length: PAIRING_CODE_LENGTH }, () =>
+      PAIRING_CHARS[Math.floor(Math.random() * PAIRING_CHARS.length)],
+    ).join("");
 
     const existing = await db
       .select({ id: tvPairingSessions.id })

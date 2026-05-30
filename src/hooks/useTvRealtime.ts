@@ -34,10 +34,13 @@ export function useTvRealtime(
 
     const channel = supabaseBrowser
       .channel(`tv-content-${displayId}`)
+      // Display config changes (orientation, audio, name, rotation).
+      // tv_displays is back in the publication with the heartbeat throttled to
+      // 60 s, so WAL overhead is ~85 % lower than the original every-4s polling.
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "UPDATE",
           schema: "public",
           table: "tv_displays",
           filter: `id=eq.${displayId}`,

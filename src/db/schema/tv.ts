@@ -113,7 +113,7 @@ export const tvPairingSessions = pgTable(
     index("tv_pairing_status_idx").on(table.status),
     check(
       "tv_pairing_code_format_check",
-      sql`${table.pairingCode} ~ '^[0-9]{4}$'`,
+      sql`${table.pairingCode} ~ '^[A-Z2-9]{6}$'`,
     ),
     check(
       "tv_pairing_status_check",

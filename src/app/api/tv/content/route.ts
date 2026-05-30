@@ -10,12 +10,17 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/tv/content?token=tv_xxx&orientation=portrait&size=1920x1080
- * Public endpoint polled by the TV every ~5 seconds.
+ * Served to the TV browser on mount and on Realtime/timer triggers.
  *
  * Auth: token via query string OR `Authorization: Bearer <token>` header.
  *
- * Response includes a `version` hash so the TV can skip re-rendering the
- * carousel when nothing has actually changed.
+ * ETag based on playlist.version:
+ *   - TV sends `If-None-Match: "<version>"` on subsequent calls.
+ *   - 304 returned when unchanged → no body transmitted, heartbeat still updated.
+ *
+ * Heartbeat throttle: updateDisplayHeartbeat skips the DB write if a heartbeat
+ * was already recorded within the last 60 s (uses lastSeenAt already fetched by
+ * findActiveDisplayByToken — no extra query needed).
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -41,9 +46,11 @@ export async function GET(req: Request) {
   const reportedOrientation = url.searchParams.get("orientation");
   const reportedSize = url.searchParams.get("size");
 
-  // Heartbeat (best-effort, async-fire-and-forget would also work here).
-  await updateDisplayHeartbeat({
+  // Throttled heartbeat — passes current lastSeenAt so the service can skip
+  // the UPDATE if one was already written in the last 60 s.
+  void updateDisplayHeartbeat({
     displayId: display.id,
+    currentLastSeenAt: display.lastSeenAt,
     reportedOrientation: reportedOrientation
       ? reportedOrientation.slice(0, 32)
       : null,
@@ -55,19 +62,42 @@ export async function GET(req: Request) {
     getSettings(),
   ]);
 
-  return NextResponse.json({
-    displayId: display.id,
-    name: display.name,
-    orientation: display.orientation,
-    rotationDegrees: display.rotationDegrees,
-    audioEnabled: display.audioEnabled,
-    volumePercent: display.volumePercent,
-    source: playlist.source,
-    eventId: playlist.eventId,
-    eventName: playlist.eventName,
-    items: playlist.items,
-    version: playlist.version,
-    restaurantName: settings?.restaurantName ?? null,
-    logoUrl: settings?.logoUrl ?? null,
-  });
+  // ETag covers both playlist content AND display config fields so that a
+  // config-only change (orientation, audio, rotation) also triggers a 200.
+  const configSig = [
+    display.orientation,
+    display.rotationDegrees,
+    display.audioEnabled ? "1" : "0",
+    display.volumePercent,
+    display.name,
+  ].join(":");
+  const etag = `"${playlist.version}-${Buffer.from(configSig).toString("base64url").slice(0, 8)}"`;
+  const ifNoneMatch = req.headers.get("if-none-match");
+
+  if (ifNoneMatch === etag) {
+    // Content and config unchanged — skip sending the body
+    return new Response(null, {
+      status: 304,
+      headers: { ETag: etag },
+    });
+  }
+
+  return NextResponse.json(
+    {
+      displayId: display.id,
+      name: display.name,
+      orientation: display.orientation,
+      rotationDegrees: display.rotationDegrees,
+      audioEnabled: display.audioEnabled,
+      volumePercent: display.volumePercent,
+      source: playlist.source,
+      eventId: playlist.eventId,
+      eventName: playlist.eventName,
+      items: playlist.items,
+      version: playlist.version,
+      restaurantName: settings?.restaurantName ?? null,
+      logoUrl: settings?.logoUrl ?? null,
+    },
+    { headers: { ETag: etag, "Cache-Control": "no-store" } },
+  );
 }
