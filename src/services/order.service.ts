@@ -414,7 +414,16 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
         grandTotalBsCents,
         surchargesSnapshot,
         status: provider.id === "whatsapp_manual" ? "whatsapp" : "pending",
-        paymentMethod: input.paymentMethod === "transfer" ? "Transf." : input.paymentMethod,
+        paymentMethod:
+            input.paymentMethod === "transfer"
+                ? "Transf."
+                : input.paymentMethod === "efectivo"
+                ? "Efectivo $"
+                : input.paymentMethod === "zelle"
+                ? "Zelle"
+                : input.paymentMethod === "binance"
+                ? "Binance"
+                : input.paymentMethod,
         paymentProvider: provider.id,
         orderMode: input.orderMode ?? null,
         deliveryAddress: input.deliveryAddress ?? null,
@@ -439,22 +448,57 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
     // 4. Initiate payment — use grand total, not subtotal
     let initResult = await provider.initiatePayment(order, settings);
 
-    // Override for transfer
+    // Transferencia: comprobante via WhatsApp (equal que zelle/binance)
     if (input.paymentMethod === "transfer") {
+        const waRaw = (settings.whatsappNumber || "").replace(/\D/g, "");
+        const waNum = waRaw.startsWith("0") ? "58" + waRaw.slice(1) : waRaw;
+        const transferMsg = `Hola! Confirmo pago por Transferencia Bancaria. Pedido #${order.orderNumber}`;
         initResult = {
-            screen: "enter_reference",
+            screen: "whatsapp",
+            waLink: `https://wa.me/${waNum}?text=${encodeURIComponent(transferMsg)}`,
+            prefilledMessage: transferMsg,
+        };
+    } else if (input.paymentMethod === "zelle") {
+        const waRaw = (settings.whatsappNumber || "").replace(/\D/g, "");
+        const waNum = waRaw.startsWith("0") ? "58" + waRaw.slice(1) : waRaw;
+        const zelleMsg = `Hola! Confirmo pago por Zelle. Pedido #${order.orderNumber}`;
+        initResult = {
+            screen: "whatsapp",
+            waLink: `https://wa.me/${waNum}?text=${encodeURIComponent(zelleMsg)}`,
+            prefilledMessage: zelleMsg,
+        };
+    } else if (input.paymentMethod === "binance") {
+        const waRaw = (settings.whatsappNumber || "").replace(/\D/g, "");
+        const waNum = waRaw.startsWith("0") ? "58" + waRaw.slice(1) : waRaw;
+        const binanceMsg = `Hola! Confirmo pago por Binance Pay. Pedido #${order.orderNumber}`;
+        initResult = {
+            screen: "whatsapp",
+            waLink: `https://wa.me/${waNum}?text=${encodeURIComponent(binanceMsg)}`,
+            prefilledMessage: binanceMsg,
+        };
+    } else if (input.paymentMethod === "efectivo") {
+        initResult = {
+            screen: "waiting_auto",
             totalBsCents: grandTotalBsCents,
             bankDetails: {
-                bankName: settings.bankName,
-                bankCode: settings.bankCode,
-                accountPhone: settings.accountPhone,
-                accountRif: settings.accountRif,
-                transferBankName: settings.transferBankName,
-                transferAccountName: settings.transferAccountName,
-                transferAccountNumber: settings.transferAccountNumber,
-                transferAccountRif: settings.transferAccountRif,
+                bankName: "Efectivo $",
+                bankCode: "CASH_USD",
+                accountPhone: "",
+                accountRif: "",
             },
         };
+
+        // Persist cash preferences if provided
+        if (input.cashAmountUsd || input.acceptChangeBs !== undefined && input.acceptChangeBs !== null) {
+            await db.update(orders).set({
+                paymentMetadata: {
+                    ...(input.cashAmountUsd ? { cashAmountUsd: input.cashAmountUsd } : {}),
+                    ...(input.acceptChangeBs !== undefined && input.acceptChangeBs !== null
+                        ? { acceptChangeBs: input.acceptChangeBs }
+                        : {}),
+                },
+            }).where(eq(orders.id, order.id));
+        }
     }
 
     return { order, initResult, subtotalBsCents, grandTotalBsCents, snapshotItems, settings, surchargesSnapshot };

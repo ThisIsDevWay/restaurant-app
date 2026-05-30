@@ -1,261 +1,257 @@
-import { useEffect, useRef } from "react";
-import { Smartphone, Landmark, CheckCircle2, Search, User } from "lucide-react";
+"use client";
+
+import { Smartphone, Landmark, Shield, Coins, DollarSign, Bitcoin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PaymentMethod } from "./CheckoutForm.types";
 
 interface PaymentMethodSelectorProps {
   paymentPagoMovilEnabled: boolean;
   paymentTransferEnabled: boolean;
-  paymentMethod: PaymentMethod;
+  paymentEfectivoEnabled: boolean;
+  paymentZelleEnabled: boolean;
+  paymentBinanceEnabled: boolean;
+  paymentMethod: PaymentMethod | null;
   onSetPaymentMethod: (method: PaymentMethod) => void;
-  phone: string;
-  onPhoneChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  getFormattedPhone: () => string;
-  phoneValid: boolean;
-  customerFieldsVisible: boolean;
-  isReturning: boolean;
+  grandTotalUsdCents: number;
+  cashAmountUsd: string;
+  onCashAmountUsdChange: (v: string) => void;
+  acceptChangeBs: boolean | null;
+  onAcceptChangeBsChange: (v: boolean | null) => void;
+  efectivoAskCashAmount: boolean;
+  efectivoAskChangeBs: boolean;
+}
+
+function MethodButton({
+  isSelected,
+  onClick,
+  icon,
+  name,
+  badge,
+  badgeColor,
+  subtitle,
+}: {
+  isSelected: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
   name: string;
-  onNameChange: (name: string) => void;
-  cedula: string;
-  onCedulaChange: (cedula: string) => void;
-  isSubmitting: boolean;
+  badge: string;
+  badgeColor: "gold" | "green" | "blue";
+  subtitle: string;
+}) {
+  const badgeClass =
+    badgeColor === "gold"
+      ? "bg-[rgba(212,175,85,0.3)] text-[#B8893A]"
+      : badgeColor === "blue"
+      ? "bg-[rgba(59,130,246,0.15)] text-blue-600"
+      : "bg-[#E8EFE3] text-[#3F6B4A]";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-center gap-3.5 p-4 rounded-[18px] border transition-all duration-200 text-left",
+        isSelected
+          ? "bg-bg-card border-2 border-primary shadow-[0_8px_22px_rgba(187,0,5,0.12)]"
+          : "bg-bg-card border border-border shadow-card"
+      )}
+    >
+      <div
+        className={cn(
+          "w-[52px] h-[52px] rounded-[14px] flex items-center justify-center shrink-0 transition-colors duration-200",
+          isSelected ? "bg-primary text-white" : "bg-surface-section text-text-main"
+        )}
+      >
+        {icon}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-display text-[22px] leading-none text-text-main">{name}</p>
+          <span className={cn("inline-block px-2 py-0.5 rounded-[4px] font-sans text-[10px] font-semibold uppercase tracking-wide", badgeClass)}>
+            {badge}
+          </span>
+        </div>
+        <p className="font-sans text-[13px] text-text-muted mt-0.5">{subtitle}</p>
+      </div>
+
+      <div
+        className={cn(
+          "w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors duration-200",
+          isSelected ? "bg-primary border-primary" : "border-border"
+        )}
+      >
+        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+      </div>
+    </button>
+  );
 }
 
 export function PaymentMethodSelector({
   paymentPagoMovilEnabled,
   paymentTransferEnabled,
+  paymentEfectivoEnabled,
+  paymentZelleEnabled,
+  paymentBinanceEnabled,
   paymentMethod,
   onSetPaymentMethod,
-  phone,
-  onPhoneChange,
-  getFormattedPhone,
-  phoneValid,
-  customerFieldsVisible,
-  isReturning,
-  name,
-  onNameChange,
-  cedula,
-  onCedulaChange,
-  isSubmitting,
+  grandTotalUsdCents,
+  cashAmountUsd,
+  onCashAmountUsdChange,
+  acceptChangeBs,
+  onAcceptChangeBsChange,
+  efectivoAskCashAmount,
+  efectivoAskChangeBs,
 }: PaymentMethodSelectorProps) {
-  const customerFieldsRef = useRef<HTMLDivElement>(null);
-  const nameInputRef = useRef<HTMLInputElement>(null);
-
-  // ✅ Auto-scroll when customer fields appear
-  useEffect(() => {
-    if (customerFieldsVisible && customerFieldsRef.current) {
-      const timer = setTimeout(() => {
-        customerFieldsRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-        });
-        nameInputRef.current?.focus();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [customerFieldsVisible]);
+  const exactUsd = (grandTotalUsdCents / 100).toFixed(2);
 
   return (
-    <div className="bg-bg-card rounded-[20px] p-5 border border-border shadow-sm space-y-6">
-      {/* Header */}
-      <div className="text-[11px] font-display font-black tracking-[0.1em] text-text-muted uppercase flex items-center gap-2 opacity-80">
-        <span className="w-4 h-[1px] bg-border" />
-        Método de pago
-      </div>
+    <div className="flex flex-col gap-2.5">
+      {paymentPagoMovilEnabled && (
+        <MethodButton
+          isSelected={paymentMethod === "pago_movil"}
+          onClick={() => onSetPaymentMethod("pago_movil")}
+          icon={<Smartphone className="w-6 h-6" strokeWidth={paymentMethod === "pago_movil" ? 2.5 : 2} />}
+          name="Pago Móvil"
+          badge="INSTANTÁNEO"
+          badgeColor="gold"
+          subtitle="Transferencia inmediata 24/7"
+        />
+      )}
 
-      {/* Payment Options (M4) */}
-      <div className="grid gap-3">
-        {paymentPagoMovilEnabled && (
-          <button
-            type="button"
-            onClick={() => onSetPaymentMethod("pago_movil")}
-            className={cn(
-              "relative flex items-center gap-4 p-4 rounded-[18px] border-[1.5px] transition-all duration-300 text-left",
-              paymentMethod === "pago_movil" 
-                ? "bg-[#FAF5F2] border-[#7B2D2D] shadow-md" 
-                : "bg-surface-section border-transparent hover:bg-border/10"
-            )}
-          >
-            <div className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500",
-              paymentMethod === "pago_movil" ? "bg-[#7B2D2D] text-white shadow-lg shadow-[#7B2D2D]/20 scale-105" : "bg-bg-card text-text-muted"
-            )}>
-              <Smartphone className="w-6 h-6" strokeWidth={paymentMethod === "pago_movil" ? 2.5 : 2} />
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className={cn(
-                  "text-[clamp(12px,4vw,14px)] font-display font-black tracking-tight",
-                  paymentMethod === "pago_movil" ? "text-[#7B2D2D]" : "text-text-main"
-                )}>
-                  Pago Móvil
-                </span>
-                {paymentTransferEnabled && (
-                  <span className="text-[9px] bg-[#2A7A4A] text-white px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
-                    RECOMENDADO
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-text-muted font-medium mt-0.5">Transferencia inmediata 24/7</p>
-            </div>
+      {paymentTransferEnabled && (
+        <MethodButton
+          isSelected={paymentMethod === "transfer"}
+          onClick={() => onSetPaymentMethod("transfer")}
+          icon={<Landmark className="w-6 h-6" strokeWidth={paymentMethod === "transfer" ? 2.5 : 2} />}
+          name="Transferencia"
+          badge="Bs"
+          badgeColor="green"
+          subtitle="Cuentas nacionales"
+        />
+      )}
 
-            <div className={cn(
-              "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300",
-              paymentMethod === "pago_movil" ? "border-[#7B2D2D] bg-[#7B2D2D]" : "border-border"
-            )}>
-              {paymentMethod === "pago_movil" && <CheckCircle2 className="w-3 h-3 text-white" strokeWidth={4} />}
-            </div>
-          </button>
-        )}
-
-        {paymentTransferEnabled && (
-          <button
-            type="button"
-            onClick={() => onSetPaymentMethod("transfer")}
-            className={cn(
-              "relative flex items-center gap-4 p-4 rounded-[18px] border-[1.5px] transition-all duration-300 text-left",
-              paymentMethod === "transfer" 
-                ? "bg-[#FAF5F2] border-[#7B2D2D] shadow-md" 
-                : "bg-surface-section border-transparent hover:bg-border/10"
-            )}
-          >
-            <div className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500",
-              paymentMethod === "transfer" ? "bg-[#7B2D2D] text-white shadow-lg shadow-[#7B2D2D]/20 scale-105" : "bg-bg-card text-text-muted"
-            )}>
-              <Landmark className="w-6 h-6" strokeWidth={paymentMethod === "transfer" ? 2.5 : 2} />
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <span className={cn(
-                "text-[clamp(12px,4vw,14px)] font-display font-black tracking-tight",
-                paymentMethod === "transfer" ? "text-[#7B2D2D]" : "text-text-main"
-              )}>
-                Transferencia
-              </span>
-              <p className="text-[11px] text-text-muted font-medium mt-0.5">Cuentas nacionales</p>
-            </div>
-
-            <div className={cn(
-              "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300",
-              paymentMethod === "transfer" ? "border-[#7B2D2D] bg-[#7B2D2D]" : "border-border"
-            )}>
-              {paymentMethod === "transfer" && <CheckCircle2 className="w-3 h-3 text-white" strokeWidth={4} />}
-            </div>
-          </button>
-        )}
-      </div>
-
-      {/* Phone Integration (M3) */}
-      <div className="pt-2">
-        <div className="flex items-center justify-between mb-3 px-1">
-          <label className="text-[12px] font-display font-black text-text-main tracking-tight uppercase opacity-80">
-            Tu número celular
-          </label>
-          {phone.length > 0 && phone.length < 11 && (
-            <span className="text-[10px] font-black text-[#7B2D2D] flex items-center gap-1 animate-pulse">
-              <Search className="w-3 h-3" /> TE BUSCAREMOS...
-            </span>
-          )}
-          {phoneValid && !isReturning && (
-            <span className="text-[10px] font-black text-[#2A7A4A] flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> NÚMERO VÁLIDO
-            </span>
-          )}
-        </div>
-
-        <div className="relative group">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-            <span className="text-[14px] sm:text-[16px]">🇻🇪</span>
-            <div className="w-[1px] h-4 bg-border/60" />
-          </div>
-          
-          <input
-            id="phone-input"
-            type="tel"
-            inputMode="numeric"
-            value={getFormattedPhone()}
-            onChange={onPhoneChange}
-            placeholder="Ej: 0414 123 4567"
-            maxLength={14}
-            disabled={isSubmitting}
-            className={cn(
-              "w-full h-[54px] rounded-2xl border-2 bg-surface-section pl-[50px] pr-4 outline-none text-[15px] font-sans font-bold text-text-main transition-all shadow-inner",
-              phone.length > 0 && !phoneValid 
-                ? "border-[#bb0005]/20 focus:border-[#bb0005] focus:bg-white" 
-                : "border-transparent focus:border-[#7B2D2D]/30 focus:bg-white focus:shadow-md"
-            )}
+      {paymentEfectivoEnabled && (
+        <>
+          <MethodButton
+            isSelected={paymentMethod === "efectivo"}
+            onClick={() => onSetPaymentMethod("efectivo")}
+            icon={<Coins className="w-6 h-6" strokeWidth={paymentMethod === "efectivo" ? 2.5 : 2} />}
+            name="Efectivo $"
+            badge="USD"
+            badgeColor="green"
+            subtitle="Paga al recibir / retirar"
           />
-        </div>
 
-        {/* Customer Data (M3/M6) */}
-        <div
-          ref={customerFieldsRef}
-          className={cn(
-            "overflow-hidden transition-all duration-500 ease-in-out",
-            customerFieldsVisible ? "max-h-[400px] opacity-100 mt-6 pt-6 border-t border-dashed border-border" : "max-h-0 opacity-0 mt-0"
-          )}
-        >
-          <div className="space-y-5 animate-in fade-in zoom-in-95 duration-500">
-            {isReturning ? (
-              <div className="bg-[#2A7A4A]/5 border border-[#2A7A4A]/20 p-4 rounded-2xl flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-[#2A7A4A] text-white flex items-center justify-center shadow-lg shadow-[#2A7A4A]/20">
-                  <User className="w-5 h-5" />
-                </div>
+          {/* ── Sección expandible de efectivo ── */}
+          {paymentMethod === "efectivo" && (efectivoAskCashAmount || efectivoAskChangeBs) && (
+            <div className="animate-in slide-in-from-top-1 fade-in duration-200 rounded-[16px] bg-surface-section border border-border/50 px-4 py-4 -mt-0.5 space-y-4">
+              {/* Monto */}
+              {efectivoAskCashAmount && (
                 <div>
-                  <h4 className="text-[13px] font-display font-black text-[#2A7A4A]">¡Te encontramos!</h4>
-                  <p className="text-[11px] text-[#2A7A4A]/70 font-bold uppercase tracking-wide mt-0.5">Bienvenido de nuevo, {name.split(' ')[0]}</p>
+                  <label className="font-sans text-[10px] uppercase tracking-[0.12em] text-text-muted block mb-1.5">
+                    ¿Con cuánto pagarás?{" "}
+                    <span className="normal-case tracking-normal text-text-muted/60 font-normal">
+                      — opcional
+                    </span>
+                  </label>
+                  <div className="flex items-center gap-2 px-3.5 py-3 rounded-[12px] border border-border bg-bg-card focus-within:border-primary/60 transition-colors">
+                    <span className="font-sans text-[15px] font-semibold text-text-muted shrink-0">$</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={cashAmountUsd}
+                      onChange={(e) => onCashAmountUsdChange(e.target.value)}
+                      placeholder={exactUsd}
+                      className="flex-1 bg-transparent outline-none font-sans text-[15px] font-semibold text-text-main placeholder:text-text-muted/35 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    {cashAmountUsd && (
+                      <button
+                        type="button"
+                        onClick={() => onCashAmountUsdChange("")}
+                        className="text-text-muted/50 hover:text-text-muted text-[18px] leading-none shrink-0"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="bg-[#FAF5F2] border border-border p-4 rounded-2xl flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-border text-text-muted flex items-center justify-center">
-                  <User className="w-5 h-5" />
-                </div>
+              )}
+
+              {/* Vuelto en Bs */}
+              {efectivoAskChangeBs && (
                 <div>
-                  <h4 className="text-[13px] font-display font-black text-text-main">Nuevo cliente</h4>
-                  <p className="text-[11px] text-text-muted font-bold uppercase tracking-wide mt-0.5">Completa tus datos</p>
+                  <label className="font-sans text-[10px] uppercase tracking-[0.12em] text-text-muted block mb-1.5">
+                    ¿Acepto vuelto en Bs (tasa BCV)?{" "}
+                    <span className="normal-case tracking-normal text-text-muted/60 font-normal">
+                      — opcional
+                    </span>
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onAcceptChangeBsChange(acceptChangeBs === true ? null : true)}
+                      className={cn(
+                        "flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border transition-all",
+                        acceptChangeBs === true
+                          ? "bg-[#E8EFE3] border-[rgba(63,107,74,0.45)] text-[#3F6B4A]"
+                          : "bg-bg-card border-border text-text-muted"
+                      )}
+                    >
+                      Sí, acepto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onAcceptChangeBsChange(acceptChangeBs === false ? null : false)}
+                      className={cn(
+                        "flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border transition-all",
+                        acceptChangeBs === false
+                          ? "bg-primary/8 border-primary/35 text-primary"
+                          : "bg-bg-card border-border text-text-muted"
+                      )}
+                    >
+                      Prefiero exacto
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            <div className="grid gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-display font-black text-text-muted uppercase tracking-widest px-1">
-                  Nombre y Apellido
-                </label>
-                <input
-                  id="name-input"
-                  ref={nameInputRef}
-                  type="text"
-                  value={name}
-                  onChange={(e) => onNameChange(e.target.value)}
-                  placeholder="Ej: Carlos Perez"
-                  className="w-full h-12 rounded-xl border border-border bg-white px-4 text-[14px] font-bold text-text-main focus:border-[#7B2D2D] outline-none transition-all shadow-sm"
-                  disabled={isSubmitting}
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-display font-black text-text-muted uppercase tracking-widest px-1">
-                  Cédula de Identidad
-                </label>
-                <input
-                  id="cedula-input"
-                  type="text"
-                  value={cedula}
-                  onChange={(e) => onCedulaChange(e.target.value)}
-                  placeholder="Ej: 12345678"
-                  className="w-full h-12 rounded-xl border border-border bg-white px-4 text-[14px] font-bold text-text-main focus:border-[#7B2D2D] outline-none transition-all shadow-sm"
-                  disabled={isSubmitting}
-                  required
-                />
-              </div>
+              )}
             </div>
-          </div>
-        </div>
+          )}
+        </>
+      )}
+
+      {paymentZelleEnabled && (
+        <MethodButton
+          isSelected={paymentMethod === "zelle"}
+          onClick={() => onSetPaymentMethod("zelle")}
+          icon={<DollarSign className="w-6 h-6" strokeWidth={paymentMethod === "zelle" ? 2.5 : 2} />}
+          name="Zelle"
+          badge="USD"
+          badgeColor="green"
+          subtitle="Transferencia bancaria USA"
+        />
+      )}
+
+      {paymentBinanceEnabled && (
+        <MethodButton
+          isSelected={paymentMethod === "binance"}
+          onClick={() => onSetPaymentMethod("binance")}
+          icon={<Bitcoin className="w-6 h-6" strokeWidth={paymentMethod === "binance" ? 2.5 : 2} />}
+          name="Binance Pay"
+          badge="USDT"
+          badgeColor="blue"
+          subtitle="Pago en cripto estable"
+        />
+      )}
+
+      {/* Security note */}
+      <div className="bg-surface-section rounded-[12px] p-3 flex items-start gap-2.5 mt-1">
+        <Shield className="w-4 h-4 text-text-muted shrink-0 mt-0.5" />
+        <p className="font-sans text-[11px] text-text-muted leading-snug">
+          Tu pago es procesado directamente con el restaurante. No almacenamos datos bancarios.
+        </p>
       </div>
     </div>
   );

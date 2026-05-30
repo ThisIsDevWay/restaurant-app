@@ -20,7 +20,7 @@ export const checkoutSchema = v.object({
   ),
   name: v.nullish(v.pipe(v.string(), v.maxLength(50))),
   cedula: v.nullish(v.pipe(v.string(), v.maxLength(20))),
-  paymentMethod: v.picklist(["pago_movil", "transfer"]),
+  paymentMethod: v.picklist(["pago_movil", "transfer", "efectivo", "zelle", "binance"]),
   orderMode: v.nullish(v.picklist(["on_site", "take_away", "delivery"])),
   deliveryAddress: v.nullish(v.pipe(v.string(), v.maxLength(200))),
   gpsCoords: v.nullish(v.object({ lat: v.number(), lng: v.number(), accuracy: v.number() })),
@@ -35,6 +35,8 @@ export const checkoutSchema = v.object({
   ),
   checkoutToken: v.pipe(v.string(), v.uuid()),
   clientSurcharges: v.nullish(clientSurchargesSchema),
+  cashAmountUsd: v.nullish(v.pipe(v.string(), v.maxLength(20))),
+  acceptChangeBs: v.nullish(v.boolean()),
 });
 
 export type CheckoutInput = v.InferOutput<typeof checkoutSchema>;

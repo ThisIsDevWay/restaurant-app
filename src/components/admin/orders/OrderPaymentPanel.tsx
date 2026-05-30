@@ -43,6 +43,8 @@ type OrderData = {
   deliveryAddress?: string | null;
   gpsCoords?: { lat: number; lng: number; accuracy: number } | null;
   comprobanteUrl?: string | null;
+  cashAmountUsd?: string | null;
+  acceptChangeBs?: boolean | null;
 };
 
 /* ─────────────────────────────────────────────
@@ -412,23 +414,12 @@ export function OrderPaymentPanel({
           <SectionLabel icon={CreditCard}>Información de Pago</SectionLabel>
 
           <dl className="divide-y-0">
-            <DataRow
-              label="Método"
-              value={order.paymentMethod}
-            />
+            <DataRow label="Método" value={order.paymentMethod} />
             {order.paymentProvider && order.paymentProvider !== "whatsapp_manual" && (
-              <DataRow
-                label="Proveedor"
-                value={formatProvider(order.paymentProvider)}
-              />
+              <DataRow label="Proveedor" value={formatProvider(order.paymentProvider)} />
             )}
             {order.paymentReference && (
-              <DataRow
-                label="Referencia"
-                value={order.paymentReference}
-                accent
-                mono
-              />
+              <DataRow label="Referencia" value={order.paymentReference} accent mono />
             )}
             {latestLog && (
               <>
@@ -444,6 +435,38 @@ export function OrderPaymentPanel({
                     </span>
                   }
                 />
+              </>
+            )}
+
+            {/* Efectivo: preferencias indicadas por el cliente */}
+            {order.paymentMethod === "Efectivo $" && (order.cashAmountUsd || order.acceptChangeBs !== undefined && order.acceptChangeBs !== null) && (
+              <>
+                {order.cashAmountUsd && (
+                  <DataRow
+                    label="Paga con"
+                    value={
+                      <span className="font-black tabular-nums text-sky-700">
+                        ${parseFloat(order.cashAmountUsd).toFixed(2)}
+                      </span>
+                    }
+                  />
+                )}
+                {order.acceptChangeBs !== undefined && order.acceptChangeBs !== null && (
+                  <DataRow
+                    label="Vuelto en Bs"
+                    value={
+                      <span
+                        className={
+                          order.acceptChangeBs
+                            ? "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200"
+                        }
+                      >
+                        {order.acceptChangeBs ? "Acepta" : "Prefiere exacto"}
+                      </span>
+                    }
+                  />
+                )}
               </>
             )}
           </dl>
