@@ -2,9 +2,15 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { desc, sql } from "drizzle-orm";
+import { auth } from "@/lib/auth";
 
 export async function GET(req: Request) {
     try {
+        const session = await auth();
+        if (!session?.user?.role || session.user.role !== "admin") {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const url = new URL(req.url);
         const rawDate = url.searchParams.get("date");
         let targetDate = new Date().toLocaleDateString("en-CA", { timeZone: "America/Caracas" });

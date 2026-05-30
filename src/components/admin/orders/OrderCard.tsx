@@ -5,11 +5,11 @@ import { formatBs } from "@/lib/money";
 import { formatPhone, cn } from "@/lib/utils";
 import { formatOrderTime } from "@/lib/utils/format-relative-time";
 import { formatItems } from "@/lib/utils/format-items";
-import { formatProvider } from "@/lib/payments/format-provider";
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
 import { QuickActions } from "@/components/admin/orders/QuickActions";
 import { OrderModeChip } from "@/components/admin/orders/OrderModeChip";
-import { Clock, Phone, FileText } from "lucide-react";
+import { checkoutFlowState } from "@/lib/payments/checkout-flow";
+import { Clock, Phone, FileText, CheckCircle2, AlertCircle, Ban } from "lucide-react";
 import type { OrderStatus } from "@/lib/constants/order-status";
 
 export interface OrderListItem {
@@ -18,6 +18,7 @@ export interface OrderListItem {
   status: string;
   subtotalBsCents: number;
   grandTotalBsCents: number;
+  grandTotalUsdCents?: number;
   customerPhone: string;
   customerName?: string | null;
   createdAt: Date;
@@ -26,19 +27,56 @@ export interface OrderListItem {
   itemsSnapshot: unknown;
   orderMode: string | null;
   tableNumber?: string | null;
+  paymentMetadata?: { uploadedUrl?: string; cashAmountUsd?: string; acceptChangeBs?: boolean; [key: string]: any } | null;
+}
+
+const USD_METHODS = ["Zelle", "Binance", "Efectivo $"];
+
+function FlowBadge({ order }: { order: OrderListItem }) {
+  const state = checkoutFlowState(order);
+
+  if (state === "terminated") return null;
+
+  const config = {
+    complete: {
+      icon: CheckCircle2,
+      label: "Flujo completo",
+      className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    },
+    incomplete: {
+      icon: AlertCircle,
+      label: "Pendiente cliente",
+      className: "bg-amber-50 text-amber-700 border-amber-200",
+    },
+  }[state];
+
+  const Icon = config.icon;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-semibold",
+        config.className
+      )}
+    >
+      <Icon className="w-2.5 h-2.5" />
+      {config.label}
+    </span>
+  );
 }
 
 export function OrderCard({ order }: { order: OrderListItem }) {
   const router = useRouter();
   const items = order.itemsSnapshot as Array<{ name: string }>;
   const orderMode = order.orderMode ?? "delivery";
-
+  const isUsd = USD_METHODS.includes(order.paymentMethod);
 
   const statusColors: Record<string, string> = {
     pending: "border-l-amber-500",
     whatsapp: "border-l-blue-500",
     paid: "border-l-emerald-500",
     kitchen: "border-l-orange-500",
+    ready: "border-l-green-500",
     delivered: "border-l-green-600",
     expired: "border-l-red-500",
     failed: "border-l-red-600",
@@ -53,8 +91,8 @@ export function OrderCard({ order }: { order: OrderListItem }) {
       )}
       onClick={() => router.push(`/admin/orders/${order.id}`)}
     >
-      {/* Row 1: Number + Status */}
-      <div className="flex items-center justify-between mb-3">
+      {/* Row 1: Number + Status + Flow indicator */}
+      <div className="flex items-start justify-between mb-3 gap-2">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary font-bold text-sm tracking-tight border border-primary/10">
             #{order.orderNumber ?? order.id.slice(0, 8)}
@@ -76,18 +114,21 @@ export function OrderCard({ order }: { order: OrderListItem }) {
             </span>
           )}
         </div>
-        <OrderStatusBadge status={order.status} />
+
+        {/* Status + flow badge stacked */}
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <OrderStatusBadge status={order.status} />
+          <FlowBadge order={order} />
+        </div>
       </div>
 
       {/* Row 2: Customer Info + Time */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        {/* Customer name (primary) */}
         {order.customerName && (
           <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/5 rounded-lg text-xs font-bold text-primary border border-primary/10">
             {order.customerName}
           </div>
         )}
-        {/* Phone */}
         {order.customerPhone && !order.customerPhone.startsWith("mesa-") && !order.customerPhone.startsWith("mesero-") && (
           <div className="flex items-center gap-1.5 px-2 py-1 bg-stone-100 rounded-lg text-xs font-medium text-text-main border border-border/50">
             <Phone className="h-3 w-3 text-text-muted/70" />
@@ -108,13 +149,21 @@ export function OrderCard({ order }: { order: OrderListItem }) {
         </p>
       </div>
 
-      {/* Row 4: Total + Actions */}
+      {/* Row 4: Total + Payment method + Actions */}
       <div className="flex items-center justify-between pt-3 border-t border-border/50">
         <div className="flex flex-col">
           <span className="text-[10px] text-text-muted/80 uppercase tracking-widest font-semibold mb-0.5">Total</span>
-          <span className="text-lg font-bold text-emerald-700 tracking-tight leading-none">
-            {formatBs(order.grandTotalBsCents)}
+          <span className="text-lg font-bold tracking-tight leading-none">
+            {isUsd && order.grandTotalUsdCents != null
+              ? <span className="text-sky-700">${(order.grandTotalUsdCents / 100).toFixed(2)}</span>
+              : <span className="text-emerald-700">{formatBs(order.grandTotalBsCents)}</span>
+            }
           </span>
+          {isUsd && order.grandTotalUsdCents != null && (
+            <span className="text-[10px] text-text-muted/60 mt-0.5 tabular-nums">
+              ≈ {formatBs(order.grandTotalBsCents)}
+            </span>
+          )}
           <span className="text-[10px] text-text-muted/70 mt-0.5 font-medium">{order.paymentMethod}</span>
         </div>
         <QuickActions

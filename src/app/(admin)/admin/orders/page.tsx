@@ -31,6 +31,8 @@ export default async function AdminOrdersPage({
       itemsSnapshot: orders.itemsSnapshot,
       orderMode: orders.orderMode,
       tableNumber: orders.tableNumber,
+      grandTotalUsdCents: orders.grandTotalUsdCents,
+      paymentMetadata: orders.paymentMetadata,
     })
     .from(orders)
     .where(sql`date(timezone('America/Caracas', ${orders.createdAt})) = ${targetDate}`)

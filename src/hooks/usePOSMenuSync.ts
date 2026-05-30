@@ -48,7 +48,9 @@ export function usePOSMenuSync(onMenuRefetch: (menu: POSMenuPayload) => void) {
 
     const scheduleRefetch = () => {
       if (debounce) clearTimeout(debounce);
-      debounce = setTimeout(refetch, 400);
+      // 2 s debounce: admin often toggles multiple items in quick succession;
+      // consolidate into one fetch instead of one per change.
+      debounce = setTimeout(refetch, 2000);
     };
 
     let channel = supabaseBrowser.channel(`pos-menu-sync-${Date.now()}`);

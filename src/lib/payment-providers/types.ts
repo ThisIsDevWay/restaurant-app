@@ -58,11 +58,19 @@ export interface BankDetails {
   accountPhone: string;
   accountRif: string;
 
-  // Optional transfer details
+  // Bolívares transfer fields
   transferBankName?: string;
   transferAccountName?: string;
   transferAccountNumber?: string;
   transferAccountRif?: string;
+
+  // Zelle fields
+  zelleEmail?: string | null;
+  zelleName?: string | null;
+
+  // Binance Pay fields
+  binancePayId?: string | null;
+  binanceEmail?: string | null;
 }
 
 export type SettingsRow = typeof settings.$inferSelect;

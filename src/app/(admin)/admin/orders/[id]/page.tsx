@@ -8,8 +8,9 @@ import { OrderActions } from "@/components/admin/orders/OrderActions";
 import { OrderTimeline } from "@/components/admin/orders/OrderTimeline";
 import { OrderItemsTable } from "@/components/admin/orders/OrderItemsTable";
 import { OrderPaymentPanel } from "@/components/admin/orders/OrderPaymentPanel";
+import { checkoutFlowState } from "@/lib/payments/checkout-flow";
 import { formatOrderDate } from "@/lib/utils";
-import { ArrowLeft, Hash } from "lucide-react";
+import { ArrowLeft, Hash, CheckCircle2, AlertCircle } from "lucide-react";
 
 type ItemsSnapshot = Array<{
   id: string;
@@ -54,8 +55,14 @@ export default async function OrderDetailPage({
   const latestLog = paymentLogs[0] ?? null;
   const items = order.itemsSnapshot as ItemsSnapshot;
   const surcharges = order.surchargesSnapshot as typeof order.surchargesSnapshot;
+  const meta = order.paymentMetadata as { uploadedUrl?: string; cashAmountUsd?: string; acceptChangeBs?: boolean } | null;
 
   const orderLabel = order.orderNumber ?? order.id.slice(0, 8).toUpperCase();
+  const flowState = checkoutFlowState({
+    status: order.status,
+    paymentMethod: order.paymentMethod,
+    paymentMetadata: meta,
+  });
 
   return (
     /*
@@ -112,6 +119,22 @@ export default async function OrderDetailPage({
 
             {/* Status badge */}
             <OrderStatusBadge status={order.status} />
+
+            {/* Checkout flow indicator */}
+            {flowState !== "terminated" && (
+              <span
+                className={
+                  flowState === "complete"
+                    ? "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+                }
+              >
+                {flowState === "complete"
+                  ? <><CheckCircle2 className="w-3 h-3" /> Flujo completo</>
+                  : <><AlertCircle className="w-3 h-3" /> Pendiente cliente</>
+                }
+              </span>
+            )}
           </div>
         </div>
 
@@ -230,7 +253,9 @@ export default async function OrderDetailPage({
                 tableNumber: order.tableNumber,
                 deliveryAddress: order.deliveryAddress,
                 gpsCoords: order.gpsCoords,
-                comprobanteUrl: order.paymentMetadata?.uploadedUrl,
+                comprobanteUrl: meta?.uploadedUrl,
+                cashAmountUsd: meta?.cashAmountUsd,
+                acceptChangeBs: meta?.acceptChangeBs,
               }}
               latestLog={
                 latestLog

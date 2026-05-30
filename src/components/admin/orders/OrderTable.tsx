@@ -2,10 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { formatBs } from "@/lib/money";
-import { formatPhone } from "@/lib/utils";
+import { formatPhone, cn } from "@/lib/utils";
 import { formatOrderTime } from "@/lib/utils/format-relative-time";
 import { formatItems } from "@/lib/utils/format-items";
-import { formatProvider } from "@/lib/payments/format-provider";
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
 import { OrderModeChip } from "@/components/admin/orders/OrderModeChip";
 import { QuickActions } from "@/components/admin/orders/QuickActions";
@@ -18,33 +17,60 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { ShoppingBag } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { OrderListItem } from "@/components/admin/orders/OrderCard";
 import type { OrderStatus } from "@/lib/constants/order-status";
 
+/* ── Status accent bar ─────────────────────────────────────── */
 const STATUS_ACCENT: Record<string, string> = {
-  pending: "bg-amber-400",
-  pending_payment: "bg-amber-400",
-  confirmed: "bg-sky-400",
-  preparing: "bg-violet-400",
-  ready: "bg-emerald-500",
+  pending:   "bg-amber-400",
+  whatsapp:  "bg-blue-400",
+  paid:      "bg-emerald-500",
+  kitchen:   "bg-orange-500",
   delivered: "bg-slate-300",
-  cancelled: "bg-red-400",
+  expired:   "bg-red-400",
+  failed:    "bg-red-600",
+  cancelled: "bg-red-700",
 };
 
-/*
- *  Column budget — must sum to 100% of table width.
- *  Using % so it scales with the container.
- *  The accent bar is 4px absolute; we account for it in the first col.
- *
- *  [accent] [orden] [hora] [cliente] [detalle] [total] [pago] [estado] [acciones]
- *  [ 0%   ] [ 11%] [ 9% ] [ 13%  ] [ auto  ] [ 10%] [ 11%] [  9%  ] [  15%   ]
- *
- *  ACCIONES is 15% (~168px at 1120px table) — enough for icon + compact label.
- *  DETALLE gets whatever is left (flex fill).
- */
-const COL_WIDTHS = ["4px", "11%", "9%", "13%", "", "10%", "11%", "9%", "15%"] as const;
+const USD_METHODS = ["Zelle", "Binance", "Efectivo $"];
 
+/*
+ * ── Column layout ───────────────────────────────────────────
+ * [accent 4px] [Orden 10%] [Hora 8%] [Cliente 11%] [Detalle auto]
+ * [Total 9%] [Pago 9%] [Estado 14%] [Vía 8%] [Acciones 11%]
+ */
+const COL_WIDTHS = ["4px", "10%", "8%", "11%", "", "9%", "9%", "14%", "8%", "11%"] as const;
+
+/* ── Specific status label ─────────────────────────────────── */
+interface StatusLabel { label: string; className: string }
+
+function specificStatus(order: OrderListItem): StatusLabel {
+  const meta = order.paymentMetadata as any;
+  const hasComprobante = !!meta?.uploadedUrl;
+  const isEfectivo = order.paymentMethod === "Efectivo $";
+
+  switch (order.status) {
+    case "pending":
+      if (isEfectivo)       return { label: "Pago al recibir",   className: "text-teal-700 bg-teal-50 border-teal-200" };
+      if (hasComprobante)   return { label: "Comprobante ✓",     className: "text-sky-700 bg-sky-50 border-sky-200" };
+      return                       { label: "Esperando pago",    className: "text-amber-700 bg-amber-50 border-amber-200" };
+
+    case "whatsapp":
+      if (isEfectivo)       return { label: "Pago al recibir",   className: "text-teal-700 bg-teal-50 border-teal-200" };
+      if (hasComprobante)   return { label: "Comprobante enviado", className: "text-sky-700 bg-sky-50 border-sky-200" };
+      return                       { label: "Sin comprobante",   className: "text-amber-700 bg-amber-50 border-amber-200" };
+
+    case "paid":      return { label: "Pago confirmado",  className: "text-emerald-700 bg-emerald-50 border-emerald-200" };
+    case "kitchen":   return { label: "En preparación",   className: "text-orange-700 bg-orange-50 border-orange-200" };
+    case "delivered": return { label: "Entregado",        className: "text-slate-600 bg-slate-50 border-slate-200" };
+    case "expired":   return { label: "Expirado",         className: "text-slate-500 bg-slate-50 border-slate-200" };
+    case "failed":    return { label: "Pago rechazado",   className: "text-red-700 bg-red-50 border-red-200" };
+    case "cancelled": return { label: "Cancelado",        className: "text-red-700 bg-red-50 border-red-200" };
+    default:          return { label: order.status,       className: "text-text-muted bg-surface-section border-border" };
+  }
+}
+
+/* ── Component ─────────────────────────────────────────────── */
 export function OrderTable({
   orders,
   suppressEmpty = false,
@@ -69,163 +95,168 @@ export function OrderTable({
 
   return (
     <div className="overflow-x-auto">
-      {/*
-       * KEY FIX: `table-fixed` tells the browser to respect <colgroup> widths
-       * instead of auto-sizing based on content. Without it, a wide button in
-       * ACCIONES inflates that column and crushes everything else.
-       */}
-      <Table className="table-fixed w-full min-w-[820px]">
+      <Table className="table-fixed w-full min-w-[900px]">
         <colgroup>
           {COL_WIDTHS.map((w, i) => (
             <col key={i} style={w ? { width: w } : undefined} />
           ))}
         </colgroup>
 
-        {/* ── Header ───────────────────────────────────────────────────────── */}
+        {/* ── Header ── */}
         <TableHeader>
           <TableRow className="bg-bg-app border-b border-border/60 hover:bg-bg-app select-none">
-            {/* accent spacer — no label */}
             <TableHead className="p-0 border-0" aria-hidden />
-
-            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">
-              Orden
-            </TableHead>
-            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">
-              Hora
-            </TableHead>
-            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">
-              Cliente
-            </TableHead>
-            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">
-              Detalle
-            </TableHead>
-            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">
-              Total
-            </TableHead>
-            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left hidden md:table-cell">
-              Pago
-            </TableHead>
-            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">
-              Estado
-            </TableHead>
-            <TableHead className="py-3 pl-4 pr-6 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-right">
-              Acciones
-            </TableHead>
+            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">Orden</TableHead>
+            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">Hora</TableHead>
+            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">Cliente</TableHead>
+            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">Detalle</TableHead>
+            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">Total</TableHead>
+            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left hidden md:table-cell">Pago</TableHead>
+            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">Estado</TableHead>
+            <TableHead className="px-4 py-3 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-left">Vía</TableHead>
+            <TableHead className="py-3 pl-4 pr-6 text-[10px] font-bold text-text-muted/70 uppercase tracking-widest text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
 
-        {/* ── Body ─────────────────────────────────────────────────────────── */}
+        {/* ── Body ── */}
         <TableBody>
-          {orders.map((order) => (
-            <TableRow
-              key={order.id}
-              className={cn(
-                "border-b border-border/40 cursor-pointer group",
-                "transition-colors duration-100 hover:bg-primary/[0.025]"
-              )}
-              onClick={() => router.push(`/admin/orders/${order.id}`)}
-            >
-              {/* accent spacer (rendered as a div inside the cell) */}
-              <TableCell className="p-0 h-full relative border-0">
-                <div
-                  className={cn(
-                    "absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full",
-                    "opacity-90 transition-opacity group-hover:opacity-100",
-                    STATUS_ACCENT[order.status] ?? "bg-border/40"
-                  )}
-                />
-              </TableCell>
+          {orders.map((order) => {
+            const { label: stateLabel, className: stateClass } = specificStatus(order);
+            const isUsd = USD_METHODS.includes(order.paymentMethod);
 
-              {/* Orden */}
-              <TableCell className="px-4 py-3 align-middle">
-                <div className="flex flex-col gap-1 items-start">
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold text-xs tracking-tight w-fit mt-0.5">
-                    #{order.orderNumber ?? order.id.slice(0, 6)}
-                  </span>
-                  <OrderModeChip mode={order.orderMode ?? "delivery"} />
-                  {order.tableNumber && order.orderMode === "on_site" && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold text-[10px] tracking-tight border border-amber-200">
-                      Mesa {order.tableNumber}
-                    </span>
-                  )}
-                  {order.tableNumber && order.orderMode === "take_away" && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 font-bold text-[10px] tracking-tight border border-sky-200 max-w-[9rem] truncate">
-                      {order.tableNumber}
-                    </span>
-                  )}
-                  {order.tableNumber && order.orderMode === "delivery" && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-bold text-[10px] tracking-tight border border-violet-200 max-w-[9rem] truncate">
-                      {order.tableNumber}
-                    </span>
-                  )}
-                </div>
-              </TableCell>
+            return (
+              <TableRow
+                key={order.id}
+                className={cn(
+                  "border-b border-border/40 cursor-pointer group",
+                  "transition-colors duration-100 hover:bg-primary/[0.025]"
+                )}
+                onClick={() => router.push(`/admin/orders/${order.id}`)}
+              >
+                {/* Accent bar */}
+                <TableCell className="p-0 h-full relative border-0">
+                  <div
+                    className={cn(
+                      "absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full opacity-90 transition-opacity group-hover:opacity-100",
+                      STATUS_ACCENT[order.status] ?? "bg-border/40"
+                    )}
+                  />
+                </TableCell>
 
-              {/* Hora */}
-              <TableCell className="px-4 py-3 align-middle">
-                <span className="text-xs text-text-muted tabular-nums">
-                  {formatOrderTime(order.createdAt)}
-                </span>
-              </TableCell>
-
-              {/* Cliente */}
-              <TableCell className="px-4 py-3 align-middle">
-                <div className="flex flex-col gap-0.5">
-                  {(order as any).customerName ? (
-                    <span className="text-[13px] font-bold text-text-main">
-                      {(order as any).customerName}
+                {/* Orden */}
+                <TableCell className="px-4 py-3 align-middle">
+                  <div className="flex flex-col gap-1 items-start">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold text-xs tracking-tight w-fit mt-0.5">
+                      #{order.orderNumber ?? order.id.slice(0, 6)}
                     </span>
-                  ) : null}
-                  {order.customerPhone &&
-                    !order.customerPhone.startsWith("mesa-") &&
-                    !order.customerPhone.startsWith("mesero-") && (
-                      <span className="text-[11px] text-text-muted tabular-nums font-mono">
-                        {formatPhone(order.customerPhone)}
+                    <OrderModeChip mode={order.orderMode ?? "delivery"} />
+                    {order.tableNumber && order.orderMode === "on_site" && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold text-[10px] tracking-tight border border-amber-200">
+                        Mesa {order.tableNumber}
                       </span>
                     )}
-                </div>
-              </TableCell>
+                    {order.tableNumber && order.orderMode === "take_away" && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 font-bold text-[10px] tracking-tight border border-sky-200 max-w-[9rem] truncate">
+                        {order.tableNumber}
+                      </span>
+                    )}
+                    {order.tableNumber && order.orderMode === "delivery" && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-bold text-[10px] tracking-tight border border-violet-200 max-w-[9rem] truncate">
+                        {order.tableNumber}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
 
-              {/* Detalle */}
-              <TableCell className="px-4 py-3 align-middle overflow-hidden">
-                <span className="text-sm text-text-muted/90 italic truncate block">
-                  {formatItems(order.itemsSnapshot as Array<{ name: string }>, 2)}
-                </span>
-              </TableCell>
+                {/* Hora */}
+                <TableCell className="px-4 py-3 align-middle">
+                  <span className="text-xs text-text-muted tabular-nums">
+                    {formatOrderTime(order.createdAt)}
+                  </span>
+                </TableCell>
 
-              {/* Total */}
-              <TableCell className="px-4 py-3 align-middle">
-                <span className="text-[15px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                  {formatBs(order.grandTotalBsCents)}
-                </span>
-              </TableCell>
+                {/* Cliente */}
+                <TableCell className="px-4 py-3 align-middle">
+                  <div className="flex flex-col gap-0.5">
+                    {order.customerName && (
+                      <span className="text-[13px] font-bold text-text-main truncate">
+                        {order.customerName}
+                      </span>
+                    )}
+                    {order.customerPhone &&
+                      !order.customerPhone.startsWith("mesa-") &&
+                      !order.customerPhone.startsWith("mesero-") && (
+                        <span className="text-[11px] text-text-muted tabular-nums font-mono">
+                          {formatPhone(order.customerPhone)}
+                        </span>
+                      )}
+                  </div>
+                </TableCell>
 
-              {/* Pago */}
-              <TableCell className="hidden md:table-cell px-4 py-3 align-middle overflow-hidden">
-                <span className="text-[11px] font-semibold tracking-wide text-text-muted uppercase truncate block">
-                  {order.paymentMethod}
-                </span>
-              </TableCell>
+                {/* Detalle */}
+                <TableCell className="px-4 py-3 align-middle overflow-hidden">
+                  <span className="text-sm text-text-muted/90 italic truncate block">
+                    {formatItems(order.itemsSnapshot as Array<{ name: string }>, 2)}
+                  </span>
+                </TableCell>
 
-              {/* Estado */}
-              <TableCell className="px-4 py-3 align-middle">
-                <OrderStatusBadge status={order.status} />
-              </TableCell>
+                {/* Total */}
+                <TableCell className="px-4 py-3 align-middle">
+                  <div className="flex flex-col gap-0">
+                    <span className={cn(
+                      "text-[15px] font-bold tabular-nums leading-tight",
+                      isUsd ? "text-sky-700" : "text-emerald-600"
+                    )}>
+                      {isUsd && order.grandTotalUsdCents != null
+                        ? `$${(order.grandTotalUsdCents / 100).toFixed(2)}`
+                        : formatBs(order.grandTotalBsCents)
+                      }
+                    </span>
+                    {isUsd && order.grandTotalUsdCents != null && (
+                      <span className="text-[10px] text-text-muted/60 tabular-nums">
+                        ≈ {formatBs(order.grandTotalBsCents)}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
 
-              {/* Acciones */}
-              <TableCell
-                className="py-3 pl-4 pr-6 align-middle"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex justify-end pr-2">
-                  <QuickActions
-                    orderId={order.id}
-                    orderStatus={order.status as OrderStatus}
-                  />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                {/* Pago */}
+                <TableCell className="hidden md:table-cell px-4 py-3 align-middle overflow-hidden">
+                  <span className="text-[11px] font-semibold tracking-wide text-text-muted uppercase truncate block">
+                    {order.paymentMethod}
+                  </span>
+                </TableCell>
+
+                {/* Estado — específico y corto */}
+                <TableCell className="px-4 py-3 align-middle">
+                  <span className={cn(
+                    "inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold whitespace-nowrap",
+                    stateClass
+                  )}>
+                    {stateLabel}
+                  </span>
+                </TableCell>
+
+                {/* Vía — badge del pipeline (antes en "Estado") */}
+                <TableCell className="px-4 py-3 align-middle">
+                  <OrderStatusBadge status={order.status} />
+                </TableCell>
+
+                {/* Acciones */}
+                <TableCell
+                  className="py-3 pl-4 pr-6 align-middle"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex justify-end pr-2">
+                    <QuickActions
+                      orderId={order.id}
+                      orderStatus={order.status as OrderStatus}
+                    />
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
