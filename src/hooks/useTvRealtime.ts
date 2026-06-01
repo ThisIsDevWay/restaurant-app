@@ -32,11 +32,38 @@ export function useTvRealtime(
       debounce = setTimeout(() => onRefreshRef.current(), 500);
     };
 
+    // The heartbeat writes last_seen_at / last_reported_* to tv_displays every
+    // ~60 s. Those rows are in the realtime publication, so each beat used to
+    // trigger a full content re-fetch — a self-sustaining loop (refetch writes
+    // a heartbeat, which fires another event, …) that dominated DB egress.
+    // We dedupe by a signature of the columns that actually affect what the TV
+    // shows; heartbeat-only updates leave the signature unchanged and are
+    // ignored. The first event seeds the baseline (one refetch), so a config
+    // change is never missed even if it arrives before any heartbeat.
+    let lastConfigSig: string | null = null;
+    const handleDisplayUpdate = (payload: { new?: Record<string, unknown> }) => {
+      const row = payload.new;
+      if (!row) {
+        scheduleRefresh();
+        return;
+      }
+      const sig = [
+        row.orientation,
+        row.rotation_degrees,
+        row.audio_enabled,
+        row.volume_percent,
+        row.name,
+      ].join("|");
+      if (sig === lastConfigSig) return; // heartbeat-only beat — ignore
+      lastConfigSig = sig;
+      scheduleRefresh();
+    };
+
     const channel = supabaseBrowser
       .channel(`tv-content-${displayId}`)
-      // Display config changes (orientation, audio, name, rotation).
-      // tv_displays is back in the publication with the heartbeat throttled to
-      // 60 s, so WAL overhead is ~85 % lower than the original every-4s polling.
+      // Display config changes (orientation, audio, name, rotation). Heartbeat
+      // writes to the same row are filtered out by handleDisplayUpdate so they
+      // no longer trigger a content re-fetch.
       .on(
         "postgres_changes",
         {
@@ -45,7 +72,7 @@ export function useTvRealtime(
           table: "tv_displays",
           filter: `id=eq.${displayId}`,
         },
-        scheduleRefresh,
+        handleDisplayUpdate,
       )
       .on(
         "postgres_changes",
