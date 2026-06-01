@@ -42,8 +42,8 @@ function MethodButton({
     badgeColor === "gold"
       ? "bg-[rgba(212,175,85,0.3)] text-[#B8893A]"
       : badgeColor === "blue"
-      ? "bg-[rgba(59,130,246,0.15)] text-blue-600"
-      : "bg-[#E8EFE3] text-[#3F6B4A]";
+        ? "bg-[rgba(59,130,246,0.15)] text-blue-600"
+        : "bg-[#E8EFE3] text-[#3F6B4A]";
 
   return (
     <button
@@ -137,7 +137,7 @@ export function PaymentMethodSelector({
             isSelected={paymentMethod === "efectivo"}
             onClick={() => onSetPaymentMethod("efectivo")}
             icon={<Coins className="w-6 h-6" strokeWidth={paymentMethod === "efectivo" ? 2.5 : 2} />}
-            name="Efectivo $"
+            name="Efectivo USD"
             badge="USD"
             badgeColor="green"
             subtitle="Paga al recibir / retirar"
@@ -156,7 +156,7 @@ export function PaymentMethodSelector({
                     </span>
                   </label>
                   <div className="flex items-center gap-2 px-3.5 py-3 rounded-[12px] border border-border bg-bg-card focus-within:border-primary/60 transition-colors">
-                    <span className="font-sans text-[15px] font-semibold text-text-muted shrink-0">$</span>
+                    <span className="font-sans text-[15px] font-semibold text-text-muted shrink-0">USD</span>
                     <input
                       type="number"
                       inputMode="decimal"

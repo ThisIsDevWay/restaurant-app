@@ -72,7 +72,7 @@ export function Step4BankDetails({
     const raw = isUsdPayment
       ? (grandTotalUsdCents / 100).toFixed(2).replace(".", ",")
       : (grandTotalBsCents / 100).toFixed(2).replace(".", ",");
-    navigator.clipboard.writeText(raw).catch(() => {});
+    navigator.clipboard.writeText(raw).catch(() => { });
     setAmountCopied(true);
     setTimeout(() => setAmountCopied(false), 1800);
   };
@@ -81,12 +81,12 @@ export function Step4BankDetails({
   const sectionTitle = isZelle
     ? "Datos de Zelle"
     : isBinance
-    ? "Datos de Binance Pay"
-    : isEfectivo
-    ? "Pago en Efectivo"
-    : isTransferBs
-    ? "Datos de Transferencia"
-    : "Datos de Pago Móvil";
+      ? "Datos de Binance Pay"
+      : isEfectivo
+        ? "Pago en Efectivo"
+        : isTransferBs
+          ? "Datos de Transferencia"
+          : "Datos de Pago Móvil";
 
   return (
     <div className="flex flex-col gap-4">
@@ -168,7 +168,7 @@ export function Step4BankDetails({
                     Paga con
                   </p>
                   <p className="font-sans text-[14px] font-bold text-text-main tabular-nums">
-                    ${parseFloat(cashAmountUsd).toFixed(2)}
+                    USD {parseFloat(cashAmountUsd).toFixed(2)}
                   </p>
                 </div>
               )}
@@ -296,8 +296,8 @@ export function Step4BankDetails({
               {isEfectivo
                 ? "Confirma tu pedido por WhatsApp"
                 : isZelle || isBinance
-                ? "Sube tu comprobante de pago"
-                : "Sube tu comprobante"}
+                  ? "Sube tu comprobante de pago"
+                  : "Sube tu comprobante"}
             </p>
             {!isEfectivo && (
               <ComprobanteUpload

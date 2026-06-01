@@ -43,9 +43,9 @@ export function AdicionalesList({
           <h3 className="font-epilogue font-semibold text-base text-[#251a07]">
             Adicionales del día
           </h3>
-          <span className="text-xs text-[#251a07]/40 font-medium">Opcional</span>
+          <span className="text-xs text-[#251a07]/65 font-medium">Opcional</span>
         </div>
-        <p className="text-sm text-[#251a07]/50 mt-1 mb-4">
+        <p className="text-sm text-[#251a07]/70 mt-1 mb-4">
           Extras disponibles hoy para cualquier plato
         </p>
       </div>

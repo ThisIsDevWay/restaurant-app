@@ -19,14 +19,25 @@ export function usdCentsToBsCents(
 /** "REF 3,10" — comma as decimal separator, no thousands separator.
  *  Returns "REF —" for null/undefined/NaN inputs. */
 export function formatRef(usdCents: number | null | undefined): string {
-  if (usdCents == null || !Number.isFinite(usdCents)) return "REF —";
-  return `REF ${(usdCents / 100).toFixed(2).replace(".", ",")}`;
+  if (usdCents == null || !Number.isFinite(usdCents)) return "REF. —";
+  return `REF. ${(usdCents / 100).toFixed(2).replace(".", ",")}`;
 }
 
 /** "Bs. 1.399,68" — dot for thousands, comma for decimals (Venezuelan convention).
- *  Returns "Bs. —" for null/undefined/NaN inputs. */
-export function formatBs(bsCents: number | null | undefined): string {
+ *  Returns "Bs. —" for null/undefined/NaN inputs.
+ *  If options.rounded is true, rounds to nearest integer and omits céntimos. */
+export function formatBs(
+  bsCents: number | null | undefined,
+  options?: { rounded?: boolean },
+): string {
   if (bsCents == null || !Number.isFinite(bsCents)) return "Bs. —";
+  if (options?.rounded) {
+    const value = Math.round(bsCents / 100);
+    return `Bs. ${value.toLocaleString("es-VE", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })}`;
+  }
   const value = bsCents / 100;
   return `Bs. ${value.toLocaleString("es-VE", {
     minimumFractionDigits: 2,
