@@ -123,6 +123,29 @@ export function DailyMenuPlatosTab({
               {allItems.find(i => i.id === platoDelDiaItemId)?.name ?? "Plato del día"}
             </p>
           )}
+
+          <div className="mt-3 border-t border-border/60 pt-3">
+            <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.04em] text-text-muted">
+              <Copy size={11} />
+              Copiar menú desde
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={copyDate}
+                onChange={(e) => onCopyDateChange(e.target.value)}
+                className="h-[34px] flex-[2] bg-white rounded-[9px] text-xs"
+              />
+              <button
+                type="button"
+                className="h-[34px] flex-1 rounded-[9px] border border-border bg-white text-xs font-bold text-text-main transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                onClick={handleCopyFrom}
+                disabled={!copyDate || copying}
+              >
+                {copying ? "Copiando..." : "Copiar"}
+              </button>
+            </div>
+          </div>
         </div>
 
         <DateNavigator
@@ -191,30 +214,6 @@ export function DailyMenuPlatosTab({
               );
             })
           )}
-        </div>
-
-        {/* Copy widget */}
-        <div className="flex-shrink-0 border-t border-border bg-bg-app p-4">
-          <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.04em] text-text-muted">
-            <Copy size={11} />
-            Copiar menú desde
-          </p>
-          <div className="flex gap-2">
-            <Input
-              type="date"
-              value={copyDate}
-              onChange={(e) => onCopyDateChange(e.target.value)}
-              className="h-[34px] flex-[2] rounded-[9px] text-xs"
-            />
-            <button
-              type="button"
-              className="h-[34px] flex-1 rounded-[9px] border border-border bg-white text-xs font-bold text-text-main transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-              onClick={handleCopyFrom}
-              disabled={!copyDate || copying}
-            >
-              {copying ? "Copiando..." : "Copiar"}
-            </button>
-          </div>
         </div>
       </div>
 
