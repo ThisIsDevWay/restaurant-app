@@ -47,6 +47,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${plusJakartaSans.variable} ${epilogue.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var saved = localStorage.getItem('theme');
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  if (saved === 'dark' || (!saved && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `
+          }}
+        />
+      </head>
       <body className="bg-bg-app text-text-main antialiased" suppressHydrationWarning>
         <QueryProvider>
           {children}

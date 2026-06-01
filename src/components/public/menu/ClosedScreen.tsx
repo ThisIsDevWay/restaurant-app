@@ -33,7 +33,7 @@ export function ClosedScreen({
 
     return (
         <div className="min-h-screen bg-bg-app flex items-center justify-center p-4">
-            <div className="text-center bg-white p-8 rounded-3xl shadow-elevated max-w-sm w-full animate-in fade-in zoom-in-95 duration-500">
+            <div className="text-center bg-bg-card p-8 rounded-3xl shadow-elevated max-w-sm w-full animate-in fade-in zoom-in-95 duration-500">
                 {logoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img

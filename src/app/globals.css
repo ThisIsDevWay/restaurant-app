@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+:root {
+  --ink: #251a07;
+  --ink-muted: #5f5e5e;
+  --bg-app: #fff8f3;
+  --surface-section: #fff2e2;
+  --bg-card: #ffffff;
+  --border: #e7bdb7;
+  --border-ghost: rgba(231, 189, 183, 0.15);
+  --input: #dcd2c9;
+  --shadow-color: 37, 26, 7;
+}
+
+
+.dark {
+  --ink: #f6f0e2;
+  --ink-muted: #9c8f7b;
+  --bg-app: #1b1612;
+  --surface-section: #2f2620;
+  --bg-card: #241d17;
+  --border: #3a2f26;
+  --border-ghost: rgba(58, 47, 38, 0.15);
+  --input: #4a3d31;
+  --shadow-color: 0, 0, 0;
+}
+
 @theme {
   /* Heritage Editorial — Primario */
   --color-primary: #bb0005;
@@ -8,19 +33,19 @@
   --color-price-green: #2d6a1f;
 
   /* Cream Canvas (surface tiers) */
-  --color-bg-app: #fff8f3;
-  --color-surface-section: #fff2e2;
-  --color-bg-card: #ffffff;
-  --color-bg-image: #fff2e2;
+  --color-bg-app: var(--bg-app);
+  --color-surface-section: var(--surface-section);
+  --color-bg-card: var(--bg-card);
+  --color-bg-image: var(--surface-section);
 
   /* Ink Typography */
-  --color-text-main: #251a07;
-  --color-text-muted: #5f5e5e;
+  --color-text-main: var(--ink);
+  --color-text-muted: var(--ink-muted);
 
   /* Borders */
-  --color-border: #e7bdb7;
-  --color-border-ghost: rgba(231, 189, 183, 0.15);
-  --color-input: #dcd2c9;
+  --color-border: var(--border);
+  --color-border-ghost: var(--border-ghost);
+  --color-input: var(--input);
 
   /* Semánticos */
   --color-success: #2d6a1f;
@@ -40,32 +65,32 @@
   --font-display: "Epilogue", system-ui, sans-serif;
 
   /* Popover & UI */
-  --color-popover: #ffffff;
-  --color-popover-foreground: #251a07;
+  --color-popover: var(--bg-card);
+  --color-popover-foreground: var(--ink);
 
   /* shadcn/ui aliases → mapeados a la paleta Heritage.
      Habilitan las variantes por defecto de Button/Badge/Tabs/Dialog
      (antes referenciaban tokens inexistentes → texto oscuro sobre rojo). */
-  --color-foreground: #251a07;
-  --color-background: #ffffff;
-  --color-card: #ffffff;
-  --color-card-foreground: #251a07;
+  --color-foreground: var(--ink);
+  --color-background: var(--bg-card);
+  --color-card: var(--bg-card);
+  --color-card-foreground: var(--ink);
   --color-primary-foreground: #ffffff;
-  --color-secondary: #fff2e2;
-  --color-secondary-foreground: #251a07;
-  --color-muted: #fff2e2;
-  --color-muted-foreground: #5f5e5e;
-  --color-accent: #fff2e2;
-  --color-accent-foreground: #251a07;
+  --color-secondary: var(--surface-section);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--surface-section);
+  --color-muted-foreground: var(--ink-muted);
+  --color-accent: var(--surface-section);
+  --color-accent-foreground: var(--ink);
   --color-destructive: #b91c1c;
   --color-destructive-foreground: #ffffff;
   --color-ring: #bb0005;
 
-  /* Ambient Shadows (on_surface #251a07 @ 5% / 12% / 16%) */
-  --shadow-card: 0 2px 8px rgba(37, 26, 7, 0.05);
-  --shadow-modal: 0 8px 32px rgba(37, 26, 7, 0.12);
-  --shadow-elevated: 0 8px 24px rgba(37, 26, 7, 0.16);
-  --shadow-float: 0 8px 32px rgba(37, 26, 7, 0.05);
+  /* Ambient Shadows */
+  --shadow-card: 0 2px 8px rgba(var(--shadow-color), 0.05);
+  --shadow-modal: 0 8px 32px rgba(var(--shadow-color), 0.12);
+  --shadow-elevated: 0 8px 24px rgba(var(--shadow-color), 0.16);
+  --shadow-float: 0 8px 32px rgba(var(--shadow-color), 0.05);
 }
 
 @layer base {
