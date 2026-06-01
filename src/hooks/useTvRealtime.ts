@@ -40,14 +40,28 @@ export function useTvRealtime(
     // shows; heartbeat-only updates leave the signature unchanged and are
     // ignored. The first event seeds the baseline (one refetch), so a config
     // change is never missed even if it arrives before any heartbeat.
+    //
+    // `is_active` is part of the signature and we listen to "*" (not just
+    // UPDATE) so that BOTH revocation paths push the TV back to pairing without
+    // polling: revoke (is_active → false, an UPDATE) flips the signature, and a
+    // hard delete (DELETE event) refreshes unconditionally. Either way the next
+    // /api/tv/content fetch returns 403 and the controller clears its token.
     let lastConfigSig: string | null = null;
-    const handleDisplayUpdate = (payload: { new?: Record<string, unknown> }) => {
+    const handleDisplayChange = (payload: {
+      eventType?: string;
+      new?: Record<string, unknown>;
+    }) => {
+      if (payload.eventType === "DELETE") {
+        scheduleRefresh();
+        return;
+      }
       const row = payload.new;
-      if (!row) {
+      if (!row || Object.keys(row).length === 0) {
         scheduleRefresh();
         return;
       }
       const sig = [
+        row.is_active,
         row.orientation,
         row.rotation_degrees,
         row.audio_enabled,
@@ -61,18 +75,18 @@ export function useTvRealtime(
 
     const channel = supabaseBrowser
       .channel(`tv-content-${displayId}`)
-      // Display config changes (orientation, audio, name, rotation). Heartbeat
-      // writes to the same row are filtered out by handleDisplayUpdate so they
-      // no longer trigger a content re-fetch.
+      // Display config + revocation changes. Heartbeat writes to the same row
+      // are filtered out by handleDisplayChange so they no longer trigger a
+      // content re-fetch.
       .on(
         "postgres_changes",
         {
-          event: "UPDATE",
+          event: "*",
           schema: "public",
           table: "tv_displays",
           filter: `id=eq.${displayId}`,
         },
-        handleDisplayUpdate,
+        handleDisplayChange,
       )
       .on(
         "postgres_changes",

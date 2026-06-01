@@ -53,7 +53,7 @@ export const rateLimiters = {
   checkout: createLimiter(10, 60_000),  // 10 req/min
   lookup: createLimiter(20, 60_000),  // 20 req/min
   imagekitUpload: createLimiter(5, 60_000),   // 5 uploads/min per IP
-  tvPairCheck: createLimiter(10, 60_000),     // 10 checks/min per IP (backoff against brute-force)
+  tvPairCheck: createLimiter(60, 60_000),     // 60 checks/min per IP — TV polls every 4s (15/min); headroom for several TVs behind one NAT. Still trivially safe vs brute-force on a short-lived 6-char code.
 };
 
 export function getIP(request: Request): string {

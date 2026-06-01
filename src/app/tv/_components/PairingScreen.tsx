@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const PAIR_POLL_MS = 3000;
+// 4s poll = 15 req/min, comfortably under the tvPairCheck rate limit (60/min)
+// even with several TVs pairing behind one NAT. Pairing is a short-lived screen
+// shown only until an admin links the device, so 4s detection latency is fine.
+const PAIR_POLL_MS = 4000;
 
 type Props = {
   onPaired: (token: string) => void;
