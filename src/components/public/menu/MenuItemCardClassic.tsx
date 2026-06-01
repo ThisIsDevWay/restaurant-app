@@ -31,6 +31,7 @@ export interface MenuItemCardClassicProps {
     categoryIsSimple: boolean;
     onOpenDetail: () => void;
     onAddSimpleItem?: (payload: any, categoryName: string) => void;
+    isReadOnly?: boolean;
 }
 
 export function MenuItemCardClassic({
@@ -50,12 +51,17 @@ export function MenuItemCardClassic({
     categoryIsSimple,
     onOpenDetail,
     onAddSimpleItem,
+    isReadOnly = false,
 }: MenuItemCardClassicProps) {
     const addItem = useCartStore((s) => s.addItem);
     const categoryKey = categoryName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const emoji = CATEGORY_EMOJI[categoryKey] || "🍽️";
 
     const handleAdd = () => {
+        if (isReadOnly) {
+            onOpenDetail();
+            return;
+        }
         if (!isAvailable) return;
 
         if (hasRequiredOptions) {
@@ -173,23 +179,25 @@ export function MenuItemCardClassic({
                             })}
                         </span>
                         <span className="rounded bg-bg-app px-1.5 py-0.5 text-[10px] font-bold text-text-muted shadow-sm border border-border/40 whitespace-nowrap shrink-0">
-                            ${(priceUsdCents / 100).toFixed(2).replace(".", ",")}
+                            REF. {(priceUsdCents / 100).toFixed(2).replace(".", ",")}
                         </span>
                     </div>
 
-                    <button
-                        onClick={(e) => { e.stopPropagation(); handleAdd(); }}
-                        disabled={!isAvailable}
-                        className={cn(
-                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors shadow-sm",
-                            isAvailable
-                                ? "bg-primary text-white active:bg-primary-hover shadow-primary/20"
-                                : "bg-gray-100 text-gray-400 border border-gray-200",
-                        )}
-                        aria-label={`Agregar ${name}`}
-                    >
-                        <Plus className="h-4 w-4" strokeWidth={3} />
-                    </button>
+                    {!isReadOnly && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleAdd(); }}
+                            disabled={!isAvailable}
+                            className={cn(
+                                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors shadow-sm",
+                                isAvailable
+                                    ? "bg-primary text-white active:bg-primary-hover shadow-primary/20"
+                                    : "bg-gray-100 text-gray-400 border border-gray-200",
+                            )}
+                            aria-label={`Agregar ${name}`}
+                        >
+                            <Plus className="h-4 w-4" strokeWidth={3} />
+                        </button>
+                    )}
                 </div>
 
                 {!categoryAllowAlone && isAvailable && (

@@ -5,6 +5,6 @@ import { BottomNav } from "./BottomNav";
 
 export function BottomNavWrapper() {
   const pathname = usePathname();
-  if (pathname === "/checkout") return null;
+  if (pathname === "/checkout" || pathname === "/menu-digital") return null;
   return <BottomNav />;
 }

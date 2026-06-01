@@ -36,7 +36,9 @@ export interface ItemDetailModalProps {
   bebidasEnabled?: boolean;
   dailyAdicionales: SimpleItem[];
   dailyBebidas: SimpleItem[];
+  dailyContornos?: SimpleItem[];
   maxQuantityPerItem?: number;
   initialData?: CartItem | null;
   editingIndex?: number | null;
+  isReadOnly?: boolean;
 }

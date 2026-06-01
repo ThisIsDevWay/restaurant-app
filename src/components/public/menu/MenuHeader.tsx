@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Instagram, LayoutGrid } from "lucide-react";
+import { Instagram, LayoutGrid, Search, ChevronDown, Info } from "lucide-react";
 import { HeaderCartButton } from "@/app/(public)/HeaderCartButton";
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { resolveOpenState, formatBusinessHours, type BusinessHours, type StatusOverride } from "@/lib/utils/date";
@@ -41,6 +41,7 @@ interface MenuHeaderProps {
     } | null;
     searchQuery: string;
     onSearchChange: (query: string) => void;
+    isReadOnly?: boolean;
 }
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -103,11 +104,14 @@ export function MenuHeader({
     rateData,
     searchQuery,
     onSearchChange,
+    isReadOnly = false,
 }: MenuHeaderProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [showFade, setShowFade] = useState(true);
     const [greeting, setGreeting] = useState("¡Hola!");
     const [openStatus, setOpenStatus] = useState<boolean | null>(null);
+    const [showInfo, setShowInfo] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
 
     // Texto de horario: usa el override manual o, si está vacío, el autogenerado
     // desde businessHours.
@@ -183,7 +187,7 @@ export function MenuHeader({
               Desktop: h-[360px]
               XL:      h-[420px]
             */}
-            <div className="hidden md:block relative w-full overflow-hidden md:h-[300px] lg:h-[360px] xl:h-[420px]">
+            <div className="hidden md:block relative w-full h-[360px] md:h-[380px] lg:h-[440px] xl:h-[500px] overflow-hidden transition-all duration-300">
                 {/* Background with Ken Burns effect */}
                 {coverImageUrl ? (
                     <div
@@ -266,12 +270,14 @@ export function MenuHeader({
                                     </a>
                                 );
                             })()}
-                            <Link
-                                href="/mis-pedidos"
-                                className="mh-glass-btn flex h-[36px] lg:h-[40px] items-center gap-1.5 rounded-full px-3.5 lg:px-5 text-[12px] lg:text-[13px] font-medium text-white/90 whitespace-nowrap tracking-wide"
-                            >
-                                Pedidos
-                            </Link>
+                            {!isReadOnly && (
+                                <Link
+                                    href="/mis-pedidos"
+                                    className="mh-glass-btn flex h-[36px] lg:h-[40px] items-center gap-1.5 rounded-full px-3.5 lg:px-5 text-[12px] lg:text-[13px] font-medium text-white/90 whitespace-nowrap tracking-wide"
+                                >
+                                    Pedidos
+                                </Link>
+                            )}
                         </div>
 
                         {/* Right: Rate and Cart */}
@@ -291,10 +297,12 @@ export function MenuHeader({
                                     </span>
                                 </div>
                             )}
-                            <HeaderCartButton
-                                className="mh-glass-btn flex h-[36px] w-[36px] lg:h-[40px] lg:w-[40px] shrink-0 items-center justify-center rounded-full !p-0"
-                                iconClassName="text-white/90 h-[16px] w-[16px] lg:h-[18px] lg:w-[18px]"
-                            />
+                            {!isReadOnly && (
+                                <HeaderCartButton
+                                    className="mh-glass-btn flex h-[36px] w-[36px] lg:h-[40px] lg:w-[40px] shrink-0 items-center justify-center rounded-full !p-0"
+                                    iconClassName="text-white/90 h-[16px] w-[16px] lg:h-[18px] lg:w-[18px]"
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -307,20 +315,22 @@ export function MenuHeader({
 
                 {/* ── Center Content ──────────────────────────────────────────── */}
                 <div
-                    className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-end pb-4 lg:pb-6"
+                    className="absolute inset-x-0 bottom-0 top-0 flex flex-col items-center justify-center pt-[75px] pb-6 lg:pb-8 shrink-0"
                     style={{
-                        top: 44,
                         animation: "mh-logo-in 700ms 180ms cubic-bezier(0.16,1,0.3,1) both",
                     }}
                 >
                     {/* Logo & Restaurant Name stacked beautifully */}
-                    <div className="flex flex-col items-center justify-center gap-2 lg:gap-3 transition-all duration-500">
+                    <div className="flex flex-col items-center justify-center gap-3 lg:gap-4 transition-all duration-500 shrink-0">
                         {logoUrl && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                                 src={logoUrl}
                                 alt={restaurantName}
-                                className="h-auto w-auto max-h-[70px] md:max-h-[130px] lg:max-h-[160px] xl:max-h-[180px] object-contain"
+                                className={`h-auto w-auto object-contain shrink-0 ${isReadOnly
+                                    ? "max-h-[90px] md:max-h-[110px] lg:max-h-[190px]"
+                                    : "max-h-[100px] md:max-h-[140px] lg:max-h-[170px] xl:max-h-[190px]"
+                                    }`}
                                 style={{
                                     filter:
                                         "drop-shadow(0 2px 18px rgba(0,0,0,0.55)) drop-shadow(0 0 6px rgba(0,0,0,0.35))",
@@ -328,7 +338,7 @@ export function MenuHeader({
                             />
                         )}
                         <h1
-                            className="font-display text-[24px] md:text-[32px] lg:text-[40px] font-extrabold leading-tight tracking-tight text-white text-center"
+                            className="font-display text-[26px] md:text-[34px] lg:text-[42px] font-extrabold leading-tight tracking-tight text-white text-center shrink-0"
                             style={{
                                 textShadow: "0 2px 24px rgba(0,0,0,0.75), 0 0 8px rgba(0,0,0,0.55)",
                             }}
@@ -340,15 +350,15 @@ export function MenuHeader({
                     {/* Metadata row */}
                     {(hasMetadata || openStatus !== null) && (
                         <div
-                            className="mh-meta-chip mt-3 lg:mt-4 hidden md:flex items-center justify-center flex-wrap"
+                            className="mh-meta-chip mt-4 lg:mt-5 hidden md:flex items-center justify-center flex-wrap shrink-0"
                             style={{
-                                gap: 10,
-                                padding: "6px 16px",
-                                borderRadius: 20,
-                                color: "rgba(255,255,255,0.88)",
-                                fontSize: "clamp(9px, 2.8vw, 12px)",
-                                fontWeight: 500,
-                                letterSpacing: "0.02em",
+                                gap: 12,
+                                padding: "8px 20px",
+                                borderRadius: 24,
+                                color: "rgba(255,255,255,0.92)",
+                                fontSize: "clamp(10px, 2.8vw, 13px)",
+                                fontWeight: 600,
+                                letterSpacing: "0.03em",
                             }}
                         >
                             {branchName && (
@@ -403,7 +413,7 @@ export function MenuHeader({
                     )}
 
                     {/* Centered Search Bar for Desktop */}
-                    <div className="mt-4 lg:mt-5 w-full max-w-md hidden md:block px-4">
+                    <div className="mt-5 lg:mt-6 w-full max-w-lg hidden md:block px-4 shrink-0">
                         <div className="relative w-full">
                             <input
                                 id="menu-search-input-desktop"
@@ -411,12 +421,12 @@ export function MenuHeader({
                                 value={searchQuery}
                                 onChange={(e) => onSearchChange(e.target.value)}
                                 placeholder="Buscar un plato, ej. asado negro"
-                                className="w-full font-sans bg-black/35 backdrop-blur-md border border-white/10 hover:border-white/20 focus:border-white/30 rounded-xl py-2.5 px-4 pl-10 text-[13px] text-white placeholder:text-white/45 outline-none focus:ring-1 focus:ring-white/10 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+                                className="w-full font-sans bg-black/45 backdrop-blur-lg border border-white/15 hover:border-white/25 focus:border-white/35 rounded-2xl py-3 px-5 pl-12 text-[14px] text-white placeholder:text-white/50 outline-none focus:ring-1 focus:ring-white/15 transition-all shadow-[0_12px_40px_rgba(0,0,0,0.25)]"
                             />
-                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/45 pointer-events-none">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">
                                 <svg
-                                    width="14"
-                                    height="14"
+                                    width="16"
+                                    height="16"
                                     viewBox="0 0 16 16"
                                     fill="none"
                                     stroke="currentColor"
@@ -433,216 +443,386 @@ export function MenuHeader({
 
                     {/* ── Desktop category count — editorial detail ─────────────── */}
                     {categories.length > 0 && (
-                        <p className="hidden lg:block mt-3 text-white/40 text-[11px] font-medium tracking-[0.15em] uppercase">
+                        <p className="hidden lg:block mt-4 text-white/50 text-[12px] font-semibold tracking-[0.18em] uppercase shrink-0">
                             {categories.length} categorías
                         </p>
                     )}
                 </div>
             </div>
 
-            {/* ── Mobile App Header (md:hidden) — hero image + floating info card ── */}
+            {/* ── Mobile App Header (md:hidden) — compact or hero depending on isReadOnly ── */}
             <div className="md:hidden w-full bg-bg-app">
-                {/* Hero con imagen de fondo */}
-                <div className="relative w-full overflow-hidden">
-                    {/* Background */}
-                    {coverImageUrl ? (
-                        <div
-                            className="mh-ken-burns"
-                            style={{
-                                position: "absolute",
-                                inset: 0,
-                                backgroundImage: `url(${coverImageUrl})`,
-                                backgroundSize: "cover",
-                                backgroundPosition: "center center",
-                                backgroundRepeat: "no-repeat",
-                            }}
-                        />
-                    ) : (
-                        <div
-                            style={{
-                                position: "absolute",
-                                inset: 0,
-                                backgroundColor: "#0a0a0a",
-                                backgroundImage:
-                                    "radial-gradient(ellipse at 30% 50%, rgba(187,0,5,0.12) 0%, transparent 60%), radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)",
-                                backgroundSize: "100% 100%, 20px 20px",
-                            }}
-                        />
-                    )}
-
-                    {/* Cinematic overlay */}
-                    <div
-                        className="pointer-events-none absolute inset-0"
-                        style={{
-                            background: [
-                                "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.92) 100%)",
-                                "radial-gradient(ellipse at 50% 120%, rgba(187,0,5,0.18) 0%, transparent 60%)",
-                            ].join(", "),
-                        }}
-                    />
-                    {/* Warm film */}
-                    <div
-                        className="pointer-events-none absolute inset-0"
-                        style={{
-                            background:
-                                "linear-gradient(135deg, rgba(255,200,100,0.04) 0%, transparent 50%, rgba(100,10,30,0.10) 100%)",
-                            mixBlendMode: "overlay",
-                        }}
-                    />
-
-                    {/* Content over image */}
-                    <div className={`relative z-10 px-4 pt-4 ${showInfoCard ? "pb-16" : "pb-5"}`}>
-                        {/* Top row: Instagram (izq) · BCV + carrito (der) */}
-                        <div className="flex items-center justify-between gap-2">
-                            <div className="flex shrink-0 items-center gap-2">
-                                {instagramHref && (
-                                    <a
-                                        href={instagramHref}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        aria-label="Instagram"
-                                        className="mh-glass-btn flex h-10 w-10 items-center justify-center rounded-full text-white"
-                                    >
-                                        <Instagram className="h-[18px] w-[18px]" />
-                                    </a>
-                                )}
-                            </div>
-
-                            <div className="flex shrink-0 items-center gap-2">
-                                {showRate && rateData && (
-                                    <div className="mh-glass-btn flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-[9px]">
-                                        <span
-                                            title={isStale ? "Tasa del día anterior" : undefined}
-                                            className={`h-1.5 w-1.5 shrink-0 rounded-full ${isStale ? "bg-amber-400" : "bg-emerald-400 mh-pulse"}`}
-                                        />
-                                        <span className="text-[9px] font-bold uppercase tracking-widest text-white/55">BCV</span>
-                                        <span className="text-[12px] font-bold tracking-tight text-white">
-                                            {rateData.rate.toLocaleString("es-VE", {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}
-                                        </span>
-                                    </div>
-                                )}
-                                <HeaderCartButton
-                                    className="!p-0 flex h-10 w-10 items-center justify-center rounded-full bg-bg-card shadow-elevated"
-                                    iconClassName="text-text-main h-[18px] w-[18px]"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Brand: logo (izq) + nombre + saludo */}
-                        <div className="mt-4 flex items-center gap-3">
-                            {logoUrl && (
-                                // eslint-disable-next-line @next/next/no-img-element
+                {isReadOnly ? (
+                    <div className="bg-bg-app w-full border-b border-border/10 shadow-sm flex flex-col gap-3 p-4 pb-0">
+                        {/* Main row: Logo + Name/Status/Triggers */}
+                        <div className="flex items-center gap-3.5">
+                            {/* Logo */}
+                            {logoUrl ? (
                                 <img
                                     src={logoUrl}
                                     alt={restaurantName}
-                                    className="h-18 w-18 shrink-0 rounded-full bg-bg-card object-contain p-1 shadow-lg ring-1 ring-white/20"
+                                    className="w-[105px] h-[105px] shrink-0 rounded-full object-contain bg-bg-card p-0.5 shadow-sm border border-border/10"
                                 />
-                            )}
-                            <div className="min-w-0 flex-1">
-                                <h1
-                                    className="truncate font-display text-[26px] font-extrabold leading-tight tracking-tight text-white"
-                                    style={{ textShadow: "0 2px 16px rgba(0,0,0,0.45)" }}
-                                >
-                                    {restaurantName}
-                                </h1>
-                                <p className="font-sans text-[14px] font-semibold leading-tight text-white/90">
-                                    {greeting}
-                                </p>
-                                <p className="mt-2 font-sans text-[12.5px] font-medium leading-tight text-white/80">
-                                    ¿Qué te gustaría ordenar hoy?
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Tarjeta flotante — ubicación · horario · estado */}
-                {showInfoCard && (
-                    <div className="relative z-20 -mt-10 px-4">
-                        <div className="flex items-center gap-3 rounded-modal bg-bg-card px-4 py-3 shadow-elevated">
-                            {branchName && (
-                                <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 text-center">
-                                    <span className="shrink-0 text-primary">
-                                        <PinIcon />
-                                    </span>
-                                    <span className="text-[12px] font-medium leading-snug text-text-main text-center">
-                                        {branchName}
-                                    </span>
+                            ) : (
+                                <div className="w-[105px] h-[105px] rounded-full bg-gradient-to-br from-[#C42B2B] to-[#7E0A0C] flex items-center justify-center font-display italic font-bold text-[36px] text-white shadow-sm shrink-0 border border-border/10">
+                                    {restaurantName[0] || "G"}
                                 </div>
                             )}
 
-                            {branchName && (scheduleText || openStatus !== null) && (
-                                <div className="w-px shrink-0 self-stretch bg-border-ghost" />
+                            {/* Column: Name + Status + Buttons */}
+                            <div className="flex-1 min-w-0 flex flex-col gap-1.5 justify-center">
+                                <h1 className="font-display text-[19px] font-extrabold leading-tight text-text-main tracking-tight break-words">
+                                    {restaurantName}
+                                </h1>
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    {openStatus !== null && (
+                                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${openStatus
+                                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800/30"
+                                            : "bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-800/30"
+                                            }`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${openStatus ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+                                            {openStatus ? "Abierto" : "Cerrado"}
+                                        </span>
+                                    )}
+
+                                    {showRate && rateData && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-bg-card border border-border/50 text-[10px] font-bold text-text-main shadow-sm">
+                                            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isStale ? "bg-amber-400" : "bg-emerald-500 animate-pulse"}`} />
+                                            <span className="text-text-main/50 text-[8px] font-bold uppercase tracking-wider mr-0.5">BCV</span>
+                                            <span className="font-extrabold font-mono text-[9.5px]">
+                                                Bs. {rateData.rate.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Interactive triggers (Info & Search) to save huge vertical space */}
+                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                    <button
+                                        onClick={() => setShowInfo(!showInfo)}
+                                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-bold shadow-sm active:scale-95 transition-all ${showInfo
+                                            ? "bg-text-main text-bg-card border-text-main"
+                                            : "bg-surface-section border-border/60 text-text-main"
+                                            }`}
+                                    >
+                                        <Info className="h-3.5 w-3.5 shrink-0" />
+                                        <span>{showInfo ? "Info" : "Información"}</span>
+                                        <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showInfo ? "rotate-180" : ""}`} />
+                                    </button>
+
+                                    <button
+                                        onClick={() => setShowSearch(!showSearch)}
+                                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-bold shadow-sm active:scale-95 transition-all ${showSearch
+                                            ? "bg-text-main text-bg-card border-text-main"
+                                            : "bg-surface-section border-border/60 text-text-main"
+                                            }`}
+                                    >
+                                        <Search className="h-3.5 w-3.5 shrink-0" />
+                                        <span>Buscar</span>
+                                        {searchQuery && (
+                                            <span className="ml-1 px-1.5 py-0.2 bg-primary text-white text-[9px] rounded-full font-black">
+                                                !
+                                            </span>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Collapsible Information section */}
+                        {showInfo && (
+                            <div className="flex flex-col gap-2.5 mt-1 animate-mh-fade-in">
+                                {(branchName || scheduleText || instagramHref) && (
+                                    <div className="bg-surface-section/40 border border-border/20 rounded-2xl p-4 flex flex-col gap-3.5 shadow-sm">
+                                        {instagramHref && (
+                                            <>
+                                                <div className="flex items-center justify-between text-[14.5px] text-text-main">
+                                                    <span className="font-bold text-text-main/90">Síguenos en Instagram</span>
+                                                    <a
+                                                        href={instagramHref}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex h-8 px-3.5 gap-1.5 items-center justify-center rounded-full bg-text-main/5 border border-border/80 text-text-main text-[13px] font-extrabold transition-all active:scale-95 hover:bg-text-main/10"
+                                                    >
+                                                        <Instagram className="h-4 w-4" />
+                                                        <span>
+                                                            {(() => {
+                                                                const cleanHandle = instagramUrl
+                                                                    ? instagramUrl.replace(/^(https?:\/\/)?(www\.)?instagram\.com\//, "").replace(/\/$/, "")
+                                                                    : "Instagram";
+                                                                return cleanHandle.startsWith("@") ? cleanHandle : `@${cleanHandle}`;
+                                                            })()}
+                                                        </span>
+                                                    </a>
+                                                </div>
+                                                {(branchName || scheduleText) && (
+                                                    <div className="h-px bg-border/40" />
+                                                )}
+                                            </>
+                                        )}
+                                        {branchName && (
+                                            <div className="flex items-start gap-2.5 text-[14.5px] text-text-main leading-relaxed">
+                                                <span className="text-[#C42B2B] mt-0.5 shrink-0">
+                                                    <PinIcon />
+                                                </span>
+                                                <span className="font-semibold">{branchName}</span>
+                                            </div>
+                                        )}
+                                        {branchName && scheduleText && (
+                                            <div className="h-px bg-border/40" />
+                                        )}
+                                        {scheduleText && (
+                                            <div className="flex items-start gap-2.5 text-[14.5px] text-text-main font-mono leading-relaxed">
+                                                <span className="text-[#C42B2B] mt-0.5 shrink-0">
+                                                    <ClockIcon />
+                                                </span>
+                                                <span className="font-medium">{scheduleText}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Collapsible Search bar */}
+                        {showSearch && (
+                            <div className="px-0 pb-3 pt-1 animate-mh-fade-in">
+                                <div className="relative w-full">
+                                    <input
+                                        id="menu-search-input"
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => onSearchChange(e.target.value)}
+                                        placeholder="Buscar un plato…"
+                                        className="w-full font-sans bg-bg-card border border-input rounded-xl py-2.5 px-4 pl-10 text-[13.5px] text-text-main placeholder:text-text-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all shadow-card"
+                                    />
+                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">
+                                        <Search className="h-4 w-4" />
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                        <div className="h-1.5" />
+                    </div>
+                ) : (
+                    <div className="w-full bg-bg-app">
+                        {/* Hero con imagen de fondo */}
+                        <div className="relative w-full overflow-hidden">
+                            {/* Background */}
+                            {coverImageUrl ? (
+                                <div
+                                    className="mh-ken-burns"
+                                    style={{
+                                        position: "absolute",
+                                        inset: 0,
+                                        backgroundImage: `url(${coverImageUrl})`,
+                                        backgroundSize: "cover",
+                                        backgroundPosition: "center center",
+                                        backgroundRepeat: "no-repeat",
+                                    }}
+                                />
+                            ) : (
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        inset: 0,
+                                        backgroundColor: "#0a0a0a",
+                                        backgroundImage:
+                                            "radial-gradient(ellipse at 30% 50%, rgba(187,0,5,0.12) 0%, transparent 60%), radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)",
+                                        backgroundSize: "100% 100%, 20px 20px",
+                                    }}
+                                />
                             )}
 
-                            {(scheduleText || openStatus !== null) && (
-                                <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 text-center">
-                                    {scheduleText && (() => {
-                                        const match = /^([^\d]+)\s+(\d.*)$/.exec(scheduleText.trim());
-                                        if (match) {
-                                            const dayPart = match[1].replace(/\s*-\s*De\s*$/i, "").trim();
-                                            const hourPart = match[2];
-                                            return (
-                                                <div className="flex flex-col items-center justify-center gap-0.5">
-                                                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                            {/* Cinematic overlay */}
+                            <div
+                                className="pointer-events-none absolute inset-0"
+                                style={{
+                                    background: [
+                                        "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.92) 100%)",
+                                        "radial-gradient(ellipse at 50% 120%, rgba(187,0,5,0.18) 0%, transparent 60%)",
+                                    ].join(", "),
+                                }}
+                            />
+                            {/* Warm film */}
+                            <div
+                                className="pointer-events-none absolute inset-0"
+                                style={{
+                                    background:
+                                        "linear-gradient(135deg, rgba(255,200,100,0.04) 0%, transparent 50%, rgba(100,10,30,0.10) 100%)",
+                                    mixBlendMode: "overlay",
+                                }}
+                            />
+
+                            {/* Content over image */}
+                            <div className={`relative z-10 px-4 pt-4 ${showInfoCard && showInfo ? "pb-16" : "pb-5"}`}>
+                                {/* Top row: Instagram (izq) · BCV + carrito (der) */}
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        {instagramHref && (
+                                            <a
+                                                href={instagramHref}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                aria-label="Instagram"
+                                                className="mh-glass-btn flex h-10 w-10 items-center justify-center rounded-full text-white"
+                                            >
+                                                <Instagram className="h-[18px] w-[18px]" />
+                                            </a>
+                                        )}
+                                    </div>
+
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        {showRate && rateData && (
+                                            <div className="mh-glass-btn flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-[9px]">
+                                                <span
+                                                    title={isStale ? "Tasa del día anterior" : undefined}
+                                                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${isStale ? "bg-amber-400" : "bg-emerald-400 mh-pulse"}`}
+                                                />
+                                                <span className="text-[9px] font-bold uppercase tracking-widest text-white/55">BCV</span>
+                                                <span className="text-[12px] font-bold tracking-tight text-white">
+                                                    {rateData.rate.toLocaleString("es-VE", {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2,
+                                                    })}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <HeaderCartButton
+                                            className="!p-0 flex h-10 w-10 items-center justify-center rounded-full bg-bg-card shadow-elevated"
+                                            iconClassName="text-text-main h-[18px] w-[18px]"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Brand: logo (izq) + Column (name, greeting, compact toggle buttons) */}
+                                <div className="mt-4 flex items-center gap-3.5">
+                                    {logoUrl && (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            src={logoUrl}
+                                            alt={restaurantName}
+                                            className="h-16 w-16 shrink-0 rounded-full bg-bg-card object-contain p-1 shadow-lg ring-1 ring-white/20"
+                                        />
+                                    )}
+                                    <div className="min-w-0 flex-1 flex flex-col gap-1">
+                                        <h1
+                                            className="truncate font-display text-[22px] font-extrabold leading-tight tracking-tight text-white"
+                                            style={{ textShadow: "0 2px 16px rgba(0,0,0,0.45)" }}
+                                        >
+                                            {restaurantName}
+                                        </h1>
+                                        <p className="font-sans text-[13px] font-semibold leading-tight text-white/90">
+                                            {greeting}
+                                        </p>
+
+                                        {/* Compact toggle buttons inside Hero (under name, centered next to logo) */}
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <button
+                                                onClick={() => setShowInfo(!showInfo)}
+                                                className={`mh-glass-btn flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-sm active:scale-95 transition-all ${showInfo ? "!bg-white !text-black border-white" : ""
+                                                    }`}
+                                            >
+                                                <Info className="h-3.5 w-3.5 shrink-0" />
+                                                <span>{showInfo ? "Info" : "Información"}</span>
+                                                <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showInfo ? "rotate-180" : ""}`} />
+                                            </button>
+
+                                            <button
+                                                onClick={() => setShowSearch(!showSearch)}
+                                                className={`mh-glass-btn flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-sm active:scale-95 transition-all ${showSearch ? "!bg-white !text-black border-white" : ""
+                                                    }`}
+                                            >
+                                                <Search className="h-3.5 w-3.5 shrink-0" />
+                                                <span>Buscar</span>
+                                                {searchQuery && (
+                                                    <span className="ml-1 px-1.5 py-0.2 bg-primary text-white text-[9px] rounded-full font-black">
+                                                        !
+                                                    </span>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tarjeta flotante — ubicación · horario · estado */}
+                        {showInfoCard && showInfo && (
+                            <div className="relative z-20 -mt-10 px-4 animate-mh-fade-in">
+                                <div className="flex items-center gap-3 rounded-modal bg-bg-card px-4 py-3 shadow-elevated">
+                                    {branchName && (
+                                        <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 text-center">
+                                            <span className="shrink-0 text-primary">
+                                                <PinIcon />
+                                            </span>
+                                            <span className="text-[14.5px] font-bold leading-snug text-text-main text-center">
+                                                {branchName}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {branchName && (scheduleText || openStatus !== null) && (
+                                        <div className="w-px shrink-0 self-stretch bg-border-ghost" />
+                                    )}
+
+                                    {(scheduleText || openStatus !== null) && (
+                                        <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 text-center">
+                                            {scheduleText && (() => {
+                                                const match = /^([^\d]+)\s+(\d.*)$/.exec(scheduleText.trim());
+                                                if (match) {
+                                                    const dayPart = match[1].replace(/\s*-\s*De\s*$/i, "").trim();
+                                                    const hourPart = match[2];
+                                                    return (
+                                                        <div className="flex flex-col items-center justify-center gap-0.5">
+                                                            <span className="flex items-center gap-1 text-[12px] font-extrabold uppercase tracking-wider text-text-main/80">
+                                                                <span className="shrink-0 text-primary">
+                                                                    <ClockIcon />
+                                                                </span>
+                                                                {dayPart}
+                                                            </span>
+                                                            <span className="text-[14.5px] font-extrabold text-text-main">
+                                                                {hourPart}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                }
+                                                return (
+                                                    <span className="flex items-center justify-center gap-1.5 text-[14.5px] font-bold text-text-main text-center">
                                                         <span className="shrink-0 text-primary">
                                                             <ClockIcon />
                                                         </span>
-                                                        {dayPart}
+                                                        {scheduleText}
                                                     </span>
-                                                    <span className="text-[12px] font-bold text-text-main">
-                                                        {hourPart}
-                                                    </span>
-                                                </div>
-                                            );
-                                        }
-                                        return (
-                                            <span className="flex items-center justify-center gap-1.5 text-[12px] font-semibold text-text-main text-center">
-                                                <span className="shrink-0 text-primary">
-                                                    <ClockIcon />
-                                                </span>
-                                                {scheduleText}
-                                            </span>
-                                        );
-                                    })()}
-                                    {openStatus !== null && <OpenBadge open={openStatus} />}
+                                                );
+                                            })()}
+                                            {openStatus !== null && <OpenBadge open={openStatus} />}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
+
+                        {/* Buscador full-width */}
+                        {showSearch && (
+                            <div className="px-4 pb-1 pt-4 animate-mh-fade-in">
+                                <div className="relative w-full">
+                                    <input
+                                        id="menu-search-input"
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => onSearchChange(e.target.value)}
+                                        placeholder="Buscar un plato, ej. asado negro"
+                                        className="w-full font-sans bg-bg-card border border-input rounded-xl py-3 px-4 pl-10 text-[13px] text-text-main placeholder:text-text-main/40 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all shadow-card"
+                                    />
+                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-main/40 pointer-events-none">
+                                        <Search className="h-4 w-4" />
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
-
-                {/* Buscador full-width */}
-                <div className="px-4 pb-1 pt-4">
-                    <div className="relative w-full">
-                        <input
-                            id="menu-search-input"
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => onSearchChange(e.target.value)}
-                            placeholder="Buscar un plato, ej. asado negro"
-                            className="w-full font-sans bg-bg-card border border-input rounded-xl py-3.5 px-4 pl-10 text-[13px] text-text-main placeholder:text-text-main/40 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all shadow-card"
-                        />
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-main/40 pointer-events-none">
-                            <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 16 16"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <circle cx="7" cy="7" r="5" />
-                                <line x1="14" y1="14" x2="10.5" y2="10.5" />
-                            </svg>
-                        </span>
-                    </div>
-                </div>
             </div>
 
             {/* ── Category pills ────────────────────────────────────────────── */}
@@ -662,7 +842,7 @@ export function MenuHeader({
                             scrollbarWidth: "none",
                             WebkitOverflowScrolling: "touch",
                             padding: "12px 16px",
-                            gap: 8,
+                            gap: 12,
                         } as React.CSSProperties}
                     >
                         {/* "Todos" pill */}
@@ -670,7 +850,7 @@ export function MenuHeader({
                             active={activeCategoryId === null}
                             onClick={() => onCategoryChange(null)}
                         >
-                            <LayoutGrid className="h-[15px] w-[15px] shrink-0" strokeWidth={2.4} />
+                            <LayoutGrid className="h-[18px] w-[18px] shrink-0" strokeWidth={2.4} />
                             Todos
                         </PillButton>
 
@@ -682,7 +862,7 @@ export function MenuHeader({
                                     active={activeCategoryId === cat.id}
                                     onClick={() => onCategoryChange(cat.id)}
                                 >
-                                    <Icon className="h-[15px] w-[15px] shrink-0" strokeWidth={2.2} />
+                                    <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2.2} />
                                     {cat.name}
                                 </PillButton>
                             );
@@ -697,7 +877,7 @@ export function MenuHeader({
                         style={{
                             width: 64,
                             background:
-                                "linear-gradient(to right, transparent, #FFFFFF 85%)",
+                                "linear-gradient(to right, transparent, var(--bg-card) 85%)",
                         }}
                     />
                 )}
@@ -793,65 +973,65 @@ export function MenuHeader({
 
                 /* Pills bar */
                 .mh-pills-bar {
-                  background: #FFFFFF;
-                  border-bottom: 1px solid rgba(0,0,0,0.05);
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                  background: var(--bg-card);
+                  border-bottom: 1px solid var(--border);
+                  box-shadow: 0 2px 8px rgba(var(--shadow-color), 0.04);
                 }
 
                 /* Premium pill styles */
                 .mh-pill {
                   position: relative;
                   border-radius: 999px;
-                  padding: 9px 18px;
-                  font-size: clamp(12px, 3.2vw, 14px);
-                  font-weight: 500;
+                  padding: 10px 20px;
+                  font-size: clamp(13px, 3.5vw, 14.5px);
+                  font-weight: 600;
                   white-space: nowrap;
                   flex-shrink: 0;
                   border: 1.5px solid transparent;
                   cursor: pointer;
-                  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+                  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
                   outline: none;
-                  letter-spacing: 0.01em;
+                  letter-spacing: 0.015em;
                   -webkit-tap-highlight-color: transparent;
                 }
 
                 /* Desktop pill sizing — more spacious */
                 @media (min-width: 1024px) {
                   .mh-pill {
-                    padding: 10px 22px;
-                    font-size: 14px;
-                    letter-spacing: 0.015em;
+                    padding: 12px 24px;
+                    font-size: 15px;
+                    letter-spacing: 0.02em;
                   }
                 }
 
                 .mh-pill[data-active="false"] {
-                  background: rgba(240,237,232,0.75);
-                  color: #595550;
-                  border-color: rgba(0,0,0,0.05);
+                  background: var(--surface-section);
+                  color: var(--ink);
+                  border-color: var(--border);
                 }
                 .mh-pill[data-active="false"]:hover {
-                  background: rgba(232,228,222,0.90);
+                  background: var(--bg-app);
                   transform: translateY(-1px);
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                  box-shadow: 0 2px 8px rgba(var(--shadow-color), 0.08);
                 }
                 .mh-pill[data-active="false"]:active {
-                  background: rgba(224,220,212,0.95);
+                  background: var(--border-ghost);
                   transform: scale(0.95);
                 }
                 .mh-pill[data-active="true"] {
-                  background: linear-gradient(135deg, #E8202A 0%, #c01820 100%);
+                  background: linear-gradient(135deg, #bb0005 0%, #e2231a 100%);
                   color: #fff;
-                  font-weight: 650;
-                  border-color: rgba(217,31,38,0.15);
+                  font-weight: 800;
+                  border-color: rgba(255,255,255,0.15);
                   box-shadow:
-                    0 4px 16px rgba(192,0,8,0.35),
-                    0 1px 4px rgba(192,0,8,0.20),
-                    inset 0 1px 0 rgba(255,255,255,0.15);
-                  transform: translateY(-1px);
+                    0 4px 14px rgba(187,0,5,0.40),
+                    0 1px 3px rgba(187,0,5,0.25),
+                    inset 0 1px 0 rgba(255,255,255,0.20);
+                  transform: translateY(-2px) scale(1.06);
                 }
                 .mh-pill[data-active="true"]:active {
                   transform: scale(0.95) translateY(0);
-                  box-shadow: 0 2px 8px rgba(192,0,8,0.28);
+                  box-shadow: 0 2px 8px rgba(187,0,5,0.28);
                 }
 
                 /* Hide webkit scrollbar */
@@ -887,12 +1067,12 @@ function PillButton({
 
 function OpenBadge({ open }: { open: boolean }) {
     return open ? (
-        <span className="inline-flex w-fit items-center gap-1 rounded-pill bg-success/15 px-2 py-0.5 text-[10px] font-bold text-success">
+        <span className="inline-flex w-fit items-center gap-1 rounded-pill bg-success/15 px-2.5 py-0.5 text-[12px] font-extrabold text-success">
             <span className="h-1.5 w-1.5 rounded-full bg-success" />
             Abierto
         </span>
     ) : (
-        <span className="inline-flex w-fit items-center gap-1 rounded-pill bg-error/10 px-2 py-0.5 text-[10px] font-bold text-error">
+        <span className="inline-flex w-fit items-center gap-1 rounded-pill bg-error/10 px-2.5 py-0.5 text-[12px] font-extrabold text-error">
             <span className="h-1.5 w-1.5 rounded-full bg-error" />
             Cerrado
         </span>

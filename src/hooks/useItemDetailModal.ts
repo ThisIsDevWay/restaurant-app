@@ -15,6 +15,7 @@ export interface UseItemDetailModalParams {
   allContornos: GlobalContorno[];
   dailyAdicionales: SimpleItem[];
   dailyBebidas: SimpleItem[];
+  dailyContornos?: SimpleItem[];
   maxQuantityPerItem?: number;
   initialData?: any | null; // using any to avoid import cycles if needed, but it's CartItem
 }
@@ -49,6 +50,7 @@ export function useItemDetailModal({
   allContornos,
   dailyAdicionales,
   dailyBebidas,
+  dailyContornos = [],
   maxQuantityPerItem = 10,
   initialData,
 }: UseItemDetailModalParams): UseItemDetailModalReturn {
@@ -203,12 +205,19 @@ export function useItemDetailModal({
 
   function getSubstituteOptions(contornoId: string) {
     const contorno = availableContornos.find((c) => c.id === contornoId);
-    if (!contorno || contorno.substituteContornoIds.length === 0) {
-      return [];
+    if (!contorno) return [];
+
+    // Intersect the allowed substitute contorno IDs with today's active menu contornos (dailyContornos)
+    if (contorno.substituteContornoIds && contorno.substituteContornoIds.length > 0) {
+      return dailyContornos.filter(
+        (c) => contorno.substituteContornoIds.includes(c.id) && c.isAvailable,
+      );
     }
-    return allContornos.filter(
-      (c) => contorno.substituteContornoIds.includes(c.id) && c.isAvailable,
-    );
+
+    // Fallback: if no specific substitutes are mapped in DB, show all active daily contornos
+    // minus the ones already included in the dish to prevent self-substitution
+    const includedIds = new Set(availableContornos.map((c) => c.id));
+    return dailyContornos.filter((c) => !includedIds.has(c.id) && c.isAvailable);
   }
 
   return {

@@ -32,6 +32,7 @@ interface MenuItemCardProps {
   categoryIsSimple: boolean;
   onOpenDetail: () => void;
   onAddSimpleItem?: (payload: any, categoryName: string) => void;
+  isReadOnly?: boolean;
 }
 
 export function MenuItemCardModern({
@@ -51,12 +52,17 @@ export function MenuItemCardModern({
   categoryIsSimple,
   onOpenDetail,
   onAddSimpleItem,
+  isReadOnly = false,
 }: MenuItemCardProps) {
   const addItem = useCartStore((s) => s.addItem);
   const categoryKey = categoryName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const emoji = CATEGORY_EMOJI[categoryKey] || "🍽️";
 
   const handleAdd = () => {
+    if (isReadOnly) {
+      onOpenDetail();
+      return;
+    }
     if (!isAvailable) return;
 
     if (hasRequiredOptions) {
@@ -101,7 +107,7 @@ export function MenuItemCardModern({
       )}
     >
       {/* Left: Image (Clamped width + Aspect Square) */}
-      <div 
+      <div
         className="relative flex shrink-0 items-center justify-center p-1.5"
         style={{ width: "clamp(115px, 38%, 150px)" }}
       >
@@ -170,25 +176,27 @@ export function MenuItemCardModern({
                   maximumFractionDigits: 2,
                 })}
               </span>
-              <span className="rounded-md bg-bg-app px-1.5 py-0.5 text-[10px] font-bold text-text-muted border border-border/30">
-                ${(priceUsdCents / 100).toFixed(2).replace(".", ",")}
+              <span className="rounded-md bg-bg-app px-1.5 py-0.5 text-[11px] font-bold text-text-muted border border-border/30">
+                REF. {(priceUsdCents / 100).toFixed(2).replace(".", ",")}
               </span>
             </div>
           </div>
 
-          <button
-            onClick={(e) => { e.stopPropagation(); handleAdd(); }}
-            disabled={!isAvailable}
-            className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors",
-              isAvailable
-                ? "bg-primary text-white active:bg-primary-hover"
-                : "bg-border text-text-muted",
-            )}
-            aria-label={`Agregar ${name}`}
-          >
-            <Plus className="h-4 w-4" strokeWidth={3} />
-          </button>
+          {!isReadOnly && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleAdd(); }}
+              disabled={!isAvailable}
+              className={cn(
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors",
+                isAvailable
+                  ? "bg-primary text-white active:bg-primary-hover"
+                  : "bg-border text-text-muted",
+              )}
+              aria-label={`Agregar ${name}`}
+            >
+              <Plus className="h-4 w-4" strokeWidth={3} />
+            </button>
+          )}
         </div>
 
         {!categoryAllowAlone && isAvailable && (

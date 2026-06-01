@@ -40,11 +40,13 @@ interface MenuGridProps {
   bebidasEnabled?: boolean;
   dailyAdicionales: SimpleItem[];
   dailyBebidas: SimpleItem[];
+  dailyContornos?: SimpleItem[];
   maxQuantityPerItem?: number;
   menuLayout?: "modern" | "classic";
   availabilityMap?: Map<string, boolean>;
   selectedItemId: string | null;
   onSelectedItemIdChange: (id: string | null) => void;
+  isReadOnly?: boolean;
 }
 
 export function MenuGrid({
@@ -55,11 +57,13 @@ export function MenuGrid({
   bebidasEnabled = true,
   dailyAdicionales,
   dailyBebidas,
+  dailyContornos = [],
   maxQuantityPerItem = 10,
   menuLayout = "modern",
   availabilityMap = new Map(),
   selectedItemId,
   onSelectedItemIdChange: setSelectedItemId,
+  isReadOnly = false,
 }: MenuGridProps) {
   const [drinkWarningItem, setDrinkWarningItem] = useState<{ payload: any; categoryName: string } | null>(null);
 
@@ -70,6 +74,7 @@ export function MenuGrid({
 
   // Handle editing from cart
   useEffect(() => {
+    if (isReadOnly) return;
     if (editingIndex !== null && cartItems[editingIndex]) {
       const cartItem = cartItems[editingIndex];
       // Find the menu item by ID
@@ -78,7 +83,7 @@ export function MenuGrid({
         setSelectedItemId(menuItem.id);
       }
     }
-  }, [editingIndex, cartItems, items, setSelectedItemId]);
+  }, [editingIndex, cartItems, items, setSelectedItemId, isReadOnly]);
 
   const handleCloseModal = () => {
     setSelectedItemId(null);
@@ -112,6 +117,11 @@ export function MenuGrid({
   const mappedDailyBebidas = dailyBebidas.map(b => ({
     ...b,
     isAvailable: availabilityMap.has(b.id) ? availabilityMap.get(b.id)! : b.isAvailable
+  }));
+
+  const mappedDailyContornos = (dailyContornos ?? []).map(c => ({
+    ...c,
+    isAvailable: availabilityMap.has(c.id) ? availabilityMap.get(c.id)! : c.isAvailable
   }));
 
   const availableItems = mappedItems.filter((i) => i.isAvailable);
@@ -189,13 +199,14 @@ export function MenuGrid({
         const effectiveHasDailyBebidas =
           bebidasEnabled && !item.hideBebidas && mappedDailyBebidas.length > 0;
 
-        const needsDetailModal =
+        const needsDetailModal = isReadOnly ? true : (
           !item.categoryIsSimple ||
           hasContornos ||
           hasRequiredOptions ||
           (item.categoryIsSimple
             ? false
-            : effectiveHasDailyAdicionales || effectiveHasDailyBebidas);
+            : effectiveHasDailyAdicionales || effectiveHasDailyBebidas)
+        );
 
         const priceBsCents = rate ? Math.round(item.priceUsdCents * rate) : 0;
 
@@ -219,6 +230,7 @@ export function MenuGrid({
             onOpenDetail={() => setSelectedItemId(item.id)}
             onAddSimpleItem={handleAddSimpleItem}
             menuLayout={menuLayout}
+            isReadOnly={isReadOnly}
           />
         );
       })}
@@ -234,10 +246,12 @@ export function MenuGrid({
           bebidasEnabled={bebidasEnabled}
           dailyAdicionales={mappedDailyAdicionales}
           dailyBebidas={mappedDailyBebidas}
+          dailyContornos={mappedDailyContornos}
           maxQuantityPerItem={maxQuantityPerItem}
           menuLayout={menuLayout}
           initialData={editingIndex !== null ? cartItems[editingIndex] : null}
           editingIndex={editingIndex}
+          isReadOnly={isReadOnly}
         />
       )}
 
