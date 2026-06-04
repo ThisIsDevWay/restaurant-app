@@ -3,6 +3,7 @@ import { timeSince, getElapsedMinutes } from "@/lib/kitchen-utils";
 import { ORDER_MODE_LABELS, type KitchenOrder, type CardVariant } from "@/types/kitchen.types";
 import { KitchenItemSnapshot } from "./KitchenItemSnapshot";
 import * as Icons from "lucide-react";
+import { obfuscatePhone } from "@/lib/utils";
 
 interface KitchenOrderCardProps {
   order: KitchenOrder;
@@ -85,22 +86,32 @@ export function KitchenOrderCard({
         </div>
       </div>
 
-      {/* Items */}
-      {variant !== "ready" ? (
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-          {order.itemsSnapshot.map((item, idx) => (
-            <KitchenItemSnapshot
-              key={idx}
-              item={item}
-              accentColor={variant === "pending" ? "amber" : "info"}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="px-4 py-3">
-          <p className="text-sm text-text-muted">{order.itemsSnapshot.length} items</p>
+      {/* Customer Info */}
+      {(order.customerName || order.customerPhone) && (
+        <div className="px-4 py-1.5 border-b border-border/30 bg-slate-50/50 flex items-center justify-between text-xs text-text-muted font-bold">
+          {order.customerName ? (
+            <span className="truncate max-w-[180px] font-black uppercase text-text-main">
+              {order.customerName}
+            </span>
+          ) : (
+            <span className="uppercase tracking-wider">Cliente</span>
+          )}
+          <span className="font-mono">{obfuscatePhone(order.customerPhone)}</span>
         </div>
       )}
+
+      {/* Items */}
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+        {order.itemsSnapshot.map((item, idx) => (
+          <KitchenItemSnapshot
+            key={idx}
+            item={item}
+            accentColor={
+              variant === "pending" ? "amber" : variant === "cooking" ? "info" : "success"
+            }
+          />
+        ))}
+      </div>
 
       {/* Footer / Action */}
       {variant !== "ready" && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { toast } from "sonner";
 import { reprintOrderAction } from "@/actions/print";
 import { updateOrderStatusAction } from "@/actions/orders";
@@ -12,6 +13,8 @@ import { useKitchenOrders } from "@/hooks/useKitchenOrders";
 import { KitchenHeader } from "./KitchenHeader";
 import { KitchenColumn } from "./KitchenColumn";
 import { KitchenEmptyState, KitchenLoadingState } from "./KitchenStates";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { KitchenOrderCard } from "./KitchenOrderCard";
 
 interface KitchenQueueProps {
   restaurantName: string;
@@ -23,6 +26,8 @@ export function KitchenQueue({ restaurantName, logoUrl }: KitchenQueueProps) {
     pendingOrders, cookingOrders, readyOrders, 
     newOrderIds, isLoading 
   } = useKitchenOrders();
+  
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   const currentTime = useClock();
   const timeStr = currentTime.toLocaleTimeString("es-VE", {
@@ -50,7 +55,7 @@ export function KitchenQueue({ restaurantName, logoUrl }: KitchenQueueProps) {
 
   if (isLoading) return <KitchenLoadingState />;
 
-  const hasOrders = pendingOrders.length + cookingOrders.length + readyOrders.length > 0;
+  const hasOrders = pendingOrders.length + cookingOrders.length > 0;
 
   return (
     <div className="min-h-screen bg-bg-app">
@@ -61,6 +66,7 @@ export function KitchenQueue({ restaurantName, logoUrl }: KitchenQueueProps) {
         pendingCount={pendingOrders.length}
         cookingCount={cookingOrders.length}
         readyCount={readyOrders.length}
+        onReadyClick={() => setIsSheetOpen(true)}
       />
 
       <div className="p-4 sm:p-6">
@@ -79,15 +85,41 @@ export function KitchenQueue({ restaurantName, logoUrl }: KitchenQueueProps) {
           onReprint={handleReprint}
         />
 
-        <KitchenColumn 
-          variant="ready" 
-          orders={readyOrders}
-          onAction={() => {}}
-          onReprint={handleReprint}
-        />
-
         {!hasOrders && <KitchenEmptyState timeStr={timeStr} />}
       </div>
+
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md p-6 overflow-y-auto bg-white border-l border-border shadow-2xl">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-lg font-black text-text-main">
+              Pedidos Listos del Día
+            </SheetTitle>
+            <SheetDescription className="text-xs text-text-muted mt-1 leading-relaxed">
+              Historial de pedidos que ya fueron marcados como entregados hoy.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-4">
+            {readyOrders.length === 0 ? (
+              <p className="text-center text-sm text-text-muted py-8 font-medium">
+                No hay pedidos listos todavía hoy.
+              </p>
+            ) : (
+              [...readyOrders]
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .map((order) => (
+                  <KitchenOrderCard
+                    key={order.id}
+                    order={order}
+                    variant="ready"
+                    onAction={() => {}}
+                    onReprint={handleReprint}
+                  />
+                ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

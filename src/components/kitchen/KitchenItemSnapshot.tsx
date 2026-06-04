@@ -3,13 +3,23 @@ import type { KitchenOrderItem } from "@/types/kitchen.types";
 
 interface KitchenItemSnapshotProps {
   item: KitchenOrderItem;
-  accentColor: "amber" | "info";
+  accentColor: "amber" | "info" | "success";
 }
 
 export function KitchenItemSnapshot({ item, accentColor }: KitchenItemSnapshotProps) {
   const resolved = resolveContornos(item);
-  const accentBg = accentColor === "amber" ? "bg-amber/10" : "bg-info/10";
-  const accentText = accentColor === "amber" ? "text-amber" : "text-info";
+  const accentBg =
+    accentColor === "amber"
+      ? "bg-amber/10"
+      : accentColor === "info"
+        ? "bg-info/10"
+        : "bg-success/10";
+  const accentText =
+    accentColor === "amber"
+      ? "text-amber"
+      : accentColor === "info"
+        ? "text-info"
+        : "text-success";
 
   return (
     <div>

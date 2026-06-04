@@ -31,6 +31,7 @@ export interface KitchenOrder {
   id: string;
   orderNumber: number;
   customerPhone: string;
+  customerName?: string | null;
   itemsSnapshot: KitchenOrderItem[];
   status: "paid" | "kitchen" | "delivered" | "whatsapp";
   paymentMethod: string;

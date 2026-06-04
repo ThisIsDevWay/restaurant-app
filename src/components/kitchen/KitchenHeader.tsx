@@ -7,11 +7,13 @@ interface KitchenHeaderProps {
   pendingCount: number;
   cookingCount: number;
   readyCount: number;
+  onReadyClick?: () => void;
 }
 
 export function KitchenHeader({
   restaurantName, logoUrl, timeStr,
-  pendingCount, cookingCount, readyCount
+  pendingCount, cookingCount, readyCount,
+  onReadyClick
 }: KitchenHeaderProps) {
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-white/90 backdrop-blur-md shadow-sm">
@@ -63,11 +65,15 @@ export function KitchenHeader({
             <span className="text-sm font-bold text-info">{cookingCount}</span>
             <span className="hidden sm:inline text-xs text-info/80">Cocinando</span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-xl bg-success/10 px-3 py-1.5">
+          <button
+            onClick={onReadyClick}
+            className="flex items-center gap-1.5 rounded-xl bg-success/10 px-3 py-1.5 hover:bg-success/20 active:scale-[0.98] transition-all cursor-pointer text-left border-0 focus:outline-none"
+            title="Ver pedidos listos"
+          >
             <CheckCircle2 className="h-4 w-4 text-success" />
             <span className="text-sm font-bold text-success">{readyCount}</span>
             <span className="hidden sm:inline text-xs text-success/80">Listos</span>
-          </div>
+          </button>
         </div>
       </div>
     </header>
