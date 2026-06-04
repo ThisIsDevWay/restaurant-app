@@ -430,7 +430,7 @@ export function OrderPaymentPanel({
                 <DataRow
                   label="Verificado"
                   value={
-                    <span className="text-[11px] text-[#9e8e7e]">
+                    <span className="text-[11px] text-[#9e8e7e]" suppressHydrationWarning>
                       {formatOrderDate(latestLog.createdAt)}
                     </span>
                   }

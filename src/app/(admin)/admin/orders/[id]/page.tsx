@@ -139,7 +139,7 @@ export default async function OrderDetailPage({
         </div>
 
         {/* Date — right-aligned, muted */}
-        <time className="hidden sm:block text-[11px] text-[#9e8e7e] font-medium shrink-0">
+        <time className="hidden sm:block text-[11px] text-[#9e8e7e] font-medium shrink-0" suppressHydrationWarning>
           {formatOrderDate(order.createdAt)}
         </time>
       </div>
@@ -171,7 +171,7 @@ export default async function OrderDetailPage({
           </div>
 
           {/* Date on mobile */}
-          <time className="sm:hidden text-[11px] text-[#9e8e7e] font-medium mb-1">
+          <time className="sm:hidden text-[11px] text-[#9e8e7e] font-medium mb-1" suppressHydrationWarning>
             {formatOrderDate(order.createdAt)}
           </time>
         </div>
