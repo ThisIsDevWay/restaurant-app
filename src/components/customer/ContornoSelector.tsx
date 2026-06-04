@@ -193,7 +193,7 @@ export function ContornoSelector({
                           <span className="text-[12px] text-text-muted">
                             {sub.priceUsdCents === 0
                               ? "Incluido"
-                              : `+${formatBs(Math.round(sub.priceUsdCents * currentRateBsPerUsd))}`}
+                              : `+${formatBs(Math.round(sub.priceUsdCents * currentRateBsPerUsd), { rounded: true })}`}
                           </span>
                         </button>
                       );

@@ -53,32 +53,32 @@ describe("usdCentsToBsCents", () => {
 
 
 describe("formatRef", () => {
-  it("formats 310 as 'REF 3,10'", () => {
-    expect(formatRef(310)).toBe("REF 3,10");
+  it("formats 310 as 'REF. 3,10'", () => {
+    expect(formatRef(310)).toBe("REF. 3,10");
   });
 
-  it("formats 1500 as 'REF 15,00'", () => {
-    expect(formatRef(1500)).toBe("REF 15,00");
+  it("formats 1500 as 'REF. 15,00'", () => {
+    expect(formatRef(1500)).toBe("REF. 15,00");
   });
 
-  it("formats 0 as 'REF 0,00'", () => {
-    expect(formatRef(0)).toBe("REF 0,00");
+  it("formats 0 as 'REF. 0,00'", () => {
+    expect(formatRef(0)).toBe("REF. 0,00");
   });
 
-  it("formats 100000 as 'REF 1000,00'", () => {
-    expect(formatRef(100000)).toBe("REF 1000,00");
+  it("formats 100000 as 'REF. 1000,00'", () => {
+    expect(formatRef(100000)).toBe("REF. 1000,00");
   });
 
-  it("returns 'REF —' for null", () => {
-    expect(formatRef(null)).toBe("REF —");
+  it("returns 'REF. —' for null", () => {
+    expect(formatRef(null)).toBe("REF. —");
   });
 
-  it("returns 'REF —' for undefined", () => {
-    expect(formatRef(undefined)).toBe("REF —");
+  it("returns 'REF. —' for undefined", () => {
+    expect(formatRef(undefined)).toBe("REF. —");
   });
 
-  it("returns 'REF —' for NaN", () => {
-    expect(formatRef(NaN)).toBe("REF —");
+  it("returns 'REF. —' for NaN", () => {
+    expect(formatRef(NaN)).toBe("REF. —");
   });
 });
 
@@ -115,6 +115,22 @@ describe("formatBs", () => {
 
   it("returns 'Bs. —' for NaN", () => {
     expect(formatBs(NaN)).toBe("Bs. —");
+  });
+
+  describe("with rounded option", () => {
+    it("rounds and omits decimals", () => {
+      expect(formatBs(139967, { rounded: true })).toBe("Bs. 1.400");
+      expect(formatBs(392815, { rounded: true })).toBe("Bs. 3.928");
+      expect(formatBs(50, { rounded: true })).toBe("Bs. 1");
+      expect(formatBs(49, { rounded: true })).toBe("Bs. 0");
+      expect(formatBs(0, { rounded: true })).toBe("Bs. 0");
+    });
+
+    it("returns 'Bs. —' for invalid inputs with rounded option", () => {
+      expect(formatBs(null, { rounded: true })).toBe("Bs. —");
+      expect(formatBs(undefined, { rounded: true })).toBe("Bs. —");
+      expect(formatBs(NaN, { rounded: true })).toBe("Bs. —");
+    });
   });
 });
 

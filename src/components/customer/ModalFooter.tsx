@@ -80,7 +80,7 @@ export function ModalFooter({
             <div className="flex items-center justify-center gap-2">
               <span>Agregar</span>
               <span className="opacity-40">|</span>
-              <span>{formatBs(totalBsCents)}</span>
+              <span>{formatBs(totalBsCents, { rounded: true })}</span>
             </div>
           )
           : (unsatisfiedGroupName ?? "Selecciona una opción")

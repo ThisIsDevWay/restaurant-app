@@ -10,13 +10,13 @@ export function fmtRef(cents: number): string {
 }
 
 const BS_FMT = new Intl.NumberFormat("es-VE", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
 });
 
 export function fmtBs(cents: number, rate: number | null) {
   if (!rate || rate <= 0) return "";
-  return BS_FMT.format((cents / 100) * rate);
+  return BS_FMT.format(Math.round((cents / 100) * rate));
 }
 
 /** clamp(minPx, unitBasedPx, maxPx) as a CSS string. */
@@ -156,7 +156,11 @@ export function PriceTag({
   variant: "grid" | "list" | "portrait";
 }) {
   const usd = fmtRef(item.priceUsdCents);
-  const bs = fmtBs(item.priceUsdCents, data.rateBsPerUsd);
+  const categoryLower = item.categoryName
+    ? item.categoryName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    : "";
+  const isAdicionalOrBebida = categoryLower.includes("adicional") || categoryLower.includes("bebida");
+  const bs = isAdicionalOrBebida ? "" : fmtBs(item.priceUsdCents, data.rateBsPerUsd);
 
   // Primary price size and secondary (Bs) size per variant.
   const [mainFs, subFs] = {

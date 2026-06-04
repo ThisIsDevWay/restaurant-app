@@ -26,7 +26,7 @@ export function AdicionalesList({
   if (dailyAdicionales.length === 0) return null;
 
   return (
-    <div className="border-t border-[#f5ece0] px-4 py-6 md:border-t-0 md:border-b md:border-border md:px-4 md:py-3">
+    <div className="border-t border-border/50 px-4 py-6 md:border-t-0 md:border-b md:border-border md:px-4 md:py-3">
       {/* Desktop Header */}
       <div className="hidden md:block">
         <h3 className="font-display mb-1 text-[14px] font-semibold text-text-main">
@@ -40,12 +40,12 @@ export function AdicionalesList({
       {/* Mobile Header */}
       <div className="md:hidden">
         <div className="flex items-baseline justify-between">
-          <h3 className="font-epilogue font-semibold text-base text-[#251a07]">
+          <h3 className="font-epilogue font-semibold text-base text-text-main">
             Adicionales del día
           </h3>
-          <span className="text-xs text-[#251a07]/65 font-medium">Opcional</span>
+          <span className="text-xs text-text-muted font-medium">Opcional</span>
         </div>
-        <p className="text-sm text-[#251a07]/70 mt-1 mb-4">
+        <p className="text-sm text-text-muted mt-1 mb-4">
           Extras disponibles hoy para cualquier plato
         </p>
       </div>
@@ -77,7 +77,7 @@ export function AdicionalesList({
                       <span className="text-[11px] text-text-muted">Incluido</span>
                     ) : (
                       <span className="text-[11px] text-text-muted">
-                        +{formatBs(Math.round(adicional.priceUsdCents * currentRateBsPerUsd))}
+                        +{formatBs(Math.round(adicional.priceUsdCents * currentRateBsPerUsd), { rounded: true })}
                         {" / "}
                         {formatRef(adicional.priceUsdCents)}
                       </span>
@@ -123,16 +123,16 @@ export function AdicionalesList({
                 <div
                   className={cn(
                     "flex md:hidden items-center justify-between rounded-xl px-3 py-3.5 transition-all border border-transparent",
-                    qty > 0 && "bg-[#f5ece0]/60 border-l-2 border-l-[#bb0005]",
+                    qty > 0 && "bg-surface-section border-l-2 border-l-primary",
                     isAlreadySubstitute && "opacity-50"
                   )}
                 >
                   <div className="flex flex-col pr-2">
-                    <span className="text-[14px] font-medium text-[#251a07]">
+                    <span className="text-[14px] font-medium text-text-main">
                       {adicional.name}
                     </span>
                     {isAlreadySubstitute && (
-                      <span className="text-[11px] text-[#bb0005]/70 font-medium mt-0.5">
+                      <span className="text-[11px] text-primary/70 font-medium mt-0.5">
                         Ya incluido como contorno
                       </span>
                     )}
@@ -141,16 +141,16 @@ export function AdicionalesList({
                   <div className="flex items-center gap-3 shrink-0">
                     {!isAlreadySubstitute && adicional.priceUsdCents > 0 && (
                       <div className="text-right">
-                        <span className="text-[13px] font-bold text-[#251a07]">
-                          +{formatBs(Math.round(adicional.priceUsdCents * currentRateBsPerUsd))}
+                        <span className="text-[13px] font-bold text-text-main">
+                          +{formatBs(Math.round(adicional.priceUsdCents * currentRateBsPerUsd), { rounded: true })}
                         </span>
-                        <span className="block text-[10px] text-[#251a07]/50 font-medium">
+                        <span className="block text-[10px] text-text-muted font-medium">
                           {formatRef(adicional.priceUsdCents)}
                         </span>
                       </div>
                     )}
                     {!isAlreadySubstitute && adicional.priceUsdCents === 0 && (
-                      <span className="text-[12px] font-medium text-[#251a07]/60 mr-1">
+                      <span className="text-[12px] font-medium text-text-muted mr-1">
                         Incluido
                       </span>
                     )}

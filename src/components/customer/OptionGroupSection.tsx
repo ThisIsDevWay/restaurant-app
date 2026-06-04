@@ -81,7 +81,7 @@ export function OptionGroupSection({
                       <span className="text-[12px] text-text-muted">
                         {option.priceUsdCents === 0
                           ? "Incluido"
-                          : `+${formatBs(Math.round(option.priceUsdCents * currentRateBsPerUsd))}`}
+                          : `+${formatBs(Math.round(option.priceUsdCents * currentRateBsPerUsd), { rounded: true })}`}
                       </span>
                     </button>
 
@@ -112,7 +112,7 @@ export function OptionGroupSection({
                         {option.priceUsdCents > 0 ? (
                           <div className="text-right">
                             <span className="text-[13px] font-bold text-[#251a07]">
-                              +{formatBs(Math.round(option.priceUsdCents * currentRateBsPerUsd))}
+                              +{formatBs(Math.round(option.priceUsdCents * currentRateBsPerUsd), { rounded: true })}
                             </span>
                             <span className="block text-[10px] text-[#251a07]/50 font-medium">
                               {formatRef(option.priceUsdCents)}

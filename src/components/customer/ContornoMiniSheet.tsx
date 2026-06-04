@@ -62,7 +62,7 @@ export function ContornoMiniSheet({
       onClick={onClose}
       className="fixed inset-0 z-[200] flex items-end justify-center"
       style={{
-        background: "rgba(37,26,7,0.55)",
+        background: "rgba(0,0,0,0.55)",
         backdropFilter: "blur(4px)",
         WebkitBackdropFilter: "blur(4px)",
         animation: "contorno-bg-in 0.18s ease",
@@ -74,13 +74,13 @@ export function ContornoMiniSheet({
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg"
         style={{
-          background: "#fff",
+          background: "var(--bg-card)",
           borderRadius: "24px 24px 0 0",
           maxHeight: "55vh",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          boxShadow: "0 -8px 40px rgba(37,26,7,0.18)",
+          boxShadow: "0 -8px 40px rgba(0,0,0,0.25)",
           animation: "contorno-sheet-in 0.26s cubic-bezier(0.32,0.72,0,1)",
         }}
       >
@@ -88,7 +88,7 @@ export function ContornoMiniSheet({
         <div style={{
           width: 36, height: 3.5,
           borderRadius: 99,
-          background: "rgba(37,26,7,0.12)",
+          background: "var(--border)",
           margin: "12px auto 0",
           flexShrink: 0,
         }} />
@@ -98,7 +98,7 @@ export function ContornoMiniSheet({
           display: "flex",
           alignItems: "center",
           padding: "14px 20px 12px",
-          borderBottom: "1px solid #fff2e2",
+          borderBottom: "1px solid var(--border)",
           flexShrink: 0,
           gap: 10,
         }}>
@@ -109,7 +109,7 @@ export function ContornoMiniSheet({
               fontWeight: 900,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#9e8e7e",
+              color: "var(--ink-muted)",
               marginBottom: 2,
             }}>
               Cambiar contorno
@@ -118,7 +118,7 @@ export function ContornoMiniSheet({
               fontFamily: "'Epilogue', sans-serif",
               fontSize: 16,
               fontWeight: 900,
-              color: "#251a07",
+              color: "var(--ink)",
               letterSpacing: "-0.02em",
             }}>
               {cleanContorno(slotName)}
@@ -131,8 +131,8 @@ export function ContornoMiniSheet({
               width: 34, height: 34,
               borderRadius: 10,
               border: "none",
-              background: "#fff2e2",
-              color: "#9e8e7e",
+              background: "var(--surface-section)",
+              color: "var(--ink-muted)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -169,8 +169,8 @@ export function ContornoMiniSheet({
               sub.priceUsdCents === 0 || priceDiff === 0
                 ? "Sin costo adicional"
                 : priceDiff > 0
-                ? `+${formatBs(Math.round(priceDiff * currentRateBsPerUsd))} (${formatRef(priceDiff)})`
-                : `${formatBs(Math.round(priceDiff * currentRateBsPerUsd))} (${formatRef(priceDiff)})`;
+                ? `+${formatBs(Math.round(priceDiff * currentRateBsPerUsd), { rounded: true })} (${formatRef(priceDiff)})`
+                : `${formatBs(Math.round(priceDiff * currentRateBsPerUsd), { rounded: true })} (${formatRef(priceDiff)})`;
 
             const displayName = alreadyUsed ? `Más ${cleanContorno(sub.name)}` : cleanContorno(sub.name);
 
@@ -216,8 +216,8 @@ function OptionRow({
         gap: 14,
         padding: "14px 12px",
         borderRadius: 14,
-        border: selected ? "2px solid #bb0005" : "2px solid transparent",
-        background: selected ? "rgba(187,0,5,0.04)" : "transparent",
+        border: selected ? "2px solid var(--color-primary, #bb0005)" : "2px solid transparent",
+        background: selected ? "rgba(187,0,5,0.08)" : "transparent",
         cursor: "pointer",
         textAlign: "left",
         transition: "background 0.12s, border-color 0.12s",
@@ -228,7 +228,7 @@ function OptionRow({
       <div style={{
         width: 20, height: 20,
         borderRadius: "50%",
-        border: selected ? "6px solid #bb0005" : "2px solid #d0c9c0",
+        border: selected ? "6px solid var(--color-primary, #bb0005)" : "2px solid var(--border)",
         flexShrink: 0,
         transition: "border 0.15s",
       }} />
@@ -239,7 +239,7 @@ function OptionRow({
           fontFamily: "'Plus Jakarta Sans', sans-serif",
           fontSize: 14,
           fontWeight: selected ? 700 : 500,
-          color: "#251a07",
+          color: "var(--ink)",
           lineHeight: 1.3,
           marginBottom: 1,
         }}>
@@ -247,7 +247,7 @@ function OptionRow({
         </p>
         <p style={{
           fontSize: 11,
-          color: "#9e8e7e",
+          color: "var(--ink-muted)",
           fontWeight: 500,
         }}>
           {sublabel}
@@ -258,7 +258,7 @@ function OptionRow({
         <span style={{
           fontSize: 11,
           fontWeight: 900,
-          color: "#bb0005",
+          color: "var(--color-primary, #bb0005)",
           fontFamily: "'Epilogue', sans-serif",
           letterSpacing: "0.06em",
           textTransform: "uppercase",
