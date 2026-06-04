@@ -403,6 +403,7 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
 
     const { order, reason } = await createOrderWithCapacityCheck({
         customerPhone: input.phone,
+        customerName: input.name ?? null,
         itemsSnapshot: snapshotItems,
         subtotalUsdCents,
         subtotalBsCents,

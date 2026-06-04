@@ -21,6 +21,7 @@ interface Step2CustomerDataProps {
   phoneValid: boolean;
   customerFieldsVisible: boolean;
   isSubmitting: boolean;
+  deliveryCoverage?: string | null;
 }
 
 const ORDER_MODE_LABELS: Record<OrderMode, string> = {
@@ -55,6 +56,7 @@ export function CheckoutForm({
   phoneValid,
   customerFieldsVisible,
   isSubmitting,
+  deliveryCoverage,
 }: Step2CustomerDataProps) {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -224,6 +226,15 @@ export function CheckoutForm({
               <label className="font-sans text-[10px] uppercase tracking-[0.12em] text-text-muted pl-1 block mb-1.5">
                 Dirección de entrega
               </label>
+
+              {deliveryCoverage && (
+                <div className="bg-amber-50/80 border border-amber-200/50 rounded-[12px] px-4 py-2.5 flex items-start gap-2.5 mb-2.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-[10px] leading-tight font-bold text-amber-900/70 uppercase tracking-wider">
+                    {deliveryCoverage}
+                  </p>
+                </div>
+              )}
 
               {/* GPS button */}
               <button

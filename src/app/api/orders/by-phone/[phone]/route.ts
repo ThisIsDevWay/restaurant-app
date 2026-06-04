@@ -29,10 +29,20 @@ export async function GET(
       status: orders.status,
       subtotalBsCents: orders.subtotalBsCents,
       grandTotalBsCents: orders.grandTotalBsCents,
+      subtotalUsdCents: orders.subtotalUsdCents,
+      grandTotalUsdCents: orders.grandTotalUsdCents,
       createdAt: orders.createdAt,
       expiresAt: orders.expiresAt,
       itemsSnapshot: orders.itemsSnapshot,
       deliveryAddress: orders.deliveryAddress,
+      paymentMethod: orders.paymentMethod,
+      orderMode: orders.orderMode,
+      tableNumber: orders.tableNumber,
+      customerName: orders.customerName,
+      packagingUsdCents: orders.packagingUsdCents,
+      deliveryUsdCents: orders.deliveryUsdCents,
+      igtfUsdCents: orders.igtfUsdCents,
+      igtfBsCents: orders.igtfBsCents,
     })
     .from(orders)
     .where(eq(orders.customerPhone, sanitized))

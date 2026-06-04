@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, ExternalLink, UtensilsCrossed } from "lucide-react";
+import { CheckCircle2, ExternalLink, UtensilsCrossed, XCircle, AlertTriangle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PaymentInitResult } from "@/lib/payment-providers/types";
 import type { OrderMode } from "./CheckoutForm.types";
+import { supabaseBrowser } from "@/lib/supabase-client";
 
 type Phase = "waiting" | "verified" | "preparing" | "done";
 
@@ -24,11 +25,12 @@ const PHASE_DELAYS: Record<Phase, number> = {
 };
 
 const ORDER_TRACKER = (mode: OrderMode | null) => [
-  { label: "Pago recibido", desc: "Tu pago fue confirmado" },
-  { label: "En cocina", desc: "Tu pedido está siendo preparado" },
+  { label: "Pedido registrado", desc: "Recibimos tu solicitud" },
+  { label: "Pago verificado", desc: "Confirmamos tu pago" },
+  { label: "En cocina", desc: "Preparando tu comida" },
   {
-    label: mode === "delivery" ? "En camino" : mode === "take_away" ? "Listo para retirar" : "Sirviendo",
-    desc: mode === "delivery" ? "El repartidor está en camino" : mode === "take_away" ? "Pasa a buscar tu pedido" : "Tu pedido llega a tu mesa",
+    label: mode === "delivery" ? "En camino" : mode === "take_away" ? "Listo para retirar" : "Servido",
+    desc: mode === "delivery" ? "El repartidor está en camino" : mode === "take_away" ? "Puedes pasar a retirarlo" : "Tu pedido llega a tu mesa",
   },
 ];
 
@@ -39,54 +41,58 @@ export function Step5Success({
   onNewOrder,
   onPaid,
 }: Step5SuccessProps) {
-  const [phase, setPhase] = useState<Phase>("waiting");
+  const [dbStatus, setDbStatus] = useState<string>(
+    initResult.screen === "whatsapp" ? "whatsapp" : "pending"
+  );
   const shortId = orderId.slice(-6).toUpperCase();
   const screen = initResult.screen;
 
-  // Phase animation progression
+  // Fetch initial status and subscribe to Realtime updates (no polling)
   useEffect(() => {
-    const timers: NodeJS.Timeout[] = [];
-    timers.push(setTimeout(() => setPhase("verified"), PHASE_DELAYS.verified));
-    timers.push(setTimeout(() => setPhase("preparing"), PHASE_DELAYS.preparing));
-    timers.push(setTimeout(() => setPhase("done"), PHASE_DELAYS.done));
-    return () => timers.forEach(clearTimeout);
-  }, []);
-
-  // Real polling for waiting_auto and whatsapp screens
-  useEffect(() => {
-    if (screen !== "waiting_auto" && screen !== "whatsapp") return;
-    if (!onPaid) return;
-
     let active = true;
-    let timeoutId: NodeJS.Timeout;
-    let attempt = 0;
-    const BASE = screen === "whatsapp" ? 8000 : 5000;
-    const MAX = 30000;
 
-    const poll = async () => {
-      if (!active) return;
+    const fetchStatus = async () => {
       try {
         const res = await fetch(`/api/orders/${orderId}/status`);
-        if (res.ok) {
+        if (res.ok && active) {
           const data = await res.json();
-          attempt = 0;
-          if (data.status === "paid") {
-            onPaid();
-            return;
+          if (data.status) {
+            setDbStatus(data.status);
+            if (data.status === "paid" && onPaid) {
+              onPaid();
+            }
           }
         }
       } catch {}
-      if (active) {
-        attempt++;
-        timeoutId = setTimeout(poll, Math.min(BASE * Math.pow(2, attempt - 1), MAX));
-      }
     };
-    poll();
+    fetchStatus();
+
+    const channel = supabaseBrowser
+      .channel(`order-tracker-${orderId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          if (payload.new && payload.new.status && active) {
+            setDbStatus(payload.new.status);
+            if (payload.new.status === "paid" && onPaid) {
+              onPaid();
+            }
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       active = false;
-      clearTimeout(timeoutId);
+      supabaseBrowser.removeChannel(channel);
     };
-  }, [orderId, screen, onPaid]);
+  }, [orderId, onPaid]);
 
   const waLink = screen === "whatsapp" ? initResult.waLink : null;
   const trackerItems = ORDER_TRACKER(orderMode);
@@ -97,39 +103,56 @@ export function Step5Success({
       <div className="flex flex-col items-center gap-4 pt-4">
         <div
           className={cn(
-            "w-24 h-24 rounded-full flex items-center justify-center transition-colors duration-700",
-            phase === "waiting"
-              ? "bg-[rgba(184,137,58,0.15)]"
-              : "bg-primary/10"
+            "w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500",
+            (dbStatus === "whatsapp" || dbStatus === "pending")
+              ? "bg-[rgba(184,137,58,0.12)]"
+              : (dbStatus === "cancelled" || dbStatus === "expired")
+              ? "bg-primary/10"
+              : "bg-[#E8EFE3]"
           )}
         >
-          {phase === "waiting" ? (
+          {(dbStatus === "whatsapp" || dbStatus === "pending") ? (
             <div className="w-10 h-10 rounded-full border-4 border-[#B8893A]/40 border-t-[#B8893A] animate-spin" />
+          ) : (dbStatus === "cancelled" || dbStatus === "expired") ? (
+            <XCircle className="w-12 h-12 text-primary" strokeWidth={1.5} />
           ) : (
             <CheckCircle2
-              className={cn(
-                "w-12 h-12 transition-colors duration-700",
-                phase === "verified" ? "text-primary" : "text-primary"
-              )}
+              className="w-12 h-12 text-[#3F6B4A]"
               strokeWidth={1.5}
             />
           )}
         </div>
 
         <div className="text-center">
-          <p className="font-display text-[34px] font-bold text-text-main leading-tight tracking-[-0.02em]">
-            {phase === "waiting"
-              ? "Verificando..."
-              : phase === "verified"
-              ? "¡Confirmado!"
-              : "¡En preparación!"}
+          <p className="font-display text-[32px] font-bold text-text-main leading-tight tracking-[-0.02em]">
+            {dbStatus === "whatsapp" || dbStatus === "pending"
+              ? "¡Pedido recibido!"
+              : dbStatus === "paid"
+              ? "¡Pago verificado!"
+              : dbStatus === "kitchen"
+              ? "¡En preparación!"
+              : dbStatus === "delivered"
+              ? (orderMode === "delivery" ? "¡En camino!" : orderMode === "take_away" ? "¡Listo para retirar!" : "¡Servido!")
+              : (dbStatus === "cancelled" ? "Pedido cancelado" : "Pedido expirado")}
           </p>
-          <p className="font-sans text-[14px] text-text-muted mt-1">
-            {phase === "waiting"
-              ? "Confirmando tu pago"
-              : phase === "verified"
-              ? "Pago recibido exitosamente"
-              : "Tu pedido ya está en cocina"}
+          <p className="font-sans text-[14px] text-text-muted mt-1 max-w-[280px] mx-auto leading-relaxed">
+            {dbStatus === "whatsapp" || dbStatus === "pending"
+              ? (initResult.screen === "whatsapp"
+                ? "Envía el comprobante por WhatsApp para confirmarlo"
+                : "Esperando confirmación automática del pago")
+              : dbStatus === "paid"
+              ? "Tu pago ha sido confirmado exitosamente"
+              : dbStatus === "kitchen"
+              ? "Tu pedido ya está siendo preparado en cocina"
+              : dbStatus === "delivered"
+              ? (orderMode === "delivery"
+                ? "El repartidor va en camino a tu dirección"
+                : orderMode === "take_away"
+                ? "Puedes pasar a retirar tu pedido por el local"
+                : "Tu comida ha sido servida en tu mesa")
+              : (dbStatus === "cancelled"
+                ? "Tu pedido fue cancelado por el restaurante"
+                : "El tiempo límite para realizar el pago ha expirado")}
           </p>
         </div>
 
@@ -144,12 +167,26 @@ export function Step5Success({
         </div>
       </div>
 
-      {/* Progress tracker */}
-      {phase !== "waiting" && (
+      {/* Progress tracker (hidden for cancelled/expired orders) */}
+      {dbStatus !== "cancelled" && dbStatus !== "expired" && (
         <div className="w-full flex flex-col gap-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {trackerItems.map((item, i) => {
-            const isDone = phase === "done" ? i <= 1 : phase === "preparing" ? i === 0 : false;
-            const isActive = phase === "preparing" && i === 1;
+            let isDone = false;
+            let isActive = false;
+
+            if (dbStatus === "whatsapp" || dbStatus === "pending") {
+              if (i === 0) isDone = true;
+              if (i === 1) isActive = true;
+            } else if (dbStatus === "paid") {
+              if (i <= 1) isDone = true;
+              if (i === 2) isActive = true;
+            } else if (dbStatus === "kitchen") {
+              if (i <= 2) isDone = true;
+              if (i === 3) isActive = true;
+            } else if (dbStatus === "delivered") {
+              isDone = true;
+            }
+
             const isLast = i === trackerItems.length - 1;
             return (
               <div key={i} className="flex items-start gap-3">
@@ -158,18 +195,21 @@ export function Step5Success({
                   <div
                     className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors duration-500",
-                      isDone || isActive ? "bg-primary border-primary" : "bg-surface-section border-border"
+                      isDone || isActive ? "bg-[#3F6B4A] border-[#3F6B4A]" : "bg-surface-section border-border"
                     )}
                   >
-                    {(isDone || isActive) && (
+                    {isDone && (
                       <div className="w-2 h-2 rounded-full bg-white" />
+                    )}
+                    {isActive && (
+                      <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
                     )}
                   </div>
                   {!isLast && (
                     <div
                       className={cn(
                         "w-0.5 h-8 transition-colors duration-500",
-                        isDone ? "bg-primary" : "bg-surface-section"
+                        isDone ? "bg-[#3F6B4A]" : "bg-surface-section"
                       )}
                     />
                   )}

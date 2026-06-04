@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Store, Package, MapPin, Loader2, CheckCircle2, AlertCircle, Home } from "lucide-react";
+import { Store, Package, MapPin, AlertCircle } from "lucide-react";
 import { formatRef } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import type { OrderMode, GpsCoords } from "./CheckoutForm.types";
+import type { OrderMode } from "./CheckoutForm.types";
 
 interface OrderModeOption {
   id: OrderMode;
@@ -18,13 +17,9 @@ interface OrderModeSelectorProps {
   availableModes: OrderModeOption[];
   orderMode: OrderMode | null;
   onSetOrderMode: (mode: OrderMode) => void;
-  deliveryAddress: string;
-  onSetDeliveryAddress: (address: string) => void;
   settings: { deliveryCoverage: string | null; deliveryFeeUsdCents?: number } | null;
   isSubmitting: boolean;
   surcharges: { deliveryUsdCents: number };
-  gpsCoords: GpsCoords | null;
-  onSetGpsCoords: (coords: GpsCoords | null) => void;
 }
 
 const MODE_ICONS: Record<string, typeof Store> = {
@@ -49,67 +44,10 @@ export function OrderModeSelector({
   availableModes,
   orderMode,
   onSetOrderMode,
-  deliveryAddress,
-  onSetDeliveryAddress,
   settings,
   isSubmitting,
   surcharges,
-  gpsCoords,
-  onSetGpsCoords,
 }: OrderModeSelectorProps) {
-  const [isGeolocating, setIsGeolocating] = useState(false);
-  const [geoError, setGeoError] = useState<string | null>(null);
-  const [usedGps, setUsedGps] = useState(false);
-
-  const handleGetLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      setGeoError("Tu navegador no soporta geolocalización.");
-      return;
-    }
-    setIsGeolocating(true);
-    setGeoError(null);
-    setUsedGps(false);
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const coords: GpsCoords = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-        };
-        onSetGpsCoords(coords);
-
-        try {
-          const { reverseGeocodeAction } = await import("@/actions/geocoding");
-          const result = await reverseGeocodeAction(coords.lat, coords.lng);
-
-          if (result.success && result.address) {
-            onSetDeliveryAddress(result.address);
-            setUsedGps(true);
-          } else {
-            onSetDeliveryAddress(
-              `Error: ${result.error || "No se encontró dirección"}. GPS: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`
-            );
-          }
-        } catch {
-          onSetDeliveryAddress(
-            `GPS: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)} (±${Math.round(coords.accuracy)}m)`
-          );
-        } finally {
-          setIsGeolocating(false);
-        }
-      },
-      (err) => {
-        setIsGeolocating(false);
-        setGeoError(
-          err.code === err.PERMISSION_DENIED
-            ? "Permiso denegado. Escribe tu dirección manualmente."
-            : "No se pudo obtener ubicación."
-        );
-      },
-      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 }
-    );
-  }, [onSetGpsCoords, onSetDeliveryAddress]);
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -169,76 +107,13 @@ export function OrderModeSelector({
             </button>
 
             {/* Delivery address — only shown under delivery card */}
-            {isDelivery && orderMode === "delivery" && (
+            {isDelivery && orderMode === "delivery" && settings?.deliveryCoverage && (
               <div className="mt-2 px-1 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                {settings?.deliveryCoverage && (
-                  <div className="bg-amber-50/80 border border-amber-200/50 rounded-[12px] px-4 py-2.5 flex items-start gap-2.5">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                    <p className="text-[10px] leading-tight font-bold text-amber-900/70 uppercase tracking-wider">
-                      {settings.deliveryCoverage}
-                    </p>
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleGetLocation}
-                  disabled={isGeolocating || isSubmitting}
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2.5 rounded-[14px] py-3.5 text-[13px] font-sans font-semibold transition-all active:scale-[0.98]",
-                    gpsCoords
-                      ? "bg-[#E8EFE3] border border-[rgba(63,107,74,0.4)] text-[#3F6B4A]"
-                      : "bg-bg-card border border-border text-text-main"
-                  )}
-                >
-                  {isGeolocating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Localizando...
-                    </>
-                  ) : gpsCoords ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      Ubicación GPS activada
-                    </>
-                  ) : (
-                    <>
-                      <MapPin className="w-4 h-4 text-primary" />
-                      Usar mi ubicación actual
-                    </>
-                  )}
-                </button>
-
-                {geoError && (
-                  <p className="text-[11px] text-primary font-semibold px-1">
-                    ⚠️ {geoError}
+                <div className="bg-amber-50/80 border border-amber-200/50 rounded-[12px] px-4 py-2.5 flex items-start gap-2.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-[10px] leading-tight font-bold text-amber-900/70 uppercase tracking-wider">
+                    {settings.deliveryCoverage}
                   </p>
-                )}
-
-                {usedGps && (
-                  <div className="bg-amber-50 border border-amber-200/60 rounded-[12px] px-4 py-2 flex items-center gap-2">
-                    <span className="text-[14px]">✍️</span>
-                    <p className="text-[11px] font-bold text-amber-900 uppercase tracking-tight">
-                      Completa o corrige tu dirección
-                    </p>
-                  </div>
-                )}
-
-                <div
-                  className={cn(
-                    "flex items-center gap-2.5 px-3.5 py-3 rounded-[14px] border",
-                    "bg-bg-card border-border"
-                  )}
-                >
-                  <Home className="w-4 h-4 text-text-muted shrink-0" />
-                  <input
-                    type="text"
-                    value={deliveryAddress}
-                    onChange={(e) => onSetDeliveryAddress(e.target.value)}
-                    placeholder="Av. Principal, Edif. Torre, Piso 3..."
-                    className="flex-1 bg-transparent outline-none text-[14px] text-text-main font-sans placeholder:text-text-muted/40"
-                    disabled={isSubmitting}
-                  />
                 </div>
               </div>
             )}

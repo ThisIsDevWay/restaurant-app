@@ -58,7 +58,7 @@ export function WizardCartChip({
         {/* Mini-plates overlapping */}
         <div className="flex items-center">
           {visibleItems.map((item, i) => (
-            <MiniPlate key={item.id} item={item} index={i} />
+            <MiniPlate key={`${item.id}-${i}`} item={item} index={i} />
           ))}
           {extraCount > 0 && (
             <div
@@ -128,12 +128,12 @@ export function WizardCartChip({
 
         {/* Items list */}
         <div className="flex-1 overflow-y-auto px-5 pb-6 pt-2.5 space-y-2.5">
-          {cartItems.map((item) => {
+          {cartItems.map((item, index) => {
             const extrasLine = buildExtrasLine(item);
             const noteLine = buildNoteLine(item);
             return (
               <div
-                key={item.id}
+                key={`${item.id}-${index}`}
                 className="flex items-center gap-3 p-3 rounded-[14px] bg-bg-card border border-border"
               >
                 {/* Plate image 48×48 */}

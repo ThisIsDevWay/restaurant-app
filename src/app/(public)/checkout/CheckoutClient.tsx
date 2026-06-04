@@ -492,13 +492,9 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
               availableModes={availableModes}
               orderMode={state.orderMode}
               onSetOrderMode={(mode) => setState((prev) => ({ ...prev, orderMode: mode }))}
-              deliveryAddress={state.address}
-              onSetDeliveryAddress={(addr) => setState((prev) => ({ ...prev, address: addr }))}
               settings={initialSettings}
               isSubmitting={state.submitting}
               surcharges={surcharges}
-              gpsCoords={state.gpsCoords}
-              onSetGpsCoords={(coords) => setState((prev) => ({ ...prev, gpsCoords: coords }))}
             />
           </>
         )}
@@ -531,6 +527,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
               phoneValid={phoneValid}
               customerFieldsVisible={state.customerFieldsVisible}
               isSubmitting={state.submitting}
+              deliveryCoverage={initialSettings.deliveryCoverage}
             />
           </>
         )}

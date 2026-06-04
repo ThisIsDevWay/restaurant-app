@@ -14,7 +14,6 @@ import { isMenuVisible, type StatusOverride } from "@/lib/utils/date";
 import { MenuGridSkeleton } from "@/components/customer/MenuGridSkeleton";
 import { MenuClient } from "./MenuClient";
 import { Cart } from "@/components/public/cart/Cart";
-import { ActiveOrdersBanner } from "@/components/public/ActiveOrdersBanner";
 import Link from "next/link";
 
 export default async function MenuPage() {
@@ -77,9 +76,6 @@ export default async function MenuPage() {
 
     return (
       <div className="min-h-screen bg-bg-app">
-        {/* Active order banner — oculto cuando el restaurante está cerrado */}
-        {initialVisible && <ActiveOrdersBanner />}
-
         {/* Categories + Menu — MenuClient se mantiene montado siempre para conservar
             la suscripción realtime de settings (reabre el menú sin recargar). */}
         <Suspense fallback={<MenuGridSkeleton />}>
