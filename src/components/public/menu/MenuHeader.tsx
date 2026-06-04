@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Instagram, LayoutGrid, Search, ChevronDown, Info } from "lucide-react";
+import { Instagram, LayoutGrid, Search, ChevronDown, Info, Sun, Moon } from "lucide-react";
 import { HeaderCartButton } from "@/app/(public)/HeaderCartButton";
 import { getCategoryIcon } from "@/lib/categoryIcons";
+import { useMenuMode } from "./MenuModeContext";
 import { resolveOpenState, formatBusinessHours, type BusinessHours, type StatusOverride } from "@/lib/utils/date";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -41,7 +42,9 @@ interface MenuHeaderProps {
     } | null;
     searchQuery: string;
     onSearchChange: (query: string) => void;
-    isReadOnly?: boolean;
+    /** Theme toggle — injected from MenuClient */
+    theme?: "light" | "dark";
+    onToggleTheme?: () => void;
 }
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -86,6 +89,59 @@ function ClockIcon() {
     );
 }
 
+// ─── ThemeSwitch ──────────────────────────────────────────────────────────────
+
+function ThemeSwitch({
+    theme,
+    onToggle,
+    variant = "glass",
+}: {
+    theme: "light" | "dark";
+    onToggle: () => void;
+    variant?: "glass" | "solid";
+}) {
+    const isDark = theme === "dark";
+    return (
+        <button
+            onClick={onToggle}
+            aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            className={[
+                "flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-all duration-300 active:scale-95 select-none",
+                variant === "glass"
+                    ? "mh-glass-btn text-white"
+                    : "bg-surface-section border border-border/60 text-text-main shadow-sm",
+            ].join(" ")}
+        >
+            {/* Sun icon */}
+            <Sun
+                className={[
+                    "h-3.5 w-3.5 shrink-0 transition-all duration-300",
+                    isDark ? "opacity-40 scale-90" : "opacity-100 scale-100",
+                ].join(" ")}
+                strokeWidth={2.2}
+            />
+            {/* Pill track */}
+            <span
+                className="relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors duration-300"
+                style={{ background: isDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.30)" }}
+            >
+                <span
+                    className="absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform duration-300"
+                    style={{ transform: isDark ? "translateX(15px)" : "translateX(2px)" }}
+                />
+            </span>
+            {/* Moon icon */}
+            <Moon
+                className={[
+                    "h-3.5 w-3.5 shrink-0 transition-all duration-300",
+                    isDark ? "opacity-100 scale-100" : "opacity-40 scale-90",
+                ].join(" ")}
+                strokeWidth={2.2}
+            />
+        </button>
+    );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function MenuHeader({
@@ -104,8 +160,10 @@ export function MenuHeader({
     rateData,
     searchQuery,
     onSearchChange,
-    isReadOnly = false,
+    theme = "light",
+    onToggleTheme,
 }: MenuHeaderProps) {
+    const { isReadOnly } = useMenuMode();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [showFade, setShowFade] = useState(true);
     const [greeting, setGreeting] = useState("¡Hola!");
@@ -280,7 +338,7 @@ export function MenuHeader({
                             )}
                         </div>
 
-                        {/* Right: Rate and Cart */}
+                        {/* Right: Rate, Cart, and Theme Switch */}
                         <div className="flex items-center gap-2 lg:gap-3">
                             {showRate && rateData && (
                                 <div className="mh-glass-btn flex h-[36px] lg:h-[40px] items-center gap-1.5 rounded-full px-3 lg:px-4 text-[12px] lg:text-[13px] font-medium text-white/90 whitespace-nowrap shrink-0">
@@ -296,6 +354,9 @@ export function MenuHeader({
                                         })}
                                     </span>
                                 </div>
+                            )}
+                            {onToggleTheme && (
+                                <ThemeSwitch theme={theme} onToggle={onToggleTheme} variant="glass" />
                             )}
                             {!isReadOnly && (
                                 <HeaderCartButton
@@ -525,6 +586,10 @@ export function MenuHeader({
                                             </span>
                                         )}
                                     </button>
+
+                                    {onToggleTheme && (
+                                        <ThemeSwitch theme={theme} onToggle={onToggleTheme} variant="solid" />
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -672,6 +737,7 @@ export function MenuHeader({
                                         )}
                                     </div>
 
+                                    {/* Right side: BCV + ThemeSwitch + Cart */}
                                     <div className="flex shrink-0 items-center gap-2">
                                         {showRate && rateData && (
                                             <div className="mh-glass-btn flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-[9px]">
@@ -687,6 +753,9 @@ export function MenuHeader({
                                                     })}
                                                 </span>
                                             </div>
+                                        )}
+                                        {onToggleTheme && (
+                                            <ThemeSwitch theme={theme} onToggle={onToggleTheme} variant="glass" />
                                         )}
                                         <HeaderCartButton
                                             className="!p-0 flex h-10 w-10 items-center justify-center rounded-full bg-bg-card shadow-elevated"

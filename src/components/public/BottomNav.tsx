@@ -15,7 +15,7 @@ export function BottomNav() {
   const handleTabClick = (tab: "menu" | "buscar" | "pedido" | "historial") => {
     if (tab === "menu") {
       if (pathname === "/") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.dispatchEvent(new Event("menu:goToTop"));
       } else {
         router.push("/");
       }

@@ -40,5 +40,4 @@ export interface ItemDetailModalProps {
   maxQuantityPerItem?: number;
   initialData?: CartItem | null;
   editingIndex?: number | null;
-  isReadOnly?: boolean;
 }

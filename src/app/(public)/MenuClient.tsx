@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { MenuGrid } from "@/components/public/menu/MenuGrid";
 import { MenuHeader } from "@/components/public/menu/MenuHeader";
+import { MenuModeProvider } from "@/components/public/menu/MenuModeContext";
+import { ActiveOrdersBanner } from "@/components/public/ActiveOrdersBanner";
 import { PlatoDelDiaBanner } from "@/components/public/menu/PlatoDelDiaBanner";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItemWithComponents as MenuItem } from "@/types/menu.types";
@@ -11,7 +13,6 @@ import { useMenuRefresh, type MenuItemUpdatePayload } from "@/hooks/useMenuRefre
 import { isMenuVisible, type StatusOverride } from "@/lib/utils/date";
 import { ClosedScreen } from "@/components/public/menu/ClosedScreen";
 import { toast } from "sonner";
-import { Sun, Moon } from "lucide-react";
 
 interface Category {
   id: string;
@@ -160,6 +161,18 @@ export function MenuClient({
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [availabilityMap, setAvailabilityMap] = useState<Map<string, boolean>>(new Map());
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Expose a "go to menu top" handler via a custom DOM event so BottomNav
+  // (a sibling subtree) can trigger it without prop drilling.
+  useEffect(() => {
+    const handler = () => {
+      setActiveCategory(null);
+      setSearchQuery("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    window.addEventListener("menu:goToTop", handler);
+    return () => window.removeEventListener("menu:goToTop", handler);
+  }, []);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const cartItems = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
@@ -239,7 +252,7 @@ export function MenuClient({
   }
 
   return (
-    <>
+    <MenuModeProvider mode={isReadOnly ? "showcase" : "order"}>
       <div className="z-20 bg-bg-app shadow-card mb-4 lg:mb-6">
         <MenuHeader
           coverImageUrl={coverImageUrl}
@@ -257,9 +270,12 @@ export function MenuClient({
           rateData={rateData}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          isReadOnly={isReadOnly}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
       </div>
+
+      {!isReadOnly && <ActiveOrdersBanner />}
 
       {/* Premium indicator for "Menú del Día" */}
       <div className="px-5 py-3 max-w-7xl mx-auto w-full flex items-center justify-between mb-2 lg:mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -302,7 +318,6 @@ export function MenuClient({
           availabilityMap={availabilityMap}
           selectedItemId={selectedItemId}
           onSelectedItemIdChange={setSelectedItemId}
-          isReadOnly={isReadOnly}
         />
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-center px-4 animate-in fade-in zoom-in-95 duration-500">
@@ -319,21 +334,6 @@ export function MenuClient({
         </div>
       )}
 
-      {/* Floating Theme Toggle */}
-      <button
-        onClick={toggleTheme}
-        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-bg-card border border-border text-text-main shadow-elevated transition-all duration-300 hover:scale-110 active:scale-95 hover:bg-surface-section"
-        aria-label="Cambiar tema"
-        style={{
-          boxShadow: "0 8px 32px rgba(var(--shadow-color), 0.15)",
-        }}
-      >
-        {theme === "light" ? (
-          <Moon className="h-5 w-5 text-text-main transition-transform duration-500 rotate-0 hover:rotate-12" />
-        ) : (
-          <Sun className="h-5 w-5 text-text-main transition-transform duration-500 rotate-0 hover:rotate-45" />
-        )}
-      </button>
-    </>
+    </MenuModeProvider>
   );
 }

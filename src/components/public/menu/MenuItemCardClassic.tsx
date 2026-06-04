@@ -1,18 +1,9 @@
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Plus } from "lucide-react";
-import { useCartStore } from "@/store/cartStore";
-import { toast } from "sonner";
-
-const CATEGORY_EMOJI: Record<string, string> = {
-    pollos: "🍗",
-    carnes: "🥩",
-    pastas: "🍝",
-    mariscos: "🍤",
-    ensaladas: "🥗",
-    bebidas: "🥤",
-    adicionales: "🍟",
-};
+import { useMenuItemCard } from "@/hooks/useMenuItemCard";
+import { SoldOutBadge } from "./_parts/SoldOutBadge";
+import { IncludedNoteBadge } from "./_parts/IncludedNoteBadge";
 
 export interface MenuItemCardClassicProps {
     id: string;
@@ -31,7 +22,6 @@ export interface MenuItemCardClassicProps {
     categoryIsSimple: boolean;
     onOpenDetail: () => void;
     onAddSimpleItem?: (payload: any, categoryName: string) => void;
-    isReadOnly?: boolean;
 }
 
 export function MenuItemCardClassic({
@@ -51,51 +41,12 @@ export function MenuItemCardClassic({
     categoryIsSimple,
     onOpenDetail,
     onAddSimpleItem,
-    isReadOnly = false,
 }: MenuItemCardClassicProps) {
-    const addItem = useCartStore((s) => s.addItem);
-    const categoryKey = categoryName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const emoji = CATEGORY_EMOJI[categoryKey] || "🍽️";
-
-    const handleAdd = () => {
-        if (isReadOnly) {
-            onOpenDetail();
-            return;
-        }
-        if (!isAvailable) return;
-
-        if (hasRequiredOptions) {
-            onOpenDetail();
-            return;
-        }
-
-        const payload = {
-            id,
-            name,
-            baseUsdCents: priceUsdCents,
-            baseBsCents: priceBsCents,
-            emoji,
-            fixedContornos: [],
-            contornoSubstitutions: [],
-            selectedAdicionales: [],
-            removedComponents: [],
-            categoryAllowAlone,
-            categoryIsSimple,
-            categoryName,
-            isPrepackaged,
-            includedNote: includedNote ?? null,
-        };
-
-        if (onAddSimpleItem) {
-            onAddSimpleItem(payload, categoryName);
-        } else {
-            addItem(payload);
-            toast.success(`${name} añadido al carrito`);
-            if (typeof navigator !== "undefined" && navigator.vibrate) {
-                navigator.vibrate(30);
-            }
-        }
-    };
+    const { emoji, isReadOnly, handleAdd } = useMenuItemCard({
+        id, name, priceUsdCents, priceBsCents, categoryName, categoryAllowAlone,
+        categoryIsSimple, isPrepackaged, includedNote, isAvailable, hasRequiredOptions,
+        onOpenDetail, onAddSimpleItem,
+    });
 
     return (
         <div
@@ -117,24 +68,12 @@ export function MenuItemCardClassic({
                         quality={75}
                         priority={priority}
                     />
-                    {!isAvailable && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
-                            <span className="rounded-full bg-error px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white shadow-lg ring-1 ring-white/20">
-                                Agotado
-                            </span>
-                        </div>
-                    )}
+                    {!isAvailable && <SoldOutBadge />}
                 </div>
             ) : (
                 <div className="relative w-full aspect-[4/3] bg-gray-50 flex items-center justify-center border-b border-border/50">
                     <span className="text-5xl">{emoji}</span>
-                    {!isAvailable && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
-                            <span className="rounded-full bg-error px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white shadow-lg ring-1 ring-white/20">
-                                Agotado
-                            </span>
-                        </div>
-                    )}
+                    {!isAvailable && <SoldOutBadge />}
                 </div>
             )}
 
@@ -153,14 +92,7 @@ export function MenuItemCardClassic({
                             {description}
                         </p>
                     )}
-                    {includedNote && (
-                        <div className="mt-1.5 flex justify-center">
-                            <p className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
-                                <span>✓</span>
-                                Incluye: {includedNote}
-                            </p>
-                        </div>
-                    )}
+                    {includedNote && <IncludedNoteBadge note={includedNote} />}
                 </div>
 
                 <div className="mt-auto pt-2 flex items-end justify-between gap-1.5">
@@ -168,14 +100,14 @@ export function MenuItemCardClassic({
                         <span
                             className="font-black leading-tight text-text-main tracking-tight shrink-0"
                             style={{ fontSize: "clamp(0.95rem, 3.5vw, 1.15rem)" }}
-                            title={`Bs. ${(priceBsCents / 100).toLocaleString("es-VE", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
+                            title={`Bs. ${Math.round(priceBsCents / 100).toLocaleString("es-VE", {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0,
                             })}`}
                         >
-                            Bs. {(priceBsCents / 100).toLocaleString("es-VE", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
+                            Bs. {Math.round(priceBsCents / 100).toLocaleString("es-VE", {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0,
                             })}
                         </span>
                         <span className="rounded bg-bg-app px-1.5 py-0.5 text-[10px] font-bold text-text-muted shadow-sm border border-border/40 whitespace-nowrap shrink-0">

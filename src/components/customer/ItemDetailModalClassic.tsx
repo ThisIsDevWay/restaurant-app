@@ -1,19 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
 import { X, ArrowLeft } from "lucide-react";
 import Image from "next/image";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatBs, formatRef } from "@/lib/money";
-import { useCartStore } from "@/store/cartStore";
-import { useItemDetailModal } from "@/hooks/useItemDetailModal";
-import { useCartCalculation } from "@/hooks/useCartCalculation";
+import { useItemDetailController } from "@/hooks/useItemDetailController";
+import { useMenuMode } from "@/components/public/menu/MenuModeContext";
 import { ContornoSelector } from "./ContornoSelector";
 import { AdicionalesList } from "./AdicionalesList";
 import { BebidasList } from "./BebidasList";
 import { OptionGroupSection } from "./OptionGroupSection";
 import { ModalFooter } from "./ModalFooter";
+import { ItemShowcaseBody } from "./ItemShowcaseBody";
 import type { ItemDetailModalProps } from "./ItemDetailModal.types";
 
 export function ItemDetailModalClassic({
@@ -30,116 +28,25 @@ export function ItemDetailModalClassic({
     maxQuantityPerItem = 10,
     initialData = null,
     editingIndex = null,
-    isReadOnly = false,
 }: ItemDetailModalProps) {
-    const addItem = useCartStore((s) => s.addItem);
-    const updateItem = useCartStore((s) => s.updateItem);
-
-    const modal = useItemDetailModal({
-        item,
-        isOpen,
-        onClose,
-        allContornos,
-        dailyAdicionales,
-        dailyBebidas,
-        dailyContornos,
-        maxQuantityPerItem,
-        initialData,
+    const { isReadOnly } = useMenuMode();
+    const {
+        modal,
+        cart,
+        showContornos,
+        showOpciones,
+        showAdicionales,
+        showBebidas,
+        itemBaseBsCents,
+        handleSave,
+    } = useItemDetailController({
+        item, isOpen, onClose, currentRateBsPerUsd, allContornos,
+        adicionalesEnabled, bebidasEnabled, dailyAdicionales, dailyBebidas,
+        dailyContornos, maxQuantityPerItem, initialData, editingIndex,
     });
-
-    const cart = useCartCalculation({
-        item,
-        availableContornos: modal.availableContornos,
-        fixedContornos: modal.fixedContornos,
-        removableContornos: modal.removableContornos,
-        substitutionMap: modal.substitutionMap,
-        selectedAdicionalQtys: modal.adicionalQuantities,
-        selectedBebidaQtys: modal.bebidaQuantities,
-        selectedRadio: modal.selectedRadio,
-        dailyAdicionales,
-        dailyBebidas,
-        allContornos,
-        quantity: modal.quantity,
-        currentRateBsPerUsd,
-    });
-
-    const allowedSubstitutes = useMemo(() => {
-        if (!dailyContornos || dailyContornos.length === 0) return [];
-
-        // 1. Check if specific substitute contorno IDs are mapped in DB for any of the dish's contornos
-        const allowedIds = new Set<string>();
-        item.contornos.forEach((c) => {
-            if (c.substituteContornoIds) {
-                c.substituteContornoIds.forEach((id) => allowedIds.add(id));
-            }
-        });
-
-        if (allowedIds.size > 0) {
-            return dailyContornos.filter((c) => allowedIds.has(c.id) && c.isAvailable);
-        }
-
-        // 2. Fallback: if no specific substitutes are set in DB, but the dish has removable contornos,
-        // show all active daily contornos minus the ones already included in the dish
-        const hasRemovable = item.contornos.some((c) => c.removable);
-        if (!hasRemovable) return [];
-
-        const includedIds = new Set(item.contornos.map((c) => c.id));
-        return dailyContornos.filter((c) => !includedIds.has(c.id) && c.isAvailable);
-    }, [item.contornos, dailyContornos]);
-
-    function handleSave() {
-        if (!cart.allRequiredSatisfied) return;
-
-        const CATEGORY_EMOJI: Record<string, string> = {
-            pollos: "🍗",
-            carnes: "🥩",
-            pastas: "🍝",
-            mariscos: "🍤",
-            ensaladas: "🥗",
-            bebidas: "🥤",
-            adicionales: "🍟",
-        };
-        const categoryKey = item.categoryName
-            .toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "");
-        const emoji = CATEGORY_EMOJI[categoryKey] || "🍽️";
-
-        const payload = {
-            id: item.id,
-            name: item.name,
-            baseUsdCents: item.priceUsdCents,
-            baseBsCents: Math.round(item.priceUsdCents * currentRateBsPerUsd),
-            isPrepackaged: item.isPrepackaged,
-            emoji,
-            fixedContornos: cart.cartFixedContornos,
-            contornoSubstitutions: cart.cartContornoSubstitutions,
-            selectedAdicionales: [...cart.cartAdicionales, ...cart.cartRadioOptions],
-            selectedBebidas: cart.cartBebidas,
-            removedComponents: [],
-            categoryAllowAlone: item.categoryAllowAlone,
-            categoryIsSimple: item.categoryIsSimple,
-            categoryName: item.categoryName,
-            includedNote: item.includedNote ?? null,
-        };
-
-        if (editingIndex !== null) {
-            updateItem(editingIndex, { ...payload, quantity: modal.quantity });
-            toast.success(`Pedido actualizado`);
-        } else {
-            for (let i = 0; i < modal.quantity; i++) {
-                addItem(payload);
-            }
-            toast.success(`${item.name} añadido al carrito`);
-        }
-
-        if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
-        modal.handleClose();
-    }
 
     if (!isOpen && !modal.closing) return null;
 
-    const itemBaseBsCents = Math.round(item.priceUsdCents * currentRateBsPerUsd);
     const optionGroupsToRender = cart.optionGroupsToRender;
     const hasImage = !!item.imageUrl;
 
@@ -250,8 +157,6 @@ export function ItemDetailModalClassic({
                                     {formatRef(item.priceUsdCents)}
                                 </span>
                             </div>
-
-
                         </div>
                     </div>
                 )}
@@ -382,176 +287,65 @@ export function ItemDetailModalClassic({
                         )}
 
                         {isReadOnly ? (
-                            <div className="flex flex-col gap-5 py-2">
-                                {/* Incluye con el plato (chips of item.contornos) */}
-                                {item.contornos && item.contornos.length > 0 && (
-                                    <div className="px-5 md:px-6">
-                                        <h4 className="font-mono text-[9.5px] text-text-muted tracking-widest uppercase mb-2">
-                                            Incluido con el plato
-                                        </h4>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {item.contornos.map((c) => (
-                                                <div
-                                                    key={c.id}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/50 text-[12.5px] font-medium"
-                                                >
-                                                    <span className="text-emerald-600 text-[10px] font-black">✓</span>
-                                                    <span>{c.name.replace(/\s*\([^)]*\)\s*$/, "").trim()}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Puedes cambiar por (substitutes) */}
-                                {allowedSubstitutes.length > 0 && (
-                                    <div className="px-5 md:px-6">
-                                        <div className="mb-2">
-                                            <h4 className="font-mono text-[9.5px] text-text-muted tracking-widest uppercase">
-                                                Puedes cambiar por
-                                            </h4>
-                                            <p className="text-[11px] text-text-muted mt-0.5">
-                                                Consulta disponibilidad con tu mesonero
-                                            </p>
-                                        </div>
-                                        <div className="bg-bg-card border border-border/60 rounded-xl overflow-hidden shadow-sm">
-                                            {allowedSubstitutes.map((o) => (
-                                                <div
-                                                    key={o.id}
-                                                    className="flex justify-between items-center gap-4 py-2.5 px-4 border-b border-border/45 last:border-0"
-                                                >
-                                                    <span className="text-[13px] text-text-main font-medium min-w-0 break-words leading-tight">
-                                                        {o.name.replace(/\s*\([^)]*\)\s*$/, "").trim()}
-                                                    </span>
-                                                    {o.priceUsdCents > 0 && (
-                                                        <span className="font-mono text-[12px] text-text-main font-bold whitespace-nowrap flex-shrink-0">
-                                                            +{formatBs(Math.round(o.priceUsdCents * currentRateBsPerUsd), { rounded: true })} / {formatRef(o.priceUsdCents)}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Adicionales */}
-                                {adicionalesEnabled && !item.hideAdicionales && dailyAdicionales && dailyAdicionales.filter(a => a.isAvailable).length > 0 && (
-                                    <div className="px-5 md:px-6">
-                                        <div className="mb-2">
-                                            <h4 className="font-mono text-[9.5px] text-text-muted tracking-widest uppercase">
-                                                Adicionales
-                                            </h4>
-                                            <p className="text-[11px] text-text-muted mt-0.5">
-                                                Se cobran aparte
-                                            </p>
-                                        </div>
-                                        <div className="bg-bg-card border border-border/60 rounded-xl overflow-hidden shadow-sm">
-                                            {dailyAdicionales.filter(a => a.isAvailable).map((a) => (
-                                                <div
-                                                    key={a.id}
-                                                    className="flex justify-between items-center gap-4 py-2.5 px-4 border-b border-border/45 last:border-0"
-                                                >
-                                                    <span className="text-[13px] text-text-main font-medium min-w-0 break-words leading-tight">
-                                                        {a.name.replace(/\s*\([^)]*\)\s*$/, "").trim()}
-                                                    </span>
-                                                    <span className="font-mono text-[12px] text-text-main font-bold whitespace-nowrap flex-shrink-0">
-                                                        {a.priceUsdCents > 0 ? (
-                                                            <>+{formatBs(Math.round(a.priceUsdCents * currentRateBsPerUsd), { rounded: true })} / {formatRef(a.priceUsdCents)}</>
-                                                        ) : (
-                                                            "Incluido"
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Bebidas */}
-                                {bebidasEnabled && !item.hideBebidas && dailyBebidas && dailyBebidas.filter(b => b.isAvailable).length > 0 && (
-                                    <div className="px-5 md:px-6">
-                                        <div className="mb-2">
-                                            <h4 className="font-mono text-[9.5px] text-text-muted tracking-widest uppercase">
-                                                Bebidas disponibles
-                                            </h4>
-                                        </div>
-                                        <div className="bg-bg-card border border-border/60 rounded-xl overflow-hidden shadow-sm">
-                                            {dailyBebidas.filter(b => b.isAvailable).map((b) => (
-                                                <div
-                                                    key={b.id}
-                                                    className="flex justify-between items-center gap-4 py-2.5 px-4 border-b border-border/45 last:border-0"
-                                                >
-                                                    <span className="text-[13px] text-text-main font-medium min-w-0 break-words leading-tight">
-                                                        {b.name.replace(/\s*\([^)]*\)\s*$/, "").trim()}
-                                                    </span>
-                                                    <span className="font-mono text-[12px] text-text-main font-bold whitespace-nowrap flex-shrink-0">
-                                                        {b.priceUsdCents > 0 ? (
-                                                            <>+{formatBs(Math.round(b.priceUsdCents * currentRateBsPerUsd), { rounded: true })} / {formatRef(b.priceUsdCents)}</>
-                                                        ) : (
-                                                            "Incluido"
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="h-28 md:h-8" />
-                            </div>
+                            <ItemShowcaseBody
+                                item={item}
+                                adicionalesEnabled={adicionalesEnabled}
+                                bebidasEnabled={bebidasEnabled}
+                                dailyAdicionales={dailyAdicionales}
+                                dailyBebidas={dailyBebidas}
+                                dailyContornos={dailyContornos}
+                            />
                         ) : (
                             <>
                                 {/* Contornos */}
-                                <ContornoSelector
-                                    fixedContornos={modal.fixedContornos}
-                                    removableContornos={modal.removableContornos}
-                                    substitutionMap={modal.substitutionMap}
-                                    expandedContornos={modal.expandedContornos}
-                                    onToggleExpand={modal.toggleExpandContorno}
-                                    onSelectSubstitute={modal.selectSubstitute}
-                                    getSubstituteOptions={modal.getSubstituteOptions}
-                                    availableContornos={modal.availableContornos}
-                                    currentRateBsPerUsd={currentRateBsPerUsd}
-                                />
+                                {showContornos && (
+                                    <ContornoSelector
+                                        fixedContornos={modal.fixedContornos}
+                                        removableContornos={modal.removableContornos}
+                                        substitutionMap={modal.substitutionMap}
+                                        expandedContornos={modal.expandedContornos}
+                                        onToggleExpand={modal.toggleExpandContorno}
+                                        onSelectSubstitute={modal.selectSubstitute}
+                                        getSubstituteOptions={modal.getSubstituteOptions}
+                                        availableContornos={modal.availableContornos}
+                                        currentRateBsPerUsd={currentRateBsPerUsd}
+                                    />
+                                )}
 
                                 {/* Option groups */}
-                                <OptionGroupSection
-                                    groups={optionGroupsToRender}
-                                    selectedRadio={modal.selectedRadio}
-                                    onSelectRadio={(groupId, optionId) =>
-                                        modal.setSelectedRadio((prev) => ({ ...prev, [groupId]: optionId }))
-                                    }
-                                    currentRateBsPerUsd={currentRateBsPerUsd}
-                                />
+                                {showOpciones && (
+                                    <OptionGroupSection
+                                        groups={optionGroupsToRender}
+                                        selectedRadio={modal.selectedRadio}
+                                        onSelectRadio={(groupId, optionId) =>
+                                            modal.setSelectedRadio((prev) => ({ ...prev, [groupId]: optionId }))
+                                        }
+                                        currentRateBsPerUsd={currentRateBsPerUsd}
+                                    />
+                                )}
 
                                 {/* Adicionales */}
-                                {adicionalesEnabled &&
-                                    !item.hideAdicionales &&
-                                    !item.categoryIsSimple &&
-                                    !item.categoryName.toLowerCase().includes("adicional") &&
-                                    !item.categoryName.toLowerCase().includes("contorno") && (
-                                        <AdicionalesList
-                                            dailyAdicionales={dailyAdicionales}
-                                            quantities={modal.adicionalQuantities}
-                                            onUpdateQty={modal.updateAdicionalQty}
-                                            activeSubstituteIds={modal.activeSubstituteIds}
-                                            currentRateBsPerUsd={currentRateBsPerUsd}
-                                            maxQuantityPerItem={maxQuantityPerItem ?? 10}
-                                        />
-                                    )}
+                                {showAdicionales && (
+                                    <AdicionalesList
+                                        dailyAdicionales={dailyAdicionales}
+                                        quantities={modal.adicionalQuantities}
+                                        onUpdateQty={modal.updateAdicionalQty}
+                                        activeSubstituteIds={modal.activeSubstituteIds}
+                                        currentRateBsPerUsd={currentRateBsPerUsd}
+                                        maxQuantityPerItem={maxQuantityPerItem ?? 10}
+                                    />
+                                )}
 
                                 {/* Bebidas */}
-                                {bebidasEnabled &&
-                                    !item.hideBebidas &&
-                                    !item.categoryIsSimple &&
-                                    !item.categoryName.toLowerCase().includes("bebida") && (
-                                        <BebidasList
-                                            dailyBebidas={dailyBebidas}
-                                            quantities={modal.bebidaQuantities}
-                                            onUpdateQty={modal.updateBebidaQty}
-                                            currentRateBsPerUsd={currentRateBsPerUsd}
-                                            maxQuantityPerItem={maxQuantityPerItem ?? 10}
-                                        />
-                                    )}
+                                {showBebidas && (
+                                    <BebidasList
+                                        dailyBebidas={dailyBebidas}
+                                        quantities={modal.bebidaQuantities}
+                                        onUpdateQty={modal.updateBebidaQty}
+                                        currentRateBsPerUsd={currentRateBsPerUsd}
+                                        maxQuantityPerItem={maxQuantityPerItem ?? 10}
+                                    />
+                                )}
                             </>
                         )}
 

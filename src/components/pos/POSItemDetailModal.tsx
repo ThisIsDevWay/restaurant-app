@@ -9,18 +9,9 @@ import { usePOSCartStore, type CartItem } from "@/store/posCartStore";
 import { useItemDetailModal } from "@/hooks/useItemDetailModal";
 import { useCartCalculation } from "@/hooks/useCartCalculation";
 import { POSContornoSelector } from "./POSContornoSelector";
+import { getCategoryEmoji } from "@/lib/categoryIcons";
 import type { MenuItemWithComponents, SimpleComponent } from "@/types/menu.types";
 import type { SimpleItem } from "@/components/customer/ItemDetailModal.types";
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  pollos: "🍗", carnes: "🥩", pastas: "🍝", mariscos: "🍤",
-  ensaladas: "🥗", bebidas: "🥤", adicionales: "🍟",
-  postres: "🍮", sopas: "🍲", sándwiches: "🥪", sandwiches: "🥪",
-};
-function getEmoji(categoryName: string): string {
-  const key = categoryName.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  return CATEGORY_EMOJI[key] ?? "🍽️";
-}
 
 interface POSItemDetailModalProps {
   item: MenuItemWithComponents;
@@ -160,7 +151,7 @@ export function POSItemDetailModal({
     const payload: Omit<CartItem, "quantity" | "itemTotalBsCents"> = {
       id: item.id,
       name: item.name,
-      emoji: getEmoji(item.categoryName),
+      emoji: getCategoryEmoji(item.categoryName),
       imageUrl: item.imageUrl ?? null,
       baseUsdCents: item.priceUsdCents,
       baseBsCents: itemBaseBsCents,
@@ -214,7 +205,7 @@ export function POSItemDetailModal({
             {item.imageUrl ? (
               <Image src={item.imageUrl} alt={item.name} width={56} height={56} className="h-full w-full object-cover" />
             ) : (
-              <span className="text-2xl">{getEmoji(item.categoryName)}</span>
+              <span className="text-2xl">{getCategoryEmoji(item.categoryName)}</span>
             )}
           </div>
           <div className="min-w-0 flex-1">

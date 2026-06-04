@@ -35,7 +35,7 @@ interface UseCartCalculationParams {
   currentRateBsPerUsd: number;
 }
 
-interface UseCartCalculationReturn {
+export interface UseCartCalculationReturn {
   cartFixedContornos: CartItemResult[];
   cartContornoSubstitutions: ContornoSubstitution[];
   cartAdicionales: CartItemResult[];

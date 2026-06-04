@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { MenuItemCard } from "./MenuItemCard";
 import { ItemDetailModal } from "@/components/customer/ItemDetailModal";
+import { useMenuMode } from "./MenuModeContext";
 import { useCartStore } from "@/store/cartStore";
 import { toast } from "sonner";
 import {
@@ -46,7 +47,6 @@ interface MenuGridProps {
   availabilityMap?: Map<string, boolean>;
   selectedItemId: string | null;
   onSelectedItemIdChange: (id: string | null) => void;
-  isReadOnly?: boolean;
 }
 
 export function MenuGrid({
@@ -63,8 +63,8 @@ export function MenuGrid({
   availabilityMap = new Map(),
   selectedItemId,
   onSelectedItemIdChange: setSelectedItemId,
-  isReadOnly = false,
 }: MenuGridProps) {
+  const { isReadOnly } = useMenuMode();
   const [drinkWarningItem, setDrinkWarningItem] = useState<{ payload: any; categoryName: string } | null>(null);
 
   const cartItems = useCartStore((s) => s.items);
@@ -230,7 +230,6 @@ export function MenuGrid({
             onOpenDetail={() => setSelectedItemId(item.id)}
             onAddSimpleItem={handleAddSimpleItem}
             menuLayout={menuLayout}
-            isReadOnly={isReadOnly}
           />
         );
       })}
@@ -251,7 +250,6 @@ export function MenuGrid({
           menuLayout={menuLayout}
           initialData={editingIndex !== null ? cartItems[editingIndex] : null}
           editingIndex={editingIndex}
-          isReadOnly={isReadOnly}
         />
       )}
 

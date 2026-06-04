@@ -124,10 +124,30 @@ export function useItemDetailModal({
     }
   }, [isOpen, initialData, item.optionGroups]);
 
-  const handleClose = useCallback(() => {
+  // `onClose` is read through a ref so a new inline callback identity from the
+  // parent (e.g. MenuGrid) doesn't re-run the back-button effect below.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  // Tracks whether we pushed a history entry for the currently-open modal, so
+  // closing can route through history.back() (consuming that entry) instead of
+  // popping a real page entry.
+  const pushedRef = useRef(false);
+
+  const doClose = useCallback(() => {
     setClosing(true);
-    setTimeout(onClose, 300);
-  }, [onClose]);
+    setTimeout(() => onCloseRef.current(), 300);
+  }, []);
+
+  // UI close (X / backdrop / escape / add-to-cart). When we have a pushed entry,
+  // go "back" so both the button and the device back gesture share ONE close
+  // path (the popstate handler). Otherwise close directly.
+  const handleClose = useCallback(() => {
+    if (pushedRef.current && typeof window !== "undefined") {
+      window.history.back();
+    } else {
+      doClose();
+    }
+  }, [doClose]);
 
   // Keyboard escape handler
   useEffect(() => {
@@ -148,6 +168,31 @@ export function useItemDetailModal({
       document.body.style.overflow = "";
     };
   }, [isOpen]);
+
+  // ─── Hardware / browser back button ────────────────────────────────────────
+  // On mobile, pressing the device/browser back button (or the back gesture)
+  // while the modal is open would otherwise leave the page. We push a throwaway
+  // history entry when the modal opens so "back" simply closes the modal via the
+  // popstate handler. UI closes route through history.back() (see handleClose),
+  // so there is a single close path and no history.back() in cleanup — avoiding
+  // the Strict Mode double-invoke race that flashed the modal open then closed.
+  useEffect(() => {
+    if (!isOpen || typeof window === "undefined") return;
+
+    window.history.pushState({ gmItemModal: true }, "");
+    pushedRef.current = true;
+
+    const handlePop = () => {
+      pushedRef.current = false;
+      doClose();
+    };
+    window.addEventListener("popstate", handlePop);
+
+    return () => {
+      window.removeEventListener("popstate", handlePop);
+      pushedRef.current = false;
+    };
+  }, [isOpen, doClose]);
 
   function toggleExpandContorno(contornoId: string) {
     setExpandedContornos((prev) => {

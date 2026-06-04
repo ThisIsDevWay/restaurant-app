@@ -12,17 +12,11 @@ import type { MenuItemWithComponents, SimpleComponent } from "@/types/menu.types
 import type { SimpleItem } from "@/components/customer/ItemDetailModal.types";
 import type { WaiterPaymentMethod } from "@/components/waiter/OrderForm";
 import type { CheckoutItem } from "@/lib/types/checkout";
+import { getCategoryEmoji } from "@/lib/categoryIcons";
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  pollos: "🍗", carnes: "🥩", pastas: "🍝", mariscos: "🍤",
-  ensaladas: "🥗", bebidas: "🥤", adicionales: "🍟",
-  postres: "🍮", sopas: "🍲", sándwiches: "🥪", sandwiches: "🥪",
-};
-
-export function getEmoji(categoryName: string): string {
-  const key = categoryName.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  return CATEGORY_EMOJI[key] ?? "🍽️";
-}
+/** @deprecated Use `getCategoryEmoji` from `@/lib/categoryIcons` directly. Kept as a
+ *  re-export so existing POS/waiter/caja imports of `getEmoji` keep working. */
+export const getEmoji = getCategoryEmoji;
 
 export function needsModal(
   item: MenuItemWithComponents,
