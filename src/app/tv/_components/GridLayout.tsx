@@ -38,7 +38,7 @@ export function GridCell({
       {reserveSlot && (
         <div 
           style={{ 
-            flex: "0 0 68%", 
+            flex: data.layout === "grid2" ? "0 0 72%" : "0 0 68%", 
             width: "100%",
             minHeight: 0,
             display: "flex",
@@ -70,8 +70,7 @@ export function GridCell({
                 display: "block",
                 position: "relative",
                 zIndex: 1,
-                animation: "tv-ken-burns 16s ease-in-out infinite alternate",
-                filter: "drop-shadow(0 25px 35px rgba(0,0,0,0.85))",
+                animation: "tv-plate-pulse 6s ease-in-out infinite",
               }}
             />
           ) : (
@@ -88,7 +87,7 @@ export function GridCell({
           flexShrink: 0, 
           display: "flex", 
           flexDirection: "column", 
-          gap: cu(4, unit * 1.2, 32),
+          gap: data.layout === "grid2" ? cu(6, unit * 1.8, 48) : cu(4, unit * 1.2, 32),
           alignItems: "center",
           textAlign: "center"
         }}
@@ -97,7 +96,7 @@ export function GridCell({
         <div style={{ lineHeight: 1.15 }}>
           <span
             style={{
-              fontSize: cu(15, unit * 2.6, 76),
+              fontSize: data.layout === "grid2" ? cu(20, unit * 3.8, 110) : cu(15, unit * 2.6, 76),
               fontWeight: 800,
               color: "#fff8f3",
               fontFamily: "var(--font-display), system-ui, sans-serif",
@@ -108,7 +107,7 @@ export function GridCell({
           {item.portionNote && (
             <span
               style={{
-                fontSize: cu(10, unit * 1.8, 42),
+                fontSize: data.layout === "grid2" ? cu(13, unit * 2.4, 60) : cu(10, unit * 1.8, 42),
                 color: "rgba(255, 248, 243, 0.45)",
                 fontWeight: 500,
                 marginLeft: "0.35em",
@@ -131,13 +130,15 @@ export function GridCell({
               <span
                 key={c}
                 style={{
-                  fontSize: cu(9, unit * 1.6, 38),
+                  fontSize: data.layout === "grid2" ? cu(11, unit * 2.0, 48) : cu(9, unit * 1.6, 38),
                   fontWeight: 700,
                   color: "#fff8f3",
                   background: "rgba(122, 142, 124, 0.12)",
                   border: "1px solid rgba(122, 142, 124, 0.3)",
                   borderRadius: 999,
-                  padding: `${cu(1.5, unit * 0.5, 10)} ${cu(5, unit * 1.2, 28)}`,
+                  padding: data.layout === "grid2"
+                    ? `${cu(2.5, unit * 0.7, 15)} ${cu(7, unit * 1.6, 38)}`
+                    : `${cu(1.5, unit * 0.5, 10)} ${cu(5, unit * 1.2, 28)}`,
                   whiteSpace: "nowrap" as const,
                   fontFamily: "var(--font-sans), system-ui, sans-serif",
                 }}
@@ -149,13 +150,15 @@ export function GridCell({
               <span
                 key={p}
                 style={{
-                  fontSize: cu(9, unit * 1.6, 38),
+                  fontSize: data.layout === "grid2" ? cu(11, unit * 2.0, 48) : cu(9, unit * 1.6, 38),
                   fontWeight: 700,
                   color: "#fff8f3",
                   background: "rgba(122, 142, 124, 0.12)",
                   border: "1px solid rgba(122, 142, 124, 0.3)",
                   borderRadius: 999,
-                  padding: `${cu(1.5, unit * 0.5, 10)} ${cu(5, unit * 1.2, 28)}`,
+                  padding: data.layout === "grid2"
+                    ? `${cu(2.5, unit * 0.7, 15)} ${cu(7, unit * 1.6, 38)}`
+                    : `${cu(1.5, unit * 0.5, 10)} ${cu(5, unit * 1.2, 28)}`,
                   whiteSpace: "nowrap" as const,
                   fontFamily: "var(--font-sans), system-ui, sans-serif",
                 }}
@@ -168,7 +171,7 @@ export function GridCell({
 
         {/* Price — below text, centered */}
         {data.showPrices && (
-          <div style={{ marginTop: cu(3, unit * 0.6, 16) }}>
+          <div style={{ marginTop: data.layout === "grid2" ? cu(5, unit * 1.0, 24) : cu(3, unit * 0.6, 16) }}>
             <PriceTag item={item} data={data} unit={unit} variant="grid" />
           </div>
         )}

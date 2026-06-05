@@ -48,9 +48,13 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
 
   const cols = useMemo(() => {
     if (isList || isPortrait) return 1; // portrait handled separately
+    if (data.layout === "grid2") {
+      if (n <= 1) return n;
+      return 2;
+    }
     if (n <= 2) return n;
     return 3;
-  }, [isList, isPortrait, n]);
+  }, [data.layout, isList, isPortrait, n]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, { name: string; items: MenuBoardData["items"] }>();
@@ -89,6 +93,11 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
         @keyframes tv-ken-burns {
           0% { transform: scale(1); }
           100% { transform: scale(1.05); }
+        }
+        @keyframes tv-plate-pulse {
+          0% { transform: scale(1); filter: drop-shadow(0 20px 35px rgba(0,0,0,0.8)); }
+          50% { transform: scale(1.025); filter: drop-shadow(0 25px 45px rgba(226, 194, 160, 0.22)) drop-shadow(0 20px 35px rgba(0,0,0,0.85)); }
+          100% { transform: scale(1); filter: drop-shadow(0 20px 35px rgba(0,0,0,0.8)); }
         }
       `}</style>
       {/* ── Header ── */}

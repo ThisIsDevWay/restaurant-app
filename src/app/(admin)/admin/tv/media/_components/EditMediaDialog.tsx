@@ -147,7 +147,7 @@ export function EditMediaDialog({
       ? initialConfig.source.categoryId
       : categories[0]?.id ?? "",
   );
-  const [mbLayout, setMbLayout] = useState<"list" | "grid">(
+  const [mbLayout, setMbLayout] = useState<"list" | "grid" | "grid2" | "grid3">(
     initialConfig?.layout ?? "list",
   );
   const [mbShowPrices, setMbShowPrices] = useState(initialConfig?.showPrices ?? true);

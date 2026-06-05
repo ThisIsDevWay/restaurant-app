@@ -21,14 +21,14 @@ export function PortraitRow({
   imageLeft: boolean;
   unit: number;
 }) {
-  const gap = cu(10, unit * 3, 80);
+  const gap = data.layout === "grid2" ? cu(14, unit * 4, 100) : cu(10, unit * 3, 80);
 
   // Render image directly — no wrapper box, no dark background, no clipping.
   // The food photography blends naturally into the dark page gradient.
   const imgSlot = (
     <div
       style={{
-        flex: "0 0 60%",
+        flex: data.layout === "grid2" ? "0 0 58%" : "0 0 60%",
         minWidth: 0,
         minHeight: 0,
         display: "flex",
@@ -60,8 +60,7 @@ export function PortraitRow({
             display: "block",
             position: "relative",
             zIndex: 1,
-            animation: "tv-ken-burns 15s ease-in-out infinite alternate",
-            filter: "drop-shadow(0 20px 35px rgba(0,0,0,0.8))",
+            animation: "tv-plate-pulse 6s ease-in-out infinite",
           }}
         />
       ) : (
@@ -81,16 +80,16 @@ export function PortraitRow({
         justifyContent: "center",
         alignItems: "flex-start",
         textAlign: "left",
-        gap: cu(6, unit * 2.6, 64),
+        gap: data.layout === "grid2" ? cu(10, unit * 3.6, 96) : cu(6, unit * 2.6, 64),
       }}
     >
       {/* Info group — name, portion, contornos kept tight together */}
-      <div style={{ display: "flex", flexDirection: "column", gap: cu(3, unit * 1.4, 34) }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: data.layout === "grid2" ? cu(5, unit * 2.0, 48) : cu(3, unit * 1.4, 34) }}>
         {/* Dish name + portionNote inline */}
         <div style={{ lineHeight: 1.06 }}>
           <span
             style={{
-              fontSize: cu(20, unit * 5.2, 150),
+              fontSize: data.layout === "grid2" ? cu(22, unit * 5.8, 160) : cu(20, unit * 5.2, 150),
               fontWeight: 800,
               color: "#fff8f3",
               letterSpacing: "-0.01em",
@@ -101,7 +100,7 @@ export function PortraitRow({
           {item.portionNote && (
             <span
               style={{
-                fontSize: cu(11, unit * 2.4, 62),
+                fontSize: data.layout === "grid2" ? cu(12, unit * 2.6, 68) : cu(11, unit * 2.4, 62),
                 color: "rgba(255, 248, 243, 0.45)",
                 fontWeight: 500,
                 marginLeft: "0.35em",
@@ -119,18 +118,20 @@ export function PortraitRow({
 
         {/* Contornos + includedNote — pill badges */}
         {(item.contornos.length > 0 || item.includedNote) && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: cu(3, unit * 0.9, 20) }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: data.layout === "grid2" ? cu(4, unit * 1.2, 28) : cu(3, unit * 0.9, 20) }}>
             {item.contornos.map((c) => (
               <span
                 key={c}
                 style={{
-                  fontSize: cu(9, unit * 1.9, 48),
+                  fontSize: data.layout === "grid2" ? cu(11, unit * 2.3, 56) : cu(9, unit * 1.9, 48),
                   fontWeight: 700,
                   color: "#fff8f3",
                   background: "rgba(122, 142, 124, 0.12)",
                   border: "1px solid rgba(122, 142, 124, 0.3)",
                   borderRadius: 999,
-                  padding: `${cu(2, unit * 0.6, 14)} ${cu(5, unit * 1.4, 32)}`,
+                  padding: data.layout === "grid2"
+                    ? `${cu(3, unit * 0.8, 18)} ${cu(7, unit * 1.8, 40)}`
+                    : `${cu(2, unit * 0.6, 14)} ${cu(5, unit * 1.4, 32)}`,
                   letterSpacing: "0.01em",
                   whiteSpace: "nowrap" as const,
                 }}
@@ -142,13 +143,15 @@ export function PortraitRow({
               <span
                 key={part}
                 style={{
-                  fontSize: cu(9, unit * 1.9, 48),
+                  fontSize: data.layout === "grid2" ? cu(11, unit * 2.3, 56) : cu(9, unit * 1.9, 48),
                   fontWeight: 700,
                   color: "#fff8f3",
                   background: "rgba(122, 142, 124, 0.12)",
                   border: "1px solid rgba(122, 142, 124, 0.3)",
                   borderRadius: 999,
-                  padding: `${cu(2, unit * 0.6, 14)} ${cu(5, unit * 1.4, 32)}`,
+                  padding: data.layout === "grid2"
+                    ? `${cu(3, unit * 0.8, 18)} ${cu(7, unit * 1.8, 40)}`
+                    : `${cu(2, unit * 0.6, 14)} ${cu(5, unit * 1.4, 32)}`,
                   letterSpacing: "0.01em",
                   whiteSpace: "nowrap" as const,
                 }}

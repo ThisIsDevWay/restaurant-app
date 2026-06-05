@@ -142,7 +142,7 @@ export type TvMenuBoardConfig = {
     | { type: "all_available" }
     | { type: "daily" };
   /** Visual layout. */
-  layout: "list" | "grid";
+  layout: "list" | "grid" | "grid2" | "grid3";
   showPrices: boolean;
   showDescriptions: boolean;
   showImages: boolean;

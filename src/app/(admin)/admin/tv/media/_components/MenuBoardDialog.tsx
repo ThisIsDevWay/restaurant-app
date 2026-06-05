@@ -50,8 +50,8 @@ export function MenuBoardConfigForm({
   setSourceType: (s: "category" | "all_available" | "daily") => void;
   categoryId: string;
   setCategoryId: (s: string) => void;
-  layout: "list" | "grid";
-  setLayout: (s: "list" | "grid") => void;
+  layout: "list" | "grid" | "grid2" | "grid3";
+  setLayout: (s: "list" | "grid" | "grid2" | "grid3") => void;
   showPrices: boolean;
   setShowPrices: (b: boolean) => void;
   showDescriptions: boolean;
@@ -131,11 +131,12 @@ export function MenuBoardConfigForm({
 
       <div>
         <Label>Diseño</Label>
-        <div className="grid grid-cols-2 gap-2 mt-1.5">
+        <div className="grid grid-cols-3 gap-2 mt-1.5">
           {(
             [
               { value: "list", label: "Lista (vertical)" },
-              { value: "grid", label: "Cuadrícula" },
+              { value: "grid2", label: "Cuadrícula 2" },
+              { value: "grid3", label: "Cuadrícula 3" },
             ] as const
           ).map((opt) => (
             <button
@@ -143,7 +144,7 @@ export function MenuBoardConfigForm({
               type="button"
               onClick={() => setLayout(opt.value)}
               className={`text-xs rounded-md border px-2 py-2 transition ${
-                layout === opt.value
+                layout === opt.value || (opt.value === "grid3" && layout === "grid")
                   ? "border-primary bg-primary/10 text-primary font-semibold"
                   : "border-border bg-surface-section text-text-muted hover:border-primary/40"
               }`}
@@ -232,7 +233,7 @@ export function MenuBoardDialog({
     "category" | "all_available" | "daily"
   >("daily");
   const [categoryId, setCategoryId] = useState<string>(categories[0]?.id ?? "");
-  const [layout, setLayout] = useState<"list" | "grid">("list");
+  const [layout, setLayout] = useState<"list" | "grid" | "grid2" | "grid3">("list");
   const [showPrices, setShowPrices] = useState(true);
   const [showDescriptions, setShowDescriptions] = useState(true);
   const [showImages, setShowImages] = useState(false);

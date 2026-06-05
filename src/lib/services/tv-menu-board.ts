@@ -16,7 +16,7 @@ const RESTAURANT_TZ = "America/Caracas";
 export type MenuBoardData = {
   title: string;
   subtitle?: string;
-  layout: "list" | "grid";
+  layout: "list" | "grid" | "grid2" | "grid3";
   showPrices: boolean;
   showDescriptions: boolean;
   showImages: boolean;
@@ -197,10 +197,10 @@ export async function resolveMenuBoard(
   const perPage =
     config.itemsPerPage && config.itemsPerPage > 0
       ? config.itemsPerPage
-      : orientationHint === "portrait"
-        ? 3
-        : config.layout === "list"
-          ? 8
+      : config.layout === "list"
+        ? 8
+        : config.layout === "grid2"
+          ? 2
           : 3;
 
   // Split into pages.

@@ -118,25 +118,32 @@ export function ImageSlot({
     );
   }
 
-  const [c1, c2] = PALETTE[strHash(item.id || item.name) % PALETTE.length];
-  const monoFs = cu(14, unit * 3.8, 80);
-
   return (
     <div
       style={{
         ...base,
-        background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
+        background: "radial-gradient(circle at center, #1b110e 0%, #0d0705 100%)",
+        border: "1px solid rgba(226, 194, 160, 0.08)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
+        boxShadow: "inset 0 0 30px rgba(0,0,0,0.8)",
+        animation: "tv-plate-pulse 6s ease-in-out infinite",
       }}
     >
-      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at top left, rgba(255,255,255,0.12) 0%, transparent 55%)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", inset: Math.max(2, unit * 0.3), borderRadius: Math.max(4, r - unit * 0.2), border: "1px solid rgba(255,255,255,0.08)", pointerEvents: "none" }} />
-      <span style={{ fontSize: monoFs, fontWeight: 800, color: "rgba(255,255,255,0.7)", letterSpacing: "0.04em", lineHeight: 1, textShadow: "0 2px 10px rgba(0,0,0,0.5)", position: "relative" }}>
-        {initials(item.name)}
-      </span>
+      <div style={{ position: "absolute", inset: Math.max(2, unit * 0.3), borderRadius: Math.max(4, r - unit * 0.2), border: "1px solid rgba(226, 194, 160, 0.04)", pointerEvents: "none" }} />
+      <svg viewBox="0 0 100 100" style={{ width: "38%", height: "38%", opacity: 0.35, filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.5))" }}>
+        <defs>
+          <linearGradient id="bronze-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#e2c2a0" />
+            <stop offset="100%" stopColor="#b85b35" />
+          </linearGradient>
+        </defs>
+        <path d="M15 72 L85 72 A2 2 0 0 1 85 76 L15 76 A2 2 0 0 1 15 72 Z" fill="url(#bronze-grad)" />
+        <path d="M22 69 C22 36, 78 36, 78 69 Z" fill="none" stroke="url(#bronze-grad)" strokeWidth="4" strokeLinecap="round" />
+        <circle cx="50" cy="32" r="5" fill="url(#bronze-grad)" />
+      </svg>
     </div>
   );
 }
@@ -164,9 +171,9 @@ export function PriceTag({
 
   // Primary price size and secondary (Bs) size per variant.
   const [mainFs, subFs] = {
-    grid:     [cu(15, unit * 2.8,  80), cu(11, unit * 1.7,  50)],
+    grid:     data.layout === "grid2" ? [cu(22, unit * 4.2, 120), cu(16, unit * 2.8, 80)] : [cu(15, unit * 2.8,  80), cu(11, unit * 1.7,  50)],
     list:     [cu(14, unit * 2.2,  72), cu(11, unit * 1.4,  46)],
-    portrait: [cu(14, unit * 3.0,  80), cu(10, unit * 2.0,  56)],
+    portrait: data.layout === "grid2" ? [cu(18, unit * 4.2, 110), cu(14, unit * 2.8, 76)] : [cu(14, unit * 3.0,  80), cu(10, unit * 2.0,  56)],
   }[variant];
 
   if (variant === "portrait") {
@@ -184,7 +191,7 @@ export function PriceTag({
         }}
       >
         {(data.currency === "usd" || data.currency === "both") && (
-          <span style={{ color: "#b85b35", fontWeight: 800, fontSize: mainFs, fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ color: "#b85b35", fontWeight: 800, fontSize: mainFs, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
             {usd}
           </span>
         )}
@@ -198,6 +205,7 @@ export function PriceTag({
               fontWeight: data.currency === "both" ? 500 : 800,
               fontSize: data.currency === "both" ? subFs : mainFs,
               fontVariantNumeric: "tabular-nums",
+              whiteSpace: "nowrap",
             }}
           >
             Bs {bs}
@@ -219,7 +227,7 @@ export function PriceTag({
       }}
     >
       {(data.currency === "usd" || data.currency === "both") && (
-        <span style={{ color: "#b85b35", fontWeight: 800, fontSize: mainFs, fontVariantNumeric: "tabular-nums" }}>
+        <span style={{ color: "#b85b35", fontWeight: 800, fontSize: mainFs, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
           {usd}
         </span>
       )}
@@ -230,6 +238,7 @@ export function PriceTag({
             fontWeight: data.currency === "both" ? 500 : 800,
             fontSize: data.currency === "both" ? subFs : mainFs,
             fontVariantNumeric: "tabular-nums",
+            whiteSpace: "nowrap",
           }}
         >
           Bs {bs}

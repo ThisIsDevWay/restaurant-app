@@ -44,7 +44,7 @@ export const menuBoardConfigSchema = v.object({
   title: v.pipe(v.string(), v.minLength(1), v.maxLength(120)),
   subtitle: v.optional(v.pipe(v.string(), v.maxLength(200))),
   source: menuBoardSourceSchema,
-  layout: v.picklist(["list", "grid"]),
+  layout: v.picklist(["list", "grid", "grid2", "grid3"]),
   showPrices: v.boolean(),
   showDescriptions: v.boolean(),
   showImages: v.boolean(),
