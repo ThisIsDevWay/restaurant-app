@@ -165,7 +165,7 @@ export function ItemDetailModalClassic({
                     RIGHT PANEL — All screens mobile/tablet; right column desktop
                 ══════════════════════════════════════════════════════════════ */}
                 <div className={cn(
-                    "flex flex-1 min-h-0 flex-col bg-bg-card shadow-modal overflow-hidden",
+                    "flex flex-1 min-h-0 flex-col bg-bg-app shadow-modal overflow-hidden",
                     "rounded-t-[24px]",
                     "md:rounded-[24px]",
                     "md:rounded-l-none md:rounded-r-[24px]",
@@ -173,7 +173,7 @@ export function ItemDetailModalClassic({
                     {/* Mobile back button (mobile only) */}
                     <button
                         onClick={modal.handleClose}
-                        className="md:hidden absolute left-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-bg-card/90 text-text-main shadow-md backdrop-blur-md transition-colors active:bg-surface-section"
+                        className="md:hidden absolute left-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-bg-app/90 text-text-main shadow-md backdrop-blur-md transition-colors active:bg-surface-section"
                         aria-label="Volver"
                     >
                         <ArrowLeft className="h-5 w-5 stroke-[2.5]" />
@@ -182,7 +182,7 @@ export function ItemDetailModalClassic({
                     {/* Desktop close button (desktop only) */}
                     <button
                         onClick={modal.handleClose}
-                        className="hidden md:flex absolute right-4 top-4 z-50 h-9 w-9 items-center justify-center rounded-full bg-bg-card/90 text-text-main shadow-md backdrop-blur-md transition-colors active:bg-surface-section"
+                        className="hidden md:flex absolute right-4 top-4 z-50 h-9 w-9 items-center justify-center rounded-full bg-bg-app/90 text-text-main shadow-md backdrop-blur-md transition-colors active:bg-surface-section"
                         aria-label="Cerrar"
                     >
                         <X className="h-5 w-5 stroke-[2.5]" />

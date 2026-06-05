@@ -40,6 +40,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
+import { ThemeManager } from "@/components/shared/ThemeManager";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -53,8 +55,10 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
+                  var path = window.location.pathname;
+                  var isAppRoute = path.startsWith('/admin') || path.startsWith('/kitchen') || path.startsWith('/login');
                   var saved = localStorage.getItem('theme');
-                  if (saved === 'dark') {
+                  if (!isAppRoute && saved === 'dark') {
                     document.documentElement.classList.add('dark');
                   } else {
                     document.documentElement.classList.remove('dark');
@@ -67,6 +71,7 @@ export default function RootLayout({
       </head>
       <body className="bg-bg-app text-text-main antialiased" suppressHydrationWarning>
         <QueryProvider>
+          <ThemeManager />
           {children}
           <Toaster
             position="bottom-center"

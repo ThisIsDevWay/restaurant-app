@@ -213,12 +213,14 @@ export function MenuHeader({
             );
         };
 
-        check();
+        const rafId = requestAnimationFrame(check);
         el.addEventListener("scroll", check, { passive: true });
-        window.addEventListener("resize", check);
+        const ro = new ResizeObserver(check);
+        ro.observe(el);
         return () => {
+            cancelAnimationFrame(rafId);
             el.removeEventListener("scroll", check);
-            window.removeEventListener("resize", check);
+            ro.disconnect();
         };
     }, [categories]);
 
@@ -514,7 +516,12 @@ export function MenuHeader({
             {/* ── Mobile App Header (md:hidden) — compact or hero depending on isReadOnly ── */}
             <div className="md:hidden w-full bg-bg-app">
                 {isReadOnly ? (
-                    <div className="bg-bg-app w-full border-b border-border/10 shadow-sm flex flex-col gap-3 p-4 pb-0">
+                    <div className="bg-bg-app w-full border-b border-border/10 shadow-sm flex flex-col gap-3 p-4 pb-0 relative">
+                        {onToggleTheme && (
+                            <div className="absolute top-4 right-4 z-20">
+                                <ThemeSwitch theme={theme} onToggle={onToggleTheme} variant="solid" />
+                            </div>
+                        )}
                         {/* Main row: Logo + Name/Status/Triggers */}
                         <div className="flex items-center gap-3.5">
                             {/* Logo */}
@@ -532,10 +539,10 @@ export function MenuHeader({
 
                             {/* Column: Name + Status + Buttons */}
                             <div className="flex-1 min-w-0 flex flex-col gap-1.5 justify-center">
-                                <h1 className="font-display text-[19px] font-extrabold leading-tight text-text-main tracking-tight break-words">
+                                <h1 className="font-display text-[19px] font-extrabold leading-tight text-text-main tracking-tight break-words pr-20">
                                     {restaurantName}
                                 </h1>
-                                <div className="flex flex-wrap items-center gap-1.5">
+                                <div className="flex flex-wrap items-center gap-1.5 pr-20">
                                     {openStatus !== null && (
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${openStatus
                                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800/30"
@@ -586,10 +593,6 @@ export function MenuHeader({
                                             </span>
                                         )}
                                     </button>
-
-                                    {onToggleTheme && (
-                                        <ThemeSwitch theme={theme} onToggle={onToggleTheme} variant="solid" />
-                                    )}
                                 </div>
                             </div>
                         </div>

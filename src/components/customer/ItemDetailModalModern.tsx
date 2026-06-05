@@ -152,7 +152,7 @@ export function ItemDetailModalModern({
         className={cn(
           "absolute bottom-0 left-0 right-0 flex max-h-[95svh] md:max-h-[88vh] flex-col",
           "transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
-          "bg-transparent md:bg-bg-card md:shadow-[0_-8px_40px_rgba(37,26,7,0.14),_0_0_0_0.5px_rgba(37,26,7,0.06)] md:rounded-[28px] md:overflow-hidden",
+          "bg-transparent md:bg-bg-app md:shadow-[0_-8px_40px_rgba(37,26,7,0.14),_0_0_0_0.5px_rgba(37,26,7,0.06)] md:rounded-[28px] md:overflow-hidden",
           hasImage
             ? "md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[740px] md:flex-row md:max-h-[88vh] lg:w-[880px]"
             : "md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[520px] md:max-h-[88vh] lg:w-[580px]",
@@ -215,7 +215,7 @@ export function ItemDetailModalModern({
         )}
 
         {/* ── RIGHT PANEL ──────────────────────────────────────────────── */}
-        <div className="flex flex-1 min-h-0 flex-col md:bg-bg-card md:rounded-l-none md:rounded-r-[28px]">
+        <div className="flex flex-1 min-h-0 flex-col md:bg-bg-app md:rounded-l-none md:rounded-r-[28px]">
 
           {/* Desktop close button */}
           <button
@@ -278,7 +278,7 @@ export function ItemDetailModalModern({
             {hasImage && <div className="h-32 md:hidden w-full shrink-0" />}
 
             {/* Mobile-only card wrapper / Desktop-only pass-through */}
-            <div className="relative flex flex-col bg-bg-card rounded-t-[28px] shadow-[0_-8px_40px_rgba(37,26,7,0.12)] md:p-0 md:bg-transparent md:shadow-none md:rounded-none">
+            <div className="relative flex flex-col bg-bg-app rounded-t-[28px] shadow-[0_-8px_40px_rgba(37,26,7,0.12)] md:p-0 md:bg-transparent md:shadow-none md:rounded-none">
 
               {/* Drag handle (mobile only) */}
               <div className="md:hidden absolute top-2.5 left-1/2 -translate-x-1/2 z-40" style={{

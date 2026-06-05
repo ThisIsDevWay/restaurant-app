@@ -26,7 +26,7 @@ export function ModalFooter({
   totalBsCents,
 }: ModalFooterProps) {
   return (
-    <div className="shrink-0 border-t border-border/60 bg-bg-card px-5 py-5 shadow-[0_-8px_20px_rgba(37,26,7,0.03)]">
+    <div className="shrink-0 border-t border-border/60 bg-bg-app px-5 py-5 shadow-[0_-8px_20px_rgba(37,26,7,0.03)]">
       <div className="mb-5 flex flex-col items-center justify-center gap-2">
         {/* Desktop Stepper (unchanged circular buttons) */}
         <div className="hidden md:flex items-center justify-center gap-6">

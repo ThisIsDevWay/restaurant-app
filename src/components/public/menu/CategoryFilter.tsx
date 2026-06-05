@@ -26,12 +26,14 @@ export function CategoryFilter({
       setShowFade(el.scrollWidth > el.clientWidth && el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
     };
 
-    check();
+    const rafId = requestAnimationFrame(check);
     el.addEventListener("scroll", check, { passive: true });
-    window.addEventListener("resize", check);
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
     return () => {
+      cancelAnimationFrame(rafId);
       el.removeEventListener("scroll", check);
-      window.removeEventListener("resize", check);
+      ro.disconnect();
     };
   }, [categories]);
 
