@@ -2,82 +2,65 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { Plus, Pencil, Image as ImageIcon, AlertTriangle, Search, X } from "lucide-react";
+import { Plus, Image as ImageIcon, Search, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import CatalogItemCard from "./CatalogItemCard";
+
+interface Contorno {
+  id: string;
+  name: string;
+  removable: boolean;
+}
 
 interface MenuItem {
   id: string;
   name: string;
   description?: string | null;
+  includedNote?: string | null;
+  hideAdicionales?: boolean;
+  hideBebidas?: boolean;
   imageUrl?: string | null;
+  imagekitFileId?: string | null;
   categoryName: string;
+  categoryId: string;
   priceUsdCents: number;
   costUsdCents: number | null;
   costUpdatedAt?: string | Date | null;
   isAvailable: boolean;
+  sortOrder?: number;
+  isPrepackaged?: boolean;
+  contornos: Contorno[];
 }
 
 interface MenuCatalogViewProps {
   items: MenuItem[];
-}
-
-function formatRef(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-function getMargin(item: MenuItem): number | null {
-  if (item.costUsdCents === null || item.priceUsdCents === 0) return null;
-  return Math.round(((item.priceUsdCents - item.costUsdCents) / item.priceUsdCents) * 100);
-}
-
-function isStale(item: MenuItem): boolean {
-  if (!item.costUpdatedAt) return false;
-  return Date.now() - new Date(item.costUpdatedAt).getTime() > 7 * 24 * 60 * 60 * 1000;
-}
-
-function MarginBadge({ item }: { item: MenuItem }) {
-  const pct = getMargin(item);
-  if (pct === null) return <span style={{ fontSize: 12, color: "#9c8c78" }}>—</span>;
-  const stale = isStale(item);
-  const color = pct >= 40 ? "#1a7a45" : pct >= 20 ? "#9a5e00" : "#b00020";
-  const bg = pct >= 40 ? "#eaf7f0" : pct >= 20 ? "#fff3e0" : "#fdeaec";
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-      <span style={{
-        display: "inline-flex", alignItems: "center", gap: 5,
-        padding: "2px 8px", borderRadius: 100,
-        background: bg, color, fontWeight: 700, fontSize: 12,
-        letterSpacing: "0.02em",
-      }}>
-        <span style={{
-          width: 6, height: 6, borderRadius: "50%",
-          background: color, flexShrink: 0,
-        }} />
-        {pct}%
-      </span>
-      {stale && (
-        <AlertTriangle size={12} style={{ color: "#c87800", flexShrink: 0 }} aria-label="Costo sin actualizar" />
-      )}
-    </span>
-  );
+  categories: Array<{ id: string; name: string; isSimple?: boolean }>;
+  availableContornos: Array<{ id: string; name: string; categoryName: string }>;
+  exchangeRate: number;
 }
 
 const CATEGORY_COLORS: string[] = [
   "#bb0005", "#1a6b3a", "#0d5a8a", "#7b3fa0", "#b56000", "#1a5c6e",
 ];
 
-export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
+export default function MenuCatalogView({
+  items,
+  categories,
+  availableContornos,
+  exchangeRate,
+}: MenuCatalogViewProps) {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [search, setSearch] = useState("");
 
-  const categories = useMemo(() => {
+  const categoryNames = useMemo(() => {
     const order: string[] = [];
     items.forEach((i) => { if (!order.includes(i.categoryName)) order.push(i.categoryName); });
     return order;
   }, [items]);
 
   const grouped = useMemo(() => {
-    const cats = activeCategory === "all" ? categories : [activeCategory];
+    const cats = activeCategory === "all" ? categoryNames : [activeCategory];
     const normalizedSearch = search.toLowerCase().trim();
 
     return cats.reduce<Record<string, MenuItem[]>>((acc, cat) => {
@@ -94,7 +77,7 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
       }
       return acc;
     }, {});
-  }, [activeCategory, categories, items, search]);
+  }, [activeCategory, categoryNames, items, search]);
 
   const stats = useMemo(() => {
     const available = items.filter((i) => i.isAvailable).length;
@@ -107,9 +90,9 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
 
   const catColorMap = useMemo(() => {
     const m: Record<string, string> = {};
-    categories.forEach((c, i) => { m[c] = CATEGORY_COLORS[i % CATEGORY_COLORS.length]; });
+    categoryNames.forEach((c, i) => { m[c] = CATEGORY_COLORS[i % CATEGORY_COLORS.length]; });
     return m;
-  }, [categories]);
+  }, [categoryNames]);
 
   return (
     <>
@@ -407,6 +390,273 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
         }
         .mcv-add-btn:hover { background: #e2231a; transform: scale(1.02); }
         .mcv-add-btn:active { transform: scale(0.97); }
+
+        /* Estilos de Edición Rápida en Tarjetas */
+        .mcv-card-editing:hover {
+          box-shadow: none;
+          transform: none;
+        }
+
+        .mcv-img-upload-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(37, 26, 7, 0.45);
+          backdrop-filter: blur(2px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+        .mcv-img-wrap:hover .mcv-img-upload-overlay,
+        .mcv-img-wrap:focus-within .mcv-img-upload-overlay {
+          opacity: 1;
+        }
+
+        .mcv-upload-label {
+          background: #fff;
+          color: #251a07;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 6px 10px;
+          border-radius: 6px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.2s ease;
+          border: 1px solid #ede0d8;
+        }
+        .mcv-upload-label:hover {
+          background: #fdfbf9;
+          border-color: #bb0005;
+          color: #bb0005;
+        }
+
+        .mcv-remove-img-btn {
+          width: 26px;
+          height: 26px;
+          border-radius: 6px;
+          background: #fff;
+          border: 1px solid #f5c5c8;
+          color: #b00020;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          padding: 0;
+        }
+        .mcv-remove-img-btn:hover {
+          background: #fdeaec;
+          border-color: #b00020;
+        }
+
+        .mcv-edit-label {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 10px;
+          font-weight: 600;
+          color: #9c8c78;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 2px;
+          display: block;
+        }
+
+        .mcv-edit-input,
+        .mcv-edit-select {
+          width: 100%;
+          height: 32px;
+          padding: 0 8px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 13px;
+          font-weight: 500;
+          color: #251a07;
+          background: #fff;
+          border: 1.5px solid #ede0d8;
+          border-radius: 6px;
+          outline: none;
+          transition: all 0.15s ease;
+        }
+        .mcv-edit-input:focus,
+        .mcv-edit-select:focus {
+          border-color: #bb0005;
+          box-shadow: 0 0 0 3px rgba(187, 0, 5, 0.05);
+        }
+
+        .mcv-edit-price-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+        .mcv-edit-price-prefix {
+          position: absolute;
+          left: 8px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 13px;
+          color: #9c8c78;
+          font-weight: 500;
+          pointer-events: none;
+        }
+        .mcv-edit-price-input {
+          width: 100%;
+          height: 32px;
+          padding: 0 8px 0 18px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 13px;
+          font-weight: 600;
+          color: #bb0005;
+          background: #fff;
+          border: 1.5px solid #ede0d8;
+          border-radius: 6px;
+          outline: none;
+          transition: all 0.15s ease;
+        }
+        .mcv-edit-price-input:focus {
+          border-color: #bb0005;
+          box-shadow: 0 0 0 3px rgba(187, 0, 5, 0.05);
+        }
+
+        .mcv-edit-price-bs {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 11px;
+          color: #9c8c78;
+          margin-top: 2px;
+          font-weight: 500;
+        }
+
+        .mcv-edit-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #fff;
+          border: 1px solid #e0d5cc;
+          padding: 4px 6px 4px 8px;
+          border-radius: 8px;
+          margin-right: 4px;
+          margin-bottom: 4px;
+          color: #251a07;
+          max-width: 100%;
+          box-shadow: 0 1px 2px rgba(37, 26, 7, 0.02);
+        }
+
+        .mcv-chip-name {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          color: #251a07;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 100px;
+        }
+
+        .mcv-chip-removable-toggle {
+          border: 1px solid #e0d5cc;
+          background: #fdf8f3;
+          color: #9c8c78;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 0 6px;
+          height: 20px;
+          border-radius: 5px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 3px;
+          transition: all 0.15s ease;
+        }
+        .mcv-chip-removable-toggle.active {
+          background: #eaf7f0;
+          border-color: #86efac;
+          color: #1a7a45;
+        }
+        .mcv-chip-removable-toggle:hover {
+          border-color: #bb0005;
+          color: #bb0005;
+          background: #fff;
+        }
+
+        .mcv-chip-remove {
+          border: none;
+          background: transparent;
+          color: #c4b09a;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          transition: all 0.15s ease;
+        }
+        .mcv-chip-remove:hover {
+          background: #fdeaec;
+          color: #b00020;
+        }
+
+        .mcv-action-btn {
+          flex: 1;
+          height: 32px;
+          border-radius: 6px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+        }
+        .mcv-btn-secondary {
+          background: transparent;
+          border: 1px solid #ede0d8;
+          color: #9c8c78;
+        }
+        .mcv-btn-secondary:hover:not(:disabled) {
+          border-color: #251a07;
+          color: #251a07;
+        }
+        .mcv-btn-primary {
+          background: #bb0005;
+          color: #fff;
+        }
+        .mcv-btn-primary:hover:not(:disabled) {
+          background: #e2231a;
+        }
+        .mcv-action-btn:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
+        .mcv-card-error {
+          background: #fdeaec;
+          border: 1px solid #f5c5c8;
+          color: #b00020;
+          padding: 6px 8px;
+          border-radius: 6px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 11px;
+          line-height: 1.3;
+        }
+
+        .mcv-spinner {
+          width: 20px;
+          height: 20px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: mcv-spin 0.8s linear infinite;
+        }
+        @keyframes mcv-spin {
+          to { transform: rotate(360deg); }
+        }
       `}</style>
 
       <div className="mcv" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", minHeight: "100vh" }}>
@@ -422,7 +672,7 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
               Menú
             </h1>
             <p style={{ fontSize: 14, color: "#9c8c78", margin: "6px 0 0", fontWeight: 500 }}>
-              {items.length} {items.length === 1 ? "item" : "items"} · {categories.length} {categories.length === 1 ? "categoría" : "categorías"}
+              {items.length} {items.length === 1 ? "item" : "items"} · {categoryNames.length} {categoryNames.length === 1 ? "categoría" : "categorías"}
             </p>
           </div>
           <Link href="/admin/catalogo/new" className="mcv-add-btn">
@@ -450,7 +700,7 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
             </div>
             <div className="mcv-stat-card">
               <span className="mcv-stat-label">Categorías</span>
-              <span className="mcv-stat-value" style={{ color: "#251a07" }}>{categories.length}</span>
+              <span className="mcv-stat-value" style={{ color: "#251a07" }}>{categoryNames.length}</span>
             </div>
           </div>
         )}
@@ -477,7 +727,7 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
         </div>
 
         {/* ── Category filter pills ── */}
-        {categories.length > 1 && (
+        {categoryNames.length > 1 && (
           <div style={{
             display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8,
             padding: "12px 0", borderTop: "1px solid #f0e6df",
@@ -491,7 +741,7 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
                 marginLeft: 6, fontSize: 11, fontWeight: 700, opacity: 0.7,
               }}>{items.length}</span>
             </button>
-            {categories.map((cat) => (
+            {categoryNames.map((cat) => (
               <button
                 key={cat}
                 className={`mcv-pill ${activeCategory === cat ? "mcv-pill-active" : "mcv-pill-inactive"}`}
@@ -541,7 +791,7 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
         {Object.entries(grouped).map(([cat, catItems]) => (
           <section key={cat}>
             {/* Category header — only shown in "all" view with multiple categories */}
-            {activeCategory === "all" && categories.length > 1 && (
+            {activeCategory === "all" && categoryNames.length > 1 && (
               <div className="mcv-category-header">
                 <span
                   className="mcv-category-name"
@@ -562,67 +812,14 @@ export default function MenuCatalogView({ items }: MenuCatalogViewProps) {
             {/* Items grid */}
             <div className="mcv-grid">
               {catItems.map((item) => (
-                <article key={item.id} className="mcv-card">
-
-                  {/* Image */}
-                  <div className="mcv-img-wrap">
-                    {item.imageUrl ? (
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.name}
-                        fill
-                        className="mcv-img"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
-                      />
-                    ) : (
-                      <div className="mcv-img-placeholder">
-                        <ImageIcon size={28} color="#c4b09a" />
-                      </div>
-                    )}
-
-                    {/* Availability badge */}
-                    <div
-                      className="mcv-avail-dot"
-                      style={{
-                        background: item.isAvailable
-                          ? "rgba(234,247,240,0.92)"
-                          : "rgba(253,234,236,0.92)",
-                        color: item.isAvailable ? "#1a7a45" : "#b00020",
-                      }}
-                    >
-                      <span
-                        className="mcv-avail-dot-inner"
-                        style={{ background: item.isAvailable ? "#1a7a45" : "#b00020" }}
-                      />
-                      {item.isAvailable ? "Disponible" : "Agotado"}
-                    </div>
-
-                    {/* Edit button */}
-                    <Link
-                      href={`/admin/catalogo/${item.id}/edit`}
-                      className="mcv-edit-btn"
-                      title="Editar"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Pencil size={14} />
-                    </Link>
-                  </div>
-
-                  {/* Card body */}
-                  <div className="mcv-card-body">
-                    <div>
-                      <p className="mcv-item-name">{item.name}</p>
-                      {item.description && (
-                        <p className="mcv-item-desc">{item.description}</p>
-                      )}
-                    </div>
-
-                    <div className="mcv-card-footer">
-                      <span className="mcv-price">{formatRef(item.priceUsdCents)}</span>
-                      <MarginBadge item={item} />
-                    </div>
-                  </div>
-                </article>
+                <CatalogItemCard
+                  key={item.id}
+                  item={item}
+                  categories={categories}
+                  availableContornos={availableContornos}
+                  exchangeRate={exchangeRate}
+                  onUpdateSuccess={() => router.refresh()}
+                />
               ))}
             </div>
           </section>
