@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "@/lib/supabase-client";
 import type { MenuItemWithComponents } from "@/types/menu.types";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -79,90 +78,100 @@ export function useMenuRefresh(
   onItemUpdateRef.current = onItemUpdate;
 
   useEffect(() => {
+    let cancelled = false;
+    let removeChannel: (() => void) | null = null;
+
     let debounce: ReturnType<typeof setTimeout> | null = null;
     const scheduleRefresh = () => {
       if (debounce) clearTimeout(debounce);
       debounce = setTimeout(() => routerRef.current.refresh(), 600);
     };
 
-    const channel = supabaseBrowser
-      .channel("menu-structural-refresh")
-      // Plato añadido / removido del menú diario → refresh estructural
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "daily_menu_items" },
-        scheduleRefresh,
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "daily_menu_items" },
-        scheduleRefresh,
-      )
-      // Adicionales añadidos / removidos del día
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "daily_adicionales" },
-        scheduleRefresh,
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "daily_adicionales" },
-        scheduleRefresh,
-      )
-      // Bebidas añadidas / removidas del día
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "daily_bebidas" },
-        scheduleRefresh,
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "daily_bebidas" },
-        scheduleRefresh,
-      )
-      // Contornos añadidos / removidos del día
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "daily_contornos" },
-        scheduleRefresh,
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "daily_contornos" },
-        scheduleRefresh,
-      )
-      // Relación plato <-> contorno modificada (acompañamientos de un plato)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "menu_item_contornos" },
-        scheduleRefresh,
-      )
-      // Cambio de precio / nombre / descripción en catálogo
-      // → merge en estado local; NO dispara router.refresh()
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "menu_items" },
-        (payload) => {
-          const cb = onItemUpdateRef.current;
-          if (cb && payload.new && typeof payload.new.id === "string") {
-            cb(mapRawToPartial(payload.new as RawMenuItemRow));
-          } else {
-            // Sin callback registrado, fallback al refresh completo
-            scheduleRefresh();
-          }
-        },
-      )
-      // Toggles de settings admin (adicionalesEnabled, menuLayout…)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "settings" },
-        scheduleRefresh,
-      )
-      .subscribe();
+    // Dynamic import keeps @supabase/supabase-js out of the initial menu bundle.
+    void (async () => {
+      const { supabaseBrowser } = await import("@/lib/supabase-client");
+      if (cancelled) return;
+      const channel = supabaseBrowser
+        .channel("menu-structural-refresh")
+        // Plato añadido / removido del menú diario → refresh estructural
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "daily_menu_items" },
+          scheduleRefresh,
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "daily_menu_items" },
+          scheduleRefresh,
+        )
+        // Adicionales añadidos / removidos del día
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "daily_adicionales" },
+          scheduleRefresh,
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "daily_adicionales" },
+          scheduleRefresh,
+        )
+        // Bebidas añadidas / removidas del día
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "daily_bebidas" },
+          scheduleRefresh,
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "daily_bebidas" },
+          scheduleRefresh,
+        )
+        // Contornos añadidos / removidos del día
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "daily_contornos" },
+          scheduleRefresh,
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "daily_contornos" },
+          scheduleRefresh,
+        )
+        // Relación plato <-> contorno modificada (acompañamientos de un plato)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "menu_item_contornos" },
+          scheduleRefresh,
+        )
+        // Cambio de precio / nombre / descripción en catálogo
+        // → merge en estado local; NO dispara router.refresh()
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "menu_items" },
+          (payload) => {
+            const cb = onItemUpdateRef.current;
+            if (cb && payload.new && typeof payload.new.id === "string") {
+              cb(mapRawToPartial(payload.new as RawMenuItemRow));
+            } else {
+              // Sin callback registrado, fallback al refresh completo
+              scheduleRefresh();
+            }
+          },
+        )
+        // Toggles de settings admin (adicionalesEnabled, menuLayout…)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "settings" },
+          scheduleRefresh,
+        )
+        .subscribe();
+      removeChannel = () => supabaseBrowser.removeChannel(channel);
+    })();
 
     return () => {
+      cancelled = true;
       if (debounce) clearTimeout(debounce);
-      supabaseBrowser.removeChannel(channel);
+      removeChannel?.();
     };
   }, []);
 }

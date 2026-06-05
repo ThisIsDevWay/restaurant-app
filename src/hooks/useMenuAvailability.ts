@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { supabaseBrowser } from "@/lib/supabase-client";
 
 type AvailabilityMap = Map<string, boolean>;
 
@@ -19,6 +18,9 @@ export function useMenuAvailability(
   onChangeRef.current = onAvailabilityChange;
 
   useEffect(() => {
+    let cancelled = false;
+    let removeChannel: (() => void) | null = null;
+
     const fetchAndNotify = async () => {
       try {
         const res = await fetch("/api/menu/availability", { cache: "no-store" });
@@ -54,18 +56,25 @@ export function useMenuAvailability(
       debounce = setTimeout(() => void fetchAndNotify(), 300);
     };
 
-    const channel = supabaseBrowser
-      .channel("menu-availability")
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_menu_items" }, scheduleRefresh)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_bebidas" }, scheduleRefresh)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_contornos" }, scheduleRefresh)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_adicionales" }, scheduleRefresh)
-      .subscribe();
+    // Dynamic import keeps @supabase/supabase-js out of the initial menu bundle.
+    void (async () => {
+      const { supabaseBrowser } = await import("@/lib/supabase-client");
+      if (cancelled) return;
+      const channel = supabaseBrowser
+        .channel("menu-availability")
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_menu_items" }, scheduleRefresh)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_bebidas" }, scheduleRefresh)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_contornos" }, scheduleRefresh)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "daily_adicionales" }, scheduleRefresh)
+        .subscribe();
+      removeChannel = () => supabaseBrowser.removeChannel(channel);
+    })();
 
     return () => {
+      cancelled = true;
       if (debounce) clearTimeout(debounce);
       document.removeEventListener("visibilitychange", handleVisibility);
-      supabaseBrowser.removeChannel(channel);
+      removeChannel?.();
     };
   }, []); // mount-only: ref pattern keeps callback stable
 }
