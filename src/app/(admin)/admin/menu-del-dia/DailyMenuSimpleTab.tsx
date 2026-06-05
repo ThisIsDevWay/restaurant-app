@@ -18,6 +18,7 @@ interface DailyMenuSimpleTabProps {
   onShiftDay: (days: number) => void;
   emptyIcon: LucideIcon;
   emptyText: string;
+  onAlwaysShowToggle?: (id: string, val: boolean) => void;
 }
 
 export function DailyMenuSimpleTab({
@@ -31,6 +32,7 @@ export function DailyMenuSimpleTab({
   onShiftDay,
   emptyIcon: EmptyIcon,
   emptyText,
+  onAlwaysShowToggle,
 }: DailyMenuSimpleTabProps) {
   return (
     <div className="grid min-h-[520px] gap-3.5 lg:grid-cols-[1fr_1.6fr]">
@@ -106,6 +108,12 @@ export function DailyMenuSimpleTab({
               priceUsdCents={item.priceUsdCents}
               selected={activeIds.includes(item.id)}
               onToggle={() => onToggle(item.id)}
+              alwaysShowIfAssigned={item.alwaysShowIfAssigned}
+              onAlwaysShowToggle={
+                onAlwaysShowToggle
+                  ? (val) => onAlwaysShowToggle(item.id, val)
+                  : undefined
+              }
             />
           ))}
         </div>

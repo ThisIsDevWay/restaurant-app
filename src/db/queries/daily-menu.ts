@@ -226,16 +226,33 @@ async function getDailyMenuWithOptionsAndComponentsRaw(dateStr?: string) {
     .where(inArray(menuItemAdicionales.menuItemId, menuItemIds))
     .orderBy(menuItems.sortOrder);
 
-  const dailyContornoIds = await db
-    .select({ id: dailyContornos.contornoItemId })
-    .from(dailyContornos)
-    .where(eq(dailyContornos.date, today));
-  const dailyContornoIdsSet = new Set(dailyContornoIds.map((c) => c.id));
+  const [dailyContornoIds, alwaysShowContornoIds] = await Promise.all([
+    db
+      .select({ id: dailyContornos.contornoItemId })
+      .from(dailyContornos)
+      .where(eq(dailyContornos.date, today)),
+    db
+      .select({ id: menuItems.id })
+      .from(menuItems)
+      .innerJoin(categories, eq(menuItems.categoryId, categories.id))
+      .where(
+        and(
+          eq(categories.name, "Contornos"),
+          eq(menuItems.alwaysShowIfAssigned, true),
+          eq(menuItems.isAvailable, true)
+        )
+      )
+  ]);
 
-  const dailyContornoIdArray = Array.from(dailyContornoIdsSet);
+  const resolvedContornoIdsSet = new Set([
+    ...dailyContornoIds.map((c) => c.id),
+    ...alwaysShowContornoIds.map((c) => c.id),
+  ]);
 
-  // Only query contornos if there are daily contornos selected
-  const contornoRows = dailyContornoIdArray.length === 0 ? [] : await db
+  const resolvedContornoIdArray = Array.from(resolvedContornoIdsSet);
+
+  // Only query contornos if there are resolved contornos selected
+  const contornoRows = resolvedContornoIdArray.length === 0 ? [] : await db
     .select({
       menuItemId: menuItemContornos.menuItemId,
       id: menuItems.id,
@@ -252,7 +269,7 @@ async function getDailyMenuWithOptionsAndComponentsRaw(dateStr?: string) {
     .where(
       and(
         inArray(menuItemContornos.menuItemId, menuItemIds),
-        inArray(menuItemContornos.contornoItemId, dailyContornoIdArray)
+        inArray(menuItemContornos.contornoItemId, resolvedContornoIdArray)
       )
     )
     .orderBy(menuItems.sortOrder);
@@ -362,7 +379,7 @@ async function getDailyMenuWithOptionsAndComponentsRaw(dateStr?: string) {
     }
 
     // Filter substitutes to only those available today
-    const activeSubstitutes = (row.substituteContornoIds || []).filter(id => dailyContornoIdsSet.has(id));
+    const activeSubstitutes = (row.substituteContornoIds || []).filter(id => resolvedContornoIdsSet.has(id));
 
     listCont.push({
       ...row,

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { UtensilsCrossed, Plus, Coffee } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDailyMenuState } from "@/hooks/useDailyMenuState";
@@ -11,6 +13,7 @@ import { DailyMenuHeader } from "./DailyMenuHeader";
 import { DailyMenuPlatosTab } from "./DailyMenuPlatosTab";
 import { DailyMenuSimpleTab } from "./DailyMenuSimpleTab";
 import type { DailyMenuClientProps } from "./DailyMenu.types";
+import { toggleContornoAlwaysShowAction } from "@/actions/contornos";
 
 export function DailyMenuClient({
   allItems,
@@ -34,6 +37,34 @@ export function DailyMenuClient({
     initialDate,
     initialPlatoDelDiaItemId,
   });
+
+  const [localContornos, setLocalContornos] = useState(allContornos);
+
+  useEffect(() => {
+    setLocalContornos(allContornos);
+  }, [allContornos]);
+
+  const router = useRouter();
+  const [, startToggleTransition] = useTransition();
+
+  function handleToggleAlwaysShowContorno(id: string, alwaysShow: boolean) {
+    // Optimistic update
+    setLocalContornos((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, alwaysShowIfAssigned: alwaysShow } : c))
+    );
+
+    startToggleTransition(async () => {
+      const res = await toggleContornoAlwaysShowAction({ id, alwaysShowIfAssigned: alwaysShow });
+      if (!res?.data?.success) {
+        // Revert optimistic update on failure
+        setLocalContornos((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, alwaysShowIfAssigned: !alwaysShow } : c))
+        );
+      } else {
+        router.refresh();
+      }
+    });
+  }
 
   const contornos = useItemContornos({ allItems, setIsDirty: state.setIsDirty });
 
@@ -233,14 +264,15 @@ export function DailyMenuClient({
           title="contorno"
           activeLabel="Contornos activos hoy"
           catalogLabel="Catálogo de contornos"
-          activeItems={allContornos.filter((c) => state.dailyContornoIds.includes(c.id))}
-          allItems={allContornos}
+          activeItems={localContornos.filter((c) => state.dailyContornoIds.includes(c.id))}
+          allItems={localContornos}
           activeIds={state.dailyContornoIds}
           onToggle={handleToggleContorno}
           dateLabel={dateLabel}
           onShiftDay={sync.handleShiftDay}
           emptyIcon={UtensilsCrossed}
           emptyText="Selecciona contornos del catálogo para hoy."
+          onAlwaysShowToggle={handleToggleAlwaysShowContorno}
         />
       )}
     </div>

@@ -80,6 +80,7 @@ export default async function DailyMenuPage({
         name: c.name,
         priceUsdCents: c.priceUsdCents,
         isAvailable: c.isAvailable,
+        alwaysShowIfAssigned: c.alwaysShowIfAssigned,
       }))}
       dailyContornoIds={dailyContornoIds}
       selectedDate={selectedDate}

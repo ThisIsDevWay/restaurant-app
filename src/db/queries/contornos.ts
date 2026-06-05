@@ -10,6 +10,7 @@ export async function getAllContornos() {
       priceUsdCents: menuItems.priceUsdCents,
       isAvailable: menuItems.isAvailable,
       isPrepackaged: menuItems.isPrepackaged,
+      alwaysShowIfAssigned: menuItems.alwaysShowIfAssigned,
       sortOrder: menuItems.sortOrder,
     })
     .from(menuItems)

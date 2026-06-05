@@ -16,6 +16,7 @@ export interface SimpleItem {
   name: string;
   priceUsdCents: number;
   isAvailable: boolean;
+  alwaysShowIfAssigned?: boolean;
 }
 
 export interface DailyMenuClientProps {

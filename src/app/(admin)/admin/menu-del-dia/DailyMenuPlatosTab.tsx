@@ -189,12 +189,16 @@ export function DailyMenuPlatosTab({
                       const availableDailyContornos = allContornos.filter((c) =>
                         dailyContornoIds.includes(c.id),
                       );
+                      const alwaysShowContornos = allContornos.filter((c) =>
+                        !dailyContornoIds.includes(c.id) && c.alwaysShowIfAssigned,
+                      );
                       return (
                         <ActiveItemRow
                           key={item.id}
                           item={item}
                           currentContornos={currentContornos}
                           availableDailyContornos={availableDailyContornos}
+                          alwaysShowContornos={alwaysShowContornos}
                           expandedItemId={expandedItemId}
                           onToggleExpanded={onToggleExpanded}
                           onToggleContorno={(contornoId, name) =>

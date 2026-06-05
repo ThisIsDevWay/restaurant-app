@@ -18,6 +18,7 @@ export interface MenuWithGroups {
   name: string;
   description: string | null;
   includedNote?: string | null;
+  portionNote?: string | null;
   hideAdicionales?: boolean;
   hideBebidas?: boolean;
   priceUsdCents: number;
@@ -29,6 +30,7 @@ export interface MenuWithGroups {
   categoryIsSimple: boolean;
   isAvailable: boolean;
   imageUrl: string | null;
+  imagekitFileId: string | null;
   sortOrder: number;
   optionGroups: OptionGroupWithOptions[];
 }
@@ -47,6 +49,7 @@ export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
         name: menuItems.name,
         description: menuItems.description,
         includedNote: menuItems.includedNote,
+        portionNote: menuItems.portionNote,
         hideAdicionales: menuItems.hideAdicionales,
         hideBebidas: menuItems.hideBebidas,
         priceUsdCents: menuItems.priceUsdCents,
@@ -58,6 +61,7 @@ export async function getMenuWithOptions(): Promise<MenuWithGroups[]> {
         categoryIsSimple: categories.isSimple,
         isAvailable: menuItems.isAvailable,
         imageUrl: menuItems.imageUrl,
+        imagekitFileId: menuItems.imagekitFileId,
         sortOrder: menuItems.sortOrder,
         isPrepackaged: menuItems.isPrepackaged,
       })
