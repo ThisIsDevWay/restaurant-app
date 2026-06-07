@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { X, Info, ShoppingBag, WifiOff, ChevronDown, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { CartItem } from "./CartItem";
@@ -80,12 +80,70 @@ export function Cart({
   const closeDrawer = useCartStore((s) => s.closeDrawer);
   const setEditingIndex = useCartStore((s) => s.setEditingIndex);
 
-  const handleEdit = (index: number) => {
-    setEditingIndex(index);
-    closeDrawer();
-  };
+  const closeDrawerRef = useRef(closeDrawer);
+  closeDrawerRef.current = closeDrawer;
+
+  const pushedCartRef = useRef(false);
+  const shouldNavigateRef = useRef<string | null>(null);
+
+  const handleCloseDrawer = useCallback(() => {
+    if (pushedCartRef.current && typeof window !== "undefined") {
+      window.history.back();
+    } else {
+      closeDrawerRef.current();
+    }
+  }, []);
 
   const router = useRouter();
+
+  const handleCheckout = useCallback(() => {
+    if (pushedCartRef.current && typeof window !== "undefined") {
+      shouldNavigateRef.current = "/checkout";
+      window.history.back();
+    } else {
+      closeDrawerRef.current();
+      router.push("/checkout");
+    }
+  }, [router]);
+
+  const handleEdit = (index: number) => {
+    setEditingIndex(index);
+    handleCloseDrawer();
+  };
+
+  useEffect(() => {
+    if (!isDrawerOpen || typeof window === "undefined") return;
+
+    window.history.pushState({ gmCartDrawerOpen: true }, "");
+    pushedCartRef.current = true;
+    shouldNavigateRef.current = null;
+
+    const handlePop = () => {
+      pushedCartRef.current = false;
+      closeDrawerRef.current();
+      if (shouldNavigateRef.current) {
+        const path = shouldNavigateRef.current;
+        shouldNavigateRef.current = null;
+        router.push(path);
+      }
+    };
+    window.addEventListener("popstate", handlePop);
+
+    return () => {
+      window.removeEventListener("popstate", handlePop);
+      pushedCartRef.current = false;
+    };
+  }, [isDrawerOpen, router]);
+
+  // Handle Escape key to close drawer
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") handleCloseDrawer();
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [isDrawerOpen, handleCloseDrawer]);
   const isOnline = useOnlineStatus();
   const [taxOpen, setTaxOpen] = useState(false);
   const [upsellExpanded, setUpsellExpanded] = useState(false);
@@ -230,7 +288,7 @@ export function Cart({
       >
         {/* Overlay */}
         <div
-          onClick={closeDrawer}
+          onClick={handleCloseDrawer}
           style={{
             position: "absolute",
             inset: 0,
@@ -293,7 +351,7 @@ export function Cart({
 
               {/* Close */}
               <button
-                onClick={closeDrawer}
+                onClick={handleCloseDrawer}
                 aria-label="Cerrar"
                 style={{
                   width: 32, height: 32,
@@ -376,7 +434,7 @@ export function Cart({
                   </p>
                 </div>
                 <button
-                  onClick={closeDrawer}
+                  onClick={handleCloseDrawer}
                   style={{
                     marginTop: 8,
                     borderRadius: 12,
@@ -702,7 +760,7 @@ export function Cart({
 
               {/* Checkout CTA */}
               <button
-                onClick={() => { closeDrawer(); router.push("/checkout"); }}
+                onClick={handleCheckout}
                 style={{
                   marginTop: 14,
                   display: "flex",

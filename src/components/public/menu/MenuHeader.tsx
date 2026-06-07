@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { Instagram, LayoutGrid, Search, ChevronDown, Info, ArrowLeft, X } from "lucide-react";
 import { HeaderCartButton } from "@/app/(public)/HeaderCartButton";
@@ -113,6 +113,66 @@ export function MenuHeader({
             setGreeting("¡Hola!");
         }
     }, []);
+
+    const onSearchChangeRef = useRef(onSearchChange);
+    onSearchChangeRef.current = onSearchChange;
+
+    const pushedSearchRef = useRef(false);
+
+    const handleCloseSearch = useCallback(() => {
+        if (pushedSearchRef.current && typeof window !== "undefined") {
+            window.history.back();
+        } else {
+            onSearchChangeRef.current("");
+            setShowSearch(false);
+            setIsSearchFocused(false);
+        }
+    }, []);
+
+    const handleToggleSearch = useCallback(() => {
+        if (showSearch) {
+            handleCloseSearch();
+        } else {
+            setShowSearch(true);
+            setTimeout(() => {
+                const input = document.getElementById("menu-search-input");
+                if (input) {
+                    input.focus();
+                    input.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+            }, 100);
+        }
+    }, [showSearch, handleCloseSearch]);
+
+    useEffect(() => {
+        if (!showSearch || typeof window === "undefined") return;
+
+        window.history.pushState({ gmSearchActive: true }, "");
+        pushedSearchRef.current = true;
+
+        const handlePop = () => {
+            pushedSearchRef.current = false;
+            onSearchChangeRef.current("");
+            setShowSearch(false);
+            setIsSearchFocused(false);
+        };
+        window.addEventListener("popstate", handlePop);
+
+        return () => {
+            window.removeEventListener("popstate", handlePop);
+            pushedSearchRef.current = false;
+        };
+    }, [showSearch]);
+
+    // Handle Escape key to close search
+    useEffect(() => {
+        if (!showSearch) return;
+        function handleKey(e: KeyboardEvent) {
+            if (e.key === "Escape") handleCloseSearch();
+        }
+        document.addEventListener("keydown", handleKey);
+        return () => document.removeEventListener("keydown", handleKey);
+    }, [showSearch, handleCloseSearch]);
 
     useEffect(() => {
         const handleOpenSearch = () => {
@@ -511,7 +571,7 @@ export function MenuHeader({
                                         </button>
 
                                         <button
-                                            onClick={() => setShowSearch(!showSearch)}
+                                            onClick={handleToggleSearch}
                                             className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-bold shadow-sm active:scale-95 transition-all ${showSearch
                                                 ? "bg-text-main text-bg-card border-text-main"
                                                 : "bg-surface-section border-border/60 text-text-main"
@@ -591,11 +651,7 @@ export function MenuHeader({
                                 {isMobileSearchActive && (
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            onSearchChange("");
-                                            setShowSearch(false);
-                                            setIsSearchFocused(false);
-                                        }}
+                                        onClick={handleCloseSearch}
                                         className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full bg-surface-section text-text-main active:scale-95 transition-all border border-border/30 shadow-sm"
                                         aria-label="Volver"
                                     >
@@ -770,7 +826,7 @@ export function MenuHeader({
                                                 </button>
 
                                                 <button
-                                                    onClick={() => setShowSearch(!showSearch)}
+                                                    onClick={handleToggleSearch}
                                                     className={`mh-glass-btn flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-sm active:scale-95 transition-all ${showSearch ? "!bg-white !text-black border-white" : ""
                                                         }`}
                                                 >
@@ -851,11 +907,7 @@ export function MenuHeader({
                                 {isMobileSearchActive && (
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            onSearchChange("");
-                                            setShowSearch(false);
-                                            setIsSearchFocused(false);
-                                        }}
+                                        onClick={handleCloseSearch}
                                         className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full bg-surface-section text-text-main active:scale-95 transition-all border border-border/30 shadow-sm"
                                         aria-label="Volver"
                                     >
