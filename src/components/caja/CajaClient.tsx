@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UtensilsCrossed, Table2, ShoppingCart, ChevronUp, X, ClipboardList, Wifi, WifiOff } from "lucide-react";
+import { UtensilsCrossed, Table2, ShoppingCart, ChevronUp, X, ClipboardList, Wifi, WifiOff, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { formatBs } from "@/lib/money";
 import { usePOSOrder, getEmoji, needsModal } from "@/hooks/usePOSOrder";
+import { useNewOrderAlert } from "@/hooks/useNewOrderAlert";
 import { createWaiterOrderAction, updateWaiterOrderAction, settleOrderAction } from "@/actions/waiter-order";
 import { CartLineItem } from "@/components/waiter/CartLineItem";
 import { OrderForm, SubmitButton } from "@/components/waiter/OrderForm";
 import { ActiveOrdersSheet } from "@/components/waiter/ActiveOrdersSheet";
+import { WebOrdersSheet } from "@/components/caja/WebOrdersSheet";
 import { TableSelectorModal } from "@/components/waiter/TableSelectorModal";
 import { MenuItemGrid } from "@/components/waiter/MenuItemGrid";
 import { POSItemDetailModal } from "@/components/pos/POSItemDetailModal";
@@ -51,6 +53,7 @@ export function CajaClient({
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isOrdersSheetOpen, setIsOrdersSheetOpen] = useState(false);
   const [isWaiterOrdersSheetOpen, setIsWaiterOrdersSheetOpen] = useState(false);
+  const [isWebOrdersSheetOpen, setIsWebOrdersSheetOpen] = useState(false);
   const [isTableSelectorOpen, setIsTableSelectorOpen] = useState(false);
   const [layoutZoom, setLayoutZoom] = useState(1);
 
@@ -65,6 +68,12 @@ export function CajaClient({
 
   const paidOrders = pos.liveOrders.filter((o: any) => o.paidAt);
   const waiterPendingOrders = pos.liveOrders.filter((o: any) => !o.paidAt && !o.checkoutToken);
+  // Pedidos hechos desde la web (tienen checkoutToken). Los pendientes de
+  // verificar son los accionables; el resto se muestra como referencia.
+  const webOrders = pos.liveOrders.filter((o: any) => o.checkoutToken);
+  const webPending = webOrders.filter((o: any) => o.status === "pending" || o.status === "whatsapp");
+
+  useNewOrderAlert(webPending);
 
   // En caja el envío cobra, salvo que se edite un pedido ya cobrado.
   const willCharge = !(pos.editingOrderId !== null && pos.editingOrderPaidAt !== null);
@@ -187,6 +196,18 @@ export function CajaClient({
             <span className="hidden md:inline">Órdenes</span>
           </button>
           <button
+            onClick={() => setIsWebOrdersSheetOpen(true)}
+            className="relative flex h-10 items-center gap-2 rounded-xl bg-white/5 px-4 text-xs font-black uppercase tracking-widest text-white/80 hover:bg-white/10 hover:text-white transition-all border border-white/5 active:scale-95"
+          >
+            <Globe size={16} className="text-sky-400" />
+            <span className="hidden md:inline">Pedidos Web</span>
+            {webPending.length > 0 && (
+              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--color-primary)] px-1 text-[10px] font-black text-white animate-pulse">
+                {webPending.length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setIsWaiterOrdersSheetOpen(true)}
             className="relative flex h-10 items-center gap-2 rounded-xl bg-white/5 px-4 text-xs font-black uppercase tracking-widest text-white/80 hover:bg-white/10 hover:text-white transition-all border border-white/5 active:scale-95"
           >
@@ -297,6 +318,10 @@ export function CajaClient({
         isOpen={isWaiterOrdersSheetOpen} onClose={() => setIsWaiterOrdersSheetOpen(false)} orders={waiterPendingOrders}
         onSelect={(order) => { pos.handleEditOrder(order); setIsWaiterOrdersSheetOpen(false); setIsSheetOpen(true); }}
         title="Pedidos de Mesero" emptyText="No hay pedidos de mesero por cobrar"
+      />
+      <WebOrdersSheet
+        isOpen={isWebOrdersSheetOpen} onClose={() => setIsWebOrdersSheetOpen(false)}
+        orders={webOrders} onConfirmed={pos.refetchOrders}
       />
 
       <TableSelectorModal

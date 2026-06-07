@@ -19,14 +19,14 @@ interface ActiveOrdersSheetProps {
 }
 
 const STATUS_ACCENT: Record<string, string> = {
-  paid:      "border-l-emerald-500",
-  kitchen:   "border-l-orange-500",
+  paid: "border-l-emerald-500",
+  kitchen: "border-l-orange-500",
   delivered: "border-l-green-600",
-  whatsapp:  "border-l-blue-500",
-  pending:   "border-l-amber-400",
+  whatsapp: "border-l-blue-500",
+  pending: "border-l-amber-400",
 };
 
-function LocationBadge({ order }: { order: any }) {
+export function LocationBadge({ order }: { order: any }) {
   const mode = order.orderMode ?? "on_site";
   const table = order.tableNumber as string | null | undefined;
 
@@ -45,7 +45,7 @@ function LocationBadge({ order }: { order: any }) {
   if (mode === "take_away") {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-100 text-sky-700 font-bold text-[10px] tracking-tight border border-sky-200 max-w-[140px] truncate">
-        {table || "Mostrador"}
+        {table || "Para llevar"}
       </span>
     );
   }
@@ -71,7 +71,7 @@ function PaymentBadge({ order }: { order: any }) {
   );
 }
 
-function CustomerInfo({ order }: { order: any }) {
+export function CustomerInfo({ order }: { order: any }) {
   const name = order.customerName as string | null | undefined;
   const phone = order.customerPhone as string | null | undefined;
   const isSynthetic = !isRealPhone(phone);
