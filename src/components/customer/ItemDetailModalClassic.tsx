@@ -277,12 +277,25 @@ export function ItemDetailModalClassic({
 
                         {/* includedNote — Visible on all screens in right panel */}
                         {item.includedNote && (
-                            <div className="mx-5 mb-4 flex flex-col items-start gap-1 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 md:mx-6">
+                            <div className="mx-5 mb-4 flex flex-col items-start gap-1 rounded-xl bg-surface-section/40 border border-border/50 px-4 py-3.5 md:mx-6">
                                 <div className="flex items-center gap-1.5">
-                                    <span className="text-emerald-600 text-[13px] font-bold shrink-0">✓</span>
-                                    <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Incluye</p>
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="3.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="h-2.5 w-2.5"
+                                        >
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                    </span>
+                                    <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-text-muted">Incluye</p>
                                 </div>
-                                <p className="text-[13px] text-emerald-800 font-medium leading-snug">{item.includedNote}</p>
+                                <p className="text-[13.5px] text-text-main font-medium leading-relaxed mt-0.5">{item.includedNote}</p>
                             </div>
                         )}
 

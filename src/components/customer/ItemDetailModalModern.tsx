@@ -33,7 +33,7 @@ function StickyTabBar({
   if (tabs.length < 2) return null;
   return (
     <nav
-      className="md:hidden sticky top-0 z-10 shrink-0 flex overflow-x-auto border-b border-[#251a07]/10 gap-1.5 px-4 py-2.5 bg-[#f5ece0]"
+      className="md:hidden sticky top-0 z-10 shrink-0 flex w-full overflow-x-auto border-y border-border gap-1 px-2.5 py-2 bg-bg-app"
       style={{
         scrollbarWidth: "none",
       }}
@@ -45,16 +45,16 @@ function StickyTabBar({
             key={tab.id}
             onClick={() => onTabClick(tab.id)}
             className={cn(
-              "flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-1.5",
+              "flex-auto min-w-0 px-2 py-1.5 rounded-full text-[10.5px] min-[375px]:text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1",
               active
-                ? "bg-[#251a07] text-[#f5ece0] shadow-sm"
-                : "text-[#251a07]/75 hover:bg-[#251a07]/5"
+                ? "bg-text-main text-bg-app shadow-sm"
+                : "text-text-main/75 hover:bg-text-main/5"
             )}
             style={{
               fontFamily: "'Epilogue', sans-serif",
             }}
           >
-            {tab.label}
+            <span className="truncate">{tab.label}</span>
             {tab.count !== undefined && tab.count > 0 && (
               <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-[#bb0005] text-white text-[9px] font-black font-display leading-none">
                 {tab.count}
@@ -228,11 +228,25 @@ export function ItemDetailModalModern({
 
           {/* Desktop includedNote */}
           {item.includedNote && (
-            <div className="hidden md:flex flex-col items-start gap-1.5 rounded-xl bg-[#fcfaf5] border border-[#e5e0d3] border-l-4 border-l-emerald-600 px-5 py-4 mx-6 mt-5">
+            <div className="hidden md:flex flex-col items-start gap-1.5 rounded-xl bg-surface-section/40 border border-border/50 border-l-4 border-l-primary px-5 py-4 mx-6 mt-5">
               <div className="flex items-center gap-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-emerald-800/80">Incluye</p>
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-2.5 w-2.5"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+                <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-text-muted">Incluye</p>
               </div>
-              <p className="text-[14px] text-emerald-900 font-medium leading-relaxed italic">
+              <p className="text-[14px] text-text-main font-medium leading-relaxed italic mt-0.5">
                 &quot;{item.includedNote}&quot;
               </p>
             </div>
@@ -261,7 +275,7 @@ export function ItemDetailModalModern({
           {/* Desktop options heading */}
           {hasImage && (
             <div className="hidden md:block mb-3 px-6 pt-5">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#251a07]/75">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-main/75">
                 Realiza tu pedido
               </p>
               <div className="mt-2 h-px w-full bg-border/60" />
@@ -278,19 +292,19 @@ export function ItemDetailModalModern({
             {hasImage && <div className="h-32 md:hidden w-full shrink-0" />}
 
             {/* Mobile-only card wrapper / Desktop-only pass-through */}
-            <div className="relative flex flex-col bg-bg-app rounded-t-[28px] shadow-[0_-8px_40px_rgba(37,26,7,0.12)] md:p-0 md:bg-transparent md:shadow-none md:rounded-none">
+            <div className="relative flex flex-col bg-bg-app rounded-t-[28px] shadow-modal md:p-0 md:bg-transparent md:shadow-none md:rounded-none">
 
               {/* Drag handle (mobile only) */}
               <div className="md:hidden absolute top-2.5 left-1/2 -translate-x-1/2 z-40" style={{
                 width: 36, height: 4,
                 borderRadius: 99,
-                background: "rgba(37,26,7,0.12)",
+                background: "var(--border)",
               }} />
 
               {/* Mobile suspended close button */}
               <button
                 onClick={modal.handleClose}
-                className="md:hidden absolute left-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-[#251a07]/10 bg-[#fff2e2]/90 text-[#251a07] shadow-sm backdrop-blur-md transition-all active:scale-95"
+                className="md:hidden absolute left-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-border/40 bg-surface-section/90 text-text-main shadow-sm backdrop-blur-md transition-all active:scale-95"
                 aria-label="Volver"
               >
                 <ArrowLeft className="h-5 w-5 stroke-[2.5]" />
@@ -300,7 +314,7 @@ export function ItemDetailModalModern({
               {hasImage && (
                 <div
                   className={cn(
-                    "md:hidden absolute -top-[clamp(115px,30vw,145px)] left-1/2 z-20 -translate-x-1/2 pointer-events-none transition-all duration-700 ease-out",
+                    "md:hidden absolute -top-[clamp(115px,30vw,145px)] left-1/2 z-[45] -translate-x-1/2 pointer-events-none transition-all duration-700 ease-out",
                     imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-90"
                   )}
                   style={{
@@ -358,22 +372,23 @@ export function ItemDetailModalModern({
 
                 {/* INCLUYE badge — if item.includedNote */}
                 {item.includedNote && (
-                  <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl"
-                    style={{ background: "rgba(22,163,74,0.06)", border: "1px solid rgba(22,163,74,0.18)" }}>
-                    <span style={{
-                      width: 18, height: 18,
-                      borderRadius: "50%",
-                      background: "#16a34a",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      fontSize: 10,
-                      color: "#fff",
-                      fontWeight: 900,
-                    }}>✓</span>
-                    <p className="text-[12px] font-semibold text-emerald-900 leading-snug">
-                      <span className="font-black text-emerald-700 uppercase tracking-wide text-[10px] mr-1.5 font-display">Incluye:</span>
+                  <div className="mt-3 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-surface-section/40 border border-border/50">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-2.5 w-2.5"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </span>
+                    <p className="text-[13px] text-text-main font-medium leading-snug">
+                      <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-text-muted mr-1.5">Incluye:</span>
                       {item.includedNote}
                     </p>
                   </div>
@@ -383,16 +398,16 @@ export function ItemDetailModalModern({
                     chips are rendered by ItemShowcaseBody instead, to avoid duplication. */}
                 {!isReadOnly && item.contornos && item.contornos.length > 0 && (
                   <div className="mt-3 flex flex-col gap-1.5">
-                    <span className="text-[10px] font-black uppercase tracking-[0.12em] text-[#251a07]/75 font-display">
+                    <span className="text-[10px] font-black uppercase tracking-[0.12em] text-text-muted font-display">
                       Incluido en el plato:
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {item.contornos.map((c) => (
                         <div
                           key={c.id}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#f5ece0] bg-[#f5ece0]/30 text-xs font-semibold text-[#251a07]"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-border/50 bg-surface-section/40 text-xs font-semibold text-text-main"
                         >
-                          <span className="text-[#16a34a] text-[10px]">✓</span>
+                          <span className="text-primary text-[10px] font-black">✓</span>
                           <span>{c.name.replace(/\s*\([^)]*\)\s*$/, "").trim()}</span>
                         </div>
                       ))}

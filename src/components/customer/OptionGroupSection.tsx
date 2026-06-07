@@ -22,7 +22,7 @@ export function OptionGroupSection({
       {groups.map((group) => (
         <div
           key={group.id}
-          className="border-t border-[#f5ece0] px-4 py-6 md:border-t-0 md:border-b md:border-border md:px-4 md:py-3"
+          className="border-t border-border/40 px-4 py-6 md:border-t-0 md:border-b md:border-border md:px-4 md:py-3"
         >
           {/* Desktop Header */}
           <div className="hidden md:flex items-center gap-2 mb-2">
@@ -40,13 +40,13 @@ export function OptionGroupSection({
 
           {/* Mobile Header */}
           <div className="md:hidden flex items-baseline justify-between mb-3">
-            <h3 className="font-epilogue font-semibold text-base text-[#251a07]">
+            <h3 className="font-display font-semibold text-base text-text-main">
               {group.name}
             </h3>
             <span
               className={cn(
                 "text-xs font-semibold uppercase tracking-wider",
-                group.required ? "text-[#bb0005]" : "text-[#251a07]/40"
+                group.required ? "text-primary" : "text-text-main/40"
               )}
             >
               {group.required ? "Obligatorio · Elige 1" : "Opcional"}
@@ -90,20 +90,20 @@ export function OptionGroupSection({
                       onClick={() => onSelectRadio(group.id, option.id)}
                       className={cn(
                         "flex md:hidden w-full items-center justify-between rounded-xl px-3 py-3.5 transition-all border border-transparent text-left",
-                        isSelected && "bg-[#f5ece0]/40 border-l-2 border-l-[#bb0005]"
+                        isSelected && "bg-surface-section/40 border-l-2 border-l-primary"
                       )}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div
                           className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                            isSelected ? "border-[#bb0005] bg-[#bb0005]" : "border-[#251a07]/20"
+                            isSelected ? "border-primary bg-primary" : "border-border/60"
                           }`}
                         >
                           {isSelected && (
                             <div className="h-1.5 w-1.5 rounded-full bg-white" />
                           )}
                         </div>
-                        <span className="text-[14px] font-medium text-[#251a07] truncate">
+                        <span className="text-[14px] font-medium text-text-main truncate">
                           {option.name}
                         </span>
                       </div>
@@ -111,15 +111,15 @@ export function OptionGroupSection({
                       <div className="shrink-0 pl-2">
                         {option.priceUsdCents > 0 ? (
                           <div className="text-right">
-                            <span className="text-[13px] font-bold text-[#251a07]">
+                            <span className="text-[13px] font-bold text-text-main">
                               +{formatBs(Math.round(option.priceUsdCents * currentRateBsPerUsd), { rounded: true })}
                             </span>
-                            <span className="block text-[10px] text-[#251a07]/50 font-medium">
+                            <span className="block text-[10px] text-text-muted font-medium">
                               {formatRef(option.priceUsdCents)}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-[12px] font-medium text-[#251a07]/60">
+                          <span className="text-[12px] font-medium text-text-muted">
                             Incluido
                           </span>
                         )}

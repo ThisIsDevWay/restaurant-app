@@ -2,11 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Instagram, LayoutGrid, Search, ChevronDown, Info, Sun, Moon } from "lucide-react";
+import { Instagram, LayoutGrid, Search, ChevronDown, Info, ArrowLeft, X } from "lucide-react";
 import { HeaderCartButton } from "@/app/(public)/HeaderCartButton";
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { useMenuMode } from "./MenuModeContext";
 import { resolveOpenState, formatBusinessHours, type BusinessHours, type StatusOverride } from "@/lib/utils/date";
+import { PinIcon, ClockIcon } from "./_parts/HeaderIcons";
+import { ThemeSwitch } from "./_parts/ThemeSwitch";
+import { MenuHeaderStyles } from "./_parts/MenuHeaderStyles";
+import { cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -47,100 +51,7 @@ interface MenuHeaderProps {
     onToggleTheme?: () => void;
 }
 
-// ─── SVG Icons ────────────────────────────────────────────────────────────────
 
-function PinIcon() {
-    return (
-        <svg
-            width="11"
-            height="13"
-            viewBox="0 0 11 13"
-            fill="none"
-            aria-hidden="true"
-            style={{ flexShrink: 0 }}
-        >
-            <path
-                d="M5.5 0C3.015 0 1 2.015 1 4.5c0 3.375 4.5 8.5 4.5 8.5S10 7.875 10 4.5C10 2.015 7.985 0 5.5 0Zm0 6.25A1.75 1.75 0 1 1 5.5 2.75a1.75 1.75 0 0 1 0 3.5Z"
-                fill="currentColor"
-            />
-        </svg>
-    );
-}
-
-function ClockIcon() {
-    return (
-        <svg
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-            aria-hidden="true"
-            style={{ flexShrink: 0 }}
-        >
-            <circle cx="6" cy="6" r="5.25" stroke="currentColor" strokeWidth="1.5" />
-            <path
-                d="M6 3v3.25L8 8"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-        </svg>
-    );
-}
-
-// ─── ThemeSwitch ──────────────────────────────────────────────────────────────
-
-function ThemeSwitch({
-    theme,
-    onToggle,
-    variant = "glass",
-}: {
-    theme: "light" | "dark";
-    onToggle: () => void;
-    variant?: "glass" | "solid";
-}) {
-    const isDark = theme === "dark";
-    return (
-        <button
-            onClick={onToggle}
-            aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-            className={[
-                "flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-all duration-300 active:scale-95 select-none",
-                variant === "glass"
-                    ? "mh-glass-btn text-white"
-                    : "bg-surface-section border border-border/60 text-text-main shadow-sm",
-            ].join(" ")}
-        >
-            {/* Sun icon */}
-            <Sun
-                className={[
-                    "h-3.5 w-3.5 shrink-0 transition-all duration-300",
-                    isDark ? "opacity-40 scale-90" : "opacity-100 scale-100",
-                ].join(" ")}
-                strokeWidth={2.2}
-            />
-            {/* Pill track */}
-            <span
-                className="relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors duration-300"
-                style={{ background: isDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.30)" }}
-            >
-                <span
-                    className="absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform duration-300"
-                    style={{ transform: isDark ? "translateX(15px)" : "translateX(2px)" }}
-                />
-            </span>
-            {/* Moon icon */}
-            <Moon
-                className={[
-                    "h-3.5 w-3.5 shrink-0 transition-all duration-300",
-                    isDark ? "opacity-100 scale-100" : "opacity-40 scale-90",
-                ].join(" ")}
-                strokeWidth={2.2}
-            />
-        </button>
-    );
-}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -170,6 +81,8 @@ export function MenuHeader({
     const [openStatus, setOpenStatus] = useState<boolean | null>(null);
     const [showInfo, setShowInfo] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const isMobileSearchActive = showSearch && (isSearchFocused || searchQuery.length > 0);
 
     // Texto de horario: usa el override manual o, si está vacío, el autogenerado
     // desde businessHours.
@@ -199,6 +112,24 @@ export function MenuHeader({
         } catch (e) {
             setGreeting("¡Hola!");
         }
+    }, []);
+
+    useEffect(() => {
+        const handleOpenSearch = () => {
+            setShowSearch(true);
+            setTimeout(() => {
+                const input = document.getElementById("menu-search-input");
+                if (input) {
+                    input.focus();
+                    input.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+            }, 100);
+        };
+
+        window.addEventListener("menu:openSearch", handleOpenSearch);
+        return () => {
+            window.removeEventListener("menu:openSearch", handleOpenSearch);
+        };
     }, []);
 
     // Dynamically control right-fade visibility based on scroll position
@@ -237,7 +168,7 @@ export function MenuHeader({
 
     return (
         <div
-            className="w-full bg-bg-card shadow-card overflow-hidden"
+            className={cn("w-full bg-bg-card shadow-card", !isMobileSearchActive && "overflow-hidden")}
             style={{ animation: "mh-fade-in 700ms ease-out both" }}
         >
             {/* ── Hero ────────────────────────────────────────────────────────── */}
@@ -516,89 +447,91 @@ export function MenuHeader({
             {/* ── Mobile App Header (md:hidden) — compact or hero depending on isReadOnly ── */}
             <div className="md:hidden w-full bg-bg-app">
                 {isReadOnly ? (
-                    <div className="bg-bg-app w-full border-b border-border/10 shadow-sm flex flex-col gap-3 p-4 pb-0 relative">
-                        {onToggleTheme && (
+                    <div className={cn("bg-bg-app w-full border-b border-border/10 shadow-sm flex flex-col gap-3 p-4 pb-0 relative transition-all duration-300", isMobileSearchActive && "gap-0 p-3 pb-3 sticky top-0 z-30 border-border/40 shadow-md")}>
+                        {onToggleTheme && !isMobileSearchActive && (
                             <div className="absolute top-4 right-4 z-20">
                                 <ThemeSwitch theme={theme} onToggle={onToggleTheme} variant="solid" />
                             </div>
                         )}
                         {/* Main row: Logo + Name/Status/Triggers */}
-                        <div className="flex items-center gap-3.5">
-                            {/* Logo */}
-                            {logoUrl ? (
-                                <img
-                                    src={logoUrl}
-                                    alt={restaurantName}
-                                    className="w-[105px] h-[105px] shrink-0 rounded-full object-contain bg-bg-card p-0.5 shadow-sm border border-border/10"
-                                />
-                            ) : (
-                                <div className="w-[105px] h-[105px] rounded-full bg-gradient-to-br from-[#C42B2B] to-[#7E0A0C] flex items-center justify-center font-display italic font-bold text-[36px] text-white shadow-sm shrink-0 border border-border/10">
-                                    {restaurantName[0] || "G"}
-                                </div>
-                            )}
+                        {!isMobileSearchActive && (
+                            <div className="flex items-center gap-3.5">
+                                {/* Logo */}
+                                {logoUrl ? (
+                                    <img
+                                        src={logoUrl}
+                                        alt={restaurantName}
+                                        className="w-[105px] h-[105px] shrink-0 rounded-full object-contain bg-bg-card p-0.5 shadow-sm border border-border/10"
+                                    />
+                                ) : (
+                                    <div className="w-[105px] h-[105px] rounded-full bg-gradient-to-br from-[#C42B2B] to-[#7E0A0C] flex items-center justify-center font-display italic font-bold text-[36px] text-white shadow-sm shrink-0 border border-border/10">
+                                        {restaurantName[0] || "G"}
+                                    </div>
+                                )}
 
-                            {/* Column: Name + Status + Buttons */}
-                            <div className="flex-1 min-w-0 flex flex-col gap-1.5 justify-center">
-                                <h1 className="font-display text-[19px] font-extrabold leading-tight text-text-main tracking-tight break-words pr-20">
-                                    {restaurantName}
-                                </h1>
-                                <div className="flex flex-wrap items-center gap-1.5 pr-20">
-                                    {openStatus !== null && (
-                                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${openStatus
-                                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800/30"
-                                            : "bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-800/30"
-                                            }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${openStatus ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
-                                            {openStatus ? "Abierto" : "Cerrado"}
-                                        </span>
-                                    )}
-
-                                    {showRate && rateData && (
-                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-bg-card border border-border/50 text-[10px] font-bold text-text-main shadow-sm">
-                                            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isStale ? "bg-amber-400" : "bg-emerald-500 animate-pulse"}`} />
-                                            <span className="text-text-main/50 text-[8px] font-bold uppercase tracking-wider mr-0.5">BCV</span>
-                                            <span className="font-extrabold font-mono text-[9.5px]">
-                                                Bs. {rateData.rate.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </span>
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Interactive triggers (Info & Search) to save huge vertical space */}
-                                <div className="flex flex-wrap items-center gap-2 mt-1">
-                                    <button
-                                        onClick={() => setShowInfo(!showInfo)}
-                                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-bold shadow-sm active:scale-95 transition-all ${showInfo
-                                            ? "bg-text-main text-bg-card border-text-main"
-                                            : "bg-surface-section border-border/60 text-text-main"
-                                            }`}
-                                    >
-                                        <Info className="h-3.5 w-3.5 shrink-0" />
-                                        <span>{showInfo ? "Info" : "Información"}</span>
-                                        <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showInfo ? "rotate-180" : ""}`} />
-                                    </button>
-
-                                    <button
-                                        onClick={() => setShowSearch(!showSearch)}
-                                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-bold shadow-sm active:scale-95 transition-all ${showSearch
-                                            ? "bg-text-main text-bg-card border-text-main"
-                                            : "bg-surface-section border-border/60 text-text-main"
-                                            }`}
-                                    >
-                                        <Search className="h-3.5 w-3.5 shrink-0" />
-                                        <span>Buscar</span>
-                                        {searchQuery && (
-                                            <span className="ml-1 px-1.5 py-0.2 bg-primary text-white text-[9px] rounded-full font-black">
-                                                !
+                                {/* Column: Name + Status + Buttons */}
+                                <div className="flex-1 min-w-0 flex flex-col gap-1.5 justify-center">
+                                    <h1 className="font-display text-[19px] font-extrabold leading-tight text-text-main tracking-tight break-words pr-20">
+                                        {restaurantName}
+                                    </h1>
+                                    <div className="flex flex-wrap items-center gap-1.5 pr-20">
+                                        {openStatus !== null && (
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${openStatus
+                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800/30"
+                                                : "bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-800/30"
+                                                }`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${openStatus ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+                                                {openStatus ? "Abierto" : "Cerrado"}
                                             </span>
                                         )}
-                                    </button>
+
+                                        {showRate && rateData && (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-bg-card border border-border/50 text-[10px] font-bold text-text-main shadow-sm">
+                                                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isStale ? "bg-amber-400" : "bg-emerald-500 animate-pulse"}`} />
+                                                <span className="text-text-main/50 text-[8px] font-bold uppercase tracking-wider mr-0.5">BCV</span>
+                                                <span className="font-extrabold font-mono text-[9.5px]">
+                                                    Bs. {rateData.rate.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Interactive triggers (Info & Search) to save huge vertical space */}
+                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                        <button
+                                            onClick={() => setShowInfo(!showInfo)}
+                                            className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-bold shadow-sm active:scale-95 transition-all ${showInfo
+                                                ? "bg-text-main text-bg-card border-text-main"
+                                                : "bg-surface-section border-border/60 text-text-main"
+                                                }`}
+                                        >
+                                            <Info className="h-3.5 w-3.5 shrink-0" />
+                                            <span>{showInfo ? "Info" : "Información"}</span>
+                                            <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showInfo ? "rotate-180" : ""}`} />
+                                        </button>
+
+                                        <button
+                                            onClick={() => setShowSearch(!showSearch)}
+                                            className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-bold shadow-sm active:scale-95 transition-all ${showSearch
+                                                ? "bg-text-main text-bg-card border-text-main"
+                                                : "bg-surface-section border-border/60 text-text-main"
+                                                }`}
+                                        >
+                                            <Search className="h-3.5 w-3.5 shrink-0" />
+                                            <span>Buscar</span>
+                                            {searchQuery && (
+                                                <span className="ml-1 px-1.5 py-0.2 bg-primary text-white text-[9px] rounded-full font-black">
+                                                    !
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Collapsible Information section */}
-                        {showInfo && (
+                        {showInfo && !isMobileSearchActive && (
                             <div className="flex flex-col gap-2.5 mt-1 animate-mh-fade-in">
                                 {(branchName || scheduleText || instagramHref) && (
                                     <div className="bg-surface-section/40 border border-border/20 rounded-2xl p-4 flex flex-col gap-3.5 shadow-sm">
@@ -654,19 +587,54 @@ export function MenuHeader({
 
                         {/* Collapsible Search bar */}
                         {showSearch && (
-                            <div className="px-0 pb-3 pt-1 animate-mh-fade-in">
-                                <div className="relative w-full">
+                            <div className={cn("px-0 pb-3 pt-1 animate-mh-fade-in", isMobileSearchActive && "pb-0 pt-0 flex items-center gap-3")}>
+                                {isMobileSearchActive && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onSearchChange("");
+                                            setShowSearch(false);
+                                            setIsSearchFocused(false);
+                                        }}
+                                        className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full bg-surface-section text-text-main active:scale-95 transition-all border border-border/30 shadow-sm"
+                                        aria-label="Volver"
+                                    >
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </button>
+                                )}
+                                <div className="relative flex-1">
                                     <input
                                         id="menu-search-input"
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => onSearchChange(e.target.value)}
+                                        onFocus={() => setIsSearchFocused(true)}
+                                        onBlur={() => {
+                                            setTimeout(() => {
+                                                setIsSearchFocused(false);
+                                            }, 200);
+                                        }}
                                         placeholder="Buscar un plato…"
-                                        className="w-full font-sans bg-bg-card border border-input rounded-xl py-2.5 px-4 pl-10 text-[13.5px] text-text-main placeholder:text-text-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all shadow-card"
+                                        className="w-full font-sans bg-bg-card border border-input rounded-xl py-2.5 px-4 pl-10 pr-9 text-[13.5px] text-text-main placeholder:text-text-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all shadow-card"
                                     />
                                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">
                                         <Search className="h-4 w-4" />
                                     </span>
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onSearchChange("");
+                                                const input = document.getElementById("menu-search-input");
+                                                if (input) input.focus();
+                                            }}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center text-text-muted hover:text-text-main active:scale-90"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -675,152 +643,154 @@ export function MenuHeader({
                 ) : (
                     <div className="w-full bg-bg-app">
                         {/* Hero con imagen de fondo */}
-                        <div className="relative w-full overflow-hidden">
-                            {/* Background */}
-                            {coverImageUrl ? (
+                        {!isMobileSearchActive && (
+                            <div className="relative w-full overflow-hidden">
+                                {/* Background */}
+                                {coverImageUrl ? (
+                                    <div
+                                        className="mh-ken-burns"
+                                        style={{
+                                            position: "absolute",
+                                            inset: 0,
+                                            backgroundImage: `url(${coverImageUrl})`,
+                                            backgroundSize: "cover",
+                                            backgroundPosition: "center center",
+                                            backgroundRepeat: "no-repeat",
+                                        }}
+                                    />
+                                ) : (
+                                    <div
+                                        style={{
+                                            position: "absolute",
+                                            inset: 0,
+                                            backgroundColor: "#0a0a0a",
+                                            backgroundImage:
+                                                "radial-gradient(ellipse at 30% 50%, rgba(187,0,5,0.12) 0%, transparent 60%), radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)",
+                                            backgroundSize: "100% 100%, 20px 20px",
+                                        }}
+                                    />
+                                )}
+
+                                {/* Cinematic overlay */}
                                 <div
-                                    className="mh-ken-burns"
+                                    className="pointer-events-none absolute inset-0"
                                     style={{
-                                        position: "absolute",
-                                        inset: 0,
-                                        backgroundImage: `url(${coverImageUrl})`,
-                                        backgroundSize: "cover",
-                                        backgroundPosition: "center center",
-                                        backgroundRepeat: "no-repeat",
+                                        background: [
+                                            "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.92) 100%)",
+                                            "radial-gradient(ellipse at 50% 120%, rgba(187,0,5,0.18) 0%, transparent 60%)",
+                                        ].join(", "),
                                     }}
                                 />
-                            ) : (
+                                {/* Warm film */}
                                 <div
+                                    className="pointer-events-none absolute inset-0"
                                     style={{
-                                        position: "absolute",
-                                        inset: 0,
-                                        backgroundColor: "#0a0a0a",
-                                        backgroundImage:
-                                            "radial-gradient(ellipse at 30% 50%, rgba(187,0,5,0.12) 0%, transparent 60%), radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)",
-                                        backgroundSize: "100% 100%, 20px 20px",
+                                        background:
+                                            "linear-gradient(135deg, rgba(255,200,100,0.04) 0%, transparent 50%, rgba(100,10,30,0.10) 100%)",
+                                        mixBlendMode: "overlay",
                                     }}
                                 />
-                            )}
 
-                            {/* Cinematic overlay */}
-                            <div
-                                className="pointer-events-none absolute inset-0"
-                                style={{
-                                    background: [
-                                        "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.92) 100%)",
-                                        "radial-gradient(ellipse at 50% 120%, rgba(187,0,5,0.18) 0%, transparent 60%)",
-                                    ].join(", "),
-                                }}
-                            />
-                            {/* Warm film */}
-                            <div
-                                className="pointer-events-none absolute inset-0"
-                                style={{
-                                    background:
-                                        "linear-gradient(135deg, rgba(255,200,100,0.04) 0%, transparent 50%, rgba(100,10,30,0.10) 100%)",
-                                    mixBlendMode: "overlay",
-                                }}
-                            />
+                                {/* Content over image */}
+                                <div className={`relative z-10 px-4 pt-4 ${showInfoCard && showInfo ? "pb-16" : "pb-5"}`}>
+                                    {/* Top row: Instagram (izq) · BCV + carrito (der) */}
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            {instagramHref && (
+                                                <a
+                                                    href={instagramHref}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    aria-label="Instagram"
+                                                    className="mh-glass-btn flex h-10 w-10 items-center justify-center rounded-full text-white"
+                                                >
+                                                    <Instagram className="h-[18px] w-[18px]" />
+                                                </a>
+                                            )}
+                                        </div>
 
-                            {/* Content over image */}
-                            <div className={`relative z-10 px-4 pt-4 ${showInfoCard && showInfo ? "pb-16" : "pb-5"}`}>
-                                {/* Top row: Instagram (izq) · BCV + carrito (der) */}
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="flex shrink-0 items-center gap-2">
-                                        {instagramHref && (
-                                            <a
-                                                href={instagramHref}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                aria-label="Instagram"
-                                                className="mh-glass-btn flex h-10 w-10 items-center justify-center rounded-full text-white"
-                                            >
-                                                <Instagram className="h-[18px] w-[18px]" />
-                                            </a>
-                                        )}
-                                    </div>
-
-                                    {/* Right side: BCV + ThemeSwitch + Cart */}
-                                    <div className="flex shrink-0 items-center gap-2">
-                                        {showRate && rateData && (
-                                            <div className="mh-glass-btn flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-[9px]">
-                                                <span
-                                                    title={isStale ? "Tasa del día anterior" : undefined}
-                                                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${isStale ? "bg-amber-400" : "bg-emerald-400 mh-pulse"}`}
-                                                />
-                                                <span className="text-[9px] font-bold uppercase tracking-widest text-white/55">BCV</span>
-                                                <span className="text-[12px] font-bold tracking-tight text-white">
-                                                    {rateData.rate.toLocaleString("es-VE", {
-                                                        minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2,
-                                                    })}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {onToggleTheme && (
-                                            <ThemeSwitch theme={theme} onToggle={onToggleTheme} variant="glass" />
-                                        )}
-                                        <HeaderCartButton
-                                            className="!p-0 flex h-10 w-10 items-center justify-center rounded-full bg-bg-card shadow-elevated"
-                                            iconClassName="text-text-main h-[18px] w-[18px]"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Brand: logo (izq) + Column (name, greeting, compact toggle buttons) */}
-                                <div className="mt-4 flex items-center gap-3.5">
-                                    {logoUrl && (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                            src={logoUrl}
-                                            alt={restaurantName}
-                                            className="h-16 w-16 shrink-0 rounded-full bg-bg-card object-contain p-1 shadow-lg ring-1 ring-white/20"
-                                        />
-                                    )}
-                                    <div className="min-w-0 flex-1 flex flex-col gap-1">
-                                        <h1
-                                            className="truncate font-display text-[22px] font-extrabold leading-tight tracking-tight text-white"
-                                            style={{ textShadow: "0 2px 16px rgba(0,0,0,0.45)" }}
-                                        >
-                                            {restaurantName}
-                                        </h1>
-                                        <p className="font-sans text-[13px] font-semibold leading-tight text-white/90">
-                                            {greeting}
-                                        </p>
-
-                                        {/* Compact toggle buttons inside Hero (under name, centered next to logo) */}
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <button
-                                                onClick={() => setShowInfo(!showInfo)}
-                                                className={`mh-glass-btn flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-sm active:scale-95 transition-all ${showInfo ? "!bg-white !text-black border-white" : ""
-                                                    }`}
-                                            >
-                                                <Info className="h-3.5 w-3.5 shrink-0" />
-                                                <span>{showInfo ? "Info" : "Información"}</span>
-                                                <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showInfo ? "rotate-180" : ""}`} />
-                                            </button>
-
-                                            <button
-                                                onClick={() => setShowSearch(!showSearch)}
-                                                className={`mh-glass-btn flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-sm active:scale-95 transition-all ${showSearch ? "!bg-white !text-black border-white" : ""
-                                                    }`}
-                                            >
-                                                <Search className="h-3.5 w-3.5 shrink-0" />
-                                                <span>Buscar</span>
-                                                {searchQuery && (
-                                                    <span className="ml-1 px-1.5 py-0.2 bg-primary text-white text-[9px] rounded-full font-black">
-                                                        !
+                                        {/* Right side: BCV + ThemeSwitch + Cart */}
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            {showRate && rateData && (
+                                                <div className="mh-glass-btn flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-[9px]">
+                                                    <span
+                                                        title={isStale ? "Tasa del día anterior" : undefined}
+                                                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${isStale ? "bg-amber-400" : "bg-emerald-400 mh-pulse"}`}
+                                                    />
+                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-white/55">BCV</span>
+                                                    <span className="text-[12px] font-bold tracking-tight text-white">
+                                                        {rateData.rate.toLocaleString("es-VE", {
+                                                            minimumFractionDigits: 2,
+                                                            maximumFractionDigits: 2,
+                                                        })}
                                                     </span>
-                                                )}
-                                            </button>
+                                                </div>
+                                            )}
+                                            {onToggleTheme && (
+                                                <ThemeSwitch theme={theme} onToggle={onToggleTheme} variant="glass" />
+                                            )}
+                                            <HeaderCartButton
+                                                className="!p-0 flex h-10 w-10 items-center justify-center rounded-full bg-bg-card shadow-elevated"
+                                                iconClassName="text-text-main h-[18px] w-[18px]"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Brand: logo (izq) + Column (name, greeting, compact toggle buttons) */}
+                                    <div className="mt-4 flex items-center gap-3.5">
+                                        {logoUrl && (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img
+                                                src={logoUrl}
+                                                alt={restaurantName}
+                                                className="h-16 w-16 shrink-0 rounded-full bg-bg-card object-contain p-1 shadow-lg ring-1 ring-white/20"
+                                            />
+                                        )}
+                                        <div className="min-w-0 flex-1 flex flex-col gap-1">
+                                            <h1
+                                                className="truncate font-display text-[22px] font-extrabold leading-tight tracking-tight text-white"
+                                                style={{ textShadow: "0 2px 16px rgba(0,0,0,0.45)" }}
+                                            >
+                                                {restaurantName}
+                                            </h1>
+                                            <p className="font-sans text-[13px] font-semibold leading-tight text-white/90">
+                                                {greeting}
+                                            </p>
+
+                                            {/* Compact toggle buttons inside Hero (under name, centered next to logo) */}
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <button
+                                                    onClick={() => setShowInfo(!showInfo)}
+                                                    className={`mh-glass-btn flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-sm active:scale-95 transition-all ${showInfo ? "!bg-white !text-black border-white" : ""
+                                                        }`}
+                                                >
+                                                    <Info className="h-3.5 w-3.5 shrink-0" />
+                                                    <span>{showInfo ? "Info" : "Información"}</span>
+                                                    <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showInfo ? "rotate-180" : ""}`} />
+                                                </button>
+
+                                                <button
+                                                    onClick={() => setShowSearch(!showSearch)}
+                                                    className={`mh-glass-btn flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-sm active:scale-95 transition-all ${showSearch ? "!bg-white !text-black border-white" : ""
+                                                        }`}
+                                                >
+                                                    <Search className="h-3.5 w-3.5 shrink-0" />
+                                                    <span>Buscar</span>
+                                                    {searchQuery && (
+                                                        <span className="ml-1 px-1.5 py-0.2 bg-primary text-white text-[9px] rounded-full font-black">
+                                                            !
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Tarjeta flotante — ubicación · horario · estado */}
-                        {showInfoCard && showInfo && (
+                        {showInfoCard && showInfo && !isMobileSearchActive && (
                             <div className="relative z-20 -mt-10 px-4 animate-mh-fade-in">
                                 <div className="flex items-center gap-3 rounded-modal bg-bg-card px-4 py-3 shadow-elevated">
                                     {branchName && (
@@ -877,19 +847,54 @@ export function MenuHeader({
 
                         {/* Buscador full-width */}
                         {showSearch && (
-                            <div className="px-4 pb-1 pt-4 animate-mh-fade-in">
-                                <div className="relative w-full">
+                            <div className={cn("px-4 pb-1 pt-4 animate-mh-fade-in", isMobileSearchActive && "pb-3 pt-3 flex items-center gap-3 bg-bg-app border-b border-border/20 sticky top-0 z-30 shadow-sm")}>
+                                {isMobileSearchActive && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onSearchChange("");
+                                            setShowSearch(false);
+                                            setIsSearchFocused(false);
+                                        }}
+                                        className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full bg-surface-section text-text-main active:scale-95 transition-all border border-border/30 shadow-sm"
+                                        aria-label="Volver"
+                                    >
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </button>
+                                )}
+                                <div className="relative flex-1">
                                     <input
                                         id="menu-search-input"
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => onSearchChange(e.target.value)}
+                                        onFocus={() => setIsSearchFocused(true)}
+                                        onBlur={() => {
+                                            setTimeout(() => {
+                                                setIsSearchFocused(false);
+                                            }, 200);
+                                        }}
                                         placeholder="Buscar un plato, ej. asado negro"
-                                        className="w-full font-sans bg-bg-card border border-input rounded-xl py-3 px-4 pl-10 text-[13px] text-text-main placeholder:text-text-main/40 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all shadow-card"
+                                        className="w-full font-sans bg-bg-card border border-input rounded-xl py-3 px-4 pl-10 pr-9 text-[13px] text-text-main placeholder:text-text-main/40 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all shadow-card"
                                     />
                                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-main/40 pointer-events-none">
                                         <Search className="h-4 w-4" />
                                     </span>
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onSearchChange("");
+                                                const input = document.getElementById("menu-search-input");
+                                                if (input) input.focus();
+                                            }}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center text-text-muted hover:text-text-main active:scale-90"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -956,159 +961,7 @@ export function MenuHeader({
             </div>
 
             {/* ── Scoped styles ────────────────────────────────────────────── */}
-            <style>{`
-                @keyframes mh-fade-in {
-                  from { opacity: 0; }
-                  to   { opacity: 1; }
-                }
-                @keyframes mh-logo-in {
-                  from { opacity: 0; transform: translateY(16px) scale(0.96); }
-                  to   { opacity: 1; transform: translateY(0) scale(1); }
-                }
-                @keyframes mh-pills-in {
-                  from { opacity: 0; transform: translateY(8px); }
-                  to   { opacity: 1; transform: translateY(0); }
-                }
-                @keyframes mh-ken-burns {
-                   0%   { transform: scale(1.1) translate(0%,    0%); }
-                   33%  { transform: scale(1.14) translate(-1%,  -0.5%); }
-                   66%  { transform: scale(1.12) translate(0.8%,  0.4%); }
-                   100% { transform: scale(1.1) translate(0%,    0%); }
-                }
-                @keyframes mh-shimmer {
-                  0%   { opacity: 0; transform: translateX(-100%); }
-                  40%  { opacity: 1; }
-                  100% { opacity: 0; transform: translateX(200%); }
-                }
-                @keyframes mh-dot-pulse {
-                  0%, 100% { opacity: 1; transform: scale(1); }
-                  50%      { opacity: 0.5; transform: scale(0.75); }
-                }
-
-                .mh-ken-burns {
-                  animation: mh-ken-burns 28s ease-in-out infinite;
-                  will-change: transform;
-                  transform-origin: center center;
-                }
-
-                /* Shimmer accent line */
-                .mh-shimmer-line {
-                  background: linear-gradient(
-                    90deg,
-                    transparent 0%,
-                    rgba(255,255,255,0.0) 20%,
-                    rgba(255,255,255,0.55) 50%,
-                    rgba(255,255,255,0.0) 80%,
-                    transparent 100%
-                  );
-                  animation: mh-shimmer 5s 1.5s cubic-bezier(0.4,0,0.6,1) infinite;
-                }
-
-                /* Pulsing dot for live rate */
-                .mh-pulse {
-                  animation: mh-dot-pulse 2s ease-in-out infinite;
-                }
-
-                /* Unified glassmorphism button */
-                .mh-glass-btn {
-                  background: rgba(255,255,255,0.10);
-                  backdrop-filter: blur(20px) saturate(1.6);
-                  -webkit-backdrop-filter: blur(20px) saturate(1.6);
-                  border: 1px solid rgba(255,255,255,0.14);
-                  box-shadow:
-                    0 2px 8px rgba(0,0,0,0.18),
-                    inset 0 1px 0 rgba(255,255,255,0.10);
-                  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
-                }
-                .mh-glass-btn:hover {
-                  background: rgba(255,255,255,0.16);
-                  border-color: rgba(255,255,255,0.22);
-                  box-shadow:
-                    0 4px 16px rgba(0,0,0,0.22),
-                    inset 0 1px 0 rgba(255,255,255,0.14);
-                }
-                .mh-glass-btn:active {
-                  transform: scale(0.94);
-                  background: rgba(255,255,255,0.18);
-                }
-
-                /* Metadata chip — frosted glass */
-                .mh-meta-chip {
-                  background: rgba(0,0,0,0.28);
-                  backdrop-filter: blur(16px) saturate(1.3);
-                  -webkit-backdrop-filter: blur(16px) saturate(1.3);
-                  border: 1px solid rgba(255,255,255,0.10);
-                  box-shadow:
-                    0 2px 12px rgba(0,0,0,0.15),
-                    inset 0 1px 0 rgba(255,255,255,0.06);
-                }
-
-                /* Pills bar */
-                .mh-pills-bar {
-                  background: var(--bg-card);
-                  border-bottom: 1px solid var(--border);
-                  box-shadow: 0 2px 8px rgba(var(--shadow-color), 0.04);
-                }
-
-                /* Premium pill styles */
-                .mh-pill {
-                  position: relative;
-                  border-radius: 999px;
-                  padding: 10px 20px;
-                  font-size: clamp(13px, 3.5vw, 14.5px);
-                  font-weight: 600;
-                  white-space: nowrap;
-                  flex-shrink: 0;
-                  border: 1.5px solid transparent;
-                  cursor: pointer;
-                  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-                  outline: none;
-                  letter-spacing: 0.015em;
-                  -webkit-tap-highlight-color: transparent;
-                }
-
-                /* Desktop pill sizing — more spacious */
-                @media (min-width: 1024px) {
-                  .mh-pill {
-                    padding: 12px 24px;
-                    font-size: 15px;
-                    letter-spacing: 0.02em;
-                  }
-                }
-
-                .mh-pill[data-active="false"] {
-                  background: var(--surface-section);
-                  color: var(--ink);
-                  border-color: var(--border);
-                }
-                .mh-pill[data-active="false"]:hover {
-                  background: var(--bg-app);
-                  transform: translateY(-1px);
-                  box-shadow: 0 2px 8px rgba(var(--shadow-color), 0.08);
-                }
-                .mh-pill[data-active="false"]:active {
-                  background: var(--border-ghost);
-                  transform: scale(0.95);
-                }
-                .mh-pill[data-active="true"] {
-                  background: linear-gradient(135deg, #bb0005 0%, #e2231a 100%);
-                  color: #fff;
-                  font-weight: 800;
-                  border-color: rgba(255,255,255,0.15);
-                  box-shadow:
-                    0 4px 14px rgba(187,0,5,0.40),
-                    0 1px 3px rgba(187,0,5,0.25),
-                    inset 0 1px 0 rgba(255,255,255,0.20);
-                  transform: translateY(-2px) scale(1.06);
-                }
-                .mh-pill[data-active="true"]:active {
-                  transform: scale(0.95) translateY(0);
-                  box-shadow: 0 2px 8px rgba(187,0,5,0.28);
-                }
-
-                /* Hide webkit scrollbar */
-                .mh-pills-scroll::-webkit-scrollbar { display: none; }
-            `}</style>
+            <MenuHeaderStyles />
         </div>
     );
 }

@@ -5,20 +5,7 @@ import { Minus, Plus, Trash2, AlertTriangle, Pencil } from "lucide-react";
 import { formatBs, formatRef } from "@/lib/money";
 import { type CartItem as CartItemType } from "@/store/cartStore";
 
-/* ─────────────────────────────────────────────
-   DESIGN TOKENS
-───────────────────────────────────────────── */
-const T = {
-  primary: "#bb0005",
-  primaryDeep: "#e2231a",
-  ink: "#251a07",
-  cream: "#fff8f3",
-  creamLow: "#fff2e2",
-  muted: "#9e8e7e",
-  surface: "#ffffff",
-  fontDisplay: "'Epilogue', sans-serif",
-  fontBody: "'Plus Jakarta Sans', sans-serif",
-} as const;
+import { HERITAGE as T } from "@/lib/heritage-tokens";
 
 /* ─────────────────────────────────────────────
    HELPERS

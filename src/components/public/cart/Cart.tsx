@@ -8,20 +8,7 @@ import { formatBs, formatRef } from "@/lib/money";
 import { useRouter } from "next/navigation";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
-/* ─────────────────────────────────────────────
-   DESIGN TOKENS
-───────────────────────────────────────────── */
-const T = {
-  primary: "#bb0005",
-  primaryDeep: "#e2231a",
-  ink: "#251a07",
-  cream: "#fff8f3",
-  creamLow: "#fff2e2",
-  muted: "#9e8e7e",
-  surface: "#ffffff",
-  fontDisplay: "'Epilogue', sans-serif",
-  fontBody: "'Plus Jakarta Sans', sans-serif",
-} as const;
+import { HERITAGE as T } from "@/lib/heritage-tokens";
 
 /* ─────────────────────────────────────────────
    PILL BADGE
@@ -124,7 +111,7 @@ export function Cart({
     }
   }, [hasHydrated, mounted, items.length]);
 
-  if (!hasHydrated || !mounted || items.length === 0) return null;
+  if (!hasHydrated || !mounted) return null;
 
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
   const baseImponible = Math.round(totalBsCents / 1.16);
@@ -135,13 +122,14 @@ export function Cart({
       {/* ────────────────────────────────────────
           BOTTOM BAR
       ──────────────────────────────────────── */}
-      <div className={`hidden md:block fixed z-40 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-        bottom-0 left-0 right-0 p-[10px_16px_16px] rounded-none
-        lg:bottom-6 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:w-[420px] lg:rounded-2xl lg:p-[12px_16px] lg:border lg:border-primary/10
-        ${barVisible ? 'translate-y-0 lg:translate-y-0' : 'translate-y-full lg:translate-y-[150%]'}
-      `} style={{
-          /* Glass + cream warmth */
-          background: "rgba(255,248,243,0.92)",
+      {items.length > 0 && (
+        <div className={`hidden md:block fixed z-40 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+          bottom-0 left-0 right-0 p-[10px_16px_16px] rounded-none
+          lg:bottom-6 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:w-[420px] lg:rounded-2xl lg:p-[12px_16px] lg:border lg:border-primary/10
+          ${barVisible ? 'translate-y-0 lg:translate-y-0' : 'translate-y-full lg:translate-y-[150%]'}
+        `} style={{
+            /* Glass + cream warmth */
+            background: "rgba(255,248,243,0.92)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           borderTop: "1px solid rgba(187,0,5,0.08)",
@@ -189,7 +177,7 @@ export function Cart({
 
           {/* CTA button */}
           <button
-            onClick={() => isOnline && openDrawer()}
+            onClick={() => { if (isOnline) { router.prefetch("/checkout"); openDrawer(); } }}
             disabled={!isOnline}
             aria-label={!isOnline ? "Necesitas conexión para hacer un pedido" : "Ver pedido"}
             style={{
@@ -226,6 +214,7 @@ export function Cart({
           </button>
         </div>
       </div>
+      )}
 
       {/* ────────────────────────────────────────
           DRAWER SHELL
@@ -340,17 +329,87 @@ export function Cart({
               scrollbarColor: `${T.creamLow} transparent`,
             }}
           >
-            {items.map((item, index) => (
-              <CartItem
-                key={`${item.id}-${(item.fixedContornos ?? []).map((c) => c.id).join(",")}-${(item.contornoSubstitutions ?? []).map((s) => s.substituteId).join(",")}-${(item.selectedAdicionales ?? []).map((a) => a.id).join(",")}-${(item.selectedBebidas ?? []).map((b) => b.id).join(",")}-${index}`}
-                item={item}
-                index={index}
-                maxQuantityPerItem={maxQuantityPerItem}
-                onUpdateQuantity={updateQuantity}
-                onRemove={removeItem}
-                onEdit={handleEdit}
-              />
-            ))}
+            {items.length === 0 ? (
+              <div style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 16,
+                padding: "64px 24px",
+                textAlign: "center",
+                userSelect: "none",
+              }}>
+                <div style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 99,
+                  background: "var(--color-secondary)",
+                  border: "1px solid rgba(187,0,5,0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--color-text-muted)",
+                }}>
+                  <ShoppingBag style={{ width: 28, height: 28, opacity: 0.6 }} />
+                </div>
+                <div>
+                  <h3 style={{
+                    fontFamily: T.fontDisplay,
+                    fontSize: 15,
+                    fontWeight: 900,
+                    color: T.ink,
+                  }}>
+                    Tu carrito está vacío
+                  </h3>
+                  <p style={{
+                    fontSize: 12,
+                    color: T.muted,
+                    marginTop: 6,
+                    maxWidth: 240,
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                    lineHeight: 1.5,
+                  }}>
+                    Agrega algunos deliciosos platos del menú para comenzar tu pedido.
+                  </p>
+                </div>
+                <button
+                  onClick={closeDrawer}
+                  style={{
+                    marginTop: 8,
+                    borderRadius: 12,
+                    background: T.primary,
+                    border: "none",
+                    padding: "10px 20px",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    color: "#fff",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 12px rgba(187,0,5,0.2)",
+                    fontFamily: T.fontDisplay,
+                    transition: "transform 0.15s",
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.03)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
+                >
+                  Ver el menú
+                </button>
+              </div>
+            ) : (
+              items.map((item, index) => (
+                <CartItem
+                  key={`${item.id}-${(item.fixedContornos ?? []).map((c) => c.id).join(",")}-${(item.contornoSubstitutions ?? []).map((s) => s.substituteId).join(",")}-${(item.selectedAdicionales ?? []).map((a) => a.id).join(",")}-${(item.selectedBebidas ?? []).map((b) => b.id).join(",")}-${index}`}
+                  item={item}
+                  index={index}
+                  maxQuantityPerItem={maxQuantityPerItem}
+                  onUpdateQuantity={updateQuantity}
+                  onRemove={removeItem}
+                  onEdit={handleEdit}
+                />
+              ))
+            )}
 
             {/* Upsell list when cart has 1-2 items */}
             {items.length >= 1 && items.length <= 2 && (dailyAdicionales.length > 0 || dailyBebidas.length > 0) && (
@@ -522,180 +581,182 @@ export function Cart({
           </div>
 
           {/* ── STICKY FOOTER ── */}
-          <div style={{
-            borderTop: `1px solid ${T.creamLow}`,
-            background: T.surface,
-            padding: "12px 16px 20px",
-            flexShrink: 0,
-          }}>
-            {/* Tax toggle */}
-            <button
-              onClick={() => setTaxOpen((p) => !p)}
-              style={{
-                display: "flex",
-                width: "100%",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "7px 0",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <span style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 11,
-                color: T.muted,
-                fontWeight: 600,
-              }}>
-                <Info style={{ width: 13, height: 13, opacity: 0.6 }} />
-                Desglose fiscal (IVA 16%)
-                <ChevronDown style={{
-                  width: 12, height: 12, opacity: 0.6,
-                  transform: taxOpen ? "rotate(180deg)" : "rotate(0deg)",
-                  transition: "transform 0.2s",
-                }} />
-              </span>
-              <span style={{ fontSize: 11, color: T.muted, fontWeight: 600, fontFamily: T.fontDisplay }}>
-                {formatBs(ivaBs)}
-              </span>
-            </button>
-
-            {/* Tax breakdown */}
-            {taxOpen && (
-              <div style={{
-                borderRadius: 10,
-                background: T.cream,
-                padding: "8px 12px",
-                marginBottom: 12,   /* ↑ more breathing before total row */
-                animation: "tax-in 0.15s ease",
-              }}>
-                <TaxRow label="BASE IMP." value={formatBs(baseImponible)} />
-                <TaxRow label="IVA (16%)" value={formatBs(ivaBs)} />
-              </div>
-            )}
-
-            {/* Total row */}
+          {items.length > 0 && (
             <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingTop: 11,
-              marginTop: 3,
-              borderTop: `1.5px solid ${T.creamLow}`,
+              borderTop: `1px solid ${T.creamLow}`,
+              background: T.surface,
+              padding: "12px 16px 20px",
+              flexShrink: 0,
             }}>
-              <span style={{
-                fontFamily: T.fontDisplay,
-                fontSize: "clamp(10px, 3vw, 12px)",
-                fontWeight: 800,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                color: T.muted,
-              }}>
-                Total a pagar
-              </span>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: T.muted,
-                  background: T.creamLow,
-                  padding: "2px 8px",
-                  borderRadius: 6,
-                  fontFamily: T.fontDisplay,
-                }}>
-                  {formatRef(totalUsdCents)}
-                </span>
-                <span style={{
-                  fontFamily: T.fontDisplay,
-                  fontSize: "clamp(22px, 6vw, 30px)",
-                  fontWeight: 900,
-                  color: T.ink,
-                  letterSpacing: "-0.03em",
-                  lineHeight: 1,
-                }}>
-                  {formatBs(totalBsCents)}
-                </span>
-              </div>
-            </div>
-
-            {/* Multi-quantity hint */}
-            {items.some((item) => item.quantity > 1) && (
-              <div style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 6,
-                marginTop: 10,
-                padding: "8px 10px",
-                borderRadius: 10,
-                background: T.cream,
-                border: `1px solid ${T.creamLow}`,
-              }}>
-                <Info style={{ width: 12, height: 12, color: T.muted, opacity: 0.7, marginTop: 1, flexShrink: 0 }} />
-                <p style={{ fontSize: 11, color: T.muted, lineHeight: 1.5, fontWeight: 500 }}>
-                  Para contornos o extras distintos por plato, agrégalos uno a uno.
-                </p>
-              </div>
-            )}
-
-            {/* Checkout CTA */}
-            <button
-              onClick={() => { closeDrawer(); router.push("/checkout"); }}
-              style={{
-                marginTop: 14,
-                display: "flex",
-                width: "100%",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                height: 52,
-                borderRadius: 14,
-                border: "none",
-                cursor: "pointer",
-                background: `linear-gradient(150deg, ${T.primary} 0%, ${T.primaryDeep} 100%)`,
-                color: "#fff",
-                fontFamily: T.fontDisplay,
-                fontSize: "clamp(12px, 3.5vw, 14px)",
-                fontWeight: 900,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                boxShadow: "0 6px 20px rgba(187,0,5,0.32)",
-                position: "relative",
-                overflow: "hidden",
-                transition: "transform 0.15s, box-shadow 0.15s",
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.02)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 28px rgba(187,0,5,0.4)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(187,0,5,0.32)"; }}
-              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(0.98)"; }}
-              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.02)"; }}
-            >
-              {/* Shimmer */}
-              <span aria-hidden style={{
-                position: "absolute",
-                inset: 0,
-                background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%)",
-                backgroundSize: "200% 100%",
-                animation: "shimmer-cta 2.5s infinite",
-                borderRadius: "inherit",
-              }} />
-              <span style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 10 }}>
-                Confirmar pedido
+              {/* Tax toggle */}
+              <button
+                onClick={() => setTaxOpen((p) => !p)}
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "7px 0",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
                 <span style={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  width: 24,
-                  height: 24,
-                  borderRadius: 7,
-                  background: "rgba(255,255,255,0.2)",
+                  gap: 6,
+                  fontSize: 11,
+                  color: T.muted,
+                  fontWeight: 600,
                 }}>
-                  <ArrowRight style={{ width: 13, height: 13 }} />
+                  <Info style={{ width: 13, height: 13, opacity: 0.6 }} />
+                  Desglose fiscal (IVA 16%)
+                  <ChevronDown style={{
+                    width: 12, height: 12, opacity: 0.6,
+                    transform: taxOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.2s",
+                  }} />
                 </span>
-              </span>
-            </button>
-          </div>
+                <span style={{ fontSize: 11, color: T.muted, fontWeight: 600, fontFamily: T.fontDisplay }}>
+                  {formatBs(ivaBs)}
+                </span>
+              </button>
+
+              {/* Tax breakdown */}
+              {taxOpen && (
+                <div style={{
+                  borderRadius: 10,
+                  background: T.cream,
+                  padding: "8px 12px",
+                  marginBottom: 12,   /* ↑ more breathing before total row */
+                  animation: "tax-in 0.15s ease",
+                }}>
+                  <TaxRow label="BASE IMP." value={formatBs(baseImponible)} />
+                  <TaxRow label="IVA (16%)" value={formatBs(ivaBs)} />
+                </div>
+              )}
+
+              {/* Total row */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingTop: 11,
+                marginTop: 3,
+                borderTop: `1.5px solid ${T.creamLow}`,
+              }}>
+                <span style={{
+                  fontFamily: T.fontDisplay,
+                  fontSize: "clamp(10px, 3vw, 12px)",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  color: T.muted,
+                }}>
+                  Total a pagar
+                </span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: T.muted,
+                    background: T.creamLow,
+                    padding: "2px 8px",
+                    borderRadius: 6,
+                    fontFamily: T.fontDisplay,
+                  }}>
+                    {formatRef(totalUsdCents)}
+                  </span>
+                  <span style={{
+                    fontFamily: T.fontDisplay,
+                    fontSize: "clamp(22px, 6vw, 30px)",
+                    fontWeight: 900,
+                    color: T.ink,
+                    letterSpacing: "-0.03em",
+                    lineHeight: 1,
+                  }}>
+                    {formatBs(totalBsCents)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Multi-quantity hint */}
+              {items.some((item) => item.quantity > 1) && (
+                <div style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 6,
+                  marginTop: 10,
+                  padding: "8px 10px",
+                  borderRadius: 10,
+                  background: T.cream,
+                  border: `1px solid ${T.creamLow}`,
+                }}>
+                  <Info style={{ width: 12, height: 12, color: T.muted, opacity: 0.7, marginTop: 1, flexShrink: 0 }} />
+                  <p style={{ fontSize: 11, color: T.muted, lineHeight: 1.5, fontWeight: 500 }}>
+                    Para contornos o extras distintos por plato, agrégalos uno a uno.
+                  </p>
+                </div>
+              )}
+
+              {/* Checkout CTA */}
+              <button
+                onClick={() => { closeDrawer(); router.push("/checkout"); }}
+                style={{
+                  marginTop: 14,
+                  display: "flex",
+                  width: "100%",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  height: 52,
+                  borderRadius: 14,
+                  border: "none",
+                  cursor: "pointer",
+                  background: `linear-gradient(150deg, ${T.primary} 0%, ${T.primaryDeep} 100%)`,
+                  color: "#fff",
+                  fontFamily: T.fontDisplay,
+                  fontSize: "clamp(12px, 3.5vw, 14px)",
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  boxShadow: "0 6px 20px rgba(187,0,5,0.32)",
+                  position: "relative",
+                  overflow: "hidden",
+                  transition: "transform 0.15s, box-shadow 0.15s",
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.02)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 28px rgba(187,0,5,0.4)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(187,0,5,0.32)"; }}
+                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(0.98)"; }}
+                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.02)"; }}
+              >
+                {/* Shimmer */}
+                <span aria-hidden style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%)",
+                  backgroundSize: "200% 100%",
+                  animation: "shimmer-cta 2.5s infinite",
+                  borderRadius: "inherit",
+                }} />
+                <span style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 10 }}>
+                  Confirmar pedido
+                  <span style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 24,
+                    height: 24,
+                    borderRadius: 7,
+                    background: "rgba(255,255,255,0.2)",
+                  }}>
+                    <ArrowRight style={{ width: 13, height: 13 }} />
+                  </span>
+                </span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

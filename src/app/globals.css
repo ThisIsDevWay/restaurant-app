@@ -3,33 +3,63 @@
 :root {
   --ink: #251a07;
   --ink-muted: #5f5e5e;
+  --ink-subtle: #8c7d6c;
   --bg-app: #fff8f3;
   --surface-section: #fff2e2;
+  --surface-hover: #fbf2e7;
   --bg-card: #ffffff;
   --border: #e7bdb7;
   --border-ghost: rgba(231, 189, 183, 0.15);
   --input: #dcd2c9;
   --shadow-color: 37, 26, 7;
+
+  /* Primary Accent Brand Colors (Light) */
+  --primary: #bb0005;
+  --primary-hover: #e2231a;
+  --primary-gradient: linear-gradient(15deg, #bb0005, #e2231a);
+  --primary-foreground: #ffffff;
+  --primary-ring: #bb0005;
 }
 
-
 .dark {
-  --ink: #f6f0e2;
-  --ink-muted: #9c8f7b;
-  --bg-app: #1b1612;
-  --surface-section: #2f2620;
-  --bg-card: #241d17;
-  --border: #3a2f26;
-  --border-ghost: rgba(58, 47, 38, 0.15);
-  --input: #4a3d31;
-  --shadow-color: 0, 0, 0;
+  /* Texto */
+  --ink: #f4eee0;            /* cream principal (un pelo más suave vs #f6f0e2) */
+  --ink-muted: #a89a85;      /* +brillo: margen AA cómodo en todas las elevaciones */
+  --ink-subtle: #74695b;     /* placeholders / disabled — decorativo, ~3:1 */
+
+  /* Superficies (de menor a mayor elevación) */
+  --bg-app: #181312;
+  --bg-card: #211b1a;
+  --surface-section: #2b2322;
+  --surface-hover: #322928;  /* hover de filas/tarjetas */
+  --input: #463a39;
+
+  /* Bordes */
+  --border: #3a302f;
+  --border-ghost: rgba(244, 238, 224, 0.07);  /* hairline como luz, no como sombra */
+
+  /* Acento rojo adaptado a dark */
+  --accent: #e2675b;         /* aclarado + desaturado — 5.4:1 para texto */
+  --accent-hover: #ec8074;
+  --on-accent: #1a1110;      /* texto OSCURO sobre fills; blanco solo pasa en texto grande */
+  --ring: rgba(226, 103, 91, 0.55);
+
+  /* Mapeo de acentos adaptados a variables primarias */
+  --primary: var(--accent);
+  --primary-hover: var(--accent-hover);
+  --primary-gradient: linear-gradient(15deg, var(--accent), var(--accent-hover));
+  --primary-foreground: var(--on-accent);
+  --primary-ring: var(--ring);
+
+  /* Sombra cálida en vez de negro puro */
+  --shadow-color: 12, 6, 5;
 }
 
 @theme {
   /* Heritage Editorial — Primario */
-  --color-primary: #bb0005;
-  --color-primary-hover: #e2231a;
-  --color-primary-gradient: linear-gradient(15deg, #bb0005, #e2231a);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-gradient: var(--primary-gradient);
   --color-price-green: #2d6a1f;
 
   /* Cream Canvas (surface tiers) */
@@ -41,6 +71,7 @@
   /* Ink Typography */
   --color-text-main: var(--ink);
   --color-text-muted: var(--ink-muted);
+  --color-text-subtle: var(--ink-subtle);
 
   /* Borders */
   --color-border: var(--border);
@@ -75,7 +106,7 @@
   --color-background: var(--bg-card);
   --color-card: var(--bg-card);
   --color-card-foreground: var(--ink);
-  --color-primary-foreground: #ffffff;
+  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--surface-section);
   --color-secondary-foreground: var(--ink);
   --color-muted: var(--surface-section);
@@ -84,7 +115,7 @@
   --color-accent-foreground: var(--ink);
   --color-destructive: #b91c1c;
   --color-destructive-foreground: #ffffff;
-  --color-ring: #bb0005;
+  --color-ring: var(--primary-ring);
 
   /* Ambient Shadows */
   --shadow-card: 0 2px 8px rgba(var(--shadow-color), 0.05);

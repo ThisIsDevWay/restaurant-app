@@ -37,7 +37,7 @@ export function ModalFooter({
           >
             <Minus className="h-4 w-4 stroke-[2.5]" />
           </button>
-          <span className="w-10 text-center text-xl font-black tracking-tight text-[#251a07] font-display">
+          <span className="w-10 text-center text-xl font-black tracking-tight text-text-main font-display">
             {quantity}
           </span>
           <button

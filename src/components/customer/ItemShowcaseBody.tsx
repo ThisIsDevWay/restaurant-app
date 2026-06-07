@@ -41,8 +41,8 @@ function InfoList({
   return (
     <div className="px-5 md:px-6">
       <div className="mb-2">
-        <h4 className="font-mono text-[9.5px] text-text-muted tracking-widest uppercase">{title}</h4>
-        {subtitle && <p className="text-[11px] text-text-muted mt-0.5">{subtitle}</p>}
+        <h4 className="font-mono text-[11px] text-text-muted tracking-widest uppercase">{title}</h4>
+        {subtitle && <p className="text-[12.5px] text-text-muted mt-0.5">{subtitle}</p>}
       </div>
       <div className="bg-bg-card border border-border/60 rounded-xl overflow-hidden shadow-sm">
         {rows.map((row) => (
@@ -50,11 +50,11 @@ function InfoList({
             key={row.id}
             className="flex justify-between items-center gap-4 py-2.5 px-4 border-b border-border/45 last:border-0"
           >
-            <span className="text-[13px] text-text-main font-medium min-w-0 break-words leading-tight">
+            <span className="text-[14.5px] text-text-main font-medium min-w-0 break-words leading-tight mt-0.5">
               {cleanName(row.name)}
             </span>
             {row.trailing && (
-              <span className="font-mono text-[12px] text-text-main font-bold whitespace-nowrap flex-shrink-0">
+              <span className="font-mono text-[13.5px] text-text-main font-bold whitespace-nowrap flex-shrink-0 mt-0.5">
                 {row.trailing}
               </span>
             )}
@@ -94,16 +94,16 @@ export function ItemShowcaseBody({
       {/* Incluido con el plato — chips */}
       {item.contornos && item.contornos.length > 0 && (
         <div className="px-5 md:px-6">
-          <h4 className="font-mono text-[9.5px] text-text-muted tracking-widest uppercase mb-2">
+          <h4 className="font-mono text-[12px] text-text-muted tracking-widest uppercase mb-2">
             Incluido con el plato
           </h4>
           <div className="flex flex-wrap gap-1.5">
             {item.contornos.map((c) => (
               <div
                 key={c.id}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/50 text-[12.5px] font-medium"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-section/40 text-text-main border border-border/50 text-[14.5px] font-medium"
               >
-                <span className="text-emerald-600 text-[10px] font-black">✓</span>
+                <span className="text-primary text-[11px] font-black">✓</span>
                 <span>{cleanName(c.name)}</span>
               </div>
             ))}

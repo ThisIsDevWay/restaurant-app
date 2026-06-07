@@ -23,13 +23,10 @@ export function BottomNav() {
       if (pathname !== "/") {
         router.push("/");
         setTimeout(() => {
-          const input = document.getElementById("menu-search-input");
-          input?.focus();
+          window.dispatchEvent(new Event("menu:openSearch"));
         }, 300);
       } else {
-        const input = document.getElementById("menu-search-input");
-        input?.focus();
-        input?.scrollIntoView({ behavior: "smooth", block: "center" });
+        window.dispatchEvent(new Event("menu:openSearch"));
       }
     } else if (tab === "pedido") {
       openDrawer();
@@ -43,13 +40,13 @@ export function BottomNav() {
   const isHistorialTabActive = pathname === "/mis-pedidos" && !isDrawerOpen;
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-[#251a07]/10 pb-safe shadow-[0_-4px_20px_rgba(37,26,7,0.06)]">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-bg-card border-t border-border/50 pb-safe shadow-[0_-4px_20px_rgba(37,26,7,0.06)]">
       <div className="flex h-16 w-full items-center justify-around px-2 relative">
         {/* Menu Tab */}
         <button
           onClick={() => handleTabClick("menu")}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-[#251a07]/45 hover:text-[#251a07]/70 active:scale-95",
+            "flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-text-main/45 hover:text-text-main/70 active:scale-95",
             isMenuTabActive && "text-[#bb0005]"
           )}
         >
@@ -63,7 +60,7 @@ export function BottomNav() {
         {/* Buscar Tab */}
         <button
           onClick={() => handleTabClick("buscar")}
-          className="flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-[#251a07]/45 hover:text-[#251a07]/70 active:scale-95"
+          className="flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-text-main/45 hover:text-text-main/70 active:scale-95"
         >
           <Search className="h-[21px] w-[21px]" strokeWidth={2.0} />
           <span className="text-[10px] font-bold tracking-wide uppercase font-sans">Buscar</span>
@@ -73,7 +70,7 @@ export function BottomNav() {
         <button
           onClick={() => handleTabClick("pedido")}
           className={cn(
-            "relative flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 text-[#251a07]/45 hover:text-[#251a07]/70 active:scale-95",
+            "relative flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 text-text-main/45 hover:text-text-main/70 active:scale-95",
             isPedidoTabActive && "text-[#bb0005]"
           )}
         >
@@ -93,7 +90,7 @@ export function BottomNav() {
         <button
           onClick={() => handleTabClick("historial")}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-[#251a07]/45 hover:text-[#251a07]/70 active:scale-95",
+            "flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-text-main/45 hover:text-text-main/70 active:scale-95",
             isHistorialTabActive && "text-[#bb0005]"
           )}
         >
