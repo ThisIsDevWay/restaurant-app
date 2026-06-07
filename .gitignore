@@ -80,7 +80,7 @@ supabase/.temp/
 test-*.ts
 opencode.jsonc
 
-# Print Agent — binaries compiled from print-agent/main.go
+# Print Agent ï¿½ binaries compiled from print-agent/main.go
 print-agent/agent.exe
 print-agent/agent
 print-agent/*.exe
@@ -93,3 +93,8 @@ print-agent/*.zip
 # PWA sw files
 public/sw.js
 public/sw.js.map
+
+# Graphify knowledge graph (HTML viz + cache are regenerable; graph.json too for solo-dev)
+**/graphify-out/
+claude.md
+.claude.json
