@@ -45,12 +45,13 @@ export function OrderItemsTable({
   const packagingBsCents = surcharges ? Math.round(surcharges.packagingUsdCents * rate) : 0;
   const deliveryBsCents = surcharges ? Math.round(surcharges.deliveryUsdCents * rate) : 0;
   const hasSurcharges = surcharges && (surcharges.packagingUsdCents > 0 || surcharges.deliveryUsdCents > 0);
-  const displayTotalBs = grandTotalBsCents ?? subtotalBsCents;
-  const displayTotalUsd = grandTotalUsdCents ?? subtotalUsdCents;
 
   // Derive subtotal from snapshot items so it's always consistent,
   // even for older orders where subtotalBsCents was stored incorrectly.
   const derivedSubtotalBsCents = items.reduce((sum, item) => sum + item.itemTotalBsCents, 0);
+
+  const displayTotalBs = grandTotalBsCents ?? (derivedSubtotalBsCents + packagingBsCents + deliveryBsCents);
+  const displayTotalUsd = grandTotalUsdCents ?? subtotalUsdCents;
 
 
   return (

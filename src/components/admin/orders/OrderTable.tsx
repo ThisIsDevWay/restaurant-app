@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { formatBs } from "@/lib/money";
-import { formatPhone, cn } from "@/lib/utils";
+import { formatPhone, cn, isRealPhone } from "@/lib/utils";
 import { formatOrderTime } from "@/lib/utils/format-relative-time";
 import { formatItems } from "@/lib/utils/format-items";
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
@@ -18,19 +18,9 @@ import {
 } from "@/components/ui/table";
 import { ShoppingBag } from "lucide-react";
 import type { OrderListItem } from "@/components/admin/orders/OrderCard";
-import type { OrderStatus } from "@/lib/constants/order-status";
+import { STATUS_STYLES, type OrderStatus } from "@/lib/constants/order-status";
 
-/* ── Status accent bar ─────────────────────────────────────── */
-const STATUS_ACCENT: Record<string, string> = {
-  pending:   "bg-amber-400",
-  whatsapp:  "bg-blue-400",
-  paid:      "bg-emerald-500",
-  kitchen:   "bg-orange-500",
-  delivered: "bg-slate-300",
-  expired:   "bg-red-400",
-  failed:    "bg-red-600",
-  cancelled: "bg-red-700",
-};
+
 
 const USD_METHODS = ["Zelle", "Binance", "Efectivo $"];
 
@@ -51,22 +41,22 @@ function specificStatus(order: OrderListItem): StatusLabel {
 
   switch (order.status) {
     case "pending":
-      if (isEfectivo)       return { label: "Pago al recibir",   className: "text-teal-700 bg-teal-50 border-teal-200" };
-      if (hasComprobante)   return { label: "Comprobante ✓",     className: "text-sky-700 bg-sky-50 border-sky-200" };
-      return                       { label: "Esperando pago",    className: "text-amber-700 bg-amber-50 border-amber-200" };
+      if (isEfectivo) return { label: "Pago al recibir", className: "text-teal-700 bg-teal-50 border-teal-200" };
+      if (hasComprobante) return { label: "Comprobante ✓", className: "text-sky-700 bg-sky-50 border-sky-200" };
+      return { label: "Esperando pago", className: "text-amber-700 bg-amber-50 border-amber-200" };
 
     case "whatsapp":
-      if (isEfectivo)       return { label: "Pago al recibir",   className: "text-teal-700 bg-teal-50 border-teal-200" };
-      if (hasComprobante)   return { label: "Comprobante enviado", className: "text-sky-700 bg-sky-50 border-sky-200" };
-      return                       { label: "Sin comprobante",   className: "text-amber-700 bg-amber-50 border-amber-200" };
+      if (isEfectivo) return { label: "Pago al recibir", className: "text-teal-700 bg-teal-50 border-teal-200" };
+      if (hasComprobante) return { label: "Comprobante cargado", className: "text-sky-700 bg-sky-50 border-sky-200" };
+      return { label: "Sin comprobante", className: "text-amber-700 bg-amber-50 border-amber-200" };
 
-    case "paid":      return { label: "Pago confirmado",  className: "text-emerald-700 bg-emerald-50 border-emerald-200" };
-    case "kitchen":   return { label: "En preparación",   className: "text-orange-700 bg-orange-50 border-orange-200" };
-    case "delivered": return { label: "Entregado",        className: "text-slate-600 bg-slate-50 border-slate-200" };
-    case "expired":   return { label: "Expirado",         className: "text-slate-500 bg-slate-50 border-slate-200" };
-    case "failed":    return { label: "Pago rechazado",   className: "text-red-700 bg-red-50 border-red-200" };
-    case "cancelled": return { label: "Cancelado",        className: "text-red-700 bg-red-50 border-red-200" };
-    default:          return { label: order.status,       className: "text-text-muted bg-surface-section border-border" };
+    case "paid": return { label: "Pago confirmado", className: "text-emerald-700 bg-emerald-50 border-emerald-200" };
+    case "kitchen": return { label: "En preparación", className: "text-orange-700 bg-orange-50 border-orange-200" };
+    case "delivered": return { label: "Entregado", className: "text-slate-600 bg-slate-50 border-slate-200" };
+    case "expired": return { label: "Expirado", className: "text-slate-500 bg-slate-50 border-slate-200" };
+    case "failed": return { label: "Pago rechazado", className: "text-red-700 bg-red-50 border-red-200" };
+    case "cancelled": return { label: "Cancelado", className: "text-red-700 bg-red-50 border-red-200" };
+    default: return { label: order.status, className: "text-text-muted bg-surface-section border-border" };
   }
 }
 
@@ -138,7 +128,7 @@ export function OrderTable({
                   <div
                     className={cn(
                       "absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full opacity-90 transition-opacity group-hover:opacity-100",
-                      STATUS_ACCENT[order.status] ?? "bg-border/40"
+                      STATUS_STYLES[order.status as OrderStatus]?.accentBg ?? "bg-border/40"
                     )}
                   />
                 </TableCell>
@@ -183,13 +173,11 @@ export function OrderTable({
                         {order.customerName}
                       </span>
                     )}
-                    {order.customerPhone &&
-                      !order.customerPhone.startsWith("mesa-") &&
-                      !order.customerPhone.startsWith("mesero-") && (
-                        <span className="text-[11px] text-text-muted tabular-nums font-mono">
-                          {formatPhone(order.customerPhone)}
-                        </span>
-                      )}
+                    {order.customerPhone && isRealPhone(order.customerPhone) && (
+                      <span className="text-[11px] text-text-muted tabular-nums font-mono">
+                        {formatPhone(order.customerPhone)}
+                      </span>
+                    )}
                   </div>
                 </TableCell>
 

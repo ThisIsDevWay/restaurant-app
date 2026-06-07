@@ -47,3 +47,9 @@ export function formatRate(rate: string | number | null | undefined): string {
     maximumFractionDigits: 2,
   });
 }
+
+/** Check if a phone is real (not synthetic e.g. "mesa-", "mesero-") */
+export function isRealPhone(phone: string | null | undefined): boolean {
+  if (!phone) return false;
+  return !phone.startsWith("mesa-") && !phone.startsWith("mesero-");
+}

@@ -13,6 +13,7 @@ import type { SimpleItem } from "@/components/customer/ItemDetailModal.types";
 import type { WaiterPaymentMethod } from "@/components/waiter/OrderForm";
 import type { CheckoutItem } from "@/lib/types/checkout";
 import { getCategoryEmoji } from "@/lib/categoryIcons";
+import { isRealPhone } from "@/lib/utils";
 
 /** @deprecated Use `getCategoryEmoji` from `@/lib/categoryIcons` directly. Kept as a
  *  re-export so existing POS/waiter/caja imports of `getEmoji` keep working. */
@@ -201,7 +202,7 @@ export function usePOSOrder({
     setTableNumber(order.tableNumber || "");
     setCustomerName(order.customerName || "");
     const phone: string = order.customerPhone ?? "";
-    setCustomerPhone(phone.startsWith("mesa-") || phone.startsWith("mesero-") ? "" : phone);
+    setCustomerPhone(isRealPhone(phone) ? phone : "");
     setDeliveryZone((order.surchargesSnapshot?.deliveryZoneLabel as string) || "");
     const oldToNew: Record<string, string> = {
       cash_usd: "Efectivo $", cash_bs: "Efectivo Bs", pago_movil: "Pago Móvil",

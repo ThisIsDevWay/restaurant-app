@@ -16,40 +16,58 @@ export type OrderStatus = NonNullable<typeof orders.$inferSelect["status"]>;
 export interface StatusConfig {
   label: string;
   className: string;
+  accentBg: string;
+  borderAccent: string;
 }
 
 export const STATUS_STYLES: Record<OrderStatus, StatusConfig> = {
   pending: {
     label: "Pendiente",
     className: "bg-amber-100 text-amber-800 border-amber-200",
+    accentBg: "bg-amber-400",
+    borderAccent: "border-l-amber-500",
   },
   paid: {
     label: "Pagado",
     className: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    accentBg: "bg-emerald-500",
+    borderAccent: "border-l-emerald-500",
   },
   kitchen: {
     label: "En cocina",
     className: "bg-orange-100 text-orange-800 border-orange-200",
+    accentBg: "bg-orange-500",
+    borderAccent: "border-l-orange-500",
   },
   delivered: {
     label: "Entregado",
     className: "bg-green-100 text-green-800 border-green-200",
+    accentBg: "bg-slate-300",
+    borderAccent: "border-l-green-600",
   },
   expired: {
     label: "Expirada",
     className: "bg-red-100 text-red-800 border-red-200",
+    accentBg: "bg-red-400",
+    borderAccent: "border-l-red-500",
   },
   failed: {
     label: "Fallido",
     className: "bg-red-100 text-red-800 border-red-200",
+    accentBg: "bg-red-600",
+    borderAccent: "border-l-red-600",
   },
   whatsapp: {
     label: "WhatsApp",
     className: "bg-blue-100 text-blue-800 border-blue-200",
+    accentBg: "bg-blue-400",
+    borderAccent: "border-l-blue-500",
   },
   cancelled: {
     label: "Cancelada",
     className: "bg-red-100 text-red-800 border-red-200",
+    accentBg: "bg-red-700",
+    borderAccent: "border-l-red-700",
   },
 };
 

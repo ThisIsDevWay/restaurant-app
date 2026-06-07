@@ -3,7 +3,7 @@
 import { ChefHat, Clock, Phone, MapPin, User, CheckCircle2, CircleDollarSign } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { formatBs } from "@/lib/money";
-import { formatPhone } from "@/lib/utils";
+import { formatPhone, isRealPhone } from "@/lib/utils";
 import { formatOrderTime } from "@/lib/utils/format-relative-time";
 import { OrderModeChip } from "@/components/admin/orders/OrderModeChip";
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
@@ -74,7 +74,7 @@ function PaymentBadge({ order }: { order: any }) {
 function CustomerInfo({ order }: { order: any }) {
   const name = order.customerName as string | null | undefined;
   const phone = order.customerPhone as string | null | undefined;
-  const isSynthetic = !phone || phone.startsWith("mesa-") || phone.startsWith("mesero-");
+  const isSynthetic = !isRealPhone(phone);
 
   if (name) {
     return (

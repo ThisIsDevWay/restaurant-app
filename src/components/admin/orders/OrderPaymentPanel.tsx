@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatOrderDate, formatRate } from "@/lib/utils";
+import { formatOrderDate, formatRate, isRealPhone } from "@/lib/utils";
 import { formatProvider } from "@/lib/payments/format-provider";
 import { OrderModeChip } from "./OrderModeChip";
 import {
@@ -279,9 +279,7 @@ export function OrderPaymentPanel({
                     {order.customerName}
                   </span>
                 ) : null}
-                {order.customerPhone &&
-                  !order.customerPhone.startsWith("mesa-") &&
-                  !order.customerPhone.startsWith("mesero-") && (
+                {order.customerPhone && isRealPhone(order.customerPhone) && (
                     <span
                       className={cn(
                         "text-white/80 font-mono tracking-tight",
@@ -297,8 +295,7 @@ export function OrderPaymentPanel({
                   )}
                 {/* Fallback if everything is synthetic */}
                 {!order.customerName &&
-                  (order.customerPhone?.startsWith("mesa-") ||
-                    order.customerPhone?.startsWith("mesero-")) && (
+                  !isRealPhone(order.customerPhone) && (
                     <span
                       className="text-white/50 text-sm font-semibold italic"
                     >
@@ -307,9 +304,7 @@ export function OrderPaymentPanel({
                   )}
               </div>
               {/* Call button — only when phone is real */}
-              {order.customerPhone &&
-                !order.customerPhone.startsWith("mesa-") &&
-                !order.customerPhone.startsWith("mesero-") && (
+              {order.customerPhone && isRealPhone(order.customerPhone) && (
                   <a
                     href={`tel:${order.customerPhone}`}
                     className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-[10px] font-bold tracking-wider uppercase transition-all hover:scale-105 active:scale-95 backdrop-blur-sm border border-white/20"

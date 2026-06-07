@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { formatBs } from "@/lib/money";
-import { formatPhone, cn } from "@/lib/utils";
+import { formatPhone, cn, isRealPhone } from "@/lib/utils";
 import { formatOrderTime } from "@/lib/utils/format-relative-time";
 import { formatItems } from "@/lib/utils/format-items";
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
@@ -10,7 +10,7 @@ import { QuickActions } from "@/components/admin/orders/QuickActions";
 import { OrderModeChip } from "@/components/admin/orders/OrderModeChip";
 import { checkoutFlowState } from "@/lib/payments/checkout-flow";
 import { Clock, Phone, FileText, CheckCircle2, AlertCircle, Ban } from "lucide-react";
-import type { OrderStatus } from "@/lib/constants/order-status";
+import { STATUS_STYLES, type OrderStatus } from "@/lib/constants/order-status";
 
 export interface OrderListItem {
   id: string;
@@ -71,23 +71,11 @@ export function OrderCard({ order }: { order: OrderListItem }) {
   const orderMode = order.orderMode ?? "delivery";
   const isUsd = USD_METHODS.includes(order.paymentMethod);
 
-  const statusColors: Record<string, string> = {
-    pending: "border-l-amber-500",
-    whatsapp: "border-l-blue-500",
-    paid: "border-l-emerald-500",
-    kitchen: "border-l-orange-500",
-    ready: "border-l-green-500",
-    delivered: "border-l-green-600",
-    expired: "border-l-red-500",
-    failed: "border-l-red-600",
-    cancelled: "border-l-red-700",
-  };
-
   return (
     <div
       className={cn(
         "bg-card border border-border border-l-4 rounded-xl p-4 cursor-pointer active:scale-[0.98] transition-all shadow-sm hover:shadow-md",
-        statusColors[order.status] ?? "border-l-muted"
+        STATUS_STYLES[order.status as OrderStatus]?.borderAccent ?? "border-l-muted"
       )}
       onClick={() => router.push(`/admin/orders/${order.id}`)}
     >
@@ -129,7 +117,7 @@ export function OrderCard({ order }: { order: OrderListItem }) {
             {order.customerName}
           </div>
         )}
-        {order.customerPhone && !order.customerPhone.startsWith("mesa-") && !order.customerPhone.startsWith("mesero-") && (
+        {order.customerPhone && isRealPhone(order.customerPhone) && (
           <div className="flex items-center gap-1.5 px-2 py-1 bg-stone-100 rounded-lg text-xs font-medium text-text-main border border-border/50">
             <Phone className="h-3 w-3 text-text-muted/70" />
             <span className="font-mono">{formatPhone(order.customerPhone)}</span>

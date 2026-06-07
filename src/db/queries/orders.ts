@@ -2,6 +2,24 @@ import { db } from "../index";
 import { orders } from "../schema";
 import { eq, and, lt, sql, inArray, gte } from "drizzle-orm";
 
+export const ORDER_LIST_COLUMNS = {
+  id: orders.id,
+  orderNumber: orders.orderNumber,
+  status: orders.status,
+  subtotalBsCents: orders.subtotalBsCents,
+  grandTotalBsCents: orders.grandTotalBsCents,
+  customerPhone: orders.customerPhone,
+  customerName: orders.customerName,
+  createdAt: orders.createdAt,
+  paymentMethod: orders.paymentMethod,
+  paymentProvider: orders.paymentProvider,
+  itemsSnapshot: orders.itemsSnapshot,
+  orderMode: orders.orderMode,
+  tableNumber: orders.tableNumber,
+  grandTotalUsdCents: orders.grandTotalUsdCents,
+  paymentMetadata: orders.paymentMetadata,
+} as const;
+
 export async function getOrderById(id: string) {
   const [order] = await db
     .select()

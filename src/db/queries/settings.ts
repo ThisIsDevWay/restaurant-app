@@ -32,7 +32,7 @@ export function getSettingsFresh() {
   return getSettingsRaw();
 }
 
-export async function getActiveRate(): Promise<{ rate: number; fetchedAt: string; currency: string } | null> {
+async function getActiveRateRaw(): Promise<{ rate: number; fetchedAt: string; currency: string } | null> {
   const s = await getSettings();
   if (!s) return null;
 
@@ -52,6 +52,14 @@ export async function getActiveRate(): Promise<{ rate: number; fetchedAt: string
 
   return rate ? { rate: parseFloat(rate.rateBsPerUsd), fetchedAt: rate.fetchedAt.toISOString(), currency } : null;
 }
+
+export const getActiveRate = (typeof process !== "undefined" && process.env.NEXT_RUNTIME === "nodejs")
+  ? unstable_cache(
+      getActiveRateRaw,
+      ["active-rate"],
+      { tags: ["settings"], revalidate: 300 }
+    )
+  : getActiveRateRaw;
 
 export async function updateSettings(data: Partial<typeof settings.$inferInsert>) {
   const [row] = await db

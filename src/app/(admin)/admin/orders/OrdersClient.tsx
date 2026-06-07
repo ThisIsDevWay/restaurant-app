@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useTransition } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useOrdersRealtime } from "@/hooks/useOrdersRealtime";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Search, Calendar } from "lucide-react";
@@ -26,6 +27,13 @@ export function OrdersClient({ orders, initialDate }: { orders: OrderListItem[],
   const [search, setSearch] = useState("");
   // Transition flag suppresses the empty-state flash on tab change
   const [isPending, startTransition] = useTransition();
+
+  const queryClient = useQueryClient();
+
+  useOrdersRealtime(() => {
+    queryClient.invalidateQueries({ queryKey: ["orders", "list", initialDate] });
+    queryClient.invalidateQueries({ queryKey: ["orders", "counts", initialDate] });
+  });
 
   const { data: counts } = useQuery<TabCounts>({
     queryKey: ["orders", "counts", initialDate],
@@ -72,7 +80,6 @@ export function OrdersClient({ orders, initialDate }: { orders: OrderListItem[],
         const itemNames = items.map((i) => i.name.toLowerCase()).join(" ");
         return (
           orderNum.includes(q) ||
-          phone.endsWith(q) ||
           phone.includes(q) ||
           itemNames.includes(q)
         );
@@ -106,7 +113,7 @@ export function OrdersClient({ orders, initialDate }: { orders: OrderListItem[],
           <h1 className="text-3xl font-bold tracking-tight text-text-main">Órdenes</h1>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-sm text-text-muted">
-              {orders.length} órdenes registradas
+              {counts.all} órdenes registradas
             </p>
             {counts.pending > 0 && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 animate-pulse border border-amber-200">
