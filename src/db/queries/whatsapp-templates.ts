@@ -115,6 +115,19 @@ export async function seedDefaultTemplates() {
         "□ Efectivo al recibir",
       ].join("\n"),
     },
+    {
+      key: "cancelled",
+      label: "Pedido cancelado",
+      body: [
+        "{restaurantName}",
+        "❌ *Pedido {numeroPedido} cancelado*",
+        "",
+        "Hola {nombre}, tu pedido ha sido cancelado.",
+        "Ref: *{orderRef}* • {metodoPago}",
+        "",
+        "Si crees que es un error o necesitas ayuda, por favor escríbenos.",
+      ].join("\n"),
+    },
   ];
 
   await db.insert(whatsappTemplates).values(defaults);

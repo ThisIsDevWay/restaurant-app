@@ -9,6 +9,7 @@ import {
   MessageCircle,
   Info,
   Save,
+  XCircle,
 } from "lucide-react";
 import { saveTemplateAction, toggleTemplateAction } from "@/actions/whatsapp-templates";
 import { Switch } from "@/components/ui/switch";
@@ -31,6 +32,7 @@ const TEMPLATE_ICONS: Record<string, any> = {
   kitchen: Info,
   delivered: Info,
   checkout_manual: MessageCircle,
+  cancelled: XCircle,
 };
 
 const TEMPLATE_DESCRIPTIONS: Record<string, string> = {
@@ -39,6 +41,7 @@ const TEMPLATE_DESCRIPTIONS: Record<string, string> = {
   kitchen: "Aviso de que el pedido ha pasado a preparación",
   delivered: "Notificación de que el pedido va en camino",
   checkout_manual: "Instrucciones para pagos manuales",
+  cancelled: "Notificación de pedido cancelado",
 };
 
 const AVAILABLE_VARIABLES = [

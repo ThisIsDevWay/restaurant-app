@@ -20,7 +20,7 @@ export const saveTemplateAction = adminActionClient
       return { success: false, error: "Key y body son requeridos" };
     }
 
-    const validKeys = ["received", "paid", "kitchen", "delivered", "checkout_manual"];
+    const validKeys = ["received", "paid", "kitchen", "delivered", "checkout_manual", "cancelled"];
     if (!validKeys.includes(key)) {
       return { success: false, error: "Key de plantilla inválida" };
     }
