@@ -76,7 +76,7 @@ interface Order {
 
 const STATUS_LABELS: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Pendiente", color: "bg-[rgba(184,137,58,0.08)] text-[#B8893A] border border-[rgba(184,137,58,0.2)]", icon: Clock },
-  whatsapp: { label: "Por Confirmar (WA)", color: "bg-[rgba(184,137,58,0.08)] text-[#B8893A] border border-[rgba(184,137,58,0.2)]", icon: Clock },
+  whatsapp: { label: "Verificando pago", color: "bg-[rgba(184,137,58,0.08)] text-[#B8893A] border border-[rgba(184,137,58,0.2)]", icon: Clock },
   paid: { label: "Pago Verificado", color: "bg-[#E8EFE3] text-[#3F6B4A] border border-[rgba(63,107,74,0.2)]", icon: CheckCircle2 },
   kitchen: { label: "En Cocina", color: "bg-primary/5 text-primary border border-primary/10", icon: UtensilsCrossed },
   delivered: { label: "Listo / Entregado", color: "bg-[#E8EFE3] text-[#3F6B4A] border border-[rgba(63,107,74,0.2)]", icon: CheckCircle2 },
@@ -166,7 +166,7 @@ export default function MisPedidosPage() {
   return (
     <div className="min-h-[100dvh] bg-bg-app flex flex-col font-sans">
       {/* Header */}
-      <header className="sticky top-0 z-10 backdrop-blur-md bg-white/70 border-b border-border/40 px-5 py-4">
+      <header className="sticky top-0 z-10 bg-bg-card/95 md:backdrop-blur-md md:bg-bg-card/70 border-b border-border/40 px-5 py-4">
         <div className="max-w-xl mx-auto flex items-center gap-3.5">
           <Link
             href="/"
@@ -192,30 +192,32 @@ export default function MisPedidosPage() {
           <label className="font-sans text-[10px] uppercase tracking-[0.12em] text-text-muted pl-1 block mb-2 font-semibold">
             Número de WhatsApp registrado
           </label>
-          <div className="flex items-center gap-0 rounded-[14px] border border-border bg-bg-card transition-all focus-within:border-primary/50 overflow-hidden pr-1.5 pl-3.5 py-1.5">
-            <span className="text-[14px]">🇻🇪</span>
-            <span className="font-sans text-[14px] font-semibold text-text-muted ml-2.5">+58</span>
-            <div className="w-px h-4 bg-border shrink-0 mx-2.5" />
-            <input
-              type="tel"
-              inputMode="numeric"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="0414 123 4567"
-              className="flex-1 bg-transparent outline-none font-sans text-[14px] text-text-main placeholder:text-text-muted/40 min-w-0 py-1.5"
-            />
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-0 rounded-[14px] border border-border bg-bg-card transition-all focus-within:border-primary/50 overflow-hidden pr-3 pl-3.5 py-2.5">
+              <span className="text-[14px]">🇻🇪</span>
+              <span className="font-sans text-[14px] font-semibold text-text-muted ml-2.5">+58</span>
+              <div className="w-px h-4 bg-border shrink-0 mx-2.5" />
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                placeholder="0414 123 4567"
+                className="flex-1 bg-transparent outline-none font-sans text-[14px] text-text-main placeholder:text-text-muted/40 min-w-0 py-1"
+              />
+            </div>
             <button
               onClick={handleSearch}
               disabled={loading || !phone}
-              className="rounded-[10px] bg-primary hover:bg-primary-hover px-4 py-2 text-[13px] font-bold text-white shadow-sm active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 flex items-center gap-1.5 shrink-0 ml-1"
+              className="w-full rounded-[14px] bg-primary hover:bg-primary-hover py-3 text-[14px] font-bold text-white shadow-sm active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-2"
             >
               {loading ? (
-                <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <Search className="w-3.5 h-3.5" />
-                  Buscar
+                  <Search className="w-4 h-4" />
+                  Buscar pedidos
                 </>
               )}
             </button>
@@ -269,7 +271,7 @@ export default function MisPedidosPage() {
                   <div
                     key={order.id}
                     className={cn(
-                      "rounded-[24px] border p-5.5 shadow-[0_4px_20px_rgba(0,0,0,0.01)] transition-all flex flex-col gap-4.5 bg-bg-card",
+                      "rounded-[24px] border p-5.5 shadow-[0_4px_20px_rgba(0,0,0,0.01)] transition-all flex flex-col gap-4.5 bg-bg-card [transform:translate3d(0,0,0)] [will-change:transform]",
                       isActive
                         ? "border-primary/20 shadow-[0_8px_24px_rgba(187,0,5,0.035)] bg-primary/[0.01]"
                         : "border-border/60"

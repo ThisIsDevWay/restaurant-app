@@ -68,7 +68,7 @@ export class WhatsAppManualProvider implements PaymentProvider {
     const originalNumber = settings.whatsappNumber || "584140000000";
     const sanitizedNumber = originalNumber.replace(/\D/g, "");
     const international = sanitizedNumber.startsWith("0") ? "58" + sanitizedNumber.slice(1) : sanitizedNumber;
-    const waLink = `https://wa.me/${international}?text=${encodeURIComponent(finalMessage)}`;
+    const waLink = `https://api.whatsapp.com/send?phone=${international}&text=${encodeURIComponent(finalMessage)}`;
 
     return {
       screen: "whatsapp",

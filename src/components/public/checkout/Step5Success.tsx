@@ -26,7 +26,7 @@ const PHASE_DELAYS: Record<Phase, number> = {
 
 const ORDER_TRACKER = (mode: OrderMode | null) => [
   { label: "Pedido registrado", desc: "Recibimos tu solicitud" },
-  { label: "Pago verificado", desc: "Confirmamos tu pago" },
+  { label: "Verificando pago", desc: "En breve confirmaremos tu pago" },
   { label: "En cocina", desc: "Preparando tu comida" },
   {
     label: mode === "delivery" ? "En camino" : mode === "take_away" ? "Listo para retirar" : "Servido",
@@ -63,7 +63,7 @@ export function Step5Success({
             }
           }
         }
-      } catch {}
+      } catch { }
     };
     fetchStatus();
 
@@ -107,8 +107,8 @@ export function Step5Success({
             (dbStatus === "whatsapp" || dbStatus === "pending")
               ? "bg-[rgba(184,137,58,0.12)]"
               : (dbStatus === "cancelled" || dbStatus === "expired")
-              ? "bg-primary/10"
-              : "bg-[#E8EFE3]"
+                ? "bg-primary/10"
+                : "bg-[#E8EFE3]"
           )}
         >
           {(dbStatus === "whatsapp" || dbStatus === "pending") ? (
@@ -128,12 +128,12 @@ export function Step5Success({
             {dbStatus === "whatsapp" || dbStatus === "pending"
               ? "¡Pedido recibido!"
               : dbStatus === "paid"
-              ? "¡Pago verificado!"
-              : dbStatus === "kitchen"
-              ? "¡En preparación!"
-              : dbStatus === "delivered"
-              ? (orderMode === "delivery" ? "¡En camino!" : orderMode === "take_away" ? "¡Listo para retirar!" : "¡Servido!")
-              : (dbStatus === "cancelled" ? "Pedido cancelado" : "Pedido expirado")}
+                ? "¡Pago verificado!"
+                : dbStatus === "kitchen"
+                  ? "¡En preparación!"
+                  : dbStatus === "delivered"
+                    ? (orderMode === "delivery" ? "¡En camino!" : orderMode === "take_away" ? "¡Listo para retirar!" : "¡Servido!")
+                    : (dbStatus === "cancelled" ? "Pedido cancelado" : "Pedido expirado")}
           </p>
           <p className="font-sans text-[14px] text-text-muted mt-1 max-w-[280px] mx-auto leading-relaxed">
             {dbStatus === "whatsapp" || dbStatus === "pending"
@@ -141,18 +141,18 @@ export function Step5Success({
                 ? "Envía el comprobante por WhatsApp para confirmarlo"
                 : "Esperando confirmación automática del pago")
               : dbStatus === "paid"
-              ? "Tu pago ha sido confirmado exitosamente"
-              : dbStatus === "kitchen"
-              ? "Tu pedido ya está siendo preparado en cocina"
-              : dbStatus === "delivered"
-              ? (orderMode === "delivery"
-                ? "El repartidor va en camino a tu dirección"
-                : orderMode === "take_away"
-                ? "Puedes pasar a retirar tu pedido por el local"
-                : "Tu comida ha sido servida en tu mesa")
-              : (dbStatus === "cancelled"
-                ? "Tu pedido fue cancelado por el restaurante"
-                : "El tiempo límite para realizar el pago ha expirado")}
+                ? "Tu pago ha sido confirmado exitosamente"
+                : dbStatus === "kitchen"
+                  ? "Tu pedido ya está siendo preparado en cocina"
+                  : dbStatus === "delivered"
+                    ? (orderMode === "delivery"
+                      ? "El repartidor va en camino a tu dirección"
+                      : orderMode === "take_away"
+                        ? "Puedes pasar a retirar tu pedido por el local"
+                        : "Tu comida ha sido servida en tu mesa")
+                    : (dbStatus === "cancelled"
+                      ? "Tu pedido fue cancelado por el restaurante"
+                      : "El tiempo límite para realizar el pago ha expirado")}
           </p>
         </div>
 

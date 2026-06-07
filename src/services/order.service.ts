@@ -456,7 +456,7 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
         const transferMsg = `Hola! Confirmo pago por Transferencia Bancaria. Pedido #${order.orderNumber}`;
         initResult = {
             screen: "whatsapp",
-            waLink: `https://wa.me/${waNum}?text=${encodeURIComponent(transferMsg)}`,
+            waLink: `https://api.whatsapp.com/send?phone=${waNum}&text=${encodeURIComponent(transferMsg)}`,
             prefilledMessage: transferMsg,
         };
     } else if (input.paymentMethod === "zelle") {
@@ -465,7 +465,7 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
         const zelleMsg = `Hola! Confirmo pago por Zelle. Pedido #${order.orderNumber}`;
         initResult = {
             screen: "whatsapp",
-            waLink: `https://wa.me/${waNum}?text=${encodeURIComponent(zelleMsg)}`,
+            waLink: `https://api.whatsapp.com/send?phone=${waNum}&text=${encodeURIComponent(zelleMsg)}`,
             prefilledMessage: zelleMsg,
         };
     } else if (input.paymentMethod === "binance") {
@@ -474,7 +474,7 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
         const binanceMsg = `Hola! Confirmo pago por Binance Pay. Pedido #${order.orderNumber}`;
         initResult = {
             screen: "whatsapp",
-            waLink: `https://wa.me/${waNum}?text=${encodeURIComponent(binanceMsg)}`,
+            waLink: `https://api.whatsapp.com/send?phone=${waNum}&text=${encodeURIComponent(binanceMsg)}`,
             prefilledMessage: binanceMsg,
         };
     } else if (input.paymentMethod === "efectivo") {
