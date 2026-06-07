@@ -29,7 +29,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ status: result.status });
+    return NextResponse.json({ status: result.status, updatedAt: result.updatedAt });
   } catch {
     return NextResponse.json(
       { error: "Internal server error" },

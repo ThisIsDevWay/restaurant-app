@@ -31,7 +31,7 @@ export async function getOrderById(id: string) {
 
 export async function getOrderStatus(id: string) {
   const [result] = await db
-    .select({ status: orders.status })
+    .select({ status: orders.status, updatedAt: orders.updatedAt })
     .from(orders)
     .where(eq(orders.id, id))
     .limit(1);
