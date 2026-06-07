@@ -7,6 +7,24 @@ import { getProviderById } from "@/lib/payment-providers";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 import { logger } from "@/lib/logger";
+import * as v from "valibot";
+
+const paramsSchema = v.object({
+  id: v.pipe(v.string(), v.uuid("ID de orden inválido")),
+});
+
+const confirmWithRefBodySchema = v.object({
+  paymentReference: v.pipe(
+    v.string(),
+    v.minLength(3, "Se requiere un número de referencia válido (mínimo 3 caracteres)")
+  ),
+  phone: v.pipe(
+    v.string(),
+    v.minLength(7, "Se requiere un número de teléfono válido (mínimo 7 dígitos)")
+  ),
+  customerName: v.nullish(v.pipe(v.string(), v.maxLength(50))),
+  cedula: v.nullish(v.pipe(v.string(), v.maxLength(20))),
+});
 
 export async function POST(
     req: Request,
@@ -17,30 +35,26 @@ export async function POST(
         return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    const { id: orderId } = await params;
+    // Validar parámetros de ruta
+    const paramsResult = v.safeParse(paramsSchema, await params);
+    if (!paramsResult.success) {
+        return NextResponse.json(
+            { error: paramsResult.issues[0].message },
+            { status: 400 },
+        );
+    }
+    const { id: orderId } = paramsResult.output;
 
     try {
         const body = await req.json();
-        const { paymentReference, phone, customerName, cedula } = body as {
-            paymentReference?: string;
-            phone?: string;
-            customerName?: string;
-            cedula?: string;
-        };
-
-        if (!paymentReference || paymentReference.trim().length < 3) {
+        const bodyResult = v.safeParse(confirmWithRefBodySchema, body);
+        if (!bodyResult.success) {
             return NextResponse.json(
-                { error: "Se requiere un número de referencia válido (mínimo 3 caracteres)" },
+                { error: bodyResult.issues[0].message },
                 { status: 400 },
             );
         }
-
-        if (!phone || phone.trim().length < 7) {
-            return NextResponse.json(
-                { error: "Se requiere un número de teléfono válido (mínimo 7 dígitos)" },
-                { status: 400 },
-            );
-        }
+        const { paymentReference, phone, customerName, cedula } = bodyResult.output;
 
         const order = await getOrderById(orderId);
         if (!order) {
@@ -118,7 +132,8 @@ export async function POST(
         });
 
         return NextResponse.json({ success: true, status: "paid" });
-    } catch {
+    } catch (err) {
+        logger.error("Failed to confirm order with reference", { error: String(err), orderId });
         return NextResponse.json(
             { success: false, error: "Error interno del servidor" },
             { status: 500 },

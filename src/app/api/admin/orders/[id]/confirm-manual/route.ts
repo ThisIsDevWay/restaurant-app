@@ -6,6 +6,12 @@ import { getProviderById } from "@/lib/payment-providers";
 import { getCustomerByPhone } from "@/db/queries/customers";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
+import { logger } from "@/lib/logger";
+import * as v from "valibot";
+
+const paramsSchema = v.object({
+  id: v.pipe(v.string(), v.uuid("ID de orden inválido")),
+});
 
 export async function POST(
   _req: Request,
@@ -16,7 +22,15 @@ export async function POST(
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  const { id: orderId } = await params;
+  // Validar parámetros de ruta
+  const paramsResult = v.safeParse(paramsSchema, await params);
+  if (!paramsResult.success) {
+    return NextResponse.json(
+      { error: paramsResult.issues[0].message },
+      { status: 400 },
+    );
+  }
+  const { id: orderId } = paramsResult.output;
 
   try {
     const order = await getOrderById(orderId);
@@ -71,7 +85,7 @@ export async function POST(
           : undefined,
         baseUrl: settings.whatsappMicroserviceUrl,
       }).catch((err) => {
-        console.error("WhatsApp Error:", err);
+        logger.error("WhatsApp Error:", { error: String(err) });
       });
 
       return NextResponse.json({ success: true });
@@ -82,7 +96,8 @@ export async function POST(
       reason: result.reason,
       message: result.message,
     });
-  } catch {
+  } catch (err) {
+    logger.error("Failed manual confirmation", { error: String(err), orderId });
     return NextResponse.json(
       { success: false, error: "Error interno del servidor" },
       { status: 500 },

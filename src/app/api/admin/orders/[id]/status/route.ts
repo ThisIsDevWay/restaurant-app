@@ -6,6 +6,7 @@ import { getSettings } from "@/db/queries/settings";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 import { logger } from "@/lib/logger";
+import * as v from "valibot";
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   pending: ["paid", "cancelled"],
@@ -20,6 +21,17 @@ const STATUS_TO_TEMPLATE: Record<string, string> = {
   delivered: "delivered",
 };
 
+const paramsSchema = v.object({
+  id: v.pipe(v.string(), v.uuid("ID de orden inválido")),
+});
+
+const statusBodySchema = v.object({
+  status: v.picklist(
+    ["pending", "paid", "kitchen", "delivered", "expired", "failed", "whatsapp", "cancelled"] as const,
+    "Estado de orden inválido"
+  ),
+});
+
 export async function POST(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -29,18 +41,26 @@ export async function POST(
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  const { id: orderId } = await params;
+  // Validar parámetros
+  const paramsResult = v.safeParse(paramsSchema, await params);
+  if (!paramsResult.success) {
+    return NextResponse.json(
+      { error: paramsResult.issues[0].message },
+      { status: 400 },
+    );
+  }
+  const { id: orderId } = paramsResult.output;
 
   try {
     const body = await _req.json();
-    const { status: newStatus } = body as { status: string };
-
-    if (!newStatus) {
+    const bodyResult = v.safeParse(statusBodySchema, body);
+    if (!bodyResult.success) {
       return NextResponse.json(
-        { error: "Estado requerido" },
+        { error: bodyResult.issues[0].message },
         { status: 400 },
       );
     }
+    const { status: newStatus } = bodyResult.output;
 
     const order = await getOrderById(orderId);
     if (!order) {
@@ -60,10 +80,7 @@ export async function POST(
       );
     }
 
-    await updateOrderStatus(
-      orderId,
-      newStatus as "pending" | "paid" | "kitchen" | "delivered" | "expired" | "failed" | "whatsapp",
-    );
+    await updateOrderStatus(orderId, newStatus);
 
     const templateKey = STATUS_TO_TEMPLATE[newStatus];
     if (templateKey) {
@@ -103,7 +120,8 @@ export async function POST(
     }
 
     return NextResponse.json({ success: true, status: newStatus });
-  } catch {
+  } catch (err) {
+    logger.error("Failed to update status", { error: String(err), orderId });
     return NextResponse.json(
       { success: false, error: "Error interno del servidor" },
       { status: 500 },

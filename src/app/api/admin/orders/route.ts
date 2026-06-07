@@ -3,6 +3,10 @@ import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { desc, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { ORDER_LIST_COLUMNS } from "@/db/queries/orders";
+import * as v from "valibot";
+import { dateStringSchema } from "@/lib/validations/date";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: Request) {
     try {
@@ -14,26 +18,18 @@ export async function GET(req: Request) {
         const url = new URL(req.url);
         const rawDate = url.searchParams.get("date");
         let targetDate = new Date().toLocaleDateString("en-CA", { timeZone: "America/Caracas" });
-        if (rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
-            targetDate = rawDate;
+        
+        if (rawDate) {
+            const result = v.safeParse(dateStringSchema, rawDate);
+            if (result.success) {
+                targetDate = result.output;
+            } else {
+                return NextResponse.json({ error: "Formato de fecha inválido" }, { status: 400 });
+            }
         }
 
         const allOrders = await db
-            .select({
-                id: orders.id,
-                orderNumber: orders.orderNumber,
-                status: orders.status,
-                subtotalBsCents: orders.subtotalBsCents,
-                grandTotalBsCents: orders.grandTotalBsCents,
-                customerPhone: orders.customerPhone,
-                customerName: orders.customerName,
-                createdAt: orders.createdAt,
-                paymentMethod: orders.paymentMethod,
-                paymentProvider: orders.paymentProvider,
-                itemsSnapshot: orders.itemsSnapshot,
-                orderMode: orders.orderMode,
-                tableNumber: orders.tableNumber,
-            })
+            .select(ORDER_LIST_COLUMNS)
             .from(orders)
             .where(sql`date(timezone('America/Caracas', ${orders.createdAt})) = ${targetDate}`)
             .orderBy(desc(orders.createdAt))
@@ -41,7 +37,7 @@ export async function GET(req: Request) {
 
         return NextResponse.json(allOrders);
     } catch (err) {
-        console.error("Failed to fetch orders:", err);
+        logger.error("Failed to fetch orders", { error: String(err) });
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

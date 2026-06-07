@@ -2,6 +2,9 @@ import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { desc, sql } from "drizzle-orm";
 import { OrdersClient } from "./OrdersClient";
+import { ORDER_LIST_COLUMNS } from "@/db/queries/orders";
+import * as v from "valibot";
+import { dateStringSchema } from "@/lib/validations/date";
 
 export default async function AdminOrdersPage({
   searchParams,
@@ -12,28 +15,16 @@ export default async function AdminOrdersPage({
   // Use user's selected date from query, or default to current date in Caracas
   const rawDate = resolvedSearchParams.date as string | undefined;
   let targetDate = new Date().toLocaleDateString("en-CA", { timeZone: "America/Caracas" }); // YYYY-MM-DD
-  if (rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
-    targetDate = rawDate;
+  
+  if (rawDate) {
+    const result = v.safeParse(dateStringSchema, rawDate);
+    if (result.success) {
+      targetDate = result.output;
+    }
   }
 
   const allOrders = await db
-    .select({
-      id: orders.id,
-      orderNumber: orders.orderNumber,
-      status: orders.status,
-      subtotalBsCents: orders.subtotalBsCents,
-      grandTotalBsCents: orders.grandTotalBsCents,
-      customerPhone: orders.customerPhone,
-      customerName: orders.customerName,
-      createdAt: orders.createdAt,
-      paymentMethod: orders.paymentMethod,
-      paymentProvider: orders.paymentProvider,
-      itemsSnapshot: orders.itemsSnapshot,
-      orderMode: orders.orderMode,
-      tableNumber: orders.tableNumber,
-      grandTotalUsdCents: orders.grandTotalUsdCents,
-      paymentMetadata: orders.paymentMetadata,
-    })
+    .select(ORDER_LIST_COLUMNS)
     .from(orders)
     .where(sql`date(timezone('America/Caracas', ${orders.createdAt})) = ${targetDate}`)
     .orderBy(desc(orders.createdAt))

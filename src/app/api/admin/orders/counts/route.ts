@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { sql } from "drizzle-orm";
+import * as v from "valibot";
+import { dateStringSchema } from "@/lib/validations/date";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -14,8 +17,14 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const rawDate = url.searchParams.get("date");
     let targetDate = new Date().toLocaleDateString("en-CA", { timeZone: "America/Caracas" });
-    if (rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
-      targetDate = rawDate;
+    
+    if (rawDate) {
+      const result = v.safeParse(dateStringSchema, rawDate);
+      if (result.success) {
+        targetDate = result.output;
+      } else {
+        return NextResponse.json({ error: "Formato de fecha inválido" }, { status: 400 });
+      }
     }
 
     const [result] = await db
@@ -39,7 +48,8 @@ export async function GET(req: Request) {
       preparing: result.paid + result.kitchen,
       history: result.delivered + result.expired + result.failed + result.cancelled,
     });
-  } catch {
+  } catch (err) {
+    logger.error("Failed to fetch order counts", { error: String(err) });
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 },
