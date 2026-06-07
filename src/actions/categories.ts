@@ -120,19 +120,19 @@ export const reorderCategoriesAction = adminActionClient
   .action(async ({ parsedInput: { orderedIds } }) => {
     try {
       if (orderedIds.length === 0) return { success: true };
-      await db
-        .update(categories)
-        .set({
-          sortOrder: sql`CASE ${categories.id} ${sql.join(
-            orderedIds.map((id, i) => sql`WHEN ${id} THEN ${i}`),
-            sql` `,
-          )} END`,
-        })
-        .where(inArray(categories.id, orderedIds));
+      await db.transaction(async (tx) => {
+        for (let i = 0; i < orderedIds.length; i++) {
+          await tx
+            .update(categories)
+            .set({ sortOrder: i })
+            .where(eq(categories.id, orderedIds[i]));
+        }
+      });
       invalidateMenuCache();
       revalidatePath("/admin/categories");
       return { success: true };
-    } catch {
+    } catch (err) {
+      console.error("reorderCategoriesAction error:", err);
       return { success: false, error: "Error al reordenar" };
     }
   });

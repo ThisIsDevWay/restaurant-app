@@ -24,6 +24,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -252,7 +253,16 @@ export function CategoriesClient({
     setItems(reordered);
     setDraggingIdx(null);
 
-    await reorderCategoriesAction({ orderedIds: reordered.map((i) => i.id) });
+    try {
+      const res = await reorderCategoriesAction({ orderedIds: reordered.map((i) => i.id) });
+      if (res?.data?.success) {
+        toast.success("Categorías reordenadas");
+      } else {
+        toast.error("Error al guardar el orden");
+      }
+    } catch {
+      toast.error("Error de conexión al reordenar");
+    }
   };
 
   return (
