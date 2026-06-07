@@ -30,7 +30,7 @@ import {
   AlertCircle,
   Printer,
 } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useOrderActionMutation } from "@/hooks/useOrderActionMutation";
 import { reprintOrderAction } from "@/actions/print";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -75,7 +75,6 @@ export function QuickActions({
   compact?: boolean;
 }) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const actions = ACTION_MAP[orderStatus] ?? [];
   const primary = actions[0];
 
@@ -89,42 +88,9 @@ export function QuickActions({
   const [errors, setErrors] = useState<Partial<RefFields>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof RefFields, boolean>>>({});
 
-  const mutation = useMutation({
-    mutationFn: async ({
-      actionType,
-      refPayload,
-    }: {
-      actionType: ActionType;
-      refPayload?: RefFields;
-    }) => {
-      const config = ACTION_ENDPOINTS[actionType];
-      const url = config.url(orderId);
-      const body =
-        actionType === "confirm_with_ref" && refPayload
-          ? {
-            paymentReference: refPayload.paymentReference,
-            phone: refPayload.phone,
-            customerName: refPayload.customerName || undefined,
-            cedula: refPayload.cedula || undefined,
-          }
-          : config.body
-            ? config.body(orderId)
-            : {};
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Error al actualizar la orden");
-      }
-      return res.json();
-    },
+  const mutation = useOrderActionMutation({
+    orderId,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
-      router.refresh();
       setRefDialogOpen(false);
     },
   });

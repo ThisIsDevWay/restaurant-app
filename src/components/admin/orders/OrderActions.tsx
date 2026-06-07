@@ -17,7 +17,7 @@ import {
   AlertTriangle,
   X,
 } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useOrderActionMutation } from "@/hooks/useOrderActionMutation";
 import {
   ACTION_MAP,
   ACTION_ENDPOINTS,
@@ -26,20 +26,7 @@ import {
 } from "@/lib/constants/order-status";
 import { cn } from "@/lib/utils";
 
-/* ─────────────────────────────────────────────
-   DESIGN TOKENS (Heritage Editorial)
-───────────────────────────────────────────── */
-const T = {
-  primary:     "#bb0005",
-  primaryDeep: "#e2231a",
-  ink:         "#251a07",
-  cream:       "#fff8f3",
-  creamLow:    "#fff2e2",
-  muted:       "#9e8e7e",
-  surface:     "#ffffff",
-  fontDisplay: "'Epilogue', sans-serif",
-  fontBody:    "'Plus Jakarta Sans', sans-serif",
-} as const;
+import { HERITAGE as T } from "@/lib/heritage-tokens";
 
 /* ─────────────────────────────────────────────
    ACTION CONFIG
@@ -435,9 +422,6 @@ export function OrderActions({
   orderId: string;
   orderStatus: OrderStatus;
 }) {
-  const router      = useRouter();
-  const queryClient = useQueryClient();
-
   const [confirmKey,    setConfirmKey]    = useState<string | null>(null);
   const [refDialogOpen, setRefDialogOpen] = useState(false);
   const [refFields, setRefFields] = useState<RefFields>({
@@ -447,22 +431,9 @@ export function OrderActions({
 
   const quickActions = ACTION_MAP[orderStatus] ?? [];
 
-  const mutation = useMutation({
-    mutationFn: async ({ actionType, refPayload }: { actionType: ActionType; refPayload?: RefFields }) => {
-      const config = ACTION_ENDPOINTS[actionType];
-      const url    = config.url(orderId);
-      const body   = actionType === "confirm_with_ref" && refPayload
-        ? { paymentReference: refPayload.paymentReference, phone: refPayload.phone, customerName: refPayload.customerName || undefined, cedula: refPayload.cedula || undefined }
-        : config.body ? config.body(orderId) : {};
-
-      const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Error al actualizar"); }
-      return res.json();
-    },
+  const mutation = useOrderActionMutation({
+    orderId,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      router.refresh();
       setConfirmKey(null);
       setRefDialogOpen(false);
     },
