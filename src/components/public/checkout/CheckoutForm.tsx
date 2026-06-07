@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { User, Phone, MapPin, Loader2, CheckCircle2, AlertCircle, Home } from "lucide-react";
+import { User, MapPin, Loader2, CheckCircle2, AlertCircle, Home, IdCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { OrderMode, GpsCoords } from "./CheckoutForm.types";
 
@@ -129,8 +129,8 @@ export function CheckoutForm({
             phoneError
               ? "border-primary bg-bg-card"
               : phoneValid
-              ? "border-[#3F6B4A] bg-bg-card"
-              : "border-border bg-bg-card"
+                ? "border-[#3F6B4A] bg-bg-card"
+                : "border-border bg-bg-card"
           )}
         >
           <span className="text-[15px] shrink-0">🇻🇪</span>
@@ -150,8 +150,14 @@ export function CheckoutForm({
             <CheckCircle2 className="w-4 h-4 text-[#3F6B4A] shrink-0" />
           )}
         </div>
-        {phoneError && (
+        {phoneError ? (
           <p className="font-sans text-[11px] text-primary mt-1 pl-1">{phoneError}</p>
+        ) : (
+          !phoneValid && (
+            <p className="font-sans text-[12px] text-text-muted/60 mt-1 pl-1">
+              Debes ingresar los 11 dígitos de tu número de teléfono (ej. 0414 123 4567)
+            </p>
+          )
         )}
       </div>
 
@@ -208,12 +214,12 @@ export function CheckoutForm({
               Cédula de identidad
             </label>
             <div className="flex items-center gap-2.5 px-3.5 py-3 rounded-[14px] border border-border bg-bg-card transition-colors">
-              <Phone className="w-[18px] h-[18px] text-text-muted shrink-0" />
+              <IdCard className="w-[18px] h-[18px] text-text-muted shrink-0" />
               <input
                 type="text"
                 value={cedula}
                 onChange={(e) => onCedulaChange(e.target.value)}
-                placeholder="V-12345678"
+                placeholder="12345678"
                 disabled={isSubmitting}
                 className="flex-1 bg-transparent outline-none font-sans text-[15px] text-text-main placeholder:text-text-muted/40"
               />

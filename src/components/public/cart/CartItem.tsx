@@ -48,7 +48,7 @@ function Pill({ children, variant = "default" }: { children: React.ReactNode; va
     default: { background: "#ffffff", color: T.muted, border: "1px solid rgba(37, 26, 7, 0.08)" },
     swap: { background: "rgba(255, 242, 226, 0.7)", color: T.ink, border: "1px solid rgba(255, 178, 89, 0.2)" },
     remove: { background: "rgba(255, 240, 240, 0.8)", color: "#c0392b", border: "1px solid rgba(192, 57, 43, 0.12)" },
-    extra: { background: "rgba(187, 0, 5, 0.05)", color: T.primary, border: "1px solid rgba(187, 0, 5, 0.1)" },
+    extra: { background: "rgba(22, 163, 74, 0.06)", color: "#15803d", border: "1px solid rgba(22, 163, 74, 0.14)" },
     bebida: { background: "rgba(37, 26, 7, 0.04)", color: T.ink, border: "1px solid rgba(37, 26, 7, 0.06)" },
   };
 
@@ -431,10 +431,7 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
               color: T.ink,
               lineHeight: 1.25,
               marginBottom: 1,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
+              wordBreak: "break-word",
             }}>
               {item.quantity > 1 ? (
                 <>

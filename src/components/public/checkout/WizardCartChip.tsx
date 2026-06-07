@@ -127,17 +127,23 @@ export function WizardCartChip({
         </div>
 
         {/* Items list */}
-        <div className="flex-1 overflow-y-auto px-5 pb-6 pt-2.5 space-y-2.5">
+        <div className="flex-1 overflow-y-auto px-5 pb-6 pt-2.5 space-y-3">
           {cartItems.map((item, index) => {
-            const extrasLine = buildExtrasLine(item);
-            const noteLine = buildNoteLine(item);
+            const hasCustomizations =
+              (item.fixedContornos ?? []).length > 0 ||
+              (item.contornoSubstitutions ?? []).length > 0 ||
+              (item.removedComponents ?? []).length > 0 ||
+              (item.selectedAdicionales ?? []).length > 0 ||
+              (item.selectedBebidas ?? []).length > 0 ||
+              !!item.includedNote;
+
             return (
               <div
                 key={`${item.id}-${index}`}
-                className="flex items-center gap-3 p-3 rounded-[14px] bg-bg-card border border-border"
+                className="flex items-start gap-3.5 p-4 rounded-[16px] bg-bg-card border border-border/80 shadow-sm"
               >
                 {/* Plate image 48×48 */}
-                <div className="w-12 h-12 rounded-[12px] overflow-hidden bg-surface-section flex items-center justify-center text-[22px] shrink-0">
+                <div className="w-12 h-12 rounded-[12px] overflow-hidden bg-surface-section border border-border/40 flex items-center justify-center text-[22px] shrink-0">
                   {item.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -152,25 +158,74 @@ export function WizardCartChip({
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start gap-1.5">
-                    <p className="font-display text-[17px] text-text-main leading-[1.05] truncate">
-                      {item.quantity}× {item.name}
+                  <div className="flex justify-between items-start gap-2">
+                    <p className="font-display text-[16px] font-black text-text-main leading-tight break-words">
+                      <span className="text-primary font-black mr-1">{item.quantity}×</span>
+                      {item.name}
                     </p>
-                    <p className="font-sans text-[13px] font-semibold text-text-main shrink-0 tabular-nums">
-                      {formatRef(computeItemUsdCents(item))}
-                    </p>
+                    <div className="text-right shrink-0">
+                      <p className="font-sans text-[13px] font-bold text-text-main tabular-nums leading-none">
+                        {formatRef(computeItemUsdCents(item))}
+                      </p>
+                      <p className="font-sans text-[11px] text-text-muted/80 tabular-nums mt-1 leading-none">
+                        ≈ {formatBs(item.itemTotalBsCents)}
+                      </p>
+                    </div>
                   </div>
 
-                  {extrasLine && (
-                    <p className="text-[11px] text-text-muted mt-0.5 leading-snug">
-                      {extrasLine}
-                    </p>
-                  )}
+                  {/* Customizations block */}
+                  {hasCustomizations && (
+                    <div className="flex flex-wrap gap-1.5 mt-2.5">
+                      {item.includedNote && (
+                        <span className="bg-emerald-50 text-[#15803d] border border-emerald-100/50 px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1">
+                          <span className="text-[#15803d] font-extrabold">✓</span>
+                          {item.includedNote}
+                        </span>
+                      )}
 
-                  {noteLine && (
-                    <span className="inline-block mt-1 px-1.5 py-0.5 rounded-[6px] bg-surface-section text-[10px] text-text-muted italic">
-                      &quot;{noteLine}&quot;
-                    </span>
+                      {(item.fixedContornos ?? []).map((c) => (
+                        <span key={c.id} className="bg-surface-section text-text-muted border border-border/50 px-2 py-0.5 rounded-full text-[10px] font-semibold inline-flex items-center">
+                          {c.name}
+                        </span>
+                      ))}
+
+                      {(item.contornoSubstitutions ?? []).map((s, idx) => (
+                        <span key={idx} className="bg-[#fff2e2]/70 text-text-main border border-[#ffb259]/20 px-2 py-0.5 rounded-full text-[10px] font-semibold inline-flex items-center gap-1">
+                          <span className="text-[#b8893a]">🔀</span>
+                          <span>{s.substituteName}</span>
+                          <span className="text-[9px] text-text-muted font-normal italic">por {s.originalName}</span>
+                          {s.priceUsdCents > 0 && (
+                            <span className="text-[9px] font-bold text-primary">+{formatRef(s.priceUsdCents)}</span>
+                          )}
+                        </span>
+                      ))}
+
+                      {(item.removedComponents ?? []).map((r) => (
+                        <span key={r.componentId} className="bg-[#fff0f0]/80 text-[#c0392b] border border-[rgba(192,57,43,0.12)] px-2 py-0.5 rounded-full text-[10px] font-semibold inline-flex items-center gap-1 opacity-75 line-through">
+                          Sin {r.name}
+                        </span>
+                      ))}
+
+                      {(item.selectedAdicionales ?? []).map((a) => (
+                        <span key={a.id} className="bg-[rgba(22,163,74,0.06)] text-[#15803d] border border-[rgba(22,163,74,0.14)] px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1">
+                          <span>+{a.quantity ?? 1}×</span>
+                          <span>{a.name}</span>
+                          {a.priceUsdCents > 0 && (
+                            <span className="text-[9px] font-bold text-[#15803d]/85">+{formatRef(a.priceUsdCents * (a.quantity ?? 1))}</span>
+                          )}
+                        </span>
+                      ))}
+
+                      {(item.selectedBebidas ?? []).map((b) => (
+                        <span key={b.id} className="bg-[rgba(37,26,7,0.04)] text-text-main border border-[rgba(37,26,7,0.06)] px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1">
+                          <span>+{b.quantity ?? 1}×</span>
+                          <span>{b.name}</span>
+                          {b.priceUsdCents > 0 && (
+                            <span className="text-[9px] font-bold text-text-muted">+{formatRef(b.priceUsdCents * (b.quantity ?? 1))}</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
@@ -178,48 +233,62 @@ export function WizardCartChip({
           })}
 
           {/* Totals block */}
-          <div className="mt-4 px-1 space-y-0">
-            <div className="flex justify-between py-1.5 text-[13px] text-text-muted">
-              <span>Subtotal</span>
-              <span className="font-semibold text-text-main tabular-nums">
-                {formatRef(grandTotalUsdCents - surcharges.totalSurchargeUsdCents)}
-              </span>
-            </div>
+          {(() => {
+            const derivedRate = grandTotalUsdCents > 0 ? grandTotalBsCents / grandTotalUsdCents : 0;
+            return (
+              <div className="mt-4 px-1 space-y-0.5 bg-surface-section/50 rounded-[16px] p-4 border border-border/30">
+                <div className="flex justify-between py-1.5 text-[13px] text-text-muted">
+                  <span>Subtotal</span>
+                  <div className="text-right font-semibold text-text-main tabular-nums">
+                    <span>{formatRef(grandTotalUsdCents - surcharges.totalSurchargeUsdCents)}</span>
+                    <span className="text-[11px] text-text-muted/65 font-medium ml-1.5">
+                      ≈ {formatBs(grandTotalBsCents - Math.round(surcharges.totalSurchargeUsdCents * derivedRate))}
+                    </span>
+                  </div>
+                </div>
 
-            {surcharges.deliveryUsdCents > 0 && (
-              <div className="flex justify-between py-1.5 text-[13px] text-text-muted">
-                <span>Delivery</span>
-                <span className="font-semibold text-text-main tabular-nums">
-                  +{formatRef(surcharges.deliveryUsdCents)}
-                </span>
+                {surcharges.deliveryUsdCents > 0 && (
+                  <div className="flex justify-between py-1.5 text-[13px] text-text-muted">
+                    <span>Delivery</span>
+                    <div className="text-right font-semibold text-text-main tabular-nums">
+                      <span>+{formatRef(surcharges.deliveryUsdCents)}</span>
+                      <span className="text-[11px] text-text-muted/65 font-medium ml-1.5">
+                        ≈ {formatBs(Math.round(surcharges.deliveryUsdCents * derivedRate))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {surcharges.packagingUsdCents > 0 && (
+                  <div className="flex justify-between py-1.5 text-[13px] text-text-muted">
+                    <span>Envases</span>
+                    <div className="text-right font-semibold text-text-main tabular-nums">
+                      <span>+{formatRef(surcharges.packagingUsdCents)}</span>
+                      <span className="text-[11px] text-text-muted/65 font-medium ml-1.5">
+                        ≈ {formatBs(Math.round(surcharges.packagingUsdCents * derivedRate))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-dashed border-border/60 my-2.5" />
+
+                <div className="flex justify-between items-baseline pt-1">
+                  <span className="font-sans text-[13px] font-bold text-text-main uppercase tracking-widest">
+                    Total
+                  </span>
+                  <div className="text-right">
+                    <p className="font-sans text-[18px] font-black text-primary tabular-nums">
+                      {formatRef(grandTotalUsdCents)}
+                    </p>
+                    <p className="font-sans text-[13px] text-text-muted font-bold tabular-nums mt-0.5">
+                      ≈ {formatBs(grandTotalBsCents)}
+                    </p>
+                  </div>
+                </div>
               </div>
-            )}
-
-            {surcharges.packagingUsdCents > 0 && (
-              <div className="flex justify-between py-1.5 text-[13px] text-text-muted">
-                <span>Envases</span>
-                <span className="font-semibold text-text-main tabular-nums">
-                  +{formatRef(surcharges.packagingUsdCents)}
-                </span>
-              </div>
-            )}
-
-            <div className="border-t border-dashed border-border/60 my-2" />
-
-            <div className="flex justify-between items-baseline">
-              <span className="font-sans text-[13px] font-bold text-text-main uppercase tracking-widest">
-                Total
-              </span>
-              <div className="text-right">
-                <p className="font-sans text-[16px] font-bold text-text-main tabular-nums">
-                  {formatRef(grandTotalUsdCents)}
-                </p>
-                <p className="font-sans text-[12px] text-text-muted tabular-nums mt-0.5">
-                  ≈ {formatBs(grandTotalBsCents)}
-                </p>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       </div>
     </>
@@ -235,29 +304,3 @@ function computeItemUsdCents(item: CartItem): number {
   return (item.baseUsdCents + fixedUsd + subsUsd - remUsd) * item.quantity + adicUsd + bebUsd;
 }
 
-function buildExtrasLine(item: CartItem): string {
-  const parts: string[] = [];
-
-  (item.contornoSubstitutions ?? []).forEach((s) => {
-    parts.push(`${s.originalName} → ${s.substituteName}`);
-  });
-
-  (item.selectedAdicionales ?? []).forEach((a) => {
-    parts.push(a.name);
-  });
-
-  (item.selectedBebidas ?? []).forEach((b) => {
-    parts.push(b.name);
-  });
-
-  (item.removedComponents ?? []).forEach((r) => {
-    parts.push(`Sin ${r.name}`);
-  });
-
-  return parts.join(" · ");
-}
-
-function buildNoteLine(item: CartItem): string {
-  if (item.includedNote) return item.includedNote;
-  return "";
-}

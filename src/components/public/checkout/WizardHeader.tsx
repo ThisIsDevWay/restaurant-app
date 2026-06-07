@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft, X, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STEP_LABELS: Record<number, string> = {
@@ -65,10 +65,14 @@ export function WizardHeader({
           {onClose && (
             <button
               onClick={onClose}
-              aria-label="Cerrar checkout"
+              aria-label={step === 1 ? "Volver al menú" : "Cerrar checkout"}
               className="w-[38px] h-[38px] rounded-full border border-border bg-bg-card flex items-center justify-center active:bg-surface-section transition-colors cursor-pointer"
             >
-              <X className="w-4 h-4 text-text-main" />
+              {step === 1 ? (
+                <ArrowLeft className="w-4 h-4 text-text-main" />
+              ) : (
+                <X className="w-4 h-4 text-text-main" />
+              )}
             </button>
           )}
         </div>
