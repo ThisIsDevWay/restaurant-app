@@ -26,7 +26,8 @@ import { OrdersChartDynamic } from "@/components/admin/dashboard/OrdersChartDyna
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
 import { todayCaracas } from "@/lib/utils/date";
 import { and, gte, lte, desc } from "drizzle-orm";
-import { getWeightedAverageMarginToday, getMenuItemProfitability, getStaleCostItems } from "@/db/queries/menu";
+import { getMenuItemProfitability, getWeightedAverageMarginToday } from "@/db/queries/menu-analytics";
+import { getStaleCostItems } from "@/db/queries/menu-components";
 import { getDashboardStats, getRecentOrders, getTodayOrdersRaw } from "@/db/queries/dashboard";
 
 export default async function AdminDashboard() {

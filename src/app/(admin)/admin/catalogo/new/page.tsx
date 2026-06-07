@@ -1,4 +1,5 @@
-import { getCategories, getSimpleMenuItems } from "@/db/queries/menu";
+import { getCategories } from "@/db/queries/menu";
+import { getSimpleMenuItems } from "@/db/queries/menu-components";
 import { getActiveRate } from "@/db/queries/settings";
 import { MenuItemForm } from "@/components/admin/menu/MenuItemForm";
 

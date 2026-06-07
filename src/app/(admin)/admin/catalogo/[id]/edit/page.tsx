@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { getMenuItemById, getCategories, getMenuItemContornos, getSimpleMenuItems } from "@/db/queries/menu";
+import { getMenuItemById, getCategories } from "@/db/queries/menu";
+import { getMenuItemContornos, getSimpleMenuItems } from "@/db/queries/menu-components";
 import { getActiveRate } from "@/db/queries/settings";
 import { MenuItemForm } from "@/components/admin/menu/MenuItemForm";
 
