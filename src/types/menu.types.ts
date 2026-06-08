@@ -42,6 +42,7 @@ export interface SimpleComponent {
   isAvailable: boolean;
   isPrepackaged: boolean;
   sortOrder: number;
+  alwaysShowIfAssigned?: boolean;
 }
 
 export interface ContornoComponent extends SimpleComponent {

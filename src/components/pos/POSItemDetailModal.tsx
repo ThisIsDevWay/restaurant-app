@@ -77,23 +77,27 @@ export function POSItemDetailModal({
     maxQuantityPerItem: 999, initialData,
   });
 
-  // POS contorno model: free multi-select, no swap/slot rules.
-  const [selectedContornoIds, setSelectedContornoIds] = useState<Set<string>>(new Set());
+  // POS contorno model: quantity-based selection to support double portions.
+  const [contornoQuantities, setContornoQuantities] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!isOpen) return;
+    const qtys: Record<string, number> = {};
     if (initialData) {
-      const ids = new Set<string>([
-        ...(initialData.fixedContornos ?? []).map((c) => c.id),
-        ...(initialData.contornoSubstitutions ?? []).map((s) => s.substituteId),
-      ]);
-      setSelectedContornoIds(ids);
+      // Count frequency of fixed contornos and substitutions
+      for (const c of initialData.fixedContornos ?? []) {
+        qtys[c.id] = (qtys[c.id] ?? 0) + 1;
+      }
+      for (const s of initialData.contornoSubstitutions ?? []) {
+        qtys[s.substituteId] = (qtys[s.substituteId] ?? 0) + 1;
+      }
     } else {
-      // Default: pre-select the dish's always-included (non-removable) sides.
-      setSelectedContornoIds(
-        new Set(item.contornos.filter((c) => c.isAvailable && !c.removable).map((c) => c.id)),
-      );
+      // Default: pre-select the dish's always-included (non-removable) sides with quantity 1
+      for (const c of item.contornos.filter((c) => c.isAvailable && !c.removable)) {
+        qtys[c.id] = (qtys[c.id] ?? 0) + 1;
+      }
     }
+    setContornoQuantities(qtys);
   }, [isOpen, initialData, item.contornos]);
 
   // Drive the calculation hook for adicionales/bebidas/radio + required validation.
@@ -131,19 +135,21 @@ export function POSItemDetailModal({
 
   if (!isOpen && !modal.closing) return null;
 
-  const selectedContornos = availableContornos.filter((c) => selectedContornoIds.has(c.id));
+  // Flatten selected contornos based on their quantities
+  const selectedContornos = availableContornos.flatMap((c) => {
+    const qty = contornoQuantities[c.id] ?? 0;
+    return Array.from({ length: qty }, () => c);
+  });
   const contornosUsdCents = selectedContornos.reduce((s, c) => s + c.priceUsdCents, 0);
   const totalUsdCents = cart.totalUsdCents + contornosUsdCents * modal.quantity;
   const totalBsCents = Math.round(totalUsdCents * rate);
   const itemBaseBsCents = Math.round(item.priceUsdCents * rate);
 
-  function toggleContorno(id: string) {
-    setSelectedContornoIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  function changeContornoQty(id: string, qty: number) {
+    setContornoQuantities((prev) => ({
+      ...prev,
+      [id]: Math.max(0, qty),
+    }));
   }
 
   function handleSave() {
@@ -238,8 +244,8 @@ export function POSItemDetailModal({
           {showContornos && (
             <POSContornoSelector
               availableContornos={availableContornos}
-              selectedIds={selectedContornoIds}
-              onToggle={toggleContorno}
+              selectedQuantities={contornoQuantities}
+              onChange={changeContornoQty}
               rate={rate}
             />
           )}

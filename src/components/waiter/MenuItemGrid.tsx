@@ -129,7 +129,7 @@ export function MenuItemGrid({
       </div>
 
       {/* Items grid */}
-      <div className="flex-1 overflow-y-auto p-3" style={{ gap: "clamp(0.5rem, 2vw, 0.75rem)" }}>
+      <div className="flex-1 overflow-y-auto p-3 pb-24" style={{ gap: "clamp(0.5rem, 2vw, 0.75rem)" }}>
         {filteredItems.length === 0 ? (
           <div className="flex flex-col items-center gap-3 pt-16 text-center text-[var(--color-text-muted)]">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-surface-section)]">

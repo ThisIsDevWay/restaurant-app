@@ -317,19 +317,47 @@ async function getDailyMenuWithOptionsAndComponentsRaw(dateStr?: string) {
     .where(eq(dailyBebidas.date, today))
     .orderBy(dailyBebidas.sortOrder);
 
-  const dailyContornoRows = await db
+  // Load details for all resolved contornos (both daily-configured and alwaysShowIfAssigned)
+  const allResolvedContornoDetails = resolvedContornoIdArray.length === 0 ? [] : await db
     .select({
       id: menuItems.id,
       name: menuItems.name,
       priceUsdCents: menuItems.priceUsdCents,
-      isAvailable: dailyContornos.isAvailable,
       isPrepackaged: menuItems.isPrepackaged,
+      sortOrder: menuItems.sortOrder,
+      alwaysShowIfAssigned: menuItems.alwaysShowIfAssigned,
+    })
+    .from(menuItems)
+    .where(inArray(menuItems.id, resolvedContornoIdArray));
+
+  // Get details from dailyContornos to get isAvailable and sortOrder if configured for today
+  const dailyContornoDetails = await db
+    .select({
+      id: dailyContornos.contornoItemId,
+      isAvailable: dailyContornos.isAvailable,
       sortOrder: dailyContornos.sortOrder,
     })
     .from(dailyContornos)
-    .innerJoin(menuItems, eq(dailyContornos.contornoItemId, menuItems.id))
-    .where(eq(dailyContornos.date, today))
-    .orderBy(dailyContornos.sortOrder);
+    .where(eq(dailyContornos.date, today));
+
+  const dailyContornoDetailsMap = new Map(dailyContornoDetails.map((c) => [c.id, c]));
+
+  const dailyContornoRows = allResolvedContornoDetails.map((item) => {
+    const dailyInfo = dailyContornoDetailsMap.get(item.id);
+    return {
+      id: item.id,
+      name: item.name,
+      priceUsdCents: item.priceUsdCents,
+      isPrepackaged: item.isPrepackaged,
+      // If it's in the daily contornos, use that availability; otherwise true
+      isAvailable: dailyInfo ? dailyInfo.isAvailable : true,
+      // If it's in daily contornos, use that sort order; otherwise item's catalog sort order
+      sortOrder: dailyInfo ? dailyInfo.sortOrder : item.sortOrder,
+      alwaysShowIfAssigned: item.alwaysShowIfAssigned,
+    };
+  });
+  // Sort the final list by sortOrder
+  dailyContornoRows.sort((a, b) => a.sortOrder - b.sortOrder);
 
   const optionsByItem = new Map();
   for (const row of groupRows) {

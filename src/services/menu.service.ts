@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { dailyAdicionales, dailyBebidas, dailyContornos, dailyMenuItems, menuItems } from "@/db/schema";
+import { categories, dailyAdicionales, dailyBebidas, dailyContornos, dailyMenuItems, menuItems } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
 export async function generateDailyMenuSnapshot(date: string) {
@@ -46,7 +46,34 @@ export async function generateDailyMenuSnapshot(date: string) {
         .innerJoin(menuItems, eq(dailyContornos.contornoItemId, menuItems.id))
         .where(eq(dailyContornos.date, date));
 
-    const globalContornoMap = new Map(dailyContornoRows.map((c) => [c.id, c]));
+    // Load always show contornos
+    const alwaysShowContornoRows = await db
+        .select({
+            id: menuItems.id,
+            name: menuItems.name,
+            priceUsdCents: menuItems.priceUsdCents,
+            isPrepackaged: menuItems.isPrepackaged,
+            isAvailable: menuItems.isAvailable,
+        })
+        .from(menuItems)
+        .innerJoin(categories, eq(menuItems.categoryId, categories.id))
+        .where(
+            and(
+                eq(categories.name, "Contornos"),
+                eq(menuItems.alwaysShowIfAssigned, true),
+                eq(menuItems.isAvailable, true)
+            )
+        );
+
+    const globalContornoMap = new Map();
+    // Load always show contornos first
+    for (const c of alwaysShowContornoRows) {
+        globalContornoMap.set(c.id, c);
+    }
+    // Load daily contornos (overwriting alwaysShow with daily status if present)
+    for (const c of dailyContornoRows) {
+        globalContornoMap.set(c.id, c);
+    }
 
     return { dailyAdicionalMap, dailyBebidaMap, globalContornoMap };
 }
