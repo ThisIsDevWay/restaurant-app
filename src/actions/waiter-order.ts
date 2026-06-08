@@ -5,14 +5,14 @@ import { calculateOrderTotals } from "@/services/order.service";
 import { getSettings, getActiveRate } from "@/db/queries/settings";
 import { createOrderWithCapacityCheck } from "@/db/queries/orders";
 import { db } from "@/db";
-import { printJobs, orders } from "@/db/schema";
+import { orders } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { generateTicketText } from "@/lib/print-formatter";
-import { formatOrderDate } from "@/lib/utils";
+import { printProductionTickets, printAllTickets, printReceipt } from "@/lib/print/enqueue";
 import { revalidatePath } from "next/cache";
 import { calculateSurcharges, buildSurchargesSnapshot } from "@/lib/utils/calculate-surcharges";
 import { usdCentsToBsCents } from "@/lib/money";
 import type { CheckoutItem } from "@/lib/types/checkout";
+import { isOrderLockedByCashier } from "@/lib/utils";
 
 const WAITER_PAYMENT_METHODS = [
   "Efectivo $",
@@ -49,6 +49,7 @@ const updateWaiterOrderSchema = v.object({
   // de settleOrderAction ya lleva los ítems finales).
   skipPrint: v.optional(v.boolean()),
   items: v.any(), // CheckoutItem[] — validado en service
+  loadedUpdatedAt: v.optional(v.string()),
 });
 
 const settleOrderSchema = v.object({
@@ -205,41 +206,13 @@ export const createWaiterOrderAction = authenticatedActionClient
     }
     if (!order) throw new Error("Error al crear la orden");
 
-    // Imprimir la comanda solo si el pedido va directo a cocina.
-    // En modo "pagar antes de cocinar" la comanda se imprime al cobrar.
+    // Impresión: producción al entrar a cocina; si la caja cobra al crear
+    // (chargeNow), también el recibo de caja.
     if (initialStatus === "kitchen") {
-      const ticketText = generateTicketText({
-        orderNumber: order.orderNumber,
-        tableNumber: resolvedTableNumber,
-        customerName: parsedInput.customerName,
-        items: snapshotItems,
-        totalBsCents: grandTotalBsCents,
-        totalUsdCents: grandTotalUsdCents,
-        igtfBsCents,
-        igtfUsdCents,
-        date: formatOrderDate(new Date()),
-        paymentMethod: parsedInput.paymentMethod,
-        waiterName: ctx.user.name ?? undefined,
-        orderMode: parsedInput.orderMode,
-        restaurantName: settings.restaurantName,
-      });
-
-      const printers = settings.printerTargets && settings.printerTargets.length > 0
-        ? settings.printerTargets
-        : [{ name: "main", copies: 2, enabled: true }];
-
-      const activePrinters = printers.filter(p => p.enabled && p.name.trim() !== "");
-
-      if (activePrinters.length > 0) {
-        await db.insert(printJobs).values(
-          activePrinters.map(p => ({
-            orderId: order.id,
-            copies: p.copies,
-            rawContent: ticketText,
-            status: "pending" as const,
-            target: p.name,
-          }))
-        );
+      if (chargeNow) {
+        await printAllTickets(order, { waiterName: ctx.user.name ?? undefined });
+      } else {
+        await printProductionTickets(order, { waiterName: ctx.user.name ?? undefined });
       }
     }
 
@@ -261,11 +234,74 @@ export const createWaiterOrderAction = authenticatedActionClient
     };
   });
 
+export const setOrderLockAction = authenticatedActionClient
+  .schema(v.object({
+    id: v.pipe(v.string(), v.uuid()),
+    lock: v.boolean(),
+  }))
+  .action(async ({ parsedInput, ctx }) => {
+    if (!["admin", "cashier"].includes(ctx.user.role as string)) {
+      throw new Error("No autorizado");
+    }
+
+    const [current] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, parsedInput.id))
+      .limit(1);
+
+    if (!current) throw new Error("Pedido no encontrado");
+
+    const metadata = (current.paymentMetadata as Record<string, any>) || {};
+
+    if (parsedInput.lock) {
+      metadata.cashierLockedAt = new Date().toISOString();
+      metadata.cashierLockedBy = ctx.user.name ?? "Cajero";
+    } else {
+      delete metadata.cashierLockedAt;
+      delete metadata.cashierLockedBy;
+    }
+
+    await db
+      .update(orders)
+      .set({
+        paymentMetadata: metadata,
+      })
+      .where(eq(orders.id, parsedInput.id));
+
+    revalidatePath("/waiter");
+    revalidatePath("/caja");
+
+    return { success: true };
+  });
+
 export const updateWaiterOrderAction = authenticatedActionClient
   .schema(updateWaiterOrderSchema)
   .action(async ({ parsedInput, ctx }) => {
     if (!["admin", "waiter", "cashier"].includes(ctx.user.role as string)) {
       throw new Error("No autorizado");
+    }
+
+    const [existing] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, parsedInput.id))
+      .limit(1);
+
+    if (!existing) throw new Error("Pedido no encontrado");
+
+    // Check soft lock if role is waiter
+    if (ctx.user.role === "waiter" && isOrderLockedByCashier(existing)) {
+      throw new Error("El pedido está cargado en Caja y no puede ser modificado por meseros.");
+    }
+
+    // Check OCC (Optimistic Concurrency Control)
+    if (parsedInput.loadedUpdatedAt) {
+      const dbTime = new Date(existing.updatedAt).getTime();
+      const clientTime = new Date(parsedInput.loadedUpdatedAt).getTime();
+      if (Math.abs(dbTime - clientTime) > 2000) {
+        throw new Error("El pedido fue modificado por otra estación. Por favor, recargue la página.");
+      }
     }
 
     const settings = await getSettings();
@@ -372,43 +408,10 @@ export const updateWaiterOrderAction = authenticatedActionClient
 
     if (!order) throw new Error("Error al actualizar la orden");
 
-    // Generar e imprimir la comanda actualizada — salvo que el cobro de caja
-    // lo invoque con skipPrint (el ticket de cobro ya llevará los ítems finales).
+    // Reimprimir la comanda de producción actualizada — salvo que el cobro de
+    // caja lo invoque con skipPrint (el recibo de cobro ya llevará los ítems).
     if (!parsedInput.skipPrint) {
-      const ticketText = generateTicketText({
-        orderNumber: order.orderNumber,
-        tableNumber: resolvedTableNumber,
-        customerName: parsedInput.customerName,
-        items: snapshotItems,
-        totalBsCents: grandTotalBsCents,
-        totalUsdCents: grandTotalUsdCents,
-        igtfBsCents,
-        igtfUsdCents,
-        date: formatOrderDate(new Date()),
-        paymentMethod: parsedInput.paymentMethod,
-        waiterName: ctx.user.name ?? undefined,
-        orderMode: parsedInput.orderMode,
-        restaurantName: settings.restaurantName,
-        isUpdate: true,
-      });
-
-      const printers = settings.printerTargets && settings.printerTargets.length > 0
-        ? settings.printerTargets
-        : [{ name: "main", copies: 2, enabled: true }];
-
-      const activePrinters = printers.filter(p => p.enabled && p.name.trim() !== "");
-
-      if (activePrinters.length > 0) {
-        await db.insert(printJobs).values(
-          activePrinters.map(p => ({
-            orderId: order.id,
-            copies: p.copies,
-            rawContent: ticketText,
-            status: "pending" as const,
-            target: p.name,
-          }))
-        );
-      }
+      await printProductionTickets(order, { isUpdate: true, waiterName: ctx.user.name ?? undefined });
     }
 
     revalidatePath("/kitchen");
@@ -504,40 +507,15 @@ export const settleOrderAction = authenticatedActionClient
 
     if (!order) throw new Error("Error al registrar el cobro");
 
-    // Comprobante de cobro. Si el pedido estaba pendiente (modo pagar-antes),
-    // este ticket también funciona como comanda para cocina.
-    const ticketText = generateTicketText({
-      orderNumber: order.orderNumber,
-      tableNumber: order.tableNumber ?? "",
-      customerName: order.customerName ?? undefined,
-      items: order.itemsSnapshot ?? [],
-      totalBsCents: grandTotalBsCents,
-      totalUsdCents: grandTotalUsdCents,
-      igtfBsCents,
-      igtfUsdCents,
-      date: formatOrderDate(new Date()),
-      paymentMethod: parsedInput.paymentMethod,
-      waiterName: ctx.user.name ?? undefined,
-      orderMode: order.orderMode ?? undefined,
-      restaurantName: settings.restaurantName,
-    });
-
-    const printers = settings.printerTargets && settings.printerTargets.length > 0
-      ? settings.printerTargets
-      : [{ name: "main", copies: 2, enabled: true }];
-
-    const activePrinters = printers.filter(p => p.enabled && p.name.trim() !== "");
-
-    if (activePrinters.length > 0) {
-      await db.insert(printJobs).values(
-        activePrinters.map(p => ({
-          orderId: order.id,
-          copies: p.copies,
-          rawContent: ticketText,
-          status: "pending" as const,
-          target: p.name,
-        }))
-      );
+    // Impresión al cobrar:
+    // - Si estaba PENDIENTE (modo pagar-antes), aquí entra a producción: se
+    //   imprime todo (cocina/barra + recibo).
+    // - Si ya estaba en cocina (el mesero ya envió la comanda), solo el recibo,
+    //   para no reimprimir la comanda de producción.
+    if (current.status === "pending") {
+      await printAllTickets(order, { waiterName: ctx.user.name ?? undefined });
+    } else {
+      await printReceipt(order, { waiterName: ctx.user.name ?? undefined });
     }
 
     revalidatePath("/kitchen");

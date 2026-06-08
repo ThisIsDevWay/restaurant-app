@@ -53,3 +53,15 @@ export function isRealPhone(phone: string | null | undefined): boolean {
   if (!phone) return false;
   return !phone.startsWith("mesa-") && !phone.startsWith("mesero-");
 }
+
+/** Check if an order is locked by Caja/POS. */
+export function isOrderLockedByCashier(order: any): boolean {
+  if (!order || order.paidAt) return false;
+  const metadata = order.paymentMetadata;
+  if (!metadata || !metadata.cashierLockedAt) return false;
+  const lockedAt = new Date(metadata.cashierLockedAt).getTime();
+  const now = Date.now();
+  const diffMinutes = (now - lockedAt) / (1000 * 60);
+  return diffMinutes < 10; // lock expires after 10 minutes
+}
+

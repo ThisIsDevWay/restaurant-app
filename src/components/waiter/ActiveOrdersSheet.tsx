@@ -3,11 +3,12 @@
 import { ChefHat, Clock, Phone, MapPin, User, CheckCircle2, CircleDollarSign } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { formatBs } from "@/lib/money";
-import { formatPhone, isRealPhone } from "@/lib/utils";
+import { formatPhone, isRealPhone, isOrderLockedByCashier } from "@/lib/utils";
 import { formatOrderTime } from "@/lib/utils/format-relative-time";
 import { OrderModeChip } from "@/components/admin/orders/OrderModeChip";
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface ActiveOrdersSheetProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface ActiveOrdersSheetProps {
   onSelect: (order: any) => void;
   title?: string;
   emptyText?: string;
+  isWaiter?: boolean;
 }
 
 const STATUS_ACCENT: Record<string, string> = {
@@ -114,6 +116,7 @@ export function ActiveOrdersSheet({
   onSelect,
   title = "Órdenes Activas",
   emptyText = "No hay órdenes activas",
+  isWaiter = false,
 }: ActiveOrdersSheetProps) {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -139,59 +142,82 @@ export function ActiveOrdersSheet({
               <p className="text-xs text-slate-500 mt-1">Las órdenes del día aparecerán aquí</p>
             </div>
           ) : (
-            orders.map((order) => (
-              <div
-                key={order.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => onSelect(order)}
-                onKeyDown={(e) => { if (e.key === "Enter") onSelect(order); }}
-                className={cn(
-                  "w-full text-left bg-white rounded-2xl p-4 shadow-sm cursor-pointer",
-                  "border-l-4 border border-transparent",
-                  "hover:shadow-md hover:border-primary/30 transition-all group",
-                  STATUS_ACCENT[order.status as string] ?? "border-l-slate-200"
-                )}
-              >
-                {/* Row 1: # + Mode + Status */}
-                <div className="flex items-center justify-between mb-3 gap-2">
-                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                    {/* Order number pill */}
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 text-primary font-black text-sm tracking-tight border border-primary/10 group-hover:bg-primary group-hover:text-white transition-colors shrink-0">
-                      #{order.orderNumber}
-                    </span>
-                    <OrderModeChip mode={order.orderMode ?? "on_site"} />
-                    <LocationBadge order={order} />
-                    <PaymentBadge order={order} />
-                  </div>
-                  <OrderStatusBadge status={order.status} />
-                </div>
-
-                {/* Row 2: Customer */}
-                <div className="mb-3">
-                  <CustomerInfo order={order} />
-                </div>
-
-                {/* Row 3: Time + Total + Payment */}
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100 gap-2">
-                  <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-50 px-2 py-1 rounded-full shrink-0">
-                    <Clock size={10} />
-                    <span>{formatOrderTime(order.createdAt)}</span>
-                  </div>
-
-                  <div className="flex flex-col items-end">
-                    <span className="text-base font-black text-slate-900 group-hover:text-primary transition-colors leading-tight">
-                      {formatBs(order.grandTotalBsCents)}
-                    </span>
-                    {order.paymentMethod && (
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
-                        {order.paymentMethod}
+            orders.map((order) => {
+              const isLocked = isOrderLockedByCashier(order);
+              return (
+                <div
+                  key={order.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    if (isWaiter && isLocked) {
+                      toast.error("El pedido está cargado en Caja y no puede ser modificado.");
+                      return;
+                    }
+                    onSelect(order);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (isWaiter && isLocked) {
+                        toast.error("El pedido está cargado en Caja y no puede ser modificado.");
+                        return;
+                      }
+                      onSelect(order);
+                    }
+                  }}
+                  className={cn(
+                    "w-full text-left bg-white rounded-2xl p-4 shadow-sm cursor-pointer",
+                    "border-l-4 border border-transparent",
+                    "hover:shadow-md hover:border-primary/30 transition-all group",
+                    STATUS_ACCENT[order.status as string] ?? "border-l-slate-200",
+                    isWaiter && isLocked && "opacity-60 cursor-not-allowed hover:shadow-sm hover:border-transparent"
+                  )}
+                >
+                  {/* Row 1: # + Mode + Status */}
+                  <div className="flex items-center justify-between mb-3 gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                      {/* Order number pill */}
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 text-primary font-black text-sm tracking-tight border border-primary/10 group-hover:bg-primary group-hover:text-white transition-colors shrink-0">
+                        #{order.orderNumber}
                       </span>
-                    )}
+                      <OrderModeChip mode={order.orderMode ?? "on_site"} />
+                      <LocationBadge order={order} />
+                      <PaymentBadge order={order} />
+                      {isLocked && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 font-bold text-[10px] tracking-tight border border-rose-200 shrink-0">
+                          🔒 En Caja
+                        </span>
+                      )}
+                    </div>
+                    <OrderStatusBadge status={order.status} />
+                  </div>
+
+                  {/* Row 2: Customer */}
+                  <div className="mb-3">
+                    <CustomerInfo order={order} />
+                  </div>
+
+                  {/* Row 3: Time + Total + Payment */}
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 gap-2">
+                    <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-50 px-2 py-1 rounded-full shrink-0">
+                      <Clock size={10} />
+                      <span>{formatOrderTime(order.createdAt)}</span>
+                    </div>
+
+                    <div className="flex flex-col items-end">
+                      <span className="text-base font-black text-slate-900 group-hover:text-primary transition-colors leading-tight">
+                        {formatBs(order.grandTotalBsCents)}
+                      </span>
+                      {order.paymentMethod && (
+                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                          {order.paymentMethod}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </SheetContent>

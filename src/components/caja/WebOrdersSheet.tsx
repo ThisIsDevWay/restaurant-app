@@ -6,6 +6,7 @@ import {
   Clock,
   Receipt,
   Ban,
+  ChefHat,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -162,6 +163,7 @@ function WebOrderCard({
 
   const actions = ACTION_MAP[status] ?? [];
   const canCancel = status === "pending" || status === "whatsapp";
+  const canSendToKitchen = status === "paid";
 
   return (
     <div
@@ -250,8 +252,23 @@ function WebOrderCard({
       </div>
 
       {/* Actions */}
-      {(actions.length > 0 || canCancel) && (
+      {(actions.length > 0 || canCancel || canSendToKitchen) && (
         <div className="flex items-center gap-2 mt-3 flex-wrap">
+          {canSendToKitchen && (
+            <button
+              onClick={() =>
+                mutation.mutate(
+                  { actionType: "mark_kitchen" },
+                  { onSuccess: () => toast.success(`Pedido #${order.orderNumber} enviado a cocina`) },
+                )
+              }
+              disabled={mutation.isPending}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-orange-600 text-white text-xs font-bold uppercase tracking-tight hover:bg-orange-700 active:bg-orange-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {mutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ChefHat className="h-3.5 w-3.5" />}
+              Enviar a cocina
+            </button>
+          )}
           {actions.map((action) => {
             const Icon = action.icon;
             const onClick =

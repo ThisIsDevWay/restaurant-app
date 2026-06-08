@@ -184,11 +184,10 @@ export function OrderForm({
                 key={mode}
                 type="button"
                 onClick={() => setOrderMode(mode)}
-                className={`flex flex-1 items-center justify-center gap-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider transition-all rounded-lg ${
-                  orderMode === mode
-                    ? "bg-[var(--color-primary)] text-white shadow-sm"
-                    : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-section)]"
-                }`}
+                className={`flex flex-1 items-center justify-center gap-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider transition-all rounded-lg ${orderMode === mode
+                  ? "bg-[var(--color-primary)] text-white shadow-sm"
+                  : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-section)]"
+                  }`}
               >
                 {mode === "on_site" && <><Store size={13} className={orderMode === mode ? "text-white" : ""} /> En sitio</>}
                 {mode === "take_away" && <><Package size={13} className={orderMode === mode ? "text-white" : ""} /> Llevar</>}
@@ -245,26 +244,6 @@ export function OrderForm({
         ) : orderMode === "delivery" ? (
           /* ── DELIVERY: dirección + zona + teléfono + cliente ── */
           <div className="space-y-2">
-            {/* Dirección de entrega */}
-            <div className="space-y-1">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                Dirección de entrega <span className="text-[var(--color-primary)]">*</span>
-              </label>
-              <div className="relative group">
-                <div className="absolute left-2.5 top-[0.6rem] p-1 rounded-lg bg-[var(--color-surface-section)] group-focus-within:bg-[var(--color-primary-light)] transition-colors">
-                  <Truck size={13} className="text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                </div>
-                <textarea
-                  value={tableNumber}
-                  onChange={e => setTableNumber(e.target.value)}
-                  placeholder="Calle, sector, referencia..."
-                  required
-                  rows={2}
-                  className="w-full resize-none rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all leading-snug"
-                  style={{ fieldSizing: "content" } as React.CSSProperties}
-                />
-              </div>
-            </div>
 
             {/* Zona de delivery */}
             <div className="space-y-1">
@@ -327,6 +306,27 @@ export function OrderForm({
                 </div>
               </div>
             </div>
+            {/* Dirección de entrega */}
+            <div className="space-y-1">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                Dirección de entrega <span className="text-[var(--color-primary)]">*</span>
+              </label>
+              <div className="relative group">
+                <div className="absolute left-2.5 top-[0.6rem] p-1 rounded-lg bg-[var(--color-surface-section)] group-focus-within:bg-[var(--color-primary-light)] transition-colors">
+                  <Truck size={13} className="text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
+                </div>
+                <textarea
+                  value={tableNumber}
+                  onChange={e => setTableNumber(e.target.value)}
+                  placeholder="Calle, sector, referencia..."
+                  required
+                  rows={2}
+                  className="w-full resize-none rounded-xl border border-[var(--color-border)] bg-white py-1.5 pl-10 pr-3 text-sm font-bold text-[var(--color-text-main)] outline-none placeholder:text-slate-300 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary)]/5 transition-all leading-snug"
+                  style={{ fieldSizing: "content" } as React.CSSProperties}
+                />
+              </div>
+            </div>
+
           </div>
         ) : (
           /* ── PARA LLEVAR: solo cliente ── */
@@ -362,8 +362,8 @@ export function OrderForm({
             </SelectTrigger>
             <SelectContent className="bg-white rounded-xl shadow-2xl border border-[var(--color-border)] p-1">
               {methods.map((method) => (
-                <SelectItem 
-                  key={method.id} 
+                <SelectItem
+                  key={method.id}
                   value={method.id}
                   className="text-sm font-bold py-2 px-3 rounded-lg focus:bg-[var(--color-surface-section)] focus:text-[var(--color-primary)] cursor-pointer"
                 >
@@ -444,7 +444,7 @@ export function SubmitButton({ canSubmit, isSubmitting, isEditing, onSubmit, onC
       >
         {/* Glossy overlay effect */}
         <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-        
+
         {isSubmitting ? (
           <>
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
