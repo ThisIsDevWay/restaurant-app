@@ -183,8 +183,8 @@ export function WizardCartChip({
                         </span>
                       )}
 
-                      {(item.fixedContornos ?? []).map((c) => (
-                        <span key={c.id} className="bg-surface-section text-text-muted border border-border/50 px-2 py-0.5 rounded-full text-[10px] font-semibold inline-flex items-center">
+                      {(item.fixedContornos ?? []).map((c, i) => (
+                        <span key={`${c.id}-${i}`} className="bg-surface-section text-text-muted border border-border/50 px-2 py-0.5 rounded-full text-[10px] font-semibold inline-flex items-center">
                           {c.name}
                         </span>
                       ))}

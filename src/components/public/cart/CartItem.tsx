@@ -491,8 +491,8 @@ export function CartItem({ item, index, maxQuantityPerItem = 10, onUpdateQuantit
               <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
                 <CatLabel>Contornos</CatLabel>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                  {fixedContornos.map((c) => (
-                    <Pill key={c.id} variant="default">{cleanLabel(c.name)}</Pill>
+                  {fixedContornos.map((c, i) => (
+                    <Pill key={`${c.id}-${i}`} variant="default">{cleanLabel(c.name)}</Pill>
                   ))}
                   {substitutions.map((s, i) => (
                     <Pill key={i} variant="swap">

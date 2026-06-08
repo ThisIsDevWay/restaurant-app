@@ -133,9 +133,9 @@ export function CartLineItem({ item, index, onEdit, onUpdateQuantity, onRemove }
                 Acompaña
               </span>
               <div className="flex flex-wrap gap-1 flex-1">
-                {fixedContornos.map((c) => (
+                {fixedContornos.map((c, i) => (
                   <span
-                    key={c.id}
+                    key={`${c.id}-${i}`}
                     className="text-[10px] bg-[var(--color-surface-section)] px-2 py-0.5 rounded-full font-bold text-[var(--color-text-main)] ring-1 ring-[var(--color-border-ghost)]"
                   >
                     {c.name}

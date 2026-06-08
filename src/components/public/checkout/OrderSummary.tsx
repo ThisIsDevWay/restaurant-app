@@ -125,8 +125,8 @@ export function OrderSummary({
                 {((item.fixedContornos ?? []).length > 0 || (item.contornoSubstitutions ?? []).length > 0) && (
                   <>
                     <div className="text-[10px] font-medium uppercase tracking-[0.05em] text-[#C4A090] mt-1.5 mb-[2px]">Contornos</div>
-                    {(item.fixedContornos ?? []).map((c) => (
-                      <div key={c.id} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
+                    {(item.fixedContornos ?? []).map((c, i) => (
+                      <div key={`${c.id}-${i}`} className="flex justify-between items-center pl-2 border-l-[1.5px] border-[#EDD8CF]">
                         <span className="text-[12px] text-[#5A3A3A]">{c.name}</span>
                         <span className="text-[11px] italic text-[#9A6A5A]">incluido</span>
                       </div>
