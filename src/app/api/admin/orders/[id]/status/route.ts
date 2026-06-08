@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getOrderById, updateOrderStatus } from "@/db/queries/orders";
+import { getOrderById } from "@/db/queries/orders";
+import { updateOrderStatus } from "@/services/order.service";
 import { getCustomerByPhone } from "@/db/queries/customers";
 import { getSettings } from "@/db/queries/settings";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
@@ -80,6 +81,7 @@ export async function POST(
       );
     }
 
+    // El servicio imprime las comandas de producción al entrar a cocina.
     await updateOrderStatus(orderId, newStatus);
 
     const templateKey = STATUS_TO_TEMPLATE[newStatus];

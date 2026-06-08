@@ -1,4 +1,5 @@
-import { updateOrderStatus as updateOrderStatusDb, createOrder as createOrderDb } from "@/db/queries/orders";
+import { updateOrderStatus as updateOrderStatusDb, createOrder as createOrderDb, getOrderById } from "@/db/queries/orders";
+import { printProductionTickets } from "@/lib/print/enqueue";
 import { upsertCustomer } from "@/db/queries/customers";
 import { dailyMenuItems, orders } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -25,8 +26,23 @@ export async function cancelOrder(orderId: string, _reason: string) {
     return updateOrderStatusDb(orderId, "cancelled");
 }
 
+/**
+ * Punto único de transición de estado de una orden. Si la orden entra a
+ * `kitchen` (y no estaba ya en cocina), encola las comandas de producción en
+ * las impresoras de cocina/barra. Así cualquier disparador (KDS, acción de
+ * admin, botón "Enviar a cocina" de caja) imprime automáticamente.
+ */
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
-    return updateOrderStatusDb(orderId, status);
+    const before = await getOrderById(orderId);
+    const updated = await updateOrderStatusDb(orderId, status);
+
+    if (status === "kitchen" && before?.status !== "kitchen") {
+        await printProductionTickets(updated ?? before!).catch((err) =>
+            logger.error("Print error (kitchen transition)", { error: String(err), orderId }),
+        );
+    }
+
+    return updated;
 }
 
 export async function calculateOrderTotals(items: CheckoutItem[], rate: number, date: string) {
@@ -105,17 +121,28 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
 
         // Validate and add fixed contornos prices
         for (const fc of clientItem.fixedContornos) {
-            const validContorno = menuItem.contornos.find(
+            let foundContorno: {
+                id: string;
+                name: string;
+                priceUsdCents: number;
+                isPrepackaged: boolean;
+            } | undefined = menuItem.contornos.find(
                 (c) => c.id === fc.id && c.isAvailable,
             );
-            if (validContorno) {
-                perUnitOptionsUsdCents += validContorno.priceUsdCents;
+            if (!foundContorno) {
+                const globalContorno = globalContornoMap.get(fc.id);
+                if (globalContorno && globalContorno.isAvailable) {
+                    foundContorno = globalContorno;
+                }
+            }
+            if (foundContorno) {
+                perUnitOptionsUsdCents += foundContorno.priceUsdCents;
                 fixedContornos.push({
-                    id: validContorno.id,
-                    name: validContorno.name,
-                    priceUsdCents: validContorno.priceUsdCents,
-                    priceBsCents: usdCentsToBsCents(validContorno.priceUsdCents, rate),
-                    isPrepackaged: validContorno.isPrepackaged,
+                    id: foundContorno.id,
+                    name: foundContorno.name,
+                    priceUsdCents: foundContorno.priceUsdCents,
+                    priceBsCents: usdCentsToBsCents(foundContorno.priceUsdCents, rate),
+                    isPrepackaged: foundContorno.isPrepackaged,
                 });
             }
         }
@@ -287,6 +314,8 @@ export async function calculateOrderTotals(items: CheckoutItem[], rate: number, 
         snapshotItems.push({
             id: menuItem.id,
             name: menuItem.name,
+            categoryId: menuItem.categoryId,
+            categoryName: menuItem.categoryName,
             priceUsdCents: menuItem.priceUsdCents,
             priceBsCents: itemBaseBsCents,
             isPrepackaged: menuItem.isPrepackaged,

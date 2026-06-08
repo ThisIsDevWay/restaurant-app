@@ -20,8 +20,16 @@ export const orders = pgTable("orders", {
     Array<{
       id: string;
       name: string;
+      // Categoría del ítem — habilita el ruteo de impresión por estación
+      // (p.ej. la barra imprime Postres/Café/Bebidas). Opcional para pedidos
+      // viejos creados antes de añadir estos campos.
+      categoryId?: string | null;
+      categoryName?: string | null;
       priceUsdCents: number;
       priceBsCents: number;
+      isPrepackaged?: boolean;
+      costUsdCents?: number | null;
+      includedNote?: string | null;
       fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;
       selectedAdicionales: Array<{
         id: string;

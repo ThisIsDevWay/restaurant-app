@@ -1,6 +1,5 @@
 "use server";
 
-import { auth } from "@/lib/auth";
 import { updateOrderStatus as updateOrderStatusService } from "@/services/order.service";
 import { revalidatePath } from "next/cache";
 import * as v from "valibot";
@@ -18,7 +17,9 @@ export const updateOrderStatusAction = authenticatedActionClient
       throw new Error("No autorizado");
     }
 
+    // La impresión de producción al entrar a cocina la maneja el servicio.
     await updateOrderStatusService(parsedInput.orderId, parsedInput.status);
+
     revalidatePath("/kitchen");
     revalidatePath("/admin/orders");
     return { success: true };

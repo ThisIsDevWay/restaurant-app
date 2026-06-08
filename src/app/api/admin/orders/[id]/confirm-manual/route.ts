@@ -5,6 +5,7 @@ import { getSettings } from "@/db/queries/settings";
 import { getProviderById } from "@/lib/payment-providers";
 import { getCustomerByPhone } from "@/db/queries/customers";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
+import { printReceipt } from "@/lib/print/enqueue";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 import { logger } from "@/lib/logger";
 import * as v from "valibot";
@@ -86,6 +87,13 @@ export async function POST(
         baseUrl: settings.whatsappMicroserviceUrl,
       }).catch((err) => {
         logger.error("WhatsApp Error:", { error: String(err) });
+      });
+
+      // Imprimir el recibo de caja con la orden ACTUALIZADA (estado paid) —
+      // releer para no usar el snapshot pre-pago.
+      const paidOrder = await getOrderById(orderId);
+      await printReceipt(paidOrder ?? order).catch((err) => {
+        logger.error("Print error (recibo confirm-manual)", { error: String(err), orderId });
       });
 
       return NextResponse.json({ success: true });
