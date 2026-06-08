@@ -132,53 +132,53 @@ export function WaiterClient({
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden" style={{ background: "var(--color-bg-app)", fontFamily: "var(--font-sans)" }}>
-      <header className="flex shrink-0 items-center justify-between px-4 py-3 z-30 shadow-md border-b border-white/5" style={{ background: "var(--color-text-main)" }}>
-        <div className="flex items-center gap-3">
-          <Link href="/admin" className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all active:scale-95">
+      <header className="flex shrink-0 items-center justify-between px-3 sm:px-4 py-3 z-30 shadow-md border-b border-white/5" style={{ background: "var(--color-text-main)" }}>
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Link href="/admin" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all active:scale-95">
             <ArrowLeft size={20} />
           </Link>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)]">
+          <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]">
             <UtensilsCrossed size={18} className="text-white" />
           </div>
-          <div className="flex flex-col">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 leading-none mb-0.5 flex items-center gap-1.5">
+          <div className="flex flex-col min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 leading-none mb-0.5 flex items-center gap-1.5 truncate">
               Modulo Pedidos
               {pos.connectionStatus === "ok"
-                ? <Wifi size={11} className="text-emerald-400" />
+                ? <Wifi size={11} className="text-emerald-400 shrink-0" />
                 : pos.connectionStatus === "error"
-                  ? <WifiOff size={11} className="text-red-400" />
-                  : <Wifi size={11} className="text-white/20 animate-pulse" />}
+                  ? <WifiOff size={11} className="text-red-400 shrink-0" />
+                  : <Wifi size={11} className="text-white/20 animate-pulse shrink-0" />}
             </p>
-            <p className="text-sm font-bold text-white leading-tight">
+            <p className="text-xs sm:text-sm font-bold text-white leading-tight truncate">
               {pos.editingOrderNumber ? (
-                <span className="flex items-center gap-1.5 text-amber-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="flex items-center gap-1.5 text-amber-400 truncate">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
                   Editando #{pos.editingOrderNumber}
                 </span>
               ) : ((pos.settings?.restaurantName as string) ?? "Tomar Pedido")}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             onClick={() => setIsOrdersSheetOpen(true)}
-            className="flex h-10 items-center gap-2 rounded-xl bg-white/5 px-4 text-xs font-black uppercase tracking-widest text-white/80 hover:bg-white/10 hover:text-white transition-all border border-white/5 active:scale-95"
+            className="flex h-10 items-center gap-2 rounded-xl bg-white/5 px-2.5 sm:px-4 text-xs font-black uppercase tracking-widest text-white/80 hover:bg-white/10 hover:text-white transition-all border border-white/5 active:scale-95 shrink-0"
           >
-            <Table2 size={16} className="text-amber-400" />
+            <Table2 size={16} className="text-amber-400 shrink-0" />
             <span className="hidden md:inline">Órdenes Activas</span>
           </button>
           <button
             onClick={() => setIsSheetOpen(true)}
-            className="relative flex h-10 items-center gap-3 rounded-xl bg-[var(--color-primary)] pl-4 pr-3 lg:hidden active:scale-95 transition-all"
+            className="relative flex h-10 items-center gap-1.5 sm:gap-3 rounded-xl bg-[var(--color-primary)] pl-2.5 sm:pl-4 pr-2 sm:pr-3 lg:hidden active:scale-95 transition-all shrink-0"
           >
-            <ShoppingCart size={18} className="text-white" />
+            <ShoppingCart size={18} className="text-white shrink-0" />
             {pos.count > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-black text-white shrink-0">
                 <span className="h-4 w-px bg-white/20" />
-                <span className="text-xs font-black text-white">{pos.count} · {formatBs(grandTotalBsCents)}</span>
+                <span className="tabular-nums">{pos.count} · {formatBs(grandTotalBsCents)}</span>
               </div>
             )}
-            <ChevronUp size={16} className="text-white/50" />
+            <ChevronUp size={16} className="text-white/50 shrink-0" />
           </button>
         </div>
       </header>
@@ -258,9 +258,10 @@ export function WaiterClient({
       )}
 
       <ActiveOrdersSheet
-        isOpen={isOrdersSheetOpen} onClose={() => setIsOrdersSheetOpen(false)} orders={pos.liveOrders}
+        isOpen={isOrdersSheetOpen} onClose={() => setIsOrdersSheetOpen(false)} orders={pos.liveOrders.filter((o: any) => !o.paidAt && !o.checkoutToken)}
         onSelect={(order) => { pos.handleEditOrder(order); setIsOrdersSheetOpen(false); setIsSheetOpen(true); }}
         title="Órdenes Activas" emptyText="No hay órdenes activas"
+        isWaiter={true}
       />
 
       <TableSelectorModal

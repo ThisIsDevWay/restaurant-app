@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UtensilsCrossed, Table2, ShoppingCart, ChevronUp, X, ClipboardList, Wifi, WifiOff, Globe } from "lucide-react";
+import { UtensilsCrossed, Table2, ShoppingCart, ChevronUp, X, ClipboardList, Wifi, WifiOff, Globe, Users, MapPlus } from "lucide-react";
 import { toast } from "sonner";
 import { formatBs } from "@/lib/money";
 import { usePOSOrder, getEmoji, needsModal } from "@/hooks/usePOSOrder";
 import { useNewOrderAlert } from "@/hooks/useNewOrderAlert";
-import { createWaiterOrderAction, updateWaiterOrderAction, settleOrderAction } from "@/actions/waiter-order";
+import { createWaiterOrderAction, updateWaiterOrderAction, settleOrderAction, setOrderLockAction } from "@/actions/waiter-order";
 import { CartLineItem } from "@/components/waiter/CartLineItem";
 import { OrderForm, SubmitButton } from "@/components/waiter/OrderForm";
 import { ActiveOrdersSheet } from "@/components/waiter/ActiveOrdersSheet";
@@ -14,6 +14,8 @@ import { WebOrdersSheet } from "@/components/caja/WebOrdersSheet";
 import { TableSelectorModal } from "@/components/waiter/TableSelectorModal";
 import { MenuItemGrid } from "@/components/waiter/MenuItemGrid";
 import { POSItemDetailModal } from "@/components/pos/POSItemDetailModal";
+import { SplitBillModal } from "@/components/pos/SplitBillModal";
+import { MultiDestinationModal } from "@/components/pos/MultiDestinationModal";
 import { QuickAvailabilityPanel } from "@/components/admin/availability/QuickAvailabilityPanel";
 import { CELL_SIZE } from "@/lib/salon-constants";
 import type { MenuItemWithComponents, SimpleComponent } from "@/types/menu.types";
@@ -56,6 +58,11 @@ export function CajaClient({
   const [isWebOrdersSheetOpen, setIsWebOrdersSheetOpen] = useState(false);
   const [isTableSelectorOpen, setIsTableSelectorOpen] = useState(false);
   const [layoutZoom, setLayoutZoom] = useState(1);
+  // División de cuentas (Feature A) y pedido multi-destino (Feature B).
+  const [isSplitOpen, setIsSplitOpen] = useState(false);
+  const [isSplitNewOpen, setIsSplitNewOpen] = useState(false);
+  const [isMultiDestOpen, setIsMultiDestOpen] = useState(false);
+  const [splitSourceOrder, setSplitSourceOrder] = useState<any | null>(null);
 
   useEffect(() => {
     if (isTableSelectorOpen && typeof window !== "undefined" && window.innerWidth < 768) {
@@ -65,6 +72,16 @@ export function CajaClient({
       setLayoutZoom(1);
     }
   }, [isTableSelectorOpen, pos.settings?.tablesGridCols]);
+
+  // Lock/unlock order automatically when editingOrderId changes or on unmount
+  useEffect(() => {
+    const currentId = pos.editingOrderId;
+    return () => {
+      if (currentId) {
+        setOrderLockAction({ id: currentId, lock: false }).catch(() => {});
+      }
+    };
+  }, [pos.editingOrderId]);
 
   const paidOrders = pos.liveOrders.filter((o: any) => o.paidAt);
   const waiterPendingOrders = pos.liveOrders.filter((o: any) => !o.paidAt && !o.checkoutToken);
@@ -139,9 +156,61 @@ export function CajaClient({
 
   function handleCancelEdit() {
     pos.resetForm();
+    setSplitSourceOrder(null);
     setIsSheetOpen(false);
     toast.success("Edición cancelada");
   }
+
+  // Botones de repartir/dividir, compartidos entre el panel desktop y el sheet móvil.
+  // - Dividir un pedido de mesa YA existente cargado en caja (sin cobrar).
+  const canSplitExisting = !!pos.editingOrderId && !pos.editingOrderPaidAt && pos.orderMode === "on_site" && !!splitSourceOrder;
+  // - Dividir entre pagadores un pedido de mesa NUEVO armado en caja (antes de cobrar).
+  const canSplitNew = !pos.editingOrderId && pos.orderMode === "on_site" && pos.tableNumber.trim().length > 0 && pos.cartItems.length >= 2;
+  // - Repartir un pedido nuevo en varios destinos con modalidades distintas.
+  const canMultiDest = !pos.editingOrderId && pos.cartItems.length >= 2;
+  const hasSplitActions = canSplitExisting || canSplitNew || canMultiDest;
+
+  // Líneas y CheckoutItems del carrito para el modal multi-destino (alineados por índice).
+  const cartLines = pos.cartItems.map((item: any) => {
+    const base = item.baseUsdCents * item.quantity;
+    const extras = [
+      ...(item.fixedContornos ?? []).map((c: any) => c.priceUsdCents * item.quantity),
+      ...(item.contornoSubstitutions ?? []).map((c: any) => c.priceUsdCents * item.quantity),
+      ...(item.selectedAdicionales ?? []).map((a: any) => a.priceUsdCents * (a.quantity ?? 1)),
+      ...(item.selectedBebidas ?? []).map((b: any) => b.priceUsdCents * (b.quantity ?? 1)),
+      ...(item.removedComponents ?? []).map((r: any) => -r.priceUsdCents * item.quantity),
+    ];
+    return { name: item.name, quantity: item.quantity, lineUsdCents: base + extras.reduce((a: number, b: number) => a + b, 0) };
+  });
+
+  const splitActions = (
+    <div className="flex flex-col gap-2">
+      {canSplitExisting && (
+        <button
+          onClick={() => setIsSplitOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary-light)] py-2.5 text-xs font-black uppercase tracking-widest text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary)] hover:text-white active:scale-[0.98]"
+        >
+          <Users size={15} /> Dividir Cuenta
+        </button>
+      )}
+      {canSplitNew && (
+        <button
+          onClick={() => setIsSplitNewOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary-light)] py-2.5 text-xs font-black uppercase tracking-widest text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary)] hover:text-white active:scale-[0.98]"
+        >
+          <Users size={15} /> Dividir Cuenta
+        </button>
+      )}
+      {canMultiDest && (
+        <button
+          onClick={() => setIsMultiDestOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] py-2.5 text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] active:scale-[0.98]"
+        >
+          <MapPlus size={15} /> Repartir en varios destinos
+        </button>
+      )}
+    </div>
+  );
 
   const orderForm = (showSubmitButton: boolean) => (
     <OrderForm
@@ -266,7 +335,8 @@ export function CajaClient({
             {pos.cartItems.length > 0 && <div className="mx-4 border-t border-dashed border-slate-100 my-2" />}
             <div className="px-4 pb-4 pt-2">{orderForm(false)}</div>
           </div>
-          <div className="shrink-0 border-t border-[var(--color-border)] bg-white px-4 py-4">
+          <div className="shrink-0 border-t border-[var(--color-border)] bg-white px-4 py-4 space-y-2">
+            {hasSplitActions && splitActions}
             <SubmitButton canSubmit={canSubmit} isSubmitting={pos.isSubmitting} isEditing={!!pos.editingOrderId} onSubmit={handleSubmit} onCancelEdit={handleCancelEdit} submitLabel={submitLabel} />
           </div>
         </aside>
@@ -293,6 +363,7 @@ export function CajaClient({
             <div className="flex-1 overflow-y-auto px-4 pt-3">
               {pos.cartItems.length === 0 ? <EmptyCart /> : pos.cartItems.map((item, i) => <CartLineItem key={`m-${item.id}-${i}`} item={item} index={i} onEdit={() => pos.handleEditCartItem(i)} onUpdateQuantity={pos.updateQuantity} onRemove={pos.removeItem} />)}
               {pos.cartItems.length > 0 && <div className="border-t border-dashed border-slate-100 my-3" />}
+              {hasSplitActions && <div className="pb-2">{splitActions}</div>}
               <div className="pb-6">{orderForm(true)}</div>
             </div>
           </div>
@@ -316,7 +387,13 @@ export function CajaClient({
       />
       <ActiveOrdersSheet
         isOpen={isWaiterOrdersSheetOpen} onClose={() => setIsWaiterOrdersSheetOpen(false)} orders={waiterPendingOrders}
-        onSelect={(order) => { pos.handleEditOrder(order); setIsWaiterOrdersSheetOpen(false); setIsSheetOpen(true); }}
+        onSelect={async (order) => {
+          await setOrderLockAction({ id: order.id, lock: true });
+          pos.handleEditOrder(order);
+          setSplitSourceOrder(order);
+          setIsWaiterOrdersSheetOpen(false);
+          setIsSheetOpen(true);
+        }}
         title="Pedidos de Mesero" emptyText="No hay pedidos de mesero por cobrar"
       />
       <WebOrdersSheet
@@ -329,6 +406,49 @@ export function CajaClient({
         gridCols={(pos.settings?.tablesGridCols as number) ?? 20} gridRows={(pos.settings?.tablesGridRows as number) ?? 14}
         layoutZoom={layoutZoom} onSelectTable={(label) => { pos.setTableNumber(label); setIsTableSelectorOpen(false); }}
       />
+
+      {isSplitOpen && splitSourceOrder && (
+        <SplitBillModal
+          isOpen={isSplitOpen}
+          onClose={() => setIsSplitOpen(false)}
+          order={splitSourceOrder}
+          rate={rate}
+          onSuccess={() => { setSplitSourceOrder(null); pos.resetForm(); setIsSheetOpen(false); pos.refetchOrders(); }}
+        />
+      )}
+
+      {isMultiDestOpen && (
+        <MultiDestinationModal
+          isOpen={isMultiDestOpen}
+          onClose={() => setIsMultiDestOpen(false)}
+          lines={cartLines}
+          checkoutItems={pos.buildBaseFields().items as any}
+          deliveryZones={pos.deliveryZones}
+          rate={rate}
+          settings={pos.settings as any}
+          defaultCustomerName={pos.customerName}
+          defaultCustomerPhone={pos.customerPhone}
+          onSuccess={() => { pos.resetForm(); setIsSheetOpen(false); pos.refetchOrders(); }}
+        />
+      )}
+
+      {isSplitNewOpen && (
+        <MultiDestinationModal
+          isOpen={isSplitNewOpen}
+          onClose={() => setIsSplitNewOpen(false)}
+          variant="payers"
+          sharedMode="on_site"
+          sharedTable={pos.tableNumber.trim()}
+          lines={cartLines}
+          checkoutItems={pos.buildBaseFields().items as any}
+          deliveryZones={pos.deliveryZones}
+          rate={rate}
+          settings={pos.settings as any}
+          defaultCustomerName={pos.customerName}
+          defaultCustomerPhone={pos.customerPhone}
+          onSuccess={() => { pos.resetForm(); setIsSheetOpen(false); pos.refetchOrders(); }}
+        />
+      )}
     </div>
   );
 }

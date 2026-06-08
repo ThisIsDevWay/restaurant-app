@@ -140,6 +140,7 @@ export function usePOSOrder({
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [editingOrderNumber, setEditingOrderNumber] = useState<number | null>(null);
   const [editingOrderPaidAt, setEditingOrderPaidAt] = useState<string | null>(null);
+  const [editingOrderUpdatedAt, setEditingOrderUpdatedAt] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Modal state
@@ -188,6 +189,7 @@ export function usePOSOrder({
     setEditingOrderId(null);
     setEditingOrderNumber(null);
     setEditingOrderPaidAt(null);
+    setEditingOrderUpdatedAt(null);
     setTableNumber("");
     setCustomerName("");
     setCustomerPhone("");
@@ -215,6 +217,7 @@ export function usePOSOrder({
     setOrderMode(["on_site", "take_away", "delivery"].includes(mode) ? mode : "on_site");
     setEditingOrderId(order.id);
     setEditingOrderNumber(order.orderNumber);
+    setEditingOrderUpdatedAt(order.updatedAt ? new Date(order.updatedAt).toISOString() : null);
 
     const newItems = (order.itemsSnapshot as any[]).map((snapItem) => {
       const menuItem = localItems.find((i) => i.id === snapItem.id);
@@ -267,20 +270,44 @@ export function usePOSOrder({
 
   function buildCheckoutItems(): CheckoutItem[] {
     return cartItems.map((item) => {
-      const adicionales = item.selectedAdicionales.map((a) => ({
-        id: a.id, name: a.name, priceUsdCents: a.priceUsdCents, priceBsCents: a.priceBsCents, quantity: a.quantity ?? 1,
+      const adicionales = item.selectedAdicionales.map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        priceUsdCents: a.priceUsdCents,
+        priceBsCents: a.priceBsCents,
+        quantity: a.quantity ?? 1,
+        isPrepackaged: a.isPrepackaged,
       }));
       (item.contornoSubstitutions ?? []).forEach((s) => {
         adicionales.unshift({
-          id: s.substituteId, name: s.substituteName, priceUsdCents: s.priceUsdCents, priceBsCents: s.priceBsCents,
-          quantity: 1, substitutesComponentId: s.originalId, substitutesComponentName: s.originalName,
+          id: s.substituteId,
+          name: s.substituteName,
+          priceUsdCents: s.priceUsdCents,
+          priceBsCents: s.priceBsCents,
+          quantity: 1,
+          substitutesComponentId: s.originalId,
+          substitutesComponentName: s.originalName,
+          isPrepackaged: false,
         } as any);
       });
       return {
-        id: item.id, quantity: item.quantity, fixedContornos: item.fixedContornos,
-        selectedAdicionales: adicionales, selectedBebidas: item.selectedBebidas ?? [],
-        removedComponents: item.removedComponents, categoryAllowAlone: item.categoryAllowAlone,
-        categoryIsSimple: item.categoryIsSimple, categoryName: item.categoryName,
+        id: item.id,
+        quantity: item.quantity,
+        isPrepackaged: item.isPrepackaged,
+        fixedContornos: item.fixedContornos,
+        selectedAdicionales: adicionales,
+        selectedBebidas: (item.selectedBebidas ?? []).map((b: any) => ({
+          id: b.id,
+          name: b.name,
+          priceUsdCents: b.priceUsdCents,
+          priceBsCents: b.priceBsCents,
+          quantity: b.quantity ?? 1,
+          isPrepackaged: b.isPrepackaged,
+        })),
+        removedComponents: item.removedComponents,
+        categoryAllowAlone: item.categoryAllowAlone,
+        categoryIsSimple: item.categoryIsSimple,
+        categoryName: item.categoryName,
       };
     });
   }
@@ -294,6 +321,7 @@ export function usePOSOrder({
       paymentMethod,
       orderMode,
       items: buildCheckoutItems() as any,
+      loadedUpdatedAt: editingOrderUpdatedAt || undefined,
     };
   }
 
