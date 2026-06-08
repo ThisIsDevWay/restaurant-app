@@ -8,8 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { SettingsFormData } from "./SettingsForm.types";
+import type { SettingsFormData, PrinterCategoryOption } from "./SettingsForm.types";
 import { ORDER_MODES } from "./SettingsForm.types";
+import {
+  PRINTER_STATIONS,
+  STATION_PRESETS,
+  type PrinterStation,
+  type PrinterSections,
+  type PrinterTarget,
+} from "@/lib/print/printer-target";
 
 interface SettingsOperationTabProps {
   form: SettingsFormData;
@@ -17,7 +24,23 @@ interface SettingsOperationTabProps {
   errors: Partial<Record<keyof SettingsFormData, string>>;
   decimalInputs: Record<string, string>;
   setDecimalInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  categories: PrinterCategoryOption[];
 }
+
+const SECTION_LABELS: { key: keyof PrinterSections; label: string }[] = [
+  { key: "header", label: "Encabezado" },
+  { key: "orderMeta", label: "N°, fecha y mesero" },
+  { key: "location", label: "Cliente, mesa y modo" },
+  { key: "contactData", label: "Datos de contacto" },
+  { key: "totals", label: "Precios y totales" },
+  { key: "surcharges", label: "Recargos (empaque/delivery/IGTF)" },
+];
+
+const ITEM_MODE_LABELS: { value: PrinterTarget["items"]["mode"]; label: string }[] = [
+  { value: "all", label: "Todo el pedido" },
+  { value: "drinks", label: "Solo bebidas" },
+  { value: "categories", label: "Por categoría" },
+];
 
 const ORDER_MODE_ICONS = {
   orderModeOnSiteEnabled: Store,
@@ -31,6 +54,7 @@ export function SettingsOperationTab({
   errors,
   decimalInputs,
   setDecimalInputs,
+  categories,
 }: SettingsOperationTabProps) {
   const [zonePrices, setZonePrices] = useState<string[]>(() =>
     form.deliveryZones.map((z) => (z.feeUsdCents / 100).toFixed(2)),
@@ -72,26 +96,69 @@ export function SettingsOperationTab({
     }
   };
 
-  const printerTargets = form.printerTargets || [{ name: "main", copies: 1, reprintCopies: 1, enabled: true }];
+  const printerTargets: PrinterTarget[] = form.printerTargets?.length
+    ? form.printerTargets
+    : [{ ...STATION_PRESETS.cashier, name: "main", station: "cashier", copies: 1, reprintCopies: 1, enabled: true }];
+
+  const setPrinters = (next: PrinterTarget[]) => updateField("printerTargets", next);
 
   const addPrinter = () => {
-    updateField("printerTargets", [
+    setPrinters([
       ...printerTargets,
-      { name: "", copies: 1, reprintCopies: 1, enabled: true },
+      { name: "", station: "kitchen", ...STATION_PRESETS.kitchen, copies: 1, reprintCopies: 1, enabled: true },
     ]);
   };
 
   const removePrinter = (index: number) => {
-    updateField(
-      "printerTargets",
-      printerTargets.filter((_, i) => i !== index)
+    setPrinters(printerTargets.filter((_, i) => i !== index));
+  };
+
+  const updatePrinter = <K extends keyof PrinterTarget>(index: number, key: K, value: PrinterTarget[K]) => {
+    setPrinters(printerTargets.map((p, i) => (i === index ? { ...p, [key]: value } : p)));
+  };
+
+  // Cambiar de lugar aplica el preset (items + secciones) de esa estación.
+  const changeStation = (index: number, station: PrinterStation) => {
+    setPrinters(
+      printerTargets.map((p, i) =>
+        i === index
+          ? { ...p, station, items: { ...STATION_PRESETS[station].items }, sections: { ...STATION_PRESETS[station].sections } }
+          : p,
+      ),
     );
   };
 
-  const updatePrinter = (index: number, key: "name" | "copies" | "reprintCopies" | "enabled", value: any) => {
-    updateField(
-      "printerTargets",
-      printerTargets.map((p, i) => (i === index ? { ...p, [key]: value } : p))
+  const updateItemMode = (index: number, mode: PrinterTarget["items"]["mode"]) => {
+    setPrinters(
+      printerTargets.map((p, i) =>
+        i === index ? { ...p, items: { mode, categoryIds: mode === "categories" ? p.items.categoryIds : [] } } : p,
+      ),
+    );
+  };
+
+  const toggleCategory = (index: number, categoryId: string) => {
+    setPrinters(
+      printerTargets.map((p, i) => {
+        if (i !== index) return p;
+        const has = p.items.categoryIds.includes(categoryId);
+        return {
+          ...p,
+          items: {
+            mode: "categories",
+            categoryIds: has
+              ? p.items.categoryIds.filter((c) => c !== categoryId)
+              : [...p.items.categoryIds, categoryId],
+          },
+        };
+      }),
+    );
+  };
+
+  const toggleSection = (index: number, key: keyof PrinterSections) => {
+    setPrinters(
+      printerTargets.map((p, i) =>
+        i === index ? { ...p, sections: { ...p.sections, [key]: !p.sections[key] } } : p,
+      ),
     );
   };
 
@@ -437,25 +504,63 @@ export function SettingsOperationTab({
               printerTargets.map((printer, index) => (
                 <div
                   key={index}
-                  className="p-4 rounded-2xl bg-bg-app/20 border border-border/20 hover:border-border/50 hover:bg-bg-app/30 transition-all duration-200 flex flex-col md:flex-row md:items-center gap-4"
+                  className="p-4 rounded-2xl bg-bg-app/20 border border-border/20 hover:border-border/50 transition-all duration-200 space-y-4"
                 >
-                  <div className="flex-1 space-y-1">
-                    <Label htmlFor={`printer-name-${index}`} className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
-                      Nombre de la Impresora en Windows
-                    </Label>
-                    <Input
-                      id={`printer-name-${index}`}
-                      placeholder="Ej: POS-80-Caja"
-                      value={printer.name}
-                      onChange={(e) => updatePrinter(index, "name", e.target.value)}
-                      className="rounded-lg h-9 text-xs font-semibold"
-                    />
+                  {/* Fila 1: nombre + lugar + activa + eliminar */}
+                  <div className="flex flex-col md:flex-row md:items-end gap-4">
+                    <div className="flex-1 space-y-1">
+                      <Label htmlFor={`printer-name-${index}`} className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+                        Nombre de la Impresora en Windows
+                      </Label>
+                      <Input
+                        id={`printer-name-${index}`}
+                        placeholder="Ej: POS-80-Caja"
+                        value={printer.name}
+                        onChange={(e) => updatePrinter(index, "name", e.target.value)}
+                        className="rounded-lg h-9 text-xs font-semibold"
+                      />
+                    </div>
+
+                    <div className="space-y-1 w-full md:w-44">
+                      <Label className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
+                        Lugar
+                      </Label>
+                      <select
+                        value={printer.station}
+                        onChange={(e) => changeStation(index, e.target.value as PrinterStation)}
+                        className="w-full rounded-lg h-9 text-xs font-semibold border border-border/40 bg-white px-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                      >
+                        {PRINTER_STATIONS.map((s) => (
+                          <option key={s.value} value={s.value}>{s.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-border/20 h-9">
+                        <Switch
+                          checked={printer.enabled}
+                          onCheckedChange={(v) => updatePrinter(index, "enabled", v)}
+                          className="scale-90"
+                        />
+                        <Label className="text-xs font-bold text-text-main cursor-pointer select-none">Activa</Label>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removePrinter(index)}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/40 text-text-muted hover:border-red-300 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                        title="Eliminar impresora"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:flex md:items-center gap-3">
-                    <div className="space-y-1 w-full md:w-28">
+                  {/* Fila 2: copias */}
+                  <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center">
+                    <div className="space-y-1 w-full sm:w-32">
                       <Label htmlFor={`printer-copies-${index}`} className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
-                        Copias (Caja)
+                        Copias
                       </Label>
                       <Input
                         id={`printer-copies-${index}`}
@@ -463,14 +568,11 @@ export function SettingsOperationTab({
                         min={1}
                         max={10}
                         value={printer.copies}
-                        onChange={(e) =>
-                          updatePrinter(index, "copies", Math.max(1, parseInt(e.target.value) || 1))
-                        }
+                        onChange={(e) => updatePrinter(index, "copies", Math.max(1, parseInt(e.target.value) || 1))}
                         className="rounded-lg h-9 text-xs font-semibold font-mono text-center"
                       />
                     </div>
-
-                    <div className="space-y-1 w-full md:w-28">
+                    <div className="space-y-1 w-full sm:w-32">
                       <Label htmlFor={`printer-reprint-copies-${index}`} className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
                         Copias (Reimpr.)
                       </Label>
@@ -480,34 +582,102 @@ export function SettingsOperationTab({
                         min={1}
                         max={10}
                         value={printer.reprintCopies ?? 1}
-                        onChange={(e) =>
-                          updatePrinter(index, "reprintCopies", Math.max(1, parseInt(e.target.value) || 1))
-                        }
+                        onChange={(e) => updatePrinter(index, "reprintCopies", Math.max(1, parseInt(e.target.value) || 1))}
                         className="rounded-lg h-9 text-xs font-semibold font-mono text-center"
                       />
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between md:justify-start gap-4 md:pt-4">
-                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-border/20">
-                      <Switch
-                        checked={printer.enabled}
-                        onCheckedChange={(v) => updatePrinter(index, "enabled", v)}
-                        className="scale-90"
-                      />
-                      <Label className="text-xs font-bold text-text-main cursor-pointer select-none">
-                        Activa
-                      </Label>
-                    </div>
+                  {/* Fila 3: qué imprime */}
+                  <div className="space-y-2">
+                    <Label className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
+                      Qué imprime
+                    </Label>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex flex-wrap gap-1.5">
+                        {ITEM_MODE_LABELS.map((m) => (
+                          <button
+                            key={m.value}
+                            type="button"
+                            onClick={() => updateItemMode(index, m.value)}
+                            className={cn(
+                              "px-3 h-8 rounded-lg text-[11px] font-bold border transition-colors",
+                              printer.items.mode === m.value
+                                ? "bg-primary text-white border-primary"
+                                : "bg-white text-text-muted border-border/40 hover:border-border",
+                            )}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
 
-                    <button
-                      type="button"
-                      onClick={() => removePrinter(index)}
-                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/40 text-text-muted hover:border-red-300 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
-                      title="Eliminar impresora"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                      {printer.station === "kitchen" && (
+                        <label className="flex items-center gap-2 bg-white px-3 h-8 rounded-lg border border-border/20 cursor-pointer select-none">
+                          <Switch
+                            checked={!!printer.items.includeDrinks}
+                            onCheckedChange={(v) =>
+                              updatePrinter(index, "items", {
+                                ...printer.items,
+                                includeDrinks: v,
+                              })
+                            }
+                            className="scale-75"
+                          />
+                          <span className="text-[11px] font-bold text-text-main leading-tight">
+                            Con Bebidas
+                          </span>
+                        </label>
+                      )}
+                    </div>
+                    {printer.items.mode === "categories" && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {categories.length === 0 ? (
+                          <p className="text-[11px] text-text-muted italic">No hay categorías configuradas.</p>
+                        ) : (
+                          categories.map((cat) => {
+                            const active = printer.items.categoryIds.includes(cat.id);
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => toggleCategory(index, cat.id)}
+                                className={cn(
+                                  "px-2.5 h-7 rounded-full text-[11px] font-semibold border transition-colors",
+                                  active
+                                    ? "bg-primary/10 text-primary border-primary/30"
+                                    : "bg-white text-text-muted border-border/40 hover:border-border",
+                                )}
+                              >
+                                {cat.name}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Fila 4: secciones */}
+                  <div className="space-y-2">
+                    <Label className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
+                      Secciones del ticket
+                    </Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {SECTION_LABELS.map((s) => (
+                        <label
+                          key={s.key}
+                          className="flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-lg border border-border/20 cursor-pointer select-none"
+                        >
+                          <Switch
+                            checked={printer.sections[s.key]}
+                            onCheckedChange={() => toggleSection(index, s.key)}
+                            className="scale-75"
+                          />
+                          <span className="text-[11px] font-semibold text-text-main leading-tight">{s.label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))

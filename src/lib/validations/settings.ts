@@ -108,6 +108,26 @@ export const settingsSchema = v.object({
     v.array(
       v.object({
         name: v.pipe(v.string(), v.minLength(1)),
+        station: v.optional(v.picklist(["kitchen", "cashier", "bar", "other"]), "cashier"),
+        items: v.optional(
+          v.object({
+            mode: v.optional(v.picklist(["all", "drinks", "categories"]), "all"),
+            categoryIds: v.optional(v.array(v.string()), []),
+            includeDrinks: v.optional(v.boolean()),
+          }),
+          { mode: "all", categoryIds: [] },
+        ),
+        sections: v.optional(
+          v.object({
+            header: v.optional(v.boolean(), true),
+            orderMeta: v.optional(v.boolean(), true),
+            location: v.optional(v.boolean(), true),
+            contactData: v.optional(v.boolean(), false),
+            totals: v.optional(v.boolean(), false),
+            surcharges: v.optional(v.boolean(), false),
+          }),
+          { header: true, orderMeta: true, location: true, contactData: false, totals: false, surcharges: false },
+        ),
         copies: v.pipe(v.number(), v.integer(), v.minValue(1)),
         reprintCopies: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
         enabled: v.boolean(),

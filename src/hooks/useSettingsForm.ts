@@ -85,7 +85,17 @@ const DEFAULT_FORM: SettingsFormData = {
   menuItemSortMode: "custom",
   applyIgtf: false,
   igtfPercentage: "3.00",
-  printerTargets: [{ name: "main", copies: 1, reprintCopies: 1, enabled: true }],
+  printerTargets: [
+    {
+      name: "main",
+      station: "cashier",
+      items: { mode: "all", categoryIds: [] },
+      sections: { header: true, orderMeta: true, location: true, contactData: true, totals: true, surcharges: true },
+      copies: 1,
+      reprintCopies: 1,
+      enabled: true,
+    },
+  ],
 };
 
 export function useSettingsForm({ initialData }: UseSettingsFormParams): UseSettingsFormReturn {

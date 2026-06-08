@@ -18,7 +18,7 @@ import { SettingsDesignTab } from "./SettingsDesignTab";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 import type { SettingsFormProps } from "./SettingsForm.types";
  
-export function SettingsForm({ initialData, templates = [] }: SettingsFormProps) {
+export function SettingsForm({ initialData, templates = [], categories = [] }: SettingsFormProps) {
   const {
     form,
     updateField,
@@ -96,6 +96,7 @@ export function SettingsForm({ initialData, templates = [] }: SettingsFormProps)
               errors={errors}
               decimalInputs={decimalInputs}
               setDecimalInputs={setDecimalInputs}
+              categories={categories}
             />
           </TabsContent>
  

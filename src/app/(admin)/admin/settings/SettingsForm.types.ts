@@ -1,4 +1,5 @@
 import type { ProviderId } from "@/lib/payment-providers/types";
+import type { PrinterTarget } from "@/lib/print/printer-target";
 
 export interface Template {
   id: string;
@@ -78,14 +79,20 @@ export interface SettingsFormData {
   menuItemSortMode: "custom" | "price_asc" | "price_desc";
   applyIgtf: boolean;
   igtfPercentage: string;
-  printerTargets: Array<{ name: string; copies: number; reprintCopies: number; enabled: boolean }>;
+  printerTargets: PrinterTarget[];
 }
 
 export type FormErrors = Partial<Record<keyof SettingsFormData, string>>;
 
+export interface PrinterCategoryOption {
+  id: string;
+  name: string;
+}
+
 export interface SettingsFormProps {
   initialData: SettingsFormData | null;
   templates?: Template[];
+  categories?: PrinterCategoryOption[];
 }
 
 // Order mode config — typed to match SettingsFormData keys

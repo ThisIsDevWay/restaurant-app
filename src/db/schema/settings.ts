@@ -9,6 +9,7 @@ import {
   jsonb,
 } from "drizzle-orm/pg-core";
 import { exchangeRates } from "./exchangeRates";
+import type { PrinterTarget } from "@/lib/print/printer-target";
 
 export const settings = pgTable("settings", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -104,7 +105,9 @@ export const settings = pgTable("settings", {
   printerTargets: jsonb("printer_targets")
     .notNull()
     .default([{ name: "main", copies: 1, reprintCopies: 1, enabled: true }])
-    .$type<Array<{ name: string; copies: number; reprintCopies: number; enabled: boolean }>>(),
+    // Las filas viejas pueden carecer de station/items/sections; se normalizan
+    // en lectura con normalizePrinterTarget(). El tipo refleja el esquema nuevo.
+    .$type<PrinterTarget[]>(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

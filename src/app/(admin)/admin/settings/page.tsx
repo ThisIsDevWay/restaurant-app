@@ -1,13 +1,16 @@
 import { getSettings } from "@/db/queries/settings";
 import { getAllTemplates } from "@/db/queries/whatsapp-templates";
+import { getCategoriesWithItemCount } from "@/db/queries/menu";
 import { SettingsForm } from "./SettingsForm";
 import { WhatsAppStatus } from "@/components/admin/whatsapp/WhatsAppStatus";
 import type { PaymentProvider } from "./SettingsForm.types";
+import { normalizePrinterTarget } from "@/lib/print/printer-target";
 
 export default async function SettingsPage() {
-  const [settings, templates] = await Promise.all([
+  const [settings, templates, categories] = await Promise.all([
     getSettings(),
     getAllTemplates(),
+    getCategoriesWithItemCount(),
   ]);
 
   return (
@@ -22,6 +25,7 @@ export default async function SettingsPage() {
 
       <SettingsForm
         templates={templates}
+        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
         initialData={
           settings
             ? {
@@ -89,12 +93,7 @@ export default async function SettingsPage() {
               menuItemSortMode: (settings.menuItemSortMode ?? "custom") as "custom" | "price_asc" | "price_desc",
               applyIgtf: settings.applyIgtf ?? false,
               igtfPercentage: settings.igtfPercentage ?? "3.00",
-              printerTargets: (settings.printerTargets ?? [{ name: "main", copies: 1, reprintCopies: 1, enabled: true }]).map(p => ({
-                name: p.name,
-                copies: p.copies,
-                reprintCopies: p.reprintCopies ?? 1,
-                enabled: p.enabled,
-              })),
+              printerTargets: (settings.printerTargets ?? [{ name: "main", copies: 1, reprintCopies: 1, enabled: true }]).map(normalizePrinterTarget),
             }
             : null
         }
