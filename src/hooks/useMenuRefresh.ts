@@ -87,6 +87,13 @@ export function useMenuRefresh(
       debounce = setTimeout(() => routerRef.current.refresh(), 600);
     };
 
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        routerRef.current.refresh();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     // Dynamic import keeps @supabase/supabase-js out of the initial menu bundle.
     void (async () => {
       const { supabaseBrowser } = await import("@/lib/supabase-client");
@@ -171,6 +178,7 @@ export function useMenuRefresh(
     return () => {
       cancelled = true;
       if (debounce) clearTimeout(debounce);
+      document.removeEventListener("visibilitychange", handleVisibility);
       removeChannel?.();
     };
   }, []);
