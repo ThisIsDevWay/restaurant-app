@@ -142,27 +142,42 @@ export default function CatalogItemCard({
         pendingFileIdRef.current = null;
       }
 
-      const authResult = await getImagekitAuthAction({});
-      if (authResult?.serverError) throw new Error(authResult.serverError);
-      if (!authResult?.data) throw new Error("Error obteniendo auth de subida");
-      const { token, expire, signature, publicKey } = authResult.data;
+      // Helper: attempt one upload with fresh auth params
+      async function attemptUpload(): Promise<{ url: string; fileId: string }> {
+        const authResult = await getImagekitAuthAction({});
+        if (authResult?.serverError) throw new Error(authResult.serverError);
+        if (!authResult?.data) throw new Error("Error obteniendo auth de subida");
+        const { token, expire, signature, publicKey } = authResult.data;
 
-      const formData = new FormData();
-      formData.append("file", optimizedFile);
-      formData.append("fileName", optimizedFile.name);
-      formData.append("folder", IMAGEKIT_FOLDERS.menu);
-      formData.append("useUniqueFileName", "true");
-      formData.append("publicKey", publicKey);
-      formData.append("signature", signature);
-      formData.append("expire", String(expire));
-      formData.append("token", token);
+        const formData = new FormData();
+        formData.append("file", optimizedFile);
+        formData.append("fileName", optimizedFile.name);
+        formData.append("folder", IMAGEKIT_FOLDERS.menu);
+        formData.append("useUniqueFileName", "true");
+        formData.append("publicKey", publicKey);
+        formData.append("signature", signature);
+        formData.append("expire", String(expire));
+        formData.append("token", token);
 
-      const uploadRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
-        method: "POST",
-        body: formData,
-      });
-      if (!uploadRes.ok) throw new Error("Error al subir la imagen");
-      const uploadData = (await uploadRes.json()) as { url: string; fileId: string };
+        const uploadRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          const detail = await uploadRes.text().catch(() => "");
+          throw new Error(`Upload failed (${uploadRes.status}): ${detail}`);
+        }
+        return (await uploadRes.json()) as { url: string; fileId: string };
+      }
+
+      // Try upload; retry once with fresh token on failure
+      let uploadData: { url: string; fileId: string };
+      try {
+        uploadData = await attemptUpload();
+      } catch {
+        // Retry once — token may have been cached/reused
+        uploadData = await attemptUpload();
+      }
 
       pendingFileIdRef.current = uploadData.fileId;
       const finalUrl = toOriginalUrl(uploadData.url);

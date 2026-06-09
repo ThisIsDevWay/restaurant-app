@@ -38,33 +38,41 @@ export function RestaurantLogoUpload({ logoUrl, logoImagekitFileId, onLogoChange
                 deleteImagekitFileAction({ fileId: logoImagekitFileId }).catch(() => { });
             }
 
-            const authResult = await getImagekitAuthAction({});
-            if (!authResult?.data) {
-                setError("No se pudo generar la URL de subida");
-                return;
+            // Helper: attempt one upload with fresh auth params
+            async function attemptUpload(): Promise<{ url: string; fileId: string }> {
+                const authResult = await getImagekitAuthAction({});
+                if (!authResult?.data) throw new Error("No se pudo generar la URL de subida");
+                const { token, expire, signature, publicKey } = authResult.data;
+
+                const formData = new FormData();
+                formData.append("file", optimizedFile);
+                formData.append("fileName", optimizedFile.name);
+                formData.append("folder", IMAGEKIT_FOLDERS.branding);
+                formData.append("useUniqueFileName", "true");
+                formData.append("publicKey", publicKey);
+                formData.append("signature", signature);
+                formData.append("expire", String(expire));
+                formData.append("token", token);
+
+                const uploadRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+                if (!uploadRes.ok) {
+                    const detail = await uploadRes.text().catch(() => "");
+                    throw new Error(`Upload failed (${uploadRes.status}): ${detail}`);
+                }
+                return (await uploadRes.json()) as { url: string; fileId: string };
             }
-            const { token, expire, signature, publicKey } = authResult.data;
 
-            const formData = new FormData();
-            formData.append("file", optimizedFile);
-            formData.append("fileName", optimizedFile.name);
-            formData.append("folder", IMAGEKIT_FOLDERS.branding);
-            formData.append("useUniqueFileName", "true");
-            formData.append("publicKey", publicKey);
-            formData.append("signature", signature);
-            formData.append("expire", String(expire));
-            formData.append("token", token);
-
-            const uploadRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
-                method: "POST",
-                body: formData,
-            });
-
-            if (!uploadRes.ok) {
-                setError("Error al subir el archivo");
-                return;
+            // Try upload; retry once with fresh token on failure
+            let uploadData: { url: string; fileId: string };
+            try {
+                uploadData = await attemptUpload();
+            } catch {
+                uploadData = await attemptUpload();
             }
-            const uploadData = (await uploadRes.json()) as { url: string; fileId: string };
+
             onLogoChange(toOriginalUrl(uploadData.url), uploadData.fileId);
         } catch {
             setError("Error inesperado al subir el logo");

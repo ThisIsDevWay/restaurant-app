@@ -1,6 +1,5 @@
 "use client";
 
-import { optimizeImage } from "@/lib/utils/image-optimization";
 import { toOriginalUrl } from "@/lib/imagekit/utils";
 import { IMAGEKIT_FOLDERS } from "@/lib/imagekit/folders";
 
@@ -18,6 +17,8 @@ export type UploadResult =
 
 /**
  * Valida y sube un comprobante de pago a ImageKit.
+ * NOTE: la optimización de imagen se hace en useComprobanteUpload antes de
+ * llamar a esta función — no duplicar aquí.
  */
 export async function uploadComprobante(
     file: File,
@@ -31,21 +32,13 @@ export async function uploadComprobante(
         return { success: false, error: `El archivo pesa ${mb} MB. Máximo: 5 MB.` };
     }
 
-    let fileToUpload = file;
-    try {
-        fileToUpload = await optimizeImage(file, {
-            maxWidth: 1200,
-            quality: 0.7,
-            format: "image/webp",
-        });
-    } catch (err) {
-        console.warn("[comprobante-upload] Falló optimización, subiendo original", err);
-    }
-
     // Get short-lived upload auth from the public endpoint
+    // Cache-bust: append timestamp to avoid browser serving a cached one-time-use token
     let authData: { token: string; expire: number; signature: string; publicKey: string; urlEndpoint: string };
     try {
-        const authRes = await fetch("/api/imagekit/auth");
+        const authRes = await fetch(`/api/imagekit/auth?_t=${Date.now()}`, {
+            cache: "no-store",
+        });
         if (!authRes.ok) throw new Error("Auth error");
         authData = await authRes.json();
     } catch {
@@ -53,7 +46,7 @@ export async function uploadComprobante(
     }
 
     const formData = new FormData();
-    formData.append("file", fileToUpload);
+    formData.append("file", file);
     formData.append("fileName", `${Date.now()}.webp`);
     formData.append("folder", IMAGEKIT_FOLDERS.comprobantes(orderId));
     formData.append("useUniqueFileName", "true");
@@ -68,7 +61,13 @@ export async function uploadComprobante(
     });
 
     if (!uploadRes.ok) {
-        console.error("[comprobante-upload]", uploadRes.status);
+        let detail = "";
+        try { detail = await uploadRes.text(); } catch { /* best-effort */ }
+        console.error("[comprobante-upload] ImageKit upload failed", {
+            status: uploadRes.status,
+            detail,
+            orderId,
+        });
         return { success: false, error: "No se pudo subir el comprobante. Intenta de nuevo." };
     }
 
