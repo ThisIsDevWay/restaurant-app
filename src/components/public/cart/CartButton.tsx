@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useCartStore } from "@/store/cartStore";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function CartButton() {
@@ -27,7 +27,7 @@ export function CartButton() {
         isBouncing ? "scale-125" : "scale-100"
       )}
     >
-      <ShoppingBag className="h-5 w-5" />
+      <ShoppingCart className="h-5 w-5" />
       <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary-hover text-[10px] font-bold text-white shadow-sm border border-white">
         {itemCount}
       </span>

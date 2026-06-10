@@ -148,13 +148,13 @@ export function ItemDetailModalClassic({
                             )}
 
                             {/* Price block */}
-                            <div className="mt-4 flex items-end gap-3">
+                            <div className="mt-4 flex items-baseline gap-2 flex-wrap">
                                 <p className="font-extrabold leading-tight tracking-tight text-white"
-                                    style={{ fontSize: "clamp(1.5rem, 2.4vw, 1.9rem)" }}>
+                                    style={{ fontSize: "clamp(1.4rem, 2.2vw, 1.75rem)" }}>
                                     {formatBs(itemBaseBsCents, { rounded: true })}
                                 </p>
-                                <span className="mb-1 rounded-lg bg-white/12 border border-white/15 px-2 py-0.5 text-[11px] font-bold text-white/55">
-                                    {formatRef(item.priceUsdCents)}
+                                <span className="text-[12px] font-bold text-white/70">
+                                    ({formatRef(item.priceUsdCents)})
                                 </span>
                             </div>
                         </div>
@@ -220,15 +220,15 @@ export function ItemDetailModalClassic({
                             >
                                 {item.name}
                             </h2>
-                            <div className="mt-2.5 flex items-end gap-3">
+                            <div className="mt-2.5 flex items-baseline gap-2 flex-wrap">
                                 <p
                                     className="font-extrabold leading-tight tracking-tight text-text-main"
-                                    style={{ fontSize: "clamp(1.3rem, 5.5vw, 1.6rem)" }}
+                                    style={{ fontSize: "clamp(1.15rem, 5vw, 1.35rem)" }}
                                 >
                                     {formatBs(itemBaseBsCents, { rounded: true })}
                                 </p>
-                                <span className="mb-0.5 rounded-lg bg-bg-app px-2 py-0.5 text-xs font-bold text-text-muted border border-border/50">
-                                    {formatRef(item.priceUsdCents)}
+                                <span className="text-[11px] font-bold text-text-muted/80">
+                                    ({formatRef(item.priceUsdCents)})
                                 </span>
                             </div>
                             {item.description && (
@@ -248,13 +248,13 @@ export function ItemDetailModalClassic({
                                     style={{ fontSize: "clamp(1.4rem, 2vw, 1.7rem)" }}>
                                     {item.name}
                                 </h2>
-                                <div className="mt-2.5 flex items-end gap-3">
+                                <div className="mt-2.5 flex items-baseline gap-2 flex-wrap">
                                     <p className="font-extrabold leading-tight tracking-tight text-text-main"
-                                        style={{ fontSize: "clamp(1.3rem, 2vw, 1.6rem)" }}>
+                                        style={{ fontSize: "clamp(1.15rem, 2vw, 1.35rem)" }}>
                                         {formatBs(itemBaseBsCents, { rounded: true })}
                                     </p>
-                                    <span className="mb-0.5 rounded-lg bg-bg-app px-2 py-0.5 text-xs font-bold text-text-muted border border-border/50">
-                                        {formatRef(item.priceUsdCents)}
+                                    <span className="text-[11px] font-bold text-text-muted/80">
+                                        ({formatRef(item.priceUsdCents)})
                                     </span>
                                 </div>
                                 {item.description && (

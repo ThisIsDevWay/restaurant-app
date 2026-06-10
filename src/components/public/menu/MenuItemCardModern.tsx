@@ -101,22 +101,19 @@ export function MenuItemCardModern({
         </div>
 
         <div className="mt-2 flex items-end justify-between">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[12px] font-semibold text-text-main/80 leading-none">Bs.</span>
-            <div className="flex items-center gap-2">
-              <span
-                className="font-extrabold leading-tight text-text-main tracking-tight"
-                style={{ fontSize: "clamp(1.15rem, 5vw, 1.4rem)" }}
-              >
-                {Math.round(priceBsCents / 100).toLocaleString("es-VE", {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                })}
-              </span>
-              <span className="rounded-md bg-bg-app px-1.5 py-0.5 text-[11px] font-bold text-text-muted border border-border/30">
-                REF. {(priceUsdCents / 100).toFixed(2).replace(".", ",")}
-              </span>
-            </div>
+          <div className="flex items-baseline flex-wrap gap-x-1.5 gap-y-0.5 min-w-0">
+            <span
+              className="font-extrabold leading-tight text-text-main tracking-tight whitespace-nowrap"
+              style={{ fontSize: "clamp(1.05rem, 4.5vw, 1.25rem)" }}
+            >
+              Bs. {Math.round(priceBsCents / 100).toLocaleString("es-VE", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
+            </span>
+            <span className="text-[10px] font-bold text-text-muted/80 whitespace-nowrap">
+              (REF. {(priceUsdCents / 100).toFixed(2).replace(".", ",")})
+            </span>
           </div>
 
           {!isReadOnly && (

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Utensils, Search, ShoppingBag, Receipt } from "lucide-react";
+import { Utensils, Search, ShoppingCart, Receipt } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { cn } from "@/lib/utils";
 
@@ -74,7 +74,7 @@ export function BottomNav() {
             isPedidoTabActive && "text-[#bb0005]"
           )}
         >
-          <ShoppingBag className={cn("h-[21px] w-[21px] transition-transform duration-300", isPedidoTabActive && "scale-110")} strokeWidth={isPedidoTabActive ? 2.8 : 2.0} />
+          <ShoppingCart className={cn("h-[21px] w-[21px] transition-transform duration-300", isPedidoTabActive && "scale-110")} strokeWidth={isPedidoTabActive ? 2.8 : 2.0} />
           {itemCount > 0 && (
             <span className="absolute top-2 right-2 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#bb0005] px-1 text-[9px] font-black text-white leading-none border border-white shadow-sm animate-pulse-subtle">
               {itemCount}

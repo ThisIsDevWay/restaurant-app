@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { X, Info, ShoppingBag, WifiOff, ChevronDown, ArrowRight } from "lucide-react";
+import { X, Info, ShoppingCart, WifiOff, ChevronDown, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { CartItem } from "./CartItem";
 import { formatBs, formatRef } from "@/lib/money";
@@ -267,7 +267,7 @@ export function Cart({
           >
             {!isOnline
               ? <><WifiOff style={{ width: 14, height: 14 }} />Sin conexión</>
-              : <><ShoppingBag style={{ width: 14, height: 14 }} />Ver pedido</>
+              : <><ShoppingCart style={{ width: 14, height: 14 }} />Ver pedido</>
             }
           </button>
         </div>
@@ -410,7 +410,7 @@ export function Cart({
                   justifyContent: "center",
                   color: "var(--color-text-muted)",
                 }}>
-                  <ShoppingBag style={{ width: 28, height: 28, opacity: 0.6 }} />
+                  <ShoppingCart style={{ width: 28, height: 28, opacity: 0.6 }} />
                 </div>
                 <div>
                   <h3 style={{

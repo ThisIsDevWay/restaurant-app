@@ -202,12 +202,12 @@ export function ItemDetailModalModern({
                   {item.description}
                 </p>
               )}
-              <div className="mt-6 flex items-end gap-3">
-                <p className="text-[32px] font-black leading-none text-white tracking-tight">
+              <div className="mt-6 flex items-baseline gap-2 flex-wrap">
+                <p className="text-[30px] font-black leading-none text-white tracking-tight">
                   {formatBs(itemBaseBsCents, { rounded: true })}
                 </p>
-                <span className="mb-1 text-[14px] font-bold text-white/70">
-                  {formatRef(item.priceUsdCents)}
+                <span className="text-[14px] font-bold text-white/70">
+                  ({formatRef(item.priceUsdCents)})
                 </span>
               </div>
             </div>
@@ -261,13 +261,13 @@ export function ItemDetailModalModern({
               {item.description && (
                 <p className="mt-2 text-[15px] leading-relaxed text-text-main/90 font-medium">{item.description}</p>
               )}
-              <div className="mt-3 flex items-end gap-3">
+              <div className="mt-3 flex items-baseline gap-2 flex-wrap">
                 <p className="text-xl font-extrabold leading-none text-text-main">
                   {formatBs(itemBaseBsCents, { rounded: true })}
                 </p>
-                <p className="mb-0.5 text-[13px] font-medium leading-none text-text-muted">
-                  {formatRef(item.priceUsdCents)}
-                </p>
+                <span className="text-[13px] font-bold text-text-muted/80">
+                  ({formatRef(item.priceUsdCents)})
+                </span>
               </div>
             </div>
           )}
@@ -361,11 +361,11 @@ export function ItemDetailModalModern({
                     )}
                   </div>
                   <div className="text-right flex-shrink-0 ml-2">
-                    <p className="font-display text-[18px] font-black leading-tight text-text-main tracking-tight">
+                    <p className="font-display text-[17px] font-black leading-tight text-text-main tracking-tight">
                       {formatBs(itemBaseBsCents, { rounded: true })}
                     </p>
-                    <p className="text-[11px] text-text-main/70 font-medium mt-0.5">
-                      {formatRef(item.priceUsdCents)}
+                    <p className="text-[11.5px] text-text-muted/80 font-bold mt-0.5">
+                      ({formatRef(item.priceUsdCents)})
                     </p>
                   </div>
                 </div>

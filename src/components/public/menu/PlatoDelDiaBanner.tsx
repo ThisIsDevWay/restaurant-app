@@ -61,12 +61,12 @@ export function PlatoDelDiaBanner({
           <h2 className="font-epilogue text-[18px] md:text-[30px] font-black leading-tight text-white tracking-tight line-clamp-1 max-w-[70%] md:max-w-[55%] mb-1.5 md:mb-2.5">
             {item.name}
           </h2>
-          <div className="flex items-center gap-1">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
             <span className="font-epilogue text-[17px] md:text-[24px] font-black text-white tabular-nums tracking-tight">
               {formatBs(priceBsCents, { rounded: true })}
             </span>
-            <span className="inline-flex items-center text-[10px] md:text-[12px] font-black text-amber-400/90 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md ml-1.5 md:ml-2.5 tabular-nums select-none tracking-wider leading-none">
-              {formatRef(item.priceUsdCents)}
+            <span className="text-[11px] md:text-[13px] font-bold text-amber-400/90 tabular-nums select-none tracking-wider leading-none">
+              ({formatRef(item.priceUsdCents)})
             </span>
           </div>
         </div>

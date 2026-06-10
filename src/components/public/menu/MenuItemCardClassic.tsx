@@ -96,7 +96,7 @@ export function MenuItemCardClassic({
                 </div>
 
                 <div className="mt-auto pt-2 flex items-end justify-between gap-1.5">
-                    <div className="flex flex-wrap items-baseline gap-1.5 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 min-w-0 flex-1">
                         <span
                             className="font-black leading-tight text-text-main tracking-tight shrink-0"
                             style={{ fontSize: "clamp(0.95rem, 3.5vw, 1.15rem)" }}
@@ -110,8 +110,8 @@ export function MenuItemCardClassic({
                                 maximumFractionDigits: 0,
                             })}
                         </span>
-                        <span className="rounded bg-bg-app px-1.5 py-0.5 text-[10px] font-bold text-text-muted shadow-sm border border-border/40 whitespace-nowrap shrink-0">
-                            REF. {(priceUsdCents / 100).toFixed(2).replace(".", ",")}
+                        <span className="text-[10px] font-bold text-text-muted/80 whitespace-nowrap shrink-0">
+                            (REF. {(priceUsdCents / 100).toFixed(2).replace(".", ",")})
                         </span>
                     </div>
 
