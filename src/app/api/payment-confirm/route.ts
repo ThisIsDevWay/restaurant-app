@@ -78,7 +78,7 @@ export async function POST(req: Request) {
         } | null;
         const rate = parseFloat(order.rateSnapshotBsPerUsd);
 
-        sendOrderMessage({
+        await sendOrderMessage({
           templateKey: "paid",
           phone: order.customerPhone,
           orderId: order.id,
