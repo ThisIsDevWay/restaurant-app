@@ -15,20 +15,32 @@ export const metadata: Metadata = {
  */
 export default function TvLayout({ children }: { children: ReactNode }) {
   return (
-    <div
-      style={{
-        margin: 0,
-        padding: 0,
-        width: "100vw",
-        height: "100vh",
-        background: "#000",
-        color: "#fff",
-        overflow: "hidden",
-        fontFamily:
-          'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-      }}
-    >
-      {children}
-    </div>
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          overflow: hidden !important;
+          background: #000 !important;
+        }
+      `}} />
+      <div
+        style={{
+          margin: 0,
+          padding: 0,
+          width: "100%",
+          height: "100%",
+          background: "#000",
+          color: "#fff",
+          overflow: "hidden",
+          fontFamily:
+            'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+        }}
+      >
+        {children}
+      </div>
+    </>
   );
 }

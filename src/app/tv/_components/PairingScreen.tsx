@@ -118,13 +118,15 @@ export function PairingScreen({ onPaired }: Props) {
         alignItems: "center",
         justifyContent: "center",
         fontFamily: "system-ui, -apple-system, sans-serif",
-        padding: "4vh 4vw",
+        padding: "4vh 6vw",
         textAlign: "center",
+        overflow: "hidden",
+        boxSizing: "border-box",
       }}
     >
       <div
         style={{
-          fontSize: "clamp(1.5rem, 3vw, 2.5rem)",
+          fontSize: "clamp(1.2rem, 2.5vw, 2rem)",
           fontWeight: 700,
           letterSpacing: "0.05em",
           color: "#f59e0b",
@@ -135,9 +137,9 @@ export function PairingScreen({ onPaired }: Props) {
       </div>
       <div
         style={{
-          fontSize: "clamp(1rem, 2vw, 1.5rem)",
+          fontSize: "clamp(0.85rem, 1.6vw, 1.3rem)",
           opacity: 0.7,
-          marginBottom: "5vh",
+          marginBottom: "4vh",
         }}
       >
         Conectando pantalla…
@@ -147,19 +149,20 @@ export function PairingScreen({ onPaired }: Props) {
         style={{
           fontFamily:
             'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
-          fontSize: "clamp(8rem, 22vw, 18rem)",
+          fontSize: "clamp(4rem, 10vw, 10rem)",
           fontWeight: 800,
-          letterSpacing: "0.18em",
+          letterSpacing: "0.12em",
           lineHeight: 1,
           background: "rgba(255,255,255,0.04)",
-          padding: "4vh 6vw",
-          borderRadius: "2vw",
+          padding: "3vh 5vw",
+          borderRadius: "1.5vw",
           border: "1px solid rgba(255,255,255,0.08)",
-          minWidth: "60vw",
-          minHeight: "30vh",
+          maxWidth: "80vw",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          overflow: "hidden",
+          flexShrink: 0,
         }}
       >
         {session ? session.pairingCode : "····"}
@@ -167,10 +170,10 @@ export function PairingScreen({ onPaired }: Props) {
 
       <div
         style={{
-          marginTop: "5vh",
-          fontSize: "clamp(0.9rem, 1.6vw, 1.4rem)",
+          marginTop: "4vh",
+          fontSize: "clamp(0.8rem, 1.4vw, 1.2rem)",
           opacity: 0.85,
-          maxWidth: "80vw",
+          maxWidth: "72vw",
         }}
       >
         Ingresa este código en el panel de administración
@@ -180,8 +183,8 @@ export function PairingScreen({ onPaired }: Props) {
 
       <div
         style={{
-          marginTop: "4vh",
-          fontSize: "clamp(0.8rem, 1.3vw, 1.1rem)",
+          marginTop: "3vh",
+          fontSize: "clamp(0.75rem, 1.1vw, 1rem)",
           opacity: 0.5,
           fontFamily: "ui-monospace, monospace",
         }}
@@ -193,7 +196,7 @@ export function PairingScreen({ onPaired }: Props) {
         <div
           style={{
             marginTop: "2vh",
-            fontSize: "clamp(0.8rem, 1.2vw, 1rem)",
+            fontSize: "clamp(0.75rem, 1.1vw, 0.95rem)",
             color: "#ef4444",
             opacity: 0.8,
           }}
@@ -208,7 +211,7 @@ export function PairingScreen({ onPaired }: Props) {
         style={{
           position: "absolute",
           bottom: "3vh",
-          fontSize: "clamp(0.8rem, 1.2vw, 1rem)",
+          fontSize: "clamp(0.75rem, 1.1vw, 0.95rem)",
           opacity: 0.3,
           letterSpacing: "0.5em",
         }}

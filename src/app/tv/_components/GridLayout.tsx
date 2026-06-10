@@ -47,16 +47,6 @@ export function GridCell({
             position: "relative",
           }}
         >
-          {/* Spotlight Glow */}
-          <div
-            style={{
-              position: "absolute",
-              inset: "0%",
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(255, 248, 243, 0.09) 0%, transparent 70%)",
-              zIndex: 0,
-            }}
-          />
           {item.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -70,6 +60,7 @@ export function GridCell({
                 display: "block",
                 position: "relative",
                 zIndex: 1,
+                filter: "drop-shadow(0 15px 25px rgba(0,0,0,0.65))",
                 animation: "tv-plate-pulse 6s ease-in-out infinite",
               }}
             />

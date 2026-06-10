@@ -95,9 +95,9 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
           100% { transform: scale(1.05); }
         }
         @keyframes tv-plate-pulse {
-          0% { transform: scale(1); filter: drop-shadow(0 20px 35px rgba(0,0,0,0.8)); }
-          50% { transform: scale(1.025); filter: drop-shadow(0 25px 45px rgba(226, 194, 160, 0.22)) drop-shadow(0 20px 35px rgba(0,0,0,0.85)); }
-          100% { transform: scale(1); filter: drop-shadow(0 20px 35px rgba(0,0,0,0.8)); }
+          0% { transform: scale(1); }
+          50% { transform: scale(1.02); }
+          100% { transform: scale(1); }
         }
       `}</style>
       {/* ── Header ── */}

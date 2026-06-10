@@ -102,10 +102,21 @@ export function DisplayScreen({
   const [viewport, setViewport] = useState(() => readViewport());
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const update = () => setViewport(readViewport());
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const update = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        setViewport((prev) => {
+          const next = readViewport();
+          if (prev.w === next.w && prev.h === next.h) return prev;
+          return next;
+        });
+      }, 150);
+    };
     window.addEventListener("resize", update);
     window.addEventListener("orientationchange", update);
     return () => {
+      if (timer) clearTimeout(timer);
       window.removeEventListener("resize", update);
       window.removeEventListener("orientationchange", update);
     };
@@ -635,8 +646,8 @@ function computeRotationWrapper(
     return {
       top: 0,
       left: 0,
-      width: "100vw",
-      height: "100vh",
+      width: `${vp.w}px`,
+      height: `${vp.h}px`,
     };
   }
 
@@ -644,8 +655,8 @@ function computeRotationWrapper(
     return {
       top: 0,
       left: 0,
-      width: "100vw",
-      height: "100vh",
+      width: `${vp.w}px`,
+      height: `${vp.h}px`,
       transformOrigin: "center center",
       transform: "rotate(180deg)",
     };
@@ -656,9 +667,9 @@ function computeRotationWrapper(
     // around its top-left so it sweeps down-and-left to fill the viewport.
     return {
       top: 0,
-      left: "100vw",
-      width: "100vh",
-      height: "100vw",
+      left: `${vp.w}px`,
+      width: `${vp.h}px`,
+      height: `${vp.w}px`,
       transformOrigin: "0 0",
       transform: "rotate(90deg)",
     };
@@ -666,10 +677,10 @@ function computeRotationWrapper(
 
   // 270° (or -90°): rotate counter-clockwise. Place at bottom-left corner.
   return {
-    top: "100vh",
+    top: `${vp.h}px`,
     left: 0,
-    width: "100vh",
-    height: "100vw",
+    width: `${vp.h}px`,
+    height: `${vp.w}px`,
     transformOrigin: "0 0",
     transform: "rotate(-90deg)",
   };
