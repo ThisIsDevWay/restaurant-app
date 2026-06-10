@@ -45,6 +45,8 @@ export const tvDisplays = pgTable(
       onDelete: "set null",
     }),
     notes: text("notes"),
+    /** Sort order for the admin dashboard listing. Lower = earlier. */
+    displayOrder: integer("display_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

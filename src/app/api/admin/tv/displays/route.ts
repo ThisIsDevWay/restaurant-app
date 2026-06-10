@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db";
 import { tvDisplays } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { asc, desc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export async function GET() {
   const rows = await db
     .select()
     .from(tvDisplays)
-    .orderBy(desc(tvDisplays.createdAt));
+    .orderBy(asc(tvDisplays.displayOrder), desc(tvDisplays.createdAt));
   const now = Date.now();
   const decorated = rows.map((row) => ({
     ...row,

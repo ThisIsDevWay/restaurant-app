@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { db } from "@/db";
 import { tvPairingSessions, tvDisplays } from "@/db/schema";
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, lt, sql, max } from "drizzle-orm";
 
 export const PAIRING_CODE_LENGTH = 6;
 export const PAIRING_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -109,8 +109,12 @@ export async function validatePairingCode(params: {
     return { ok: false, reason: "expired" };
   }
 
-  // Create the display first.
+  // Create the display first (assigned the next displayOrder).
   const displayToken = generateDisplayToken();
+  const [maxRow] = await db
+    .select({ maxOrder: max(tvDisplays.displayOrder) })
+    .from(tvDisplays);
+  const nextOrder = (maxRow?.maxOrder ?? -1) + 1;
   const [display] = await db
     .insert(tvDisplays)
     .values({
@@ -118,6 +122,7 @@ export async function validatePairingCode(params: {
       displayToken,
       linkedByUserId: validatedByUserId,
       lastSeenAt: new Date(),
+      displayOrder: nextOrder,
     })
     .returning();
 

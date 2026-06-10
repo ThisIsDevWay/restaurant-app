@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db";
 import { tvDisplays } from "@/db/schema";
+import { max } from "drizzle-orm";
 import { generateDisplayToken } from "@/lib/services/tv-pairing";
 
 export const dynamic = "force-dynamic";
@@ -21,12 +22,18 @@ export async function POST(req: NextRequest) {
 
   const displayToken = generateDisplayToken();
 
+  const [maxRow] = await db
+    .select({ maxOrder: max(tvDisplays.displayOrder) })
+    .from(tvDisplays);
+  const nextOrder = (maxRow?.maxOrder ?? -1) + 1;
+
   const [display] = await db
     .insert(tvDisplays)
     .values({
       name: displayName,
       displayToken,
       linkedByUserId: session.user?.id as string | undefined,
+      displayOrder: nextOrder,
     })
     .returning();
 
