@@ -6,6 +6,8 @@ import {
   formatItemsDetailed,
   type SnapshotItem,
 } from "@/lib/utils/format-items-detailed";
+import { isRealPhone } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 // ─── Template variable system ─────────────────────────────────────────────────
 
@@ -213,8 +215,22 @@ export async function buildOrderMessage(
 export async function sendOrderMessage(
   ctx: OrderMessageContext,
 ): Promise<{ success: boolean; error?: string }> {
+  // If the phone is synthetic (e.g. mesero- or mesa-), skip sending entirely
+  if (!isRealPhone(ctx.phone)) {
+    logger.info("[sendOrderMessage] Skipping WhatsApp message for synthetic phone", {
+      phone: ctx.phone,
+      templateKey: ctx.templateKey,
+      orderNumber: ctx.orderNumber,
+    });
+    return { success: true };
+  }
+
   const message = await buildOrderMessage(ctx);
   if (!message) {
+    logger.info("[sendOrderMessage] Skipping WhatsApp message: template not found or inactive", {
+      templateKey: ctx.templateKey,
+      orderNumber: ctx.orderNumber,
+    });
     // Template not found or inactive — skip silently
     return { success: true };
   }
@@ -225,5 +241,29 @@ export async function sendOrderMessage(
     ? cleanPhone
     : `58${cleanPhone}`;
 
-  return sendMessage(formattedPhone, message, ctx.baseUrl);
+  logger.info("[sendOrderMessage] Attempting to send WhatsApp message", {
+    phone: formattedPhone,
+    templateKey: ctx.templateKey,
+    orderNumber: ctx.orderNumber,
+  });
+
+  const res = await sendMessage(formattedPhone, message, ctx.baseUrl);
+
+  if (res.success) {
+    logger.info("[sendOrderMessage] WhatsApp message sent successfully", {
+      phone: formattedPhone,
+      templateKey: ctx.templateKey,
+      orderNumber: ctx.orderNumber,
+      messageId: res.id,
+    });
+  } else {
+    logger.error("[sendOrderMessage] Failed to send WhatsApp message", {
+      phone: formattedPhone,
+      templateKey: ctx.templateKey,
+      orderNumber: ctx.orderNumber,
+      error: res.error,
+    });
+  }
+
+  return res;
 }
