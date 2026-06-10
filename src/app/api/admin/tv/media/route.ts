@@ -199,6 +199,5 @@ export async function POST(req: Request) {
     .returning();
 
   revalidatePath("/admin/tv");
-  revalidatePath("/admin/tv/media");
   return NextResponse.json({ media: row }, { status: 201 });
 }

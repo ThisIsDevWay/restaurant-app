@@ -16,23 +16,17 @@ import { Badge } from "@/components/ui/badge";
 import type { TvMedia, TvMenuBoardConfig } from "@/db/schema/tv";
 import { cleanTitle } from "./media-client-utils";
 
-/**
- * Returns the simplified aspect ratio label ("16:9", "9:16", "4:3", etc.)
- * and an inline style object to drive the card dimensions.
- */
 function getAspectRatio(width: number | null, height: number | null): {
   style: React.CSSProperties;
   label: string;
 } {
   if (!width || !height || width <= 0 || height <= 0) {
-    // Fallback: landscape 16:9
     return { style: { aspectRatio: "16/9" }, label: "16:9" };
   }
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
   const d = gcd(width, height);
   const rw = width / d;
   const rh = height / d;
-  // Snap common ratios
   const ratio = width / height;
   let label: string;
   if (Math.abs(ratio - 16 / 9) < 0.05) label = "16:9";
@@ -44,8 +38,6 @@ function getAspectRatio(width: number | null, height: number | null): {
   else label = `${rw}:${rh}`;
   return { style: { aspectRatio: `${width}/${height}` }, label };
 }
-
-/* ───────────────────────── Menu Board Preview (grid card) ───────────────────────── */
 
 export function MenuBoardPreview({ item }: { item: TvMedia }) {
   const config = (item.slideConfig as TvMenuBoardConfig | null) ?? null;
@@ -69,8 +61,6 @@ export function MenuBoardPreview({ item }: { item: TvMedia }) {
     </div>
   );
 }
-
-/* ───────────────────────── Media Card ───────────────────────── */
 
 export function MediaCard({
   item,
@@ -105,7 +95,6 @@ export function MediaCard({
   const displayTitle = cleanTitle(item.title);
   const { style: aspectStyle, label: ratioLabel } = getAspectRatio(item.width, item.height);
 
-  // For menu boards, use a fixed 9:16 preview aspect ratio
   const cardStyle = item.type === "menu_board" ? { aspectRatio: "9/16" } : aspectStyle;
   const displayRatioLabel = item.type === "menu_board" ? "9:16" : ratioLabel;
 
@@ -198,7 +187,6 @@ export function MediaCard({
 
       {/* Top-right: aspect ratio + daypart + drag handle */}
       <div className="absolute top-2 right-2 z-20 flex gap-1 pointer-events-none">
-        {/* Aspect ratio pill — always shown */}
         <div
           className={`backdrop-blur-md border text-[9px] font-mono font-bold px-2 py-0.5 rounded-full shadow-sm ${
             item.type === "menu_board"
@@ -217,7 +205,6 @@ export function MediaCard({
             HORARIO
           </div>
         )}
-        {/* Drag handle — visible on hover */}
         <div
           className={`opacity-0 group-hover:opacity-100 pointer-events-auto transition-opacity duration-200 backdrop-blur-md border p-1 rounded-full shadow-sm ${
             item.type === "menu_board"

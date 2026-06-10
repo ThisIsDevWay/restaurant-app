@@ -1,7 +1,7 @@
 "use server";
 
 import * as v from "valibot";
-import { eq, and, sql, desc, asc } from "drizzle-orm";
+import { eq, and, sql, desc, asc, max } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import {
@@ -33,8 +33,6 @@ import {
 
 function revalidateTv() {
   revalidatePath("/admin/tv");
-  revalidatePath("/admin/tv/displays");
-  revalidatePath("/admin/tv/media");
   revalidatePath("/admin/tv/events");
 }
 
@@ -136,6 +134,29 @@ export const setDisplayMediaAction = adminActionClient
       return { success: true as const, count: parsedInput.mediaIds.length };
     } catch {
       return { success: false as const, error: "Error al guardar la selección" };
+    }
+  });
+
+/**
+ * Persistently reorders the TV displays list by updating `displayOrder`
+ * for each display in a single transaction.
+ */
+export const reorderTvDisplaysAction = adminActionClient
+  .schema(reorderSchema)
+  .action(async ({ parsedInput }) => {
+    try {
+      await db.transaction(async (tx) => {
+        for (let i = 0; i < parsedInput.orderedIds.length; i++) {
+          await tx
+            .update(tvDisplays)
+            .set({ displayOrder: i, updatedAt: new Date() })
+            .where(eq(tvDisplays.id, parsedInput.orderedIds[i]));
+        }
+      });
+      revalidateTv();
+      return { success: true as const };
+    } catch {
+      return { success: false as const, error: "Error al reordenar pantallas" };
     }
   });
 

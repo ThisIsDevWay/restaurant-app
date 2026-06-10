@@ -182,7 +182,7 @@ export function DisplayMediaDialog({
               </div>
               <p className="text-xs text-text-muted leading-relaxed">
                 La biblioteca de medios está vacía. Sube imágenes, videos o diseña pizarras de menú en la{" "}
-                <Link href="/admin/tv/media" className="text-amber-600 hover:underline font-semibold">
+                <Link href="/admin/tv?tab=media" className="text-amber-600 hover:underline font-semibold">
                   Biblioteca de medios
                 </Link>{" "}
                 para poder asignarlos a esta pantalla.

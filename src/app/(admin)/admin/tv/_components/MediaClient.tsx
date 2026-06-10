@@ -25,7 +25,7 @@ import {
 } from "@/actions/tv";
 import type { TvMedia } from "@/db/schema/tv";
 import { MediaCard } from "./MediaCard";
-import { EditMediaDialog } from "./EditMediaDialog";
+import { EditMediaDialog, type CategoryLite } from "./EditMediaDialog";
 import { MenuBoardDialog } from "./MenuBoardDialog";
 import {
   readVideoMetadata,
@@ -33,9 +33,9 @@ import {
   uploadWithProgress,
 } from "./media-client-utils";
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;  // 10 MB por imagen
-const MAX_BYTES = 100 * 1024 * 1024;       // 100 MB por video
-const MAX_VIDEO_SECONDS = 300;             // 5 min — suficiente para promos
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_BYTES = 100 * 1024 * 1024;
+const MAX_VIDEO_SECONDS = 300;
 const ACCEPTED =
   "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm";
 
@@ -51,13 +51,6 @@ type UploadItem = {
 type EventMediaItem = TvMedia & {
   eventId: string;
   eventName: string;
-};
-
-export type CategoryLite = {
-  id: string;
-  name: string;
-  sortOrder: number;
-  isAvailable: boolean;
 };
 
 type Props = {
@@ -76,6 +69,7 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragIdRef = useRef<string | null>(null);
   const processingRef = useRef(false);
+  const uploadQueueRef = useRef<UploadItem[]>([]);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
@@ -93,7 +87,6 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
     }
   };
 
-  // Encola archivos y arranca el procesamiento secuencial.
   const enqueueFiles = (files: FileList | File[]) => {
     const arr = Array.from(files);
     if (arr.length === 0) return;
@@ -105,33 +98,29 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
       progress: 0,
     }));
 
-    setQueue((prev) => [...prev, ...items]);
+    uploadQueueRef.current = [...uploadQueueRef.current, ...items];
+    setQueue(uploadQueueRef.current);
 
-    // Kick off the processor if not already running.
     if (!processingRef.current) {
-      // Small delay so state is flushed before we read the queue.
-      setTimeout(() => processQueue(items), 50);
+      void startProcessing();
     }
   };
 
-  const processQueue = async (newItems: UploadItem[]) => {
+  const startProcessing = async () => {
     if (processingRef.current) return;
     processingRef.current = true;
-
-    // We process the items we received at enqueue time, plus any already
-    // pending in state (handles race where two drops happen quickly).
-    const toProcess = [...newItems];
 
     let doneCount = 0;
     let errorCount = 0;
 
-    for (const item of toProcess) {
-      // Mark as uploading.
-      setQueue((prev) =>
-        prev.map((q) =>
-          q.uid === item.uid ? { ...q, status: "uploading" } : q,
-        ),
-      );
+    while (true) {
+      const nextIdx = uploadQueueRef.current.findIndex((item) => item.status === "pending");
+      if (nextIdx === -1) break;
+
+      const item = uploadQueueRef.current[nextIdx];
+
+      uploadQueueRef.current[nextIdx] = { ...item, status: "uploading" };
+      setQueue([...uploadQueueRef.current]);
 
       try {
         const isImage = item.file.type.startsWith("image/");
@@ -179,33 +168,34 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
         if (thumbnailBlob) form.append("thumbnail", thumbnailBlob, "thumb.jpg");
 
         await uploadWithProgress("/api/admin/tv/media", form, (pct) => {
-          setQueue((prev) =>
-            prev.map((q) =>
-              q.uid === item.uid ? { ...q, progress: pct } : q,
-            ),
-          );
+          uploadQueueRef.current[nextIdx] = {
+            ...uploadQueueRef.current[nextIdx],
+            progress: pct,
+          };
+          setQueue([...uploadQueueRef.current]);
         });
 
-        setQueue((prev) =>
-          prev.map((q) =>
-            q.uid === item.uid ? { ...q, status: "done", progress: 100 } : q,
-          ),
-        );
+        uploadQueueRef.current[nextIdx] = {
+          ...uploadQueueRef.current[nextIdx],
+          status: "done",
+          progress: 100,
+        };
+        setQueue([...uploadQueueRef.current]);
         doneCount++;
       } catch (err) {
         const error = err instanceof Error ? err.message : "Error";
-        setQueue((prev) =>
-          prev.map((q) =>
-            q.uid === item.uid ? { ...q, status: "error", error } : q,
-          ),
-        );
+        uploadQueueRef.current[nextIdx] = {
+          ...uploadQueueRef.current[nextIdx],
+          status: "error",
+          error,
+        };
+        setQueue([...uploadQueueRef.current]);
         errorCount++;
       }
     }
 
     processingRef.current = false;
 
-    // Refresh the grid and show summary toast.
     await refresh();
     if (doneCount > 0 && errorCount === 0) {
       toast.success(
@@ -219,10 +209,15 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
       toast.error(`${errorCount} archivos fallaron`);
     }
 
-    // Clear the queue after a short delay so user can see the final states.
     setTimeout(() => {
-      setQueue([]);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      const hasActive = uploadQueueRef.current.some(
+        (q) => q.status === "pending" || q.status === "uploading",
+      );
+      if (!hasActive) {
+        uploadQueueRef.current = [];
+        setQueue([]);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
     }, 2500);
   };
 
@@ -297,16 +292,13 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
     }
   };
 
-  // Page-level drag & drop handlers (for files dragged from the OS).
   const handlePageDragOver = (e: React.DragEvent) => {
-    // Only activate if dragging files (not a media card reorder).
     if (e.dataTransfer.types.includes("Files")) {
       e.preventDefault();
       setDropActive(true);
     }
   };
   const handlePageDragLeave = (e: React.DragEvent) => {
-    // Only deactivate when leaving the page entirely.
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setDropActive(false);
     }
@@ -357,9 +349,9 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
       {/* Header */}
       <div className="flex items-center justify-between gap-6 flex-wrap bg-gradient-to-br from-surface-section/80 to-surface-section/30 p-6 md:p-8 rounded-3xl border border-border/80 shadow-md backdrop-blur-md">
         <div className="space-y-1.5 flex-1 min-w-[280px]">
-          <h1 className="text-3xl font-extrabold tracking-tight text-text-main font-display">
+          <h2 className="text-2xl font-extrabold tracking-tight text-text-main font-display">
             Biblioteca de medios
-          </h1>
+          </h2>
           <p className="text-xs md:text-sm text-text-muted max-w-xl leading-relaxed">
             Gestiona todos los archivos multimedia del sistema de TV.
             Arrastra archivos a la pantalla o utiliza los controles para subir o diseñar pantallas.
@@ -444,9 +436,9 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
             <Globe className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-text-main leading-none">
+            <h3 className="text-base font-bold text-text-main leading-none">
               Biblioteca general
-            </h2>
+            </h3>
             <p className="text-xs text-text-muted mt-1 select-none">
               Aparecen en el carrusel por defecto de todas las TVs. Arrastra los elementos para reordenar la secuencia.
             </p>
@@ -468,8 +460,8 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
               <p className="text-xs text-text-muted max-w-xs mx-auto mb-5 leading-normal">
                 Sube imágenes (JPG, PNG, WebP, GIF) o videos (MP4, WebM) hasta 100 MB cada uno.
               </p>
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 className="bg-primary hover:bg-primary/90 text-white font-medium rounded-xl px-4 py-2 transition-all shadow-sm"
               >
@@ -511,9 +503,9 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
             <CalendarDays className="h-4 w-4 text-amber-500" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-text-main leading-none">
+            <h3 className="text-base font-bold text-text-main leading-none">
               Medios de eventos
-            </h2>
+            </h3>
             <p className="text-xs text-text-muted mt-1 select-none">
               Subidos directamente en un evento. Solo visibles en las programaciones activas del respectivo evento.
             </p>
@@ -534,7 +526,6 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
           </Card>
         ) : (
           (() => {
-            // Group by event
             const byEvent = new Map<string, { eventName: string; items: EventMediaItem[] }>();
             for (const item of eventMedia) {
               const group = byEvent.get(item.eventId) ?? { eventName: item.eventName, items: [] };
