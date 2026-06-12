@@ -147,6 +147,7 @@ export function MediaCard({
                 muted
                 playsInline
                 preload="metadata"
+                crossOrigin="anonymous"
                 className="w-full h-full object-cover"
               />
             ) : null}

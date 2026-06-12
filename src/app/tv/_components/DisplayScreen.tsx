@@ -321,13 +321,15 @@ function Carousel({
                   draggable={false}
                 />
               ) : item.type === "video" && item.url ? (
-                <VideoSlide
-                  src={item.url}
-                  active={isCurrent && introDone}
-                  muted={!isCurrent || item.muted || !wantsSound}
-                  volume={volume}
-                  onEnded={onAdvance}
-                />
+                isCurrent ? (
+                  <VideoSlide
+                    src={item.url}
+                    active={isCurrent && introDone}
+                    muted={!isCurrent || item.muted || !wantsSound}
+                    volume={volume}
+                    onEnded={onAdvance}
+                  />
+                ) : null
               ) : null
             ) : null}
           </div>
@@ -579,6 +581,7 @@ function VideoSlide({
       muted={muted}
       playsInline
       preload="auto"
+      crossOrigin="anonymous"
       onEnded={onEnded}
       onError={() => {
         if (active) onEnded();
