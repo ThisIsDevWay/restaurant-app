@@ -1,7 +1,7 @@
 "use client";
 
 import { X, ArrowLeft } from "lucide-react";
-import Image from "next/image";
+import { SafeImage } from "@/components/shared/SafeImage";
 import { cn } from "@/lib/utils";
 import { formatBs, formatRef } from "@/lib/money";
 import { useItemDetailController } from "@/hooks/useItemDetailController";
@@ -100,13 +100,13 @@ export function ItemDetailModalClassic({
                 {hasImage && (
                     <div className="hidden md:flex md:w-[320px] lg:w-[380px] md:shrink-0 md:flex-col md:relative md:rounded-l-[24px] md:overflow-hidden">
                         {/* Full-bleed image */}
-                        <Image
+                        <SafeImage
                             src={item.imageUrl!}
                             alt={item.name}
                             fill
                             className="object-cover transition-transform duration-700 hover:scale-[1.03]"
                             sizes="380px"
-                            quality={88}
+                            quality={80}
                             priority
                         />
 
@@ -197,13 +197,13 @@ export function ItemDetailModalClassic({
                                 className="relative w-full bg-bg-image flex items-center justify-center border-b border-border/50 md:hidden"
                                 style={{ height: "clamp(200px, 35vh, 280px)" }}
                             >
-                                <Image
+                                <SafeImage
                                     src={item.imageUrl!}
                                     alt={item.name}
                                     fill
                                     className="object-cover transition-transform duration-500 hover:scale-[1.02]"
                                     sizes="100vw"
-                                    quality={85}
+                                    quality={80}
                                     priority
                                 />
                             </div>

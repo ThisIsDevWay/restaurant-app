@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import Image from "next/image";
+import { SafeImage } from "@/components/shared/SafeImage";
 import { Plus } from "lucide-react";
 import { useMenuItemCard } from "@/hooks/useMenuItemCard";
 import { SoldOutBadge } from "./_parts/SoldOutBadge";
@@ -63,7 +63,7 @@ export function MenuItemCardModern({
       >
         {imageUrl ? (
           <div className="relative aspect-square w-full">
-            <Image
+            <SafeImage
               src={imageUrl}
               alt={name}
               fill

@@ -28,8 +28,8 @@ export function RestaurantLogoUpload({ logoUrl, logoImagekitFileId, onLogoChange
             // Optimizar logo: Max 400px ancho, formato WebP, calidad 90%
             const { optimizeImage } = await import("@/lib/utils/image-optimization");
             const optimizedFile = await optimizeImage(file, {
-                maxWidth: 400,
-                maxHeight: 400,
+                maxWidth: 256,
+                maxHeight: 256,
                 quality: 0.9,
             });
 

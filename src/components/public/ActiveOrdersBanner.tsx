@@ -195,6 +195,7 @@ export function ActiveOrdersBanner() {
     <div className="px-5 mb-4 max-w-xl mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
       <Link
         href="/mis-pedidos"
+        prefetch={false}
         className={cn(
           "flex items-center gap-3.5 px-4.5 py-3.5 rounded-[18px] border transition-all active:scale-[0.99] shadow-sm relative group",
           isDelivered

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import Image from "next/image";
+import { SafeImage } from "@/components/shared/SafeImage";
 import { Plus } from "lucide-react";
 import { useMenuItemCard } from "@/hooks/useMenuItemCard";
 import { SoldOutBadge } from "./_parts/SoldOutBadge";
@@ -59,7 +59,7 @@ export function MenuItemCardClassic({
             {/* Top: Image (Classic vertical layout) */}
             {imageUrl ? (
                 <div className="relative w-full aspect-[4/3] bg-bg-image overflow-hidden">
-                    <Image
+                    <SafeImage
                         src={imageUrl}
                         alt={name}
                         fill

@@ -324,6 +324,7 @@ export function MenuHeader({
                             {!isReadOnly && (
                                 <Link
                                     href="/mis-pedidos"
+                                    prefetch={false}
                                     className="mh-glass-btn flex h-[36px] lg:h-[40px] items-center gap-1.5 rounded-full px-3.5 lg:px-5 text-[12px] lg:text-[13px] font-medium text-white/90 whitespace-nowrap tracking-wide"
                                 >
                                     Pedidos

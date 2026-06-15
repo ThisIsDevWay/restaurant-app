@@ -50,6 +50,8 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${plusJakartaSans.variable} ${epilogue.variable}`} suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://ik.imagekit.io" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://wsrv.nl" crossOrigin="anonymous" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

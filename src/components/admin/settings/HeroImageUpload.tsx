@@ -25,12 +25,12 @@ export function HeroImageUpload({ coverImageUrl, coverImagekitFileId, onImageCha
         setError(null);
 
         try {
-            // Optimizar imagen: Max 1920px ancho, formato WebP, calidad 85%
+            // Optimizar imagen: Max 1200px ancho, formato WebP, calidad 70%
             const { optimizeImage } = await import("@/lib/utils/image-optimization");
             const optimizedFile = await optimizeImage(file, {
-                maxWidth: 1920,
-                maxHeight: 1080,
-                quality: 0.85,
+                maxWidth: 1200,
+                maxHeight: 675,
+                quality: 0.70,
             });
 
             // Delete old cover image from ImageKit before uploading new one

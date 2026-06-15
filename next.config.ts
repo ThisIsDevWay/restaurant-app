@@ -29,19 +29,33 @@ function getImagekitDomain(): string {
 const supabaseRealtimeDomain = getSupabaseRealtimeDomain();
 const imagekitDomain = getImagekitDomain();
 
+const imagekitHostname = (() => {
+  try {
+    return new URL(imagekitDomain).hostname;
+  } catch {
+    return "ik.imagekit.io";
+  }
+})();
+
 const nextConfig: NextConfig = {
   images: {
-    // Bypass Vercel Image Optimization — images served directly from ImageKit CDN.
-    unoptimized: true,
+    deviceSizes: [480, 640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 512],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: imagekitHostname,
+      },
+    ],
   },
   async headers() {
-    const cspImgSrc = `'self' data: blob: ${imagekitDomain}`;
+    const cspImgSrc = `'self' data: blob: ${imagekitDomain} https://wsrv.nl`;
     const cspMediaSrc = `'self' data: blob: ${imagekitDomain}`;
     const realtimeDomainStr = supabaseRealtimeDomain ? ` ${supabaseRealtimeDomain}` : "";
     const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL
       ? ` ${process.env.NEXT_PUBLIC_SUPABASE_URL}`
       : "";
-    const cspConnectSrc = `'self'${supabaseOrigin}${realtimeDomainStr} https://upload.imagekit.io ${imagekitDomain} https://*.sentry.io wss://38.171.255.120`;
+    const cspConnectSrc = `'self'${supabaseOrigin}${realtimeDomainStr} https://upload.imagekit.io ${imagekitDomain} https://wsrv.nl https://*.sentry.io wss://38.171.255.120`;
 
     return [
       {

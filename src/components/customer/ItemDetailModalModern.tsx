@@ -1,7 +1,7 @@
 "use client";
 
 import { X, ArrowLeft } from "lucide-react";
-import Image from "next/image";
+import { SafeImage } from "@/components/shared/SafeImage";
 import { useRef, useState, useMemo, useId } from "react";
 import { cn } from "@/lib/utils";
 import { formatBs, formatRef } from "@/lib/money";
@@ -165,13 +165,13 @@ export function ItemDetailModalModern({
         {/* ── LEFT PANEL (md+) ─────────────────────────────────────────── */}
         {hasImage && (
           <div className="hidden md:flex md:w-[300px] lg:w-[360px] md:shrink-0 md:flex-col md:relative md:rounded-l-[28px] md:overflow-hidden">
-            <Image
+            <SafeImage
               src={item.imageUrl!}
               alt={item.name}
               fill
               className="object-cover"
               sizes="(max-width: 1024px) 300px, 360px"
-              quality={90}
+              quality={80}
               priority
             />
             <div
@@ -322,13 +322,13 @@ export function ItemDetailModalModern({
                     height: "clamp(230px, 62vw, 275px)"
                   }}
                 >
-                  <Image
+                  <SafeImage
                     src={item.imageUrl!}
                     alt={item.name}
                     fill
                     className="object-cover rounded-3xl drop-shadow-[0_15px_25px_rgba(0,0,0,0.15)] transition-all duration-500"
                     sizes="(max-width: 500px) 240px, 280px"
-                    quality={90}
+                    quality={80}
                     priority
                     onLoad={() => setImageLoaded(true)}
                   />

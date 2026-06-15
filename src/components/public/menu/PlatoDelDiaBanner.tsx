@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { SafeImage } from "@/components/shared/SafeImage";
 import { formatBs, formatRef } from "@/lib/money";
 import type { MenuItemWithComponents as MenuItem } from "@/types/menu.types";
 import { Sparkles } from "lucide-react";
@@ -29,13 +29,13 @@ export function PlatoDelDiaBanner({
       >
         {/* Real photo background */}
         {item.imageUrl ? (
-          <Image
+          <SafeImage
             src={item.imageUrl}
             alt={item.name}
             fill
             sizes="(max-width: 768px) 100vw, 800px"
             className="object-cover transition-transform duration-[800ms] group-active:scale-105"
-            quality={90}
+            quality={80}
             priority
           />
         ) : (
