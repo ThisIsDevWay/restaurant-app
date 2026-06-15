@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -185,7 +186,7 @@ func main() {
 	fmt.Println("[System] Iniciando monitoreo...")
 
 	for {
-		url := supabaseURL + "/rest/v1/print_jobs?status=eq.pending&target=" + targetFilter + "&order=created_at.asc"
+		url := supabaseURL + "/rest/v1/print_jobs?status=eq.pending&target=" + url.QueryEscape(targetFilter) + "&order=created_at.asc"
 		
 		req, _ := http.NewRequest("GET", url, nil)
 		req.Header.Set("apikey", supabaseKey)
