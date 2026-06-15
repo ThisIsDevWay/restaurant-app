@@ -140,11 +140,11 @@ export type TvMenuBoardConfig = {
   subtitle?: string;
   /** Which menu items to pull. */
   source:
-    | { type: "category"; categoryId: string }
+    | { type: "category"; categoryId?: string; categoryIds?: string[]; onlyDaily?: boolean }
     | { type: "all_available" }
     | { type: "daily" };
   /** Visual layout. */
-  layout: "list" | "grid" | "grid2" | "grid3";
+  layout: "list" | "grid" | "grid2" | "grid3" | "promo";
   showPrices: boolean;
   showDescriptions: boolean;
   showImages: boolean;
@@ -152,6 +152,8 @@ export type TvMenuBoardConfig = {
   currency: "usd" | "ves" | "both";
   /** Optional manual cap on total items fetched across all pages. */
   maxItems?: number;
+  /** Sorting mode for menu items inside each category. */
+  sortMode?: "custom" | "price_asc" | "price_desc";
   /**
    * Items shown per page. When items exceed this, additional slides are
    * generated automatically so the carousel pages through the full menu.

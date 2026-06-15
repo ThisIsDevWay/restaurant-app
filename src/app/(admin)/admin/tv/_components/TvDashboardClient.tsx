@@ -526,6 +526,7 @@ export function TvDashboardClient({
       {mediaConfig && (
         <DisplayMediaDialog
           display={mediaConfig}
+          categories={categories}
           onClose={() => setMediaConfig(null)}
         />
       )}

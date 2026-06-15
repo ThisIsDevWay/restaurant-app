@@ -1,7 +1,7 @@
 export type MenuBoardData = {
   title: string;
   subtitle?: string;
-  layout: "list" | "grid" | "grid2" | "grid3";
+  layout: "list" | "grid" | "grid2" | "grid3" | "promo";
   showPrices: boolean;
   showDescriptions: boolean;
   showImages: boolean;

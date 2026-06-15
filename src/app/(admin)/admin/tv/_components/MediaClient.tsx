@@ -478,6 +478,7 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
                   <MediaCard
                     key={item.id}
                     item={item}
+                    categories={categories}
                     onDelete={() => handleDelete(item)}
                     onEdit={() => setEditing(item)}
                     onDragStart={() => handleDragStart(item.id)}
@@ -551,6 +552,7 @@ export function MediaClient({ initialMedia, initialEventMedia, categories }: Pro
                           <MediaCard
                             key={item.id}
                             item={item}
+                            categories={categories}
                             onDelete={() => handleDelete(item)}
                             onEdit={() => setEditing(item)}
                             onDragStart={() => {}}

@@ -22,7 +22,7 @@ import { createMenuBoardAction } from "@/actions/tv";
 import type { CategoryLite } from "./EditMediaDialog";
 
 type SourceType = "all_available" | "daily" | "category";
-type Layout = "list" | "grid" | "grid2" | "grid3";
+type Layout = "list" | "grid" | "grid2" | "grid3" | "promo";
 type Currency = "usd" | "ves" | "both";
 
 type Props = {
@@ -51,16 +51,24 @@ export function MenuBoardDialog({ categories, onClose, onSaved }: Props) {
   const [title, setTitle] = useState("Menú del Día");
   const [subtitle, setSubtitle] = useState("");
   const [sourceType, setSourceType] = useState<SourceType>("daily");
-  const [categoryId, setCategoryId] = useState<string>(
-    categories[0]?.id ?? "",
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
+    categories[0] ? [categories[0].id] : [],
   );
-  const [layout, setLayout] = useState<Layout>("grid");
+  const [onlyDaily, setOnlyDaily] = useState(false);
+
+  const toggleCategory = (id: string) => {
+    setSelectedCategoryIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+  const [layout, setLayout] = useState<Layout>("grid2");
   const [showPrices, setShowPrices] = useState(true);
   const [showDescriptions, setShowDescriptions] = useState(false);
   const [showImages, setShowImages] = useState(true);
   const [currency, setCurrency] = useState<Currency>("both");
   const [duration, setDuration] = useState("30");
   const [maxItems, setMaxItems] = useState("");
+  const [sortMode, setSortMode] = useState<"custom" | "price_asc" | "price_desc">("custom");
   const [submitting, setSubmitting] = useState(false);
 
   // Dayparting
@@ -82,8 +90,8 @@ export function MenuBoardDialog({ categories, onClose, onSaved }: Props) {
       toast.error("La duración debe estar entre 3 y 600 segundos");
       return;
     }
-    if (sourceType === "category" && !categoryId) {
-      toast.error("Selecciona una categoría");
+    if (sourceType === "category" && selectedCategoryIds.length === 0) {
+      toast.error("Selecciona al menos una categoría");
       return;
     }
 
@@ -91,7 +99,7 @@ export function MenuBoardDialog({ categories, onClose, onSaved }: Props) {
 
     const source =
       sourceType === "category"
-        ? { type: "category" as const, categoryId }
+        ? { type: "category" as const, categoryIds: selectedCategoryIds, onlyDaily }
         : sourceType === "daily"
           ? { type: "daily" as const }
           : { type: "all_available" as const };
@@ -110,6 +118,7 @@ export function MenuBoardDialog({ categories, onClose, onSaved }: Props) {
         showImages,
         currency,
         maxItems: maxItems ? Number(maxItems) : undefined,
+        sortMode,
       },
       daypartStartMinutes: daypartEnabled ? timeToMinutes(startTime) : null,
       daypartEndMinutes: daypartEnabled ? timeToMinutes(endTime) : null,
@@ -128,9 +137,9 @@ export function MenuBoardDialog({ categories, onClose, onSaved }: Props) {
 
   const layoutOptions: { value: Layout; label: string; icon: React.ReactNode }[] = [
     { value: "list", label: "Lista", icon: <List className="h-3.5 w-3.5" /> },
-    { value: "grid", label: "Cuadrícula 2", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
-    { value: "grid2", label: "Cuadrícula 3", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
-    { value: "grid3", label: "Cuadrícula 4", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
+    { value: "grid2", label: "Cuadrícula 2", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
+    { value: "grid", label: "Cuadrícula 3", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
+    { value: "promo", label: "Plato del Día", icon: <UtensilsCrossed className="h-3.5 w-3.5" /> },
   ];
 
   return (
@@ -192,11 +201,10 @@ export function MenuBoardDialog({ categories, onClose, onSaved }: Props) {
                   key={opt.value}
                   type="button"
                   onClick={() => setSourceType(opt.value)}
-                  className={`rounded-xl border p-3 text-left transition-all ${
-                    sourceType === opt.value
+                  className={`rounded-xl border p-3 text-left transition-all ${sourceType === opt.value
                       ? "bg-amber-500/10 border-amber-500/40 text-amber-800"
                       : "bg-bg-app border-border text-text-muted hover:border-amber-500/20 hover:text-text-main"
-                  }`}
+                    }`}
                 >
                   <p className="text-xs font-bold">{opt.label}</p>
                   <p className="text-[10px] mt-0.5 opacity-70">{opt.desc}</p>
@@ -205,19 +213,45 @@ export function MenuBoardDialog({ categories, onClose, onSaved }: Props) {
             </div>
 
             {sourceType === "category" && (
-              <div className="relative mt-2">
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full appearance-none bg-bg-app border border-border rounded-xl px-4 py-2.5 text-sm text-text-main focus:outline-none focus:ring-2 focus:ring-primary/30"
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
+              <div className="space-y-4 mt-2">
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                    Categorías seleccionadas *
+                  </p>
+                  <div className="flex flex-wrap gap-2 p-3 bg-bg-app border border-border rounded-xl min-h-[50px]">
+                    {categories.map((c) => {
+                      const selected = selectedCategoryIds.includes(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => toggleCategory(c.id)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${selected
+                              ? "bg-amber-500 text-white border-amber-500 shadow-sm"
+                              : "bg-surface-section text-text-muted border-border hover:border-amber-500/40 hover:text-text-main"
+                            }`}
+                        >
+                          {c.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between rounded-xl border border-border/60 bg-bg-app px-4 py-3">
+                  <div>
+                    <Label className="text-xs font-semibold text-text-main">
+                      Solo menú del día
+                    </Label>
+                    <p className="text-[10px] text-text-muted mt-0.5">
+                      Muestra únicamente items de estas categorías programados para hoy
+                    </p>
+                  </div>
+                  <Switch
+                    checked={onlyDaily}
+                    onCheckedChange={setOnlyDaily}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -227,17 +261,16 @@ export function MenuBoardDialog({ categories, onClose, onSaved }: Props) {
             <Label className="text-xs font-bold text-text-muted uppercase tracking-wider">
               Distribución visual
             </Label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {layoutOptions.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => setLayout(opt.value)}
-                  className={`rounded-xl border p-2.5 flex flex-col items-center gap-1.5 transition-all ${
-                    layout === opt.value
+                  className={`rounded-xl border p-2.5 flex flex-col items-center gap-1.5 transition-all ${layout === opt.value
                       ? "bg-primary/10 border-primary/40 text-primary"
                       : "bg-bg-app border-border text-text-muted hover:border-primary/20"
-                  }`}
+                    }`}
                 >
                   {opt.icon}
                   <span className="text-[10px] font-bold">{opt.label}</span>
@@ -246,8 +279,37 @@ export function MenuBoardDialog({ categories, onClose, onSaved }: Props) {
             </div>
           </div>
 
+          {/* Ordenamiento del Catálogo */}
+          <div className="space-y-2">
+            <Label className="text-xs font-bold text-text-muted uppercase tracking-wider">
+              Ordenamiento del catálogo
+            </Label>
+            <div className="grid grid-cols-3 gap-2">
+              {(
+                [
+                  { value: "custom", label: "Personalizado", desc: "Orden manual" },
+                  { value: "price_asc", label: "Precio (Asc.)", desc: "Menor a mayor" },
+                  { value: "price_desc", label: "Precio (Desc.)", desc: "Mayor a menor" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setSortMode(opt.value)}
+                  className={`rounded-xl border p-3 text-left transition-all ${sortMode === opt.value
+                      ? "bg-primary/10 border-primary/40 text-primary"
+                      : "bg-bg-app border-border text-text-muted hover:border-primary/20 hover:text-text-main"
+                    }`}
+                >
+                  <p className="text-xs font-bold">{opt.label}</p>
+                  <p className="text-[10px] mt-0.5 opacity-70">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Options row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {(
               [
                 { label: "Precios", value: showPrices, set: setShowPrices },
@@ -347,11 +409,10 @@ export function MenuBoardDialog({ categories, onClose, onSaved }: Props) {
                           key={day}
                           type="button"
                           onClick={() => toggleDay(bit)}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all ${
-                            active
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all ${active
                               ? "bg-primary text-white border-primary shadow-sm"
                               : "bg-bg-app text-text-muted border-border hover:border-primary/40 hover:text-text-main"
-                          }`}
+                            }`}
                         >
                           {day}
                         </button>

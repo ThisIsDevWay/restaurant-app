@@ -33,7 +33,9 @@ export const idSchema = v.object({ id: v.pipe(v.string(), v.uuid()) });
 const menuBoardSourceSchema = v.union([
   v.object({
     type: v.literal("category"),
-    categoryId: v.pipe(v.string(), v.uuid()),
+    categoryId: v.optional(v.pipe(v.string(), v.uuid())),
+    categoryIds: v.optional(v.array(v.pipe(v.string(), v.uuid()))),
+    onlyDaily: v.optional(v.boolean()),
   }),
   v.object({ type: v.literal("all_available") }),
   v.object({ type: v.literal("daily") }),
@@ -44,12 +46,13 @@ export const menuBoardConfigSchema = v.object({
   title: v.pipe(v.string(), v.minLength(1), v.maxLength(120)),
   subtitle: v.optional(v.pipe(v.string(), v.maxLength(200))),
   source: menuBoardSourceSchema,
-  layout: v.picklist(["list", "grid", "grid2", "grid3"]),
+  layout: v.picklist(["list", "grid", "grid2", "grid3", "promo"]),
   showPrices: v.boolean(),
   showDescriptions: v.boolean(),
   showImages: v.boolean(),
   currency: v.picklist(["usd", "ves", "both"]),
   maxItems: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(48))),
+  sortMode: v.optional(v.picklist(["custom", "price_asc", "price_desc"])),
 });
 
 /* ─── Dayparting fields (optional on create/update) ──────────────── */

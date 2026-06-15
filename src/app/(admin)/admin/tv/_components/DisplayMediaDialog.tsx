@@ -10,6 +10,7 @@ import {
   Image as ImageIcon,
   Tv,
   Video as VideoIcon,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -21,6 +22,50 @@ import {
 import { Button } from "@/components/ui/button";
 import type { TvDisplay, TvMedia } from "@/db/schema/tv";
 import { setDisplayMediaAction } from "@/actions/tv";
+import type { CategoryLite } from "./EditMediaDialog";
+
+function getMediaSubtitle(item: TvMedia, categories: CategoryLite[] = []): string {
+  if (item.type === "image") return "Imagen";
+  if (item.type === "video") return "Video";
+
+  const config = item.slideConfig as any;
+  if (!config) return "Pizarra Menú";
+
+  const type = config.source?.type;
+  if (type === "daily") {
+    return "Pizarra: Menú del día (Platos de hoy)";
+  }
+  if (type === "all_available") {
+    return "Pizarra: Todo el menú (Todos los platos)";
+  }
+  if (type === "category") {
+    const categoryIds: string[] = [];
+    if (config.source.categoryIds && Array.isArray(config.source.categoryIds)) {
+      categoryIds.push(...config.source.categoryIds);
+    } else if (config.source.categoryId) {
+      categoryIds.push(config.source.categoryId);
+    }
+
+    let label = "Pizarra: Categoría";
+    if (categoryIds.length > 0) {
+      const names = categoryIds
+        .map((id) => categories.find((c) => c.id === id)?.name)
+        .filter(Boolean);
+      if (names.length > 0) {
+        label = `Pizarra: ${names.join(", ")}`;
+      }
+    }
+
+    if (config.source.onlyDaily) {
+      label += " (Sólo de hoy)";
+    } else {
+      label += " (Todo)";
+    }
+    return label;
+  }
+
+  return "Pizarra Menú";
+}
 
 export function MediaThumb({ item }: { item: TvMedia }) {
   return (
@@ -63,9 +108,11 @@ export function MediaThumb({ item }: { item: TvMedia }) {
 
 export function DisplayMediaDialog({
   display,
+  categories = [],
   onClose,
 }: {
   display: TvDisplay;
+  categories?: CategoryLite[];
   onClose: () => void;
 }) {
   const [loading, setLoading] = useState(true);
@@ -241,11 +288,17 @@ export function DisplayMediaDialog({
                         </span>
                         <MediaThumb item={item} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-text-main truncate">
+                          <p 
+                            className="text-xs font-bold text-text-main line-clamp-2 leading-tight"
+                            title={item.title}
+                          >
                             {item.title}
                           </p>
-                          <p className="text-[10px] text-text-muted capitalize">
-                            {item.type === "image" ? "Imagen" : item.type === "menu_board" ? "Pizarra Menú" : "Video"} · {item.durationSeconds}s
+                          <p 
+                            className="text-[10px] text-text-muted line-clamp-1"
+                            title={`${getMediaSubtitle(item, categories)} · ${item.durationSeconds}s`}
+                          >
+                            {getMediaSubtitle(item, categories)} · {item.durationSeconds}s
                           </p>
                         </div>
                         <button
@@ -284,22 +337,36 @@ export function DisplayMediaDialog({
                     Has añadido todos los medios disponibles en la biblioteca general.
                   </p>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[220px] overflow-y-auto pr-1">
+                  <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
                     {availableItems.map((item) => (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => toggle(item.id)}
-                        className="flex items-center gap-2 rounded-xl border border-border bg-bg-app p-2 hover:border-amber-500/30 hover:bg-amber-500/[0.01] transition text-left group"
+                        className="flex items-center gap-3 w-full rounded-xl border border-border bg-bg-app p-2 hover:border-amber-500/20 hover:bg-amber-500/[0.01] transition text-left group cursor-pointer"
                       >
+                        <Plus className="h-4 w-4 text-amber-500/40 group-hover:text-amber-600 shrink-0 transition-colors" />
+                        <div className="w-5 shrink-0" />
                         <MediaThumb item={item} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-bold text-text-main truncate group-hover:text-amber-700">
+                          <p 
+                            className="text-xs font-bold text-text-main line-clamp-2 leading-tight group-hover:text-amber-700"
+                            title={item.title}
+                          >
                             {item.title}
                           </p>
-                          <p className="text-[9px] text-text-muted capitalize">
-                            {item.type === "image" ? "Imagen" : item.type === "menu_board" ? "Pizarra" : "Video"} · {item.durationSeconds}s
+                          <p 
+                            className="text-[10px] text-text-muted line-clamp-1"
+                            title={`${getMediaSubtitle(item, categories)} · ${item.durationSeconds}s`}
+                          >
+                            {getMediaSubtitle(item, categories)} · {item.durationSeconds}s
                           </p>
+                        </div>
+                        <div 
+                          className="p-2 rounded-lg text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 transition shrink-0 opacity-0 group-hover:opacity-100"
+                          title="Añadir a playlist"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
                         </div>
                       </button>
                     ))}

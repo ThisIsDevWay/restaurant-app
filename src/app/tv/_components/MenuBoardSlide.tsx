@@ -7,6 +7,7 @@ import { cu } from "./SlideComponents";
 import { PortraitLayout } from "./PortraitLayout";
 import { GridLayout } from "./GridLayout";
 import { ListLayout } from "./ListLayout";
+import { PromoLayout } from "./PromoLayout";
 
 export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -101,7 +102,7 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
         }
       `}</style>
       {/* ── Header ── */}
-      <div style={{ textAlign: "center", marginBottom: cu(4, unit * 2, 48), flexShrink: 0 }}>
+      <div style={{ textAlign: "center", marginBottom: cu(6, unit * 2.5, 64), flexShrink: 0 }}>
         <div
           style={{
             fontSize: cu(12, unit * 2.8, 72),
@@ -153,6 +154,8 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
           <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.4)", fontSize: cu(14, unit * 2, 56) }}>
             No hay productos para mostrar
           </div>
+        ) : data.layout === "promo" ? (
+          <PromoLayout data={data} unit={unit} isPortrait={isPortrait} />
         ) : isList ? (
           <ListLayout grouped={grouped} data={data} hasMultipleCategories={hasMultipleCategories} reserveSlot={reserveSlot} unit={unit} isPortrait={isPortrait} />
         ) : isPortrait ? (

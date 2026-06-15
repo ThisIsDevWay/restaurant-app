@@ -3,11 +3,14 @@ import {
   menuItems,
   categories,
   dailyMenuItems,
+  dailyBebidas,
+  dailyContornos,
+  dailyAdicionales,
   settings,
   exchangeRates,
   menuItemContornos,
 } from "@/db/schema";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { TvMenuBoardConfig } from "@/db/schema/tv";
 
 const RESTAURANT_TZ = "America/Caracas";
@@ -16,7 +19,7 @@ const RESTAURANT_TZ = "America/Caracas";
 export type MenuBoardData = {
   title: string;
   subtitle?: string;
-  layout: "list" | "grid" | "grid2" | "grid3";
+  layout: "list" | "grid" | "grid2" | "grid3" | "promo";
   showPrices: boolean;
   showDescriptions: boolean;
   showImages: boolean;
@@ -89,31 +92,199 @@ export async function resolveMenuBoard(
   let rows: RawRow[] = [];
 
   if (config.source.type === "category") {
-    const categoryId = config.source.categoryId;
-    rows = await db
-      .select({
-        id: menuItems.id,
-        name: menuItems.name,
-        description: menuItems.description,
-        portionNote: menuItems.portionNote,
-        includedNote: menuItems.includedNote,
-        imageUrl: menuItems.imageUrl,
-        priceUsdCents: menuItems.priceUsdCents,
-        categoryId: menuItems.categoryId,
-        categoryName: categories.name,
-        sortOrder: menuItems.sortOrder,
-      })
-      .from(menuItems)
-      .innerJoin(categories, eq(categories.id, menuItems.categoryId))
-      .where(
-        and(
-          eq(menuItems.categoryId, categoryId),
-          eq(menuItems.isAvailable, true),
-          eq(categories.isAvailable, true),
-        ),
-      )
-      .orderBy(asc(menuItems.sortOrder), asc(menuItems.name));
+    const categoryIds: string[] = [];
+    if ("categoryIds" in config.source && Array.isArray(config.source.categoryIds)) {
+      categoryIds.push(...config.source.categoryIds);
+    } else if ("categoryId" in config.source && config.source.categoryId) {
+      categoryIds.push(config.source.categoryId);
+    }
+
+    const onlyDaily = "onlyDaily" in config.source ? !!config.source.onlyDaily : false;
+
+    if (categoryIds.length > 0) {
+      if (onlyDaily) {
+        const today = formatLocalDate(new Date());
+        const [r1, r2, r3, r4] = await Promise.all([
+          db
+            .select({
+              id: menuItems.id,
+              name: menuItems.name,
+              description: menuItems.description,
+              portionNote: menuItems.portionNote,
+              includedNote: menuItems.includedNote,
+              imageUrl: menuItems.imageUrl,
+              priceUsdCents: menuItems.priceUsdCents,
+              categoryId: menuItems.categoryId,
+              categoryName: categories.name,
+              sortOrder: dailyMenuItems.sortOrder,
+              categorySortOrder: categories.sortOrder,
+            })
+            .from(dailyMenuItems)
+            .innerJoin(menuItems, eq(menuItems.id, dailyMenuItems.menuItemId))
+            .innerJoin(categories, eq(categories.id, menuItems.categoryId))
+            .where(
+              and(
+                eq(dailyMenuItems.date, today),
+                inArray(menuItems.categoryId, categoryIds),
+                eq(dailyMenuItems.isAvailable, true),
+                eq(menuItems.isAvailable, true),
+                eq(categories.isAvailable, true),
+              ),
+            ),
+          db
+            .select({
+              id: menuItems.id,
+              name: menuItems.name,
+              description: menuItems.description,
+              portionNote: menuItems.portionNote,
+              includedNote: menuItems.includedNote,
+              imageUrl: menuItems.imageUrl,
+              priceUsdCents: menuItems.priceUsdCents,
+              categoryId: menuItems.categoryId,
+              categoryName: categories.name,
+              sortOrder: dailyBebidas.sortOrder,
+              categorySortOrder: categories.sortOrder,
+            })
+            .from(dailyBebidas)
+            .innerJoin(menuItems, eq(menuItems.id, dailyBebidas.bebidaItemId))
+            .innerJoin(categories, eq(categories.id, menuItems.categoryId))
+            .where(
+              and(
+                eq(dailyBebidas.date, today),
+                inArray(menuItems.categoryId, categoryIds),
+                eq(dailyBebidas.isAvailable, true),
+                eq(menuItems.isAvailable, true),
+                eq(categories.isAvailable, true),
+              ),
+            ),
+          db
+            .select({
+              id: menuItems.id,
+              name: menuItems.name,
+              description: menuItems.description,
+              portionNote: menuItems.portionNote,
+              includedNote: menuItems.includedNote,
+              imageUrl: menuItems.imageUrl,
+              priceUsdCents: menuItems.priceUsdCents,
+              categoryId: menuItems.categoryId,
+              categoryName: categories.name,
+              sortOrder: dailyContornos.sortOrder,
+              categorySortOrder: categories.sortOrder,
+            })
+            .from(dailyContornos)
+            .innerJoin(menuItems, eq(menuItems.id, dailyContornos.contornoItemId))
+            .innerJoin(categories, eq(categories.id, menuItems.categoryId))
+            .where(
+              and(
+                eq(dailyContornos.date, today),
+                inArray(menuItems.categoryId, categoryIds),
+                eq(dailyContornos.isAvailable, true),
+                eq(menuItems.isAvailable, true),
+                eq(categories.isAvailable, true),
+              ),
+            ),
+          db
+            .select({
+              id: menuItems.id,
+              name: menuItems.name,
+              description: menuItems.description,
+              portionNote: menuItems.portionNote,
+              includedNote: menuItems.includedNote,
+              imageUrl: menuItems.imageUrl,
+              priceUsdCents: menuItems.priceUsdCents,
+              categoryId: menuItems.categoryId,
+              categoryName: categories.name,
+              sortOrder: dailyAdicionales.sortOrder,
+              categorySortOrder: categories.sortOrder,
+            })
+            .from(dailyAdicionales)
+            .innerJoin(menuItems, eq(menuItems.id, dailyAdicionales.adicionalItemId))
+            .innerJoin(categories, eq(categories.id, menuItems.categoryId))
+            .where(
+              and(
+                eq(dailyAdicionales.date, today),
+                inArray(menuItems.categoryId, categoryIds),
+                eq(dailyAdicionales.isAvailable, true),
+                eq(menuItems.isAvailable, true),
+                eq(categories.isAvailable, true),
+              ),
+            ),
+        ]);
+
+        const combined = [...r1, ...r2, ...r3, ...r4];
+        const uniqueMap = new Map<string, typeof combined[number]>();
+        for (const item of combined) {
+          uniqueMap.set(item.id, item);
+        }
+
+        rows = Array.from(uniqueMap.values()).sort((a, b) => {
+          if (config.sortMode === "price_asc") {
+            return a.priceUsdCents - b.priceUsdCents || a.categorySortOrder - b.categorySortOrder || a.sortOrder - b.sortOrder;
+          }
+          if (config.sortMode === "price_desc") {
+            return b.priceUsdCents - a.priceUsdCents || a.categorySortOrder - b.categorySortOrder || a.sortOrder - b.sortOrder;
+          }
+          if (a.categorySortOrder !== b.categorySortOrder) {
+            return a.categorySortOrder - b.categorySortOrder;
+          }
+          return a.sortOrder - b.sortOrder;
+        });
+      } else {
+        const orderByColumns = [];
+        if (config.sortMode === "price_asc") {
+          orderByColumns.push(asc(menuItems.priceUsdCents));
+          orderByColumns.push(asc(categories.sortOrder));
+          orderByColumns.push(asc(menuItems.sortOrder));
+        } else if (config.sortMode === "price_desc") {
+          orderByColumns.push(desc(menuItems.priceUsdCents));
+          orderByColumns.push(asc(categories.sortOrder));
+          orderByColumns.push(asc(menuItems.sortOrder));
+        } else {
+          orderByColumns.push(asc(categories.sortOrder));
+          orderByColumns.push(asc(menuItems.sortOrder));
+          orderByColumns.push(asc(menuItems.name));
+        }
+
+        rows = await db
+          .select({
+            id: menuItems.id,
+            name: menuItems.name,
+            description: menuItems.description,
+            portionNote: menuItems.portionNote,
+            includedNote: menuItems.includedNote,
+            imageUrl: menuItems.imageUrl,
+            priceUsdCents: menuItems.priceUsdCents,
+            categoryId: menuItems.categoryId,
+            categoryName: categories.name,
+            sortOrder: menuItems.sortOrder,
+          })
+          .from(menuItems)
+          .innerJoin(categories, eq(categories.id, menuItems.categoryId))
+          .where(
+            and(
+              inArray(menuItems.categoryId, categoryIds),
+              eq(menuItems.isAvailable, true),
+              eq(categories.isAvailable, true),
+            ),
+          )
+          .orderBy(...orderByColumns);
+      }
+    }
   } else if (config.source.type === "all_available") {
+    const orderByColumns = [];
+    if (config.sortMode === "price_asc") {
+      orderByColumns.push(asc(menuItems.priceUsdCents));
+      orderByColumns.push(asc(categories.sortOrder));
+      orderByColumns.push(asc(menuItems.sortOrder));
+    } else if (config.sortMode === "price_desc") {
+      orderByColumns.push(desc(menuItems.priceUsdCents));
+      orderByColumns.push(asc(categories.sortOrder));
+      orderByColumns.push(asc(menuItems.sortOrder));
+    } else {
+      orderByColumns.push(asc(categories.sortOrder));
+      orderByColumns.push(asc(menuItems.sortOrder));
+    }
+
     rows = await db
       .select({
         id: menuItems.id,
@@ -135,10 +306,24 @@ export async function resolveMenuBoard(
           eq(categories.isAvailable, true),
         ),
       )
-      .orderBy(asc(categories.sortOrder), asc(menuItems.sortOrder));
+      .orderBy(...orderByColumns);
   } else {
     // daily
     const today = formatLocalDate(new Date());
+    const orderByColumns = [];
+    if (config.sortMode === "price_asc") {
+      orderByColumns.push(asc(menuItems.priceUsdCents));
+      orderByColumns.push(asc(categories.sortOrder));
+      orderByColumns.push(asc(dailyMenuItems.sortOrder));
+    } else if (config.sortMode === "price_desc") {
+      orderByColumns.push(desc(menuItems.priceUsdCents));
+      orderByColumns.push(asc(categories.sortOrder));
+      orderByColumns.push(asc(dailyMenuItems.sortOrder));
+    } else {
+      orderByColumns.push(asc(categories.sortOrder));
+      orderByColumns.push(asc(dailyMenuItems.sortOrder));
+    }
+
     rows = await db
       .select({
         id: menuItems.id,
@@ -163,7 +348,7 @@ export async function resolveMenuBoard(
           eq(categories.isAvailable, true),
         ),
       )
-      .orderBy(asc(categories.sortOrder), asc(dailyMenuItems.sortOrder));
+      .orderBy(...orderByColumns);
   }
 
   // ── Batch-resolve contornos for all items ────────────────────────────
@@ -197,11 +382,13 @@ export async function resolveMenuBoard(
   const perPage =
     config.itemsPerPage && config.itemsPerPage > 0
       ? config.itemsPerPage
-      : config.layout === "list"
-        ? 8
-        : config.layout === "grid2"
-          ? 2
-          : 3;
+      : config.layout === "promo"
+        ? 1
+        : config.layout === "list"
+          ? (orientationHint === "portrait" ? 10 : 8)
+          : config.layout === "grid2"
+            ? 2
+            : 3;
 
   // Split into pages.
   const pages: Array<MenuBoardData["items"]> = [];

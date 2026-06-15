@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { TvMedia, TvMenuBoardConfig } from "@/db/schema/tv";
 import { cleanTitle } from "./media-client-utils";
+import type { CategoryLite } from "./EditMediaDialog";
 
 function getAspectRatio(width: number | null, height: number | null): {
   style: React.CSSProperties;
@@ -39,14 +40,42 @@ function getAspectRatio(width: number | null, height: number | null): {
   return { style: { aspectRatio: `${width}/${height}` }, label };
 }
 
-export function MenuBoardPreview({ item }: { item: TvMedia }) {
+export function MenuBoardPreview({ item, categories = [] }: { item: TvMedia; categories?: CategoryLite[] }) {
   const config = (item.slideConfig as TvMenuBoardConfig | null) ?? null;
-  const sourceLabel =
-    config?.source.type === "category"
-      ? "Categoría"
-      : config?.source.type === "daily"
-        ? "Menú del día"
-        : "Todo el menú";
+  let sourceLabel = "Todo el menú (Todos los platos)";
+
+  if (config?.source.type === "daily") {
+    sourceLabel = "Menú del día (Platos de hoy)";
+  } else if (config?.source.type === "category") {
+    const categoryIds: string[] = [];
+    if (config.source.categoryIds && Array.isArray(config.source.categoryIds)) {
+      categoryIds.push(...config.source.categoryIds);
+    } else if (config.source.categoryId) {
+      categoryIds.push(config.source.categoryId);
+    }
+
+    if (categoryIds.length > 0) {
+      const names = categoryIds
+        .map((id) => categories.find((c) => c.id === id)?.name)
+        .filter(Boolean) as string[];
+
+      if (names.length > 0) {
+        sourceLabel = `Cat: ${names.join(", ")}`;
+      } else {
+        sourceLabel = "Categoría";
+      }
+    } else {
+      sourceLabel = "Categoría";
+    }
+
+    if (config.source.onlyDaily) {
+      sourceLabel += " (Sólo de hoy)";
+    } else {
+      sourceLabel += " (Todo)";
+    }
+  } else if (config?.source.type === "all_available") {
+    sourceLabel = "Todo el menú (Todos los platos)";
+  }
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2c1805] via-[#160d05] to-[#040201] p-4 pb-12 text-center select-none">
@@ -57,13 +86,14 @@ export function MenuBoardPreview({ item }: { item: TvMedia }) {
       <p className="text-sm font-semibold text-white line-clamp-2 mb-1">
         {config?.title ?? item.title}
       </p>
-      <p className="text-[10px] text-amber-300/80 font-medium">{sourceLabel}</p>
+      <p className="text-[10px] text-amber-300/80 font-medium leading-normal break-words max-w-[90%]">{sourceLabel}</p>
     </div>
   );
 }
 
 export function MediaCard({
   item,
+  categories = [],
   onDelete,
   onEdit,
   onDragStart,
@@ -76,6 +106,7 @@ export function MediaCard({
   dragOverId,
 }: {
   item: TvMedia;
+  categories?: CategoryLite[];
   onDelete: () => void;
   onEdit: () => void;
   onDragStart: () => void;
@@ -124,7 +155,7 @@ export function MediaCard({
       {/* Background Media */}
       <div className="absolute inset-0 z-0 transition-transform duration-500 group-hover:scale-105">
         {item.type === "menu_board" ? (
-          <MenuBoardPreview item={item} />
+          <MenuBoardPreview item={item} categories={categories} />
         ) : item.type === "image" && item.publicUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

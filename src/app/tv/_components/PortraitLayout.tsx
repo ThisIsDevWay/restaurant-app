@@ -107,6 +107,24 @@ export function PortraitRow({
           )}
         </div>
 
+        {/* Description (if showDescriptions is true) */}
+        {data.showDescriptions && item.description && (
+          <p
+            style={{
+              fontSize: data.layout === "grid2" ? cu(14, unit * 2.8, 70) : cu(12, unit * 2.4, 60),
+              color: "rgba(255, 248, 243, 0.75)",
+              margin: 0,
+              lineHeight: 1.4,
+              fontStyle: "italic",
+              fontWeight: 300,
+              fontFamily: "var(--font-serif), Georgia, serif",
+              maxWidth: "95%",
+            }}
+          >
+            &quot;{item.description}&quot;
+          </p>
+        )}
+
         {/* Contornos + includedNote — pill badges */}
         {(item.contornos.length > 0 || item.includedNote) && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: data.layout === "grid2" ? cu(4, unit * 1.2, 28) : cu(3, unit * 0.9, 20) }}>
@@ -205,7 +223,7 @@ export function PortraitLayout({
       }}
     >
       {/* Category labels — separated by amber bullets */}
-      {hasMultipleCategories && (
+      {true && (
         <div
           style={{
             flexShrink: 0,

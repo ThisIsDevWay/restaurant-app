@@ -114,6 +114,25 @@ export function GridCell({
           )}
         </div>
 
+        {/* Description (if showDescriptions is true) */}
+        {data.showDescriptions && item.description && (
+          <p
+            style={{
+              fontSize: data.layout === "grid2" ? cu(13, unit * 2.6, 60) : cu(11, unit * 2.0, 48),
+              color: "rgba(255, 248, 243, 0.75)",
+              margin: 0,
+              lineHeight: 1.4,
+              fontStyle: "italic",
+              fontWeight: 300,
+              fontFamily: "var(--font-serif), Georgia, serif",
+              textAlign: "center",
+              maxWidth: "90%",
+            }}
+          >
+            &quot;{item.description}&quot;
+          </p>
+        )}
+
         {/* Contornos + includedNote — pill badges */}
         {(item.contornos.length > 0 || item.includedNote) && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: cu(3, unit * 0.7, 16), justifyContent: "center" }}>
@@ -190,7 +209,7 @@ export function GridLayout({
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: cu(4, unit * 1, 28), overflow: "hidden" }}>
-      {hasMultipleCategories && (
+      {true && (
         <div style={{ flexShrink: 0, display: "flex", gap: cu(8, unit * 2, 48), flexWrap: "wrap" }}>
           {grouped.map((g) => (
             <div
