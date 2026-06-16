@@ -56,9 +56,8 @@ export function useTvRealtime(
         return;
       }
       const row = payload.new;
-      if (!row || Object.keys(row).length === 0) {
-        scheduleRefresh();
-        return;
+      if (!row || !row.id) {
+        return; // Avoid refresh loop on empty/partial payloads (e.g. RLS filtering)
       }
       const sig = [
         row.is_active,

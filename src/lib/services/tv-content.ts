@@ -313,30 +313,25 @@ export async function updateDisplayHeartbeat(params: {
   reportedOrientation?: string | null;
   reportedSize?: string | null;
 }): Promise<void> {
-  const { displayId, currentLastSeenAt, reportedOrientation, reportedSize } =
-    params;
-
-  // Skip if a heartbeat was already written recently
-  const lastSeenDate = currentLastSeenAt ? new Date(currentLastSeenAt) : null;
-  if (
-    lastSeenDate &&
-    !isNaN(lastSeenDate.getTime()) &&
-    Date.now() - lastSeenDate.getTime() < HEARTBEAT_THROTTLE_MS
-  ) {
-    return;
-  }
+  const { displayId, reportedOrientation, reportedSize } = params;
 
   try {
     await db
       .update(tvDisplays)
       .set({
-        lastSeenAt: new Date(),
-        ...(reportedOrientation
-          ? { lastReportedOrientation: reportedOrientation }
-          : {}),
-        ...(reportedSize ? { lastReportedSize: reportedSize } : {}),
+        lastSeenAt: sql`NOW()`,
+        lastReportedOrientation: reportedOrientation || null,
+        lastReportedSize: reportedSize || null,
       })
-      .where(eq(tvDisplays.id, displayId));
+      .where(
+        and(
+          eq(tvDisplays.id, displayId),
+          or(
+            isNull(tvDisplays.lastSeenAt),
+            sql`last_seen_at < NOW() - INTERVAL '60 seconds'`
+          )
+        )
+      );
   } catch (err) {
     console.error("Failed to update tv heartbeat", err);
   }

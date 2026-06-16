@@ -38,6 +38,7 @@ export function TvController() {
   const [token, setToken] = useState<string | null>(null);
   const [content, setContent] = useState<ContentResponse | null>(null);
   const versionRef = useRef<string | null>(null);
+  const etagRef = useRef<string | null>(null);
   const failureCountRef = useRef(0);
   const [reconnecting, setReconnecting] = useState(false);
   // In a regular browser, audio is locked until the first user gesture.
@@ -138,8 +139,8 @@ export function TvController() {
       // _t keeps the URL unique so no CDN/browser layer caches it;
       // If-None-Match lets the server skip the body when version is unchanged.
       const headers: Record<string, string> = {};
-      if (versionRef.current) {
-        headers["If-None-Match"] = `"${versionRef.current}"`;
+      if (etagRef.current) {
+        headers["If-None-Match"] = etagRef.current;
       }
       const resp = await fetch(
         `/api/tv/content?token=${encodeURIComponent(currentToken)}&orientation=${encodeURIComponent(orientation)}&size=${encodeURIComponent(size)}&_t=${Date.now()}`,
@@ -162,6 +163,7 @@ export function TvController() {
         setToken(null);
         setContent(null);
         versionRef.current = null;
+        etagRef.current = null;
         setPhase("pairing");
         return;
       }
@@ -170,6 +172,11 @@ export function TvController() {
         failureCountRef.current += 1;
         if (failureCountRef.current >= 3) setReconnecting(true);
         return;
+      }
+
+      const serverEtag = resp.headers.get("etag");
+      if (serverEtag) {
+        etagRef.current = serverEtag;
       }
 
       const data = (await resp.json()) as ContentResponse;
@@ -250,6 +257,7 @@ export function TvController() {
     }
     setToken(newToken);
     versionRef.current = null;
+    etagRef.current = null;
     setContent(null);
     setPhase("displaying");
   }, []);

@@ -43,20 +43,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "revoked_or_invalid" }, { status: 403 });
   }
 
-  const reportedOrientation = url.searchParams.get("orientation");
-  const reportedSize = url.searchParams.get("size");
-
-  // Throttled heartbeat — passes current lastSeenAt so the service can skip
-  // the UPDATE if one was already written in the last 60 s.
-  void updateDisplayHeartbeat({
-    displayId: display.id,
-    currentLastSeenAt: display.lastSeenAt,
-    reportedOrientation: reportedOrientation
-      ? reportedOrientation.slice(0, 32)
-      : null,
-    reportedSize: reportedSize ? reportedSize.slice(0, 32) : null,
-  });
-
   const [playlist, settings] = await Promise.all([
     resolveContentForDisplay(display.id),
     getSettings(),
@@ -74,13 +60,27 @@ export async function GET(req: Request) {
   const etag = `"${playlist.version}-${Buffer.from(configSig).toString("base64url").slice(0, 8)}"`;
   const ifNoneMatch = req.headers.get("if-none-match");
 
-  if (ifNoneMatch === etag) {
-    // Content and config unchanged — skip sending the body
+  if (ifNoneMatch && ifNoneMatch === etag) {
+    // Content and config unchanged — skip sending the body and do not execute heartbeat
     return new Response(null, {
       status: 304,
-      headers: { ETag: etag },
+      headers: { ETag: etag, "Cache-Control": "no-cache" },
     });
   }
+
+  const reportedOrientation = url.searchParams.get("orientation");
+  const reportedSize = url.searchParams.get("size");
+
+  // Throttled heartbeat — passes current lastSeenAt so the service can skip
+  // the UPDATE if one was already written in the last 60 s.
+  void updateDisplayHeartbeat({
+    displayId: display.id,
+    currentLastSeenAt: display.lastSeenAt,
+    reportedOrientation: reportedOrientation
+      ? reportedOrientation.slice(0, 32)
+      : null,
+    reportedSize: reportedSize ? reportedSize.slice(0, 32) : null,
+  });
 
   return NextResponse.json(
     {
