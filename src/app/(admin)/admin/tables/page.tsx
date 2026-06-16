@@ -5,6 +5,8 @@ import { getAllFixtures } from "@/db/queries/floor-fixtures";
 import { getSettings } from "@/db/queries/settings";
 import { TableManagerClient } from "@/app/(admin)/admin/tables/TableManagerClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminTablesPage() {
   const session = await auth();
   if (session?.user?.role !== "admin") {

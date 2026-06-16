@@ -73,7 +73,7 @@ export async function GET(req: Request) {
 
   // Throttled heartbeat — passes current lastSeenAt so the service can skip
   // the UPDATE if one was already written in the last 60 s.
-  void updateDisplayHeartbeat({
+  await updateDisplayHeartbeat({
     displayId: display.id,
     currentLastSeenAt: display.lastSeenAt,
     reportedOrientation: reportedOrientation

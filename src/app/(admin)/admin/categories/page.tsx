@@ -1,6 +1,8 @@
 import { getCategoriesWithItemCount } from "@/db/queries/menu";
 import { CategoriesClient } from "./CategoriesClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function CategoriesPage() {
   const categoriesWithCounts = await getCategoriesWithItemCount();
 

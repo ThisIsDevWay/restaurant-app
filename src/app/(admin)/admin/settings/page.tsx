@@ -6,6 +6,8 @@ import { WhatsAppStatus } from "@/components/admin/whatsapp/WhatsAppStatus";
 import type { PaymentProvider } from "./SettingsForm.types";
 import { normalizePrinterTarget } from "@/lib/print/printer-target";
 
+export const dynamic = "force-dynamic";
+
 export default async function SettingsPage() {
   const [settings, templates, categories] = await Promise.all([
     getSettings(),

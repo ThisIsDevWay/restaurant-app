@@ -3,6 +3,8 @@ import { getSimpleMenuItems } from "@/db/queries/menu-components";
 import { getActiveRate } from "@/db/queries/settings";
 import { MenuItemForm } from "@/components/admin/menu/MenuItemForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewMenuItemPage() {
   const [categories, availableContornos, rateResult] = await Promise.all([
     getCategories().catch((err) => {

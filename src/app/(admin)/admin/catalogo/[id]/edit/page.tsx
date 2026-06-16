@@ -4,6 +4,8 @@ import { getMenuItemContornos, getSimpleMenuItems } from "@/db/queries/menu-comp
 import { getActiveRate } from "@/db/queries/settings";
 import { MenuItemForm } from "@/components/admin/menu/MenuItemForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditMenuItemPage({
   params,
 }: {

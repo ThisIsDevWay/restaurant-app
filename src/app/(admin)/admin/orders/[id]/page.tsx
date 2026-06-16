@@ -33,6 +33,8 @@ type ItemsSnapshot = Array<{
   itemTotalBsCents: number;
 }>;
 
+export const dynamic = "force-dynamic";
+
 export default async function OrderDetailPage({
   params,
 }: {

@@ -6,6 +6,8 @@ import { menuItemContornos, menuItems } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import MenuCatalogView from "./MenuCatalogView";
 
+export const dynamic = "force-dynamic";
+
 export default async function MenuAdminPage() {
   const [items, categories, availableContornos, rateResult, allContornos] = await Promise.all([
     getMenuWithOptions(),

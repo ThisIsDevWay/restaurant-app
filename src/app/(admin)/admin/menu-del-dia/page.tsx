@@ -12,6 +12,8 @@ import { getAllContornos } from "@/db/queries/contornos";
 import { DailyMenuClient } from "./DailyMenuClient";
 import { todayCaracas } from "@/lib/utils/date";
 
+export const dynamic = "force-dynamic";
+
 export default async function DailyMenuPage({
   searchParams,
 }: {

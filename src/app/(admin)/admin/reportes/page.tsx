@@ -25,6 +25,8 @@ function caracasDaysAgo(toDate: string, days: number): string {
   }).format(ref);
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function ReportesPage() {
   const toDate = todayCaracas();
   const fromDate = caracasDaysAgo(toDate, 30);

@@ -30,6 +30,8 @@ import { getMenuItemProfitability, getWeightedAverageMarginToday } from "@/db/qu
 import { getStaleCostItems } from "@/db/queries/menu-components";
 import { getDashboardStats, getRecentOrders, getTodayOrdersRaw } from "@/db/queries/dashboard";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboard() {
   const [todayStats, recentOrders, todayOrdersRaw] = await Promise.all([
     getDashboardStats(),
