@@ -9,6 +9,18 @@ import {
   createPartialResponse,
 } from "serwist";
 
+const forceCorsPlugin = {
+  requestWillFetch: async ({ request }) => {
+    if (request.mode !== "no-cors") return request;
+    return new Request(request.url, {
+      method: request.method,
+      headers: request.headers,
+      mode: "cors",
+      credentials: "omit",
+    });
+  },
+};
+
 const serwist = new Serwist({
   precacheEntries: (self as any).__SW_MANIFEST,
   skipWaiting: true,
@@ -106,6 +118,7 @@ const serwist = new Serwist({
             maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days (reduced from 30)
             purgeOnQuotaError: true,
           }),
+          forceCorsPlugin,
         ],
       }),
     },
