@@ -110,7 +110,7 @@ export function MenuItemCardClassic({
                                 maximumFractionDigits: 0,
                             })}
                         </span>
-                        <span className="text-[10px] font-bold text-text-muted/80 whitespace-nowrap shrink-0">
+                        <span className="text-[10px] font-bold text-text-muted whitespace-nowrap shrink-0">
                             (REF. {(priceUsdCents / 100).toFixed(2).replace(".", ",")})
                         </span>
                     </div>

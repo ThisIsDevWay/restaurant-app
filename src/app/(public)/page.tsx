@@ -76,14 +76,6 @@ export default async function MenuPage() {
 
     return (
       <main className="min-h-screen bg-bg-app">
-        {appSettings?.coverImageUrl && (
-          <link
-            rel="preload"
-            as="image"
-            href={appSettings.coverImageUrl}
-            fetchPriority="high"
-          />
-        )}
         {/* Categories + Menu — MenuClient se mantiene montado siempre para conservar
             la suscripción realtime de settings (reabre el menú sin recargar). */}
         <Suspense fallback={<MenuGridSkeleton />}>

@@ -291,7 +291,7 @@ export function MenuClient({
                   <h2 className="font-display text-[21px] font-black text-text-main tracking-tight leading-none">
                       Menú del Día
                   </h2>
-                  <p className="text-[11px] font-bold text-text-main/60 uppercase tracking-widest mt-1">
+                  <p className="text-[11px] font-bold text-text-main/75 uppercase tracking-widest mt-1">
                       Opciones disponibles hoy
                   </p>
               </div>

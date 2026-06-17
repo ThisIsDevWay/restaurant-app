@@ -111,7 +111,7 @@ export function MenuItemCardModern({
                 maximumFractionDigits: 0,
               })}
             </span>
-            <span className="text-[10px] font-bold text-text-muted/80 whitespace-nowrap">
+            <span className="text-[10px] font-bold text-text-muted whitespace-nowrap">
               (REF. {(priceUsdCents / 100).toFixed(2).replace(".", ",")})
             </span>
           </div>
