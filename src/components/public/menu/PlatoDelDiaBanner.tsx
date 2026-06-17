@@ -33,7 +33,7 @@ export function PlatoDelDiaBanner({
             src={item.imageUrl}
             alt={item.name}
             fill
-            sizes="(max-width: 768px) 100vw, 800px"
+            sizes="(max-width: 480px) 380px, (max-width: 768px) 700px, 800px"
             className="object-cover transition-transform duration-[800ms] group-active:scale-105"
             quality={80}
             priority

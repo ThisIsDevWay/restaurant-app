@@ -247,7 +247,7 @@ export function MenuHeader({
                         alt="Portada de Restaurante"
                         fill
                         className="object-cover mh-ken-burns"
-                        sizes="100vw"
+                        sizes="(max-width: 1200px) 100vw, 1280px"
                         priority
                         fetchPriority="high"
                     />
@@ -706,7 +706,7 @@ export function MenuHeader({
                                         alt="Portada de Restaurante"
                                         fill
                                         className="object-cover mh-ken-burns"
-                                        sizes="100vw"
+                                        sizes="(max-width: 480px) 360px, (max-width: 768px) 640px, 100vw"
                                         priority
                                         fetchPriority="high"
                                     />
