@@ -249,6 +249,7 @@ export function MenuHeader({
                         className="object-cover mh-ken-burns"
                         sizes="100vw"
                         priority
+                        fetchPriority="high"
                     />
                 ) : (
                     <div
@@ -707,6 +708,7 @@ export function MenuHeader({
                                         className="object-cover mh-ken-burns"
                                         sizes="100vw"
                                         priority
+                                        fetchPriority="high"
                                     />
                                 ) : (
                                     <div

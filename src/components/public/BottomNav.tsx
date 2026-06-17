@@ -46,7 +46,7 @@ export function BottomNav() {
         <button
           onClick={() => handleTabClick("menu")}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-text-main/45 hover:text-text-main/70 active:scale-95",
+            "flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-text-muted hover:text-text-main active:scale-95",
             isMenuTabActive && "text-[#bb0005]"
           )}
         >
@@ -60,7 +60,7 @@ export function BottomNav() {
         {/* Buscar Tab */}
         <button
           onClick={() => handleTabClick("buscar")}
-          className="flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-text-main/45 hover:text-text-main/70 active:scale-95"
+          className="flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-text-muted hover:text-text-main active:scale-95"
         >
           <Search className="h-[21px] w-[21px]" strokeWidth={2.0} />
           <span className="text-[10px] font-bold tracking-wide uppercase font-sans">Buscar</span>
@@ -70,7 +70,7 @@ export function BottomNav() {
         <button
           onClick={() => handleTabClick("pedido")}
           className={cn(
-            "relative flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 text-text-main/45 hover:text-text-main/70 active:scale-95",
+            "relative flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 text-text-muted hover:text-text-main active:scale-95",
             isPedidoTabActive && "text-[#bb0005]"
           )}
         >
@@ -90,7 +90,7 @@ export function BottomNav() {
         <button
           onClick={() => handleTabClick("historial")}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-text-main/45 hover:text-text-main/70 active:scale-95",
+            "flex flex-col items-center justify-center gap-1 w-16 h-full transition-all duration-300 relative text-text-muted hover:text-text-main active:scale-95",
             isHistorialTabActive && "text-[#bb0005]"
           )}
         >
