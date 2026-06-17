@@ -21,7 +21,12 @@ import { OrderModeSelector } from "@/components/public/checkout/OrderModeSelecto
 import { CheckoutForm } from "@/components/public/checkout/CheckoutForm";
 import { PaymentMethodSelector } from "@/components/public/checkout/PaymentMethodSelector";
 import { Step4BankDetails } from "@/components/public/checkout/Step4BankDetails";
-import { Step5Success } from "@/components/public/checkout/Step5Success";
+import dynamic from "next/dynamic";
+
+const Step5Success = dynamic(
+  () => import("@/components/public/checkout/Step5Success").then((mod) => mod.Step5Success),
+  { ssr: false }
+);
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 type PaymentMethod = "pago_movil" | "transfer" | "efectivo" | "zelle" | "binance";

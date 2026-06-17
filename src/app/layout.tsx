@@ -37,7 +37,6 @@ export const viewport: Viewport = {
   themeColor: "#bb0005",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
 import { ThemeManager } from "@/components/shared/ThemeManager";

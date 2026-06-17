@@ -4,7 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { MenuGrid } from "@/components/public/menu/MenuGrid";
 import { MenuHeader } from "@/components/public/menu/MenuHeader";
 import { MenuModeProvider } from "@/components/public/menu/MenuModeContext";
-import { ActiveOrdersBanner } from "@/components/public/ActiveOrdersBanner";
+import dynamic from "next/dynamic";
+
+const ActiveOrdersBanner = dynamic(
+  () => import("@/components/public/ActiveOrdersBanner").then((mod) => mod.ActiveOrdersBanner),
+  { ssr: false }
+);
+
 import { PlatoDelDiaBanner } from "@/components/public/menu/PlatoDelDiaBanner";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItemWithComponents as MenuItem } from "@/types/menu.types";

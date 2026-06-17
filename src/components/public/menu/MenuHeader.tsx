@@ -11,6 +11,7 @@ import { PinIcon, ClockIcon } from "./_parts/HeaderIcons";
 import { ThemeSwitch } from "./_parts/ThemeSwitch";
 import { MenuHeaderStyles } from "./_parts/MenuHeaderStyles";
 import { cn } from "@/lib/utils";
+import { SafeImage } from "@/components/shared/SafeImage";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -241,18 +242,13 @@ export function MenuHeader({
             <div className="hidden md:block relative w-full h-[360px] md:h-[380px] lg:h-[440px] xl:h-[500px] overflow-hidden transition-all duration-300">
                 {/* Background with Ken Burns effect */}
                 {coverImageUrl ? (
-                    <div
-                        className="mh-ken-burns"
-                        style={{
-                            position: "absolute",
-                            inset: 0,
-                            width: "100%",
-                            height: "100%",
-                            backgroundImage: `url(${coverImageUrl})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center center",
-                            backgroundRepeat: "no-repeat",
-                        }}
+                    <SafeImage
+                        src={coverImageUrl}
+                        alt="Portada de Restaurante"
+                        fill
+                        className="object-cover mh-ken-burns"
+                        sizes="100vw"
+                        priority
                     />
                 ) : (
                     <div
@@ -704,16 +700,13 @@ export function MenuHeader({
                             <div className="relative w-full overflow-hidden">
                                 {/* Background */}
                                 {coverImageUrl ? (
-                                    <div
-                                        className="mh-ken-burns"
-                                        style={{
-                                            position: "absolute",
-                                            inset: 0,
-                                            backgroundImage: `url(${coverImageUrl})`,
-                                            backgroundSize: "cover",
-                                            backgroundPosition: "center center",
-                                            backgroundRepeat: "no-repeat",
-                                        }}
+                                    <SafeImage
+                                        src={coverImageUrl}
+                                        alt="Portada de Restaurante"
+                                        fill
+                                        className="object-cover mh-ken-burns"
+                                        sizes="100vw"
+                                        priority
                                     />
                                 ) : (
                                     <div

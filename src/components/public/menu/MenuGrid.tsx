@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { MenuItemCard } from "./MenuItemCard";
-import { ItemDetailModal } from "@/components/customer/ItemDetailModal";
+import dynamic from "next/dynamic";
+
+const ItemDetailModal = dynamic(
+  () => import("@/components/customer/ItemDetailModal").then((mod) => mod.ItemDetailModal),
+  { ssr: false }
+);
+
 import { useMenuMode } from "./MenuModeContext";
 import { useCartStore } from "@/store/cartStore";
 import { toast } from "sonner";
