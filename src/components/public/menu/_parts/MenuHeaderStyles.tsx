@@ -139,17 +139,13 @@ export function MenuHeaderStyles() {
             .mh-pill[data-active="true"] {
               background: linear-gradient(135deg, #bb0005 0%, #e2231a 100%);
               color: #fff;
-              font-weight: 800;
-              border-color: rgba(255,255,255,0.15);
-              box-shadow:
-                0 4px 14px rgba(187,0,5,0.40),
-                0 1px 3px rgba(187,0,5,0.25),
-                inset 0 1px 0 rgba(255,255,255,0.20);
-              transform: translateY(-2px) scale(1.06);
+              font-weight: 750;
+              border-color: rgba(255,255,255,0.10);
+              box-shadow: 0 4px 12px rgba(187, 0, 5, 0.20);
+              transition: all 0.2s ease;
             }
             .mh-pill[data-active="true"]:active {
-              transform: scale(0.95) translateY(0);
-              box-shadow: 0 2px 8px rgba(187,0,5,0.28);
+              transform: scale(0.97);
             }
 
             /* Hide webkit scrollbar */

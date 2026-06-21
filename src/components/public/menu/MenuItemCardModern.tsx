@@ -68,7 +68,7 @@ export function MenuItemCardModern({
               alt={name}
               fill
               className="object-cover rounded-[10px] drop-shadow-sm transition-transform duration-500 hover:scale-105"
-              sizes="(max-width: 480px) 120px, (max-width: 640px) 140px, 150px"
+              sizes="(max-width: 640px) 38vw, 150px"
               quality={75}
               priority={priority}
             />

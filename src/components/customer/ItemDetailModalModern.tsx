@@ -154,7 +154,7 @@ export function ItemDetailModalModern({
           "transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
           "bg-transparent md:bg-bg-app md:shadow-[0_-8px_40px_rgba(37,26,7,0.14),_0_0_0_0.5px_rgba(37,26,7,0.06)] md:rounded-[28px] md:overflow-hidden",
           hasImage
-            ? "md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[740px] md:flex-row md:max-h-[88vh] lg:w-[880px]"
+            ? "md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[780px] md:flex-row md:max-h-[88vh] lg:w-[920px]"
             : "md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[520px] md:max-h-[88vh] lg:w-[580px]",
           modal.closing
             ? "translate-y-full md:opacity-0 md:-translate-y-[45%]"
@@ -164,7 +164,7 @@ export function ItemDetailModalModern({
 
         {/* ── LEFT PANEL (md+) ─────────────────────────────────────────── */}
         {hasImage && (
-          <div className="hidden md:flex md:w-[300px] lg:w-[360px] md:shrink-0 md:flex-col md:relative md:rounded-l-[28px] md:overflow-hidden">
+          <div className="hidden md:flex md:w-[340px] lg:w-[400px] md:shrink-0 md:flex-col md:relative md:rounded-l-[28px] md:overflow-hidden">
             <SafeImage
               src={item.imageUrl!}
               alt={item.name}
@@ -289,7 +289,7 @@ export function ItemDetailModalModern({
             style={{ overscrollBehavior: "contain" }}
           >
             {/* Mobile-only spacer to allow suspended image to float */}
-            {hasImage && <div className="h-32 md:hidden w-full shrink-0" />}
+            {hasImage && <div className="h-40 md:hidden w-full shrink-0" />}
 
             {/* Mobile-only card wrapper / Desktop-only pass-through */}
             <div className="relative flex flex-col bg-bg-app rounded-t-[28px] shadow-modal md:p-0 md:bg-transparent md:shadow-none md:rounded-none">
@@ -314,12 +314,12 @@ export function ItemDetailModalModern({
               {hasImage && (
                 <div
                   className={cn(
-                    "md:hidden absolute -top-[clamp(115px,30vw,145px)] left-1/2 z-[45] -translate-x-1/2 pointer-events-none transition-all duration-700 ease-out",
+                    "md:hidden absolute -top-[clamp(150px,35vw,145px)] left-1/2 z-[45] -translate-x-1/2 pointer-events-none transition-all duration-700 ease-out",
                     imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-90"
                   )}
                   style={{
-                    width: "clamp(230px, 62vw, 275px)",
-                    height: "clamp(230px, 62vw, 275px)"
+                    width: "clamp(260px, 70vw, 310px)",
+                    height: "clamp(260px, 70vw, 310px)"
                   }}
                 >
                   <SafeImage

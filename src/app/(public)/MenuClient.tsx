@@ -284,19 +284,19 @@ export function MenuClient({
       {!isReadOnly && <ActiveOrdersBanner />}
 
       {/* Premium indicator for "Menú del Día" */}
-      <div className="px-5 py-3 max-w-7xl mx-auto w-full flex items-center justify-between mb-2 lg:mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <div className="flex items-center gap-3">
-              <span className="w-1.5 h-6 bg-gradient-to-b from-[#bb0005] to-[#e2231a] rounded-full shrink-0" />
-              <div>
-                  <h2 className="font-display text-[21px] font-black text-text-main tracking-tight leading-none">
+      <div className="px-5 py-1.5 md:py-2.5 max-w-7xl mx-auto w-full flex items-center justify-between mb-1 md:mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="flex items-center gap-2">
+              <span className="w-1 h-4 bg-gradient-to-b from-[#bb0005] to-[#e2231a] rounded-full shrink-0" />
+              <div className="flex items-baseline gap-2 flex-wrap">
+                  <h2 className="font-display text-[15px] md:text-[18px] font-black text-text-main tracking-tight leading-none">
                       Menú del Día
                   </h2>
-                  <p className="text-[11px] font-bold text-text-main/75 uppercase tracking-widest mt-1">
-                      Opciones disponibles hoy
-                  </p>
+                  <span className="text-[9px] md:text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                      • Opciones de hoy
+                  </span>
               </div>
           </div>
-          <div className="hidden md:block flex-1 h-px bg-border/40 ml-6" />
+          <div className="hidden md:block flex-1 h-px bg-border/30 ml-4" />
       </div>
 
       {showBanners && (

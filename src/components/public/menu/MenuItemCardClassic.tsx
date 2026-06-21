@@ -64,7 +64,7 @@ export function MenuItemCardClassic({
                         alt={name}
                         fill
                         className="object-cover"
-                        sizes="(max-width: 480px) 140px, (max-width: 640px) 200px, 250px"
+                        sizes="(max-width: 640px) 50vw, 250px"
                         quality={75}
                         priority={priority}
                     />

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { Instagram, LayoutGrid, Search, ChevronDown, Info, ArrowLeft, X } from "lucide-react";
+import { Instagram, LayoutGrid, Search, ChevronDown, Info, ArrowLeft, X, Moon, Sun } from "lucide-react";
 import { HeaderCartButton } from "@/app/(public)/HeaderCartButton";
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { useMenuMode } from "./MenuModeContext";
@@ -247,7 +247,7 @@ export function MenuHeader({
                         alt="Portada de Restaurante"
                         fill
                         className="object-cover mh-ken-burns"
-                        sizes="(max-width: 1200px) 100vw, 1280px"
+                        sizes="100vw"
                         priority
                         fetchPriority="high"
                     />
@@ -505,103 +505,119 @@ export function MenuHeader({
             {/* ── Mobile App Header (md:hidden) — compact or hero depending on isReadOnly ── */}
             <div className="md:hidden w-full bg-bg-app">
                 {isReadOnly ? (
-                    <div className={cn("bg-bg-app w-full border-b border-border/10 shadow-sm flex flex-col gap-3 p-4 pb-0 relative transition-all duration-300", isMobileSearchActive && "gap-0 p-3 pb-3 sticky top-0 z-30 border-border/40 shadow-md")}>
-                        {onToggleTheme && !isMobileSearchActive && (
-                            <div className="absolute top-4 right-4 z-20">
-                                <ThemeSwitch theme={theme} onToggle={onToggleTheme} variant="solid" />
-                            </div>
-                        )}
-                        {/* Main row: Logo + Name/Status/Triggers */}
-                        {!isMobileSearchActive && (
-                            <div className="flex items-center gap-3.5">
-                                {/* Logo */}
-                                {logoUrl ? (
-                                    <img
-                                        src={logoUrl}
-                                        alt={restaurantName}
-                                        className="w-[105px] h-[105px] shrink-0 rounded-full object-contain bg-bg-card p-0.5 shadow-sm border border-border/10"
-                                    />
-                                ) : (
-                                    <div className="w-[105px] h-[105px] rounded-full bg-gradient-to-br from-[#C42B2B] to-[#7E0A0C] flex items-center justify-center font-display italic font-bold text-[36px] text-white shadow-sm shrink-0 border border-border/10">
-                                        {restaurantName[0] || "G"}
-                                    </div>
-                                )}
-
-                                {/* Column: Name + Status + Buttons */}
-                                <div className="flex-1 min-w-0 flex flex-col gap-1.5 justify-center">
-                                    <h1 className="font-display text-[19px] font-extrabold leading-tight text-text-main tracking-tight break-words pr-20">
-                                        {restaurantName}
-                                    </h1>
-                                    <div className="flex flex-wrap items-center gap-1.5 pr-20">
-                                        {openStatus !== null && (
-                                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${openStatus
-                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800/30"
-                                                : "bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-800/30"
-                                                }`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${openStatus ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
-                                                {openStatus ? "Abierto" : "Cerrado"}
-                                            </span>
-                                        )}
-
-                                        {showRate && rateData && (
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-bg-card border border-border/50 text-[10px] font-bold text-text-main shadow-sm">
-                                                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isStale ? "bg-amber-400" : "bg-emerald-500 animate-pulse"}`} />
-                                                <span className="text-text-main/50 text-[8px] font-bold uppercase tracking-wider mr-0.5">BCV</span>
-                                                <span className="font-extrabold font-mono text-[9.5px]">
-                                                    Bs. {rateData.rate.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </span>
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Interactive triggers (Info & Search) to save huge vertical space */}
-                                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                                        <button
-                                            onClick={() => setShowInfo(!showInfo)}
-                                            className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-bold shadow-sm active:scale-95 transition-all ${showInfo
-                                                ? "bg-text-main text-bg-card border-text-main"
-                                                : "bg-surface-section border-border/60 text-text-main"
-                                                }`}
-                                        >
-                                            <Info className="h-3.5 w-3.5 shrink-0" />
-                                            <span>{showInfo ? "Info" : "Información"}</span>
-                                            <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showInfo ? "rotate-180" : ""}`} />
-                                        </button>
-
-                                        <button
-                                            onClick={handleToggleSearch}
-                                            className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-bold shadow-sm active:scale-95 transition-all ${showSearch
-                                                ? "bg-text-main text-bg-card border-text-main"
-                                                : "bg-surface-section border-border/60 text-text-main"
-                                                }`}
-                                        >
-                                            <Search className="h-3.5 w-3.5 shrink-0" />
-                                            <span>Buscar</span>
-                                            {searchQuery && (
-                                                <span className="ml-1 px-1.5 py-0.2 bg-primary text-white text-[9px] rounded-full font-black">
-                                                    !
-                                                </span>
-                                            )}
-                                        </button>
-                                    </div>
+                    <div className="bg-bg-app w-full flex flex-col relative">
+                        {/* Fila 1: Marca (Logo + Nombre + Toggle de tema) */}
+                        <div className="relative flex gap-3 px-4 pt-3 pb-1 bg-bg-app">
+                            <div className="flex items-center justify-center gap-3 min-w-0 max-w-[calc(100%-2.5rem)]">
+                                <div className="relative h-18 w-18 rounded-full overflow-hidden ring-1 ring-border shrink-0 bg-bg-card flex items-center justify-center">
+                                    {logoUrl ? (
+                                        <SafeImage src={logoUrl} alt={restaurantName} fill className="object-contain p-0.5" />
+                                    ) : (
+                                        <span className="font-display italic font-bold text-xl text-text-main">
+                                            {restaurantName[0] || "G"}
+                                        </span>
+                                    )}
                                 </div>
+                                <h1 className="font-display font-black text-text-main text-[22px] leading-tight tracking-tight whitespace-normal text-left">
+                                    {restaurantName}
+                                </h1>
                             </div>
-                        )}
+
+                            {onToggleTheme && (
+                                <div className="absolute right-2 top-1/3 -translate-y-1/2">
+                                    <button
+                                        onClick={onToggleTheme}
+                                        className="h-10 w-10 flex items-center justify-center rounded-full shrink-0 bg-bg-card border border-border/40 hover:bg-surface-hover text-text-main active:scale-95 transition-all shadow-sm"
+                                        aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                                    >
+                                        {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Fila 2: Estado + BCV rate + Información (inline) */}
+                        <div className="relative flex items-center justify-between gap-3 px-4 py-1 bg-bg-app">
+                            {/* Left: BCV rate */}
+                            <div className="text-xs text-text-muted font-medium whitespace-nowrap min-w-0">
+                                {showRate && rateData && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-section/60 border border-border/20 text-[10.5px] font-extrabold text-text-muted select-none">
+                                        Bs. {rateData.rate.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Center: Estado (Abierto / Cerrado) */}
+                            <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
+                                {openStatus !== null && (
+                                    <span className={cn(
+                                        "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold border select-none",
+                                        openStatus
+                                            ? "bg-success/10 text-success border-success/20 dark:bg-success/20 dark:text-success dark:border-success/30"
+                                            : "bg-error/10 text-error border-error/20 dark:bg-error/20 dark:text-error dark:border-error/30"
+                                    )}>
+                                        <span className={cn("h-1.5 w-1.5 rounded-full shrink-0",
+                                            openStatus ? "bg-success animate-pulse" : "bg-error")} />
+                                        {openStatus ? "Abierto" : "Cerrado"}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Right: Información (Inline ghost link) */}
+                            <button
+                                onClick={() => setShowInfo(!showInfo)}
+                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-bg-card border border-border/40 text-text-main shadow-sm text-[11px] font-bold active:scale-95 transition-all hover:bg-surface-hover z-10 select-none"
+                            >
+                                <Info className="h-3 w-3 text-text-muted" />
+                                <span>Info</span>
+                                <ChevronDown className={cn("h-3 w-3 transition-transform duration-200 text-text-muted/80", showInfo && "rotate-180")} />
+                            </button>
+                        </div>
+
+                        {/* Fila 3: Barra de búsqueda principal (siempre visible) */}
+                        <div className="px-4 pb-2.5 pt-1 w-full bg-bg-app border-b border-border/10">
+                            <div className="relative w-full">
+                                <input
+                                    id="menu-search-input"
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => onSearchChange(e.target.value)}
+                                    placeholder="Buscar platos..."
+                                    className="w-full font-sans bg-surface-section border border-border/40 hover:border-border/60 focus:border-primary/40 focus:ring-1 focus:ring-primary/25 rounded-xl py-1.5 px-4 pl-10 pr-9 text-[13px] text-text-main placeholder:text-text-muted outline-none transition-all shadow-sm"
+                                />
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">
+                                    <Search className="h-4 w-4" />
+                                </span>
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onSearchChange("");
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center text-text-muted hover:text-text-main active:scale-90"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
 
                         {/* Collapsible Information section */}
-                        {showInfo && !isMobileSearchActive && (
-                            <div className="flex flex-col gap-2.5 mt-1 animate-mh-fade-in">
+                        {showInfo && (
+                            <div className="flex flex-col gap-2.5 p-4 bg-bg-app border-b border-border/10 animate-mh-fade-in">
                                 {(branchName || scheduleText || instagramHref) && (
                                     <div className="bg-surface-section/40 border border-border/20 rounded-2xl p-4 flex flex-col gap-3.5 shadow-sm">
                                         {instagramHref && (
                                             <>
-                                                <div className="flex items-center justify-between text-[14.5px] text-text-main">
+                                                <div className="flex items-center justify-between text-[14px] text-text-main">
                                                     <span className="font-bold text-text-main/90">Síguenos en Instagram</span>
                                                     <a
                                                         href={instagramHref}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="inline-flex h-8 px-3.5 gap-1.5 items-center justify-center rounded-full bg-text-main/5 border border-border/80 text-text-main text-[13px] font-extrabold transition-all active:scale-95 hover:bg-text-main/10"
+                                                        className="inline-flex h-8 px-3.5 gap-1.5 items-center justify-center rounded-full bg-text-main/5 border border-border/80 text-text-main text-[12px] font-extrabold transition-all active:scale-95 hover:bg-text-main/10"
                                                     >
                                                         <Instagram className="h-4 w-4" />
                                                         <span>
@@ -620,8 +636,8 @@ export function MenuHeader({
                                             </>
                                         )}
                                         {branchName && (
-                                            <div className="flex items-start gap-2.5 text-[14.5px] text-text-main leading-relaxed">
-                                                <span className="text-[#C42B2B] mt-0.5 shrink-0">
+                                            <div className="flex items-start gap-2.5 text-[14px] text-text-main leading-relaxed">
+                                                <span className="text-primary mt-0.5 shrink-0">
                                                     <PinIcon />
                                                 </span>
                                                 <span className="font-semibold">{branchName}</span>
@@ -631,8 +647,8 @@ export function MenuHeader({
                                             <div className="h-px bg-border/40" />
                                         )}
                                         {scheduleText && (
-                                            <div className="flex items-start gap-2.5 text-[14.5px] text-text-main font-mono leading-relaxed">
-                                                <span className="text-[#C42B2B] mt-0.5 shrink-0">
+                                            <div className="flex items-start gap-2.5 text-[14px] text-text-main font-mono leading-relaxed">
+                                                <span className="text-primary mt-0.5 shrink-0">
                                                     <ClockIcon />
                                                 </span>
                                                 <span className="font-medium">{scheduleText}</span>
@@ -642,57 +658,6 @@ export function MenuHeader({
                                 )}
                             </div>
                         )}
-
-                        {/* Collapsible Search bar */}
-                        {showSearch && (
-                            <div className={cn("px-0 pb-3 pt-1 animate-mh-fade-in", isMobileSearchActive && "pb-0 pt-0 flex items-center gap-3")}>
-                                {isMobileSearchActive && (
-                                    <button
-                                        type="button"
-                                        onClick={handleCloseSearch}
-                                        className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full bg-surface-section text-text-main active:scale-95 transition-all border border-border/30 shadow-sm"
-                                        aria-label="Volver"
-                                    >
-                                        <ArrowLeft className="h-5 w-5" />
-                                    </button>
-                                )}
-                                <div className="relative flex-1">
-                                    <input
-                                        id="menu-search-input"
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={(e) => onSearchChange(e.target.value)}
-                                        onFocus={() => setIsSearchFocused(true)}
-                                        onBlur={() => {
-                                            setTimeout(() => {
-                                                setIsSearchFocused(false);
-                                            }, 200);
-                                        }}
-                                        placeholder="Buscar un plato…"
-                                        className="w-full font-sans bg-bg-card border border-input rounded-xl py-2.5 px-4 pl-10 pr-9 text-[13.5px] text-text-main placeholder:text-text-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all shadow-card"
-                                    />
-                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">
-                                        <Search className="h-4 w-4" />
-                                    </span>
-                                    {searchQuery && (
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                onSearchChange("");
-                                                const input = document.getElementById("menu-search-input");
-                                                if (input) input.focus();
-                                            }}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center text-text-muted hover:text-text-main active:scale-90"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                        <div className="h-1.5" />
                     </div>
                 ) : (
                     <div className="w-full bg-bg-app">
@@ -706,7 +671,7 @@ export function MenuHeader({
                                         alt="Portada de Restaurante"
                                         fill
                                         className="object-cover mh-ken-burns"
-                                        sizes="(max-width: 480px) 360px, (max-width: 768px) 640px, 100vw"
+                                        sizes="100vw"
                                         priority
                                         fetchPriority="high"
                                     />
@@ -975,7 +940,7 @@ export function MenuHeader({
                             active={activeCategoryId === null}
                             onClick={() => onCategoryChange(null)}
                         >
-                            <LayoutGrid className="h-[18px] w-[18px] shrink-0" strokeWidth={2.4} />
+                            <LayoutGrid className="h-[18px] w-[18px] shrink-0" strokeWidth={2.2} />
                             Todos
                         </PillButton>
 

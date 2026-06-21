@@ -86,7 +86,7 @@ export function ItemDetailModalClassic({
                     "transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
                     // Tablet & Desktop (md+): centered two-column wide modal
                     hasImage
-                        ? "md:bottom-auto md:right-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[740px] lg:w-[880px] md:flex-row md:max-h-[88vh] md:rounded-[24px] md:overflow-hidden"
+                        ? "md:bottom-auto md:right-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[780px] lg:w-[920px] md:flex-row md:max-h-[88vh] md:rounded-[24px] md:overflow-hidden"
                         : "md:bottom-auto md:right-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[540px] md:max-h-[88vh] md:rounded-[24px] md:overflow-hidden",
                     // Closing states
                     modal.closing
@@ -98,7 +98,7 @@ export function ItemDetailModalClassic({
                     LEFT PANEL — md+ only
                 ══════════════════════════════════════════════════════════════ */}
                 {hasImage && (
-                    <div className="hidden md:flex md:w-[320px] lg:w-[380px] md:shrink-0 md:flex-col md:relative md:rounded-l-[24px] md:overflow-hidden">
+                    <div className="hidden md:flex md:w-[360px] lg:w-[420px] md:shrink-0 md:flex-col md:relative md:rounded-l-[24px] md:overflow-hidden">
                         {/* Full-bleed image */}
                         <SafeImage
                             src={item.imageUrl!}
@@ -195,7 +195,7 @@ export function ItemDetailModalClassic({
                         {hasImage && (
                             <div
                                 className="relative w-full bg-bg-image flex items-center justify-center border-b border-border/50 md:hidden"
-                                style={{ height: "clamp(200px, 35vh, 280px)" }}
+                                style={{ height: "clamp(240px, 40vh, 320px)" }}
                             >
                                 <SafeImage
                                     src={item.imageUrl!}
