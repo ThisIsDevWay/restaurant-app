@@ -13,7 +13,7 @@ const client = globalForDb.postgresClient ?? postgres(process.env.DATABASE_URL!,
     // them instead of reconnecting — each reconnect re-runs postgres.js' type
     // introspection query (~390 rows), which was the single largest egress source.
     idle_timeout: 120,
-    connect_timeout: 10,
+    connect_timeout: 30,
 });
 
 // Reuse the client across module evaluations / warm invocations in ALL
