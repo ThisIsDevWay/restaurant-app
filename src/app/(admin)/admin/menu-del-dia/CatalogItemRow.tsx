@@ -18,6 +18,7 @@ export function CatalogItemRow({ item, isOn, onToggle }: CatalogItemRowProps) {
       selected={isOn}
       onToggle={() => onToggle(item.id)}
       showImage
+      isHighRisk={item.isHighRisk}
     />
   );
 }

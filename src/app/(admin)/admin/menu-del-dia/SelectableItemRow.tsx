@@ -15,6 +15,7 @@ interface SelectableItemRowProps {
   showImage?: boolean;
   alwaysShowIfAssigned?: boolean;
   onAlwaysShowToggle?: (val: boolean) => void;
+  isHighRisk?: boolean;
 }
 
 /**
@@ -30,6 +31,7 @@ export function SelectableItemRow({
   showImage = false,
   alwaysShowIfAssigned = false,
   onAlwaysShowToggle,
+  isHighRisk = false,
 }: SelectableItemRowProps) {
   if (!onAlwaysShowToggle) {
     return (
@@ -78,13 +80,20 @@ export function SelectableItemRow({
           ))}
 
         <span className="min-w-0 flex-1">
-          <span
-            className={cn(
-              "block truncate text-[13px] font-semibold transition-colors",
-              selected ? "text-primary" : "text-text-main",
+          <span className="flex items-center gap-1.5 min-w-0">
+            <span
+              className={cn(
+                "block truncate text-[13px] font-semibold transition-colors",
+                selected ? "text-primary" : "text-text-main",
+              )}
+            >
+              {name}
+            </span>
+            {isHighRisk && (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-2 py-0.5 text-[9px] font-extrabold text-amber-600 ring-1 ring-amber-500/20 shrink-0">
+                ⚠️ Riesgo
+              </span>
             )}
-          >
-            {name}
           </span>
           <span className="mt-0.5 block text-[11px] font-semibold text-price-green">
             {formatRef(priceUsdCents)}
@@ -146,13 +155,20 @@ export function SelectableItemRow({
         ))}
 
       <div className="min-w-0 flex-1">
-        <span
-          className={cn(
-            "block truncate text-[13px] font-semibold transition-colors",
-            selected ? "text-primary" : "text-text-main",
+        <span className="flex items-center gap-1.5 min-w-0">
+          <span
+            className={cn(
+              "block truncate text-[13px] font-semibold transition-colors",
+              selected ? "text-primary" : "text-text-main",
+            )}
+          >
+            {name}
+          </span>
+          {isHighRisk && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-2 py-0.5 text-[9px] font-extrabold text-amber-600 ring-1 ring-amber-500/20 shrink-0">
+              ⚠️ Riesgo
+            </span>
           )}
-        >
-          {name}
         </span>
         <span className="mt-0.5 block text-[11px] font-semibold text-price-green">
           {formatRef(priceUsdCents)}

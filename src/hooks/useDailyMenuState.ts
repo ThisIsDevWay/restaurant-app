@@ -11,6 +11,7 @@ export interface UseDailyMenuStateParams {
   initialDailyContornoIds: string[];
   initialDate: string;
   initialPlatoDelDiaItemId: string | null;
+  isNewDaySugerido?: boolean;
 }
 
 export interface UseDailyMenuStateReturn {
@@ -40,6 +41,8 @@ export interface UseDailyMenuStateReturn {
   setCopying: React.Dispatch<React.SetStateAction<boolean>>;
   platoDelDiaItemId: string | null;
   setPlatoDelDiaItemId: React.Dispatch<React.SetStateAction<string | null>>;
+  hideAssigned: boolean;
+  setHideAssigned: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export function useDailyMenuState({
@@ -50,6 +53,7 @@ export function useDailyMenuState({
   initialDailyContornoIds,
   initialDate,
   initialPlatoDelDiaItemId,
+  isNewDaySugerido,
 }: UseDailyMenuStateParams): UseDailyMenuStateReturn {
   const [dailyItemIds, setDailyItemIds] = useState<string[]>(initialDailyItemIds);
   const [dailyAdicionalIds, setDailyAdicionalIds] = useState<string[]>(initialDailyAdicionalIds);
@@ -62,8 +66,9 @@ export function useDailyMenuState({
   const [copyDate, setCopyDate] = useState("");
   const [activeTab, setActiveTab] = useState<"platos" | "adicionales" | "bebidas" | "contornos">("platos");
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
+  const [isDirty, setIsDirty] = useState(isNewDaySugerido ?? false);
   const [copying, setCopying] = useState(false);
+  const [hideAssigned, setHideAssigned] = useState(false);
 
   // Sync local state from props when not dirty (e.g. after date change + router.refresh)
   useEffect(() => {
@@ -91,5 +96,6 @@ export function useDailyMenuState({
     isDirty, setIsDirty,
     copying, setCopying,
     platoDelDiaItemId, setPlatoDelDiaItemId,
+    hideAssigned, setHideAssigned,
   };
 }

@@ -146,7 +146,7 @@ export const copyDailyMenuFromAction = adminActionClient
   .schema(v.object({ fromDate: v.string(), toDate: v.string() }))
   .action(async ({ parsedInput: { fromDate, toDate } }) => {
     try {
-      const count = await db.transaction(async (tx) => {
+      const data = await db.transaction(async (tx) => {
         // Leer todo el menú fuente en paralelo
         const [items, ads, bebs, conts] = await Promise.all([
           tx
@@ -221,12 +221,18 @@ export const copyDailyMenuFromAction = adminActionClient
             }))
           );
 
-        return items.length;
+        return {
+          menuItemIds: items.map((i) => i.menuItemId),
+          adicionalIds: ads.map((i) => i.adicionalItemId),
+          bebidaIds: bebs.map((i) => i.bebidaItemId),
+          contornoIds: conts.map((i) => i.contornoItemId),
+          platoDelDiaId: items.find((i) => i.isPlatoDelDia)?.menuItemId || null,
+        };
       });
 
       invalidateDailyMenuCache();
       revalidatePath("/admin/menu-del-dia");
-      return { success: true, count };
+      return { success: true, data };
     } catch (error) {
       logger.error("[copyDailyMenuFrom] Error", { error: String(error) });
       return { success: false, error: "Error al copiar el menú." };

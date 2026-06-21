@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import * as React from "react";
+import { useMemo, useRef } from "react";
 import { UtensilsCrossed, Search, Copy, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { DateNavigator } from "@/components/shared/DateNavigator";
 import { CatalogItemRow } from "./CatalogItemRow";
 import { ActiveItemRow } from "./ActiveItemRow";
@@ -40,6 +42,8 @@ interface DailyMenuPlatosTabProps {
   copying: boolean;
   platoDelDiaItemId: string | null;
   onSetPlatoDelDia: (id: string | null) => void;
+  hideAssigned: boolean;
+  onHideAssignedChange: (val: boolean) => void;
 }
 
 const CAT_HEADER =
@@ -74,7 +78,11 @@ export function DailyMenuPlatosTab({
   copying,
   platoDelDiaItemId,
   onSetPlatoDelDia,
+  hideAssigned,
+  onHideAssignedChange,
 }: DailyMenuPlatosTabProps) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const categories = useMemo(
     () => [...new Set(allItems.map((i) => i.categoryName))],
     [allItems],
@@ -90,14 +98,33 @@ export function DailyMenuPlatosTab({
     return allItems.filter((item) => {
       const matchSearch = !q || item.name.toLowerCase().includes(q);
       const matchPill = activePill === "Todos" || item.categoryName === activePill;
-      return matchSearch && matchPill;
+      const matchHideAssigned = !hideAssigned || !dailyItemIds.includes(item.id);
+      return matchSearch && matchPill && matchHideAssigned;
     });
-  }, [allItems, search, activePill]);
+  }, [allItems, search, activePill, hideAssigned, dailyItemIds]);
 
   const visibleCategories = useMemo(() => {
     if (activePill !== "Todos") return [activePill];
     return [...new Set(filteredItems.map((i) => i.categoryName))];
   }, [filteredItems, activePill]);
+
+  const handleCatalogToggle = (id: string) => {
+    handleToggle(id);
+    requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (filteredItems.length === 1) {
+        const uniqueItem = filteredItems[0];
+        handleCatalogToggle(uniqueItem.id);
+        onSearchChange("");
+      }
+    }
+  };
 
   return (
     <div className="grid min-h-[520px] gap-3.5 lg:grid-cols-[1fr_1.6fr]">
@@ -224,17 +251,50 @@ export function DailyMenuPlatosTab({
       {/* RIGHT: Catalog */}
       <div className="flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-border shadow-card">
         <div className="flex flex-shrink-0 flex-col gap-2.5 border-b border-border bg-bg-app px-5 py-3.5">
-          <div className="relative">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
-            />
-            <Input
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Buscar plato en el catálogo..."
-              className="h-[38px] bg-white pl-9 text-[13px]"
-            />
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
+              />
+              <Input
+                ref={searchInputRef}
+                value={search}
+                onChange={(e) => onSearchChange(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Buscar plato en el catálogo..."
+                className="h-[38px] bg-white pl-9 pr-24 text-[13px]"
+              />
+              {search.trim().length > 0 && filteredItems.length >= 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idsToToggle = filteredItems
+                      .filter((item) => !dailyItemIds.includes(item.id))
+                      .map((item) => item.id);
+                    if (idsToToggle.length > 0) {
+                      idsToToggle.forEach((id) => handleCatalogToggle(id));
+                    }
+                    onSearchChange("");
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-extrabold text-primary transition-all hover:bg-primary hover:text-white"
+                >
+                  + Agregar {filteredItems.length}
+                </button>
+              )}
+            </div>
+
+            {/* Ocultar ya agregados switch */}
+            <div className="flex items-center gap-1.5 shrink-0 select-none">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-text-muted">
+                Ocultar agregados
+              </span>
+              <Switch
+                size="sm"
+                checked={hideAssigned}
+                onCheckedChange={onHideAssignedChange}
+              />
+            </div>
           </div>
           <div className="flex gap-1.5 overflow-x-auto pb-0.5">
             {["Todos", ...categories].map((cat) => {
@@ -317,7 +377,7 @@ export function DailyMenuPlatosTab({
                         key={item.id}
                         item={item}
                         isOn={dailyItemIds.includes(item.id)}
-                        onToggle={handleToggle}
+                        onToggle={handleCatalogToggle}
                       />
                     ))}
                   </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   syncDailyMenuAction,
@@ -16,10 +16,15 @@ export interface UseDailyMenuSyncParams {
   selectedDate: string;
   setSelectedDate: React.Dispatch<React.SetStateAction<string>>;
   dailyItemIds: string[];
+  setDailyItemIds: React.Dispatch<React.SetStateAction<string[]>>;
   dailyAdicionalIds: string[];
+  setDailyAdicionalIds: React.Dispatch<React.SetStateAction<string[]>>;
   dailyBebidaIds: string[];
+  setDailyBebidaIds: React.Dispatch<React.SetStateAction<string[]>>;
   dailyContornoIds: string[];
+  setDailyContornoIds: React.Dispatch<React.SetStateAction<string[]>>;
   platoDelDiaItemId: string | null;
+  setPlatoDelDiaItemId: React.Dispatch<React.SetStateAction<string | null>>;
   isDirty: boolean;
   setIsDirty: React.Dispatch<React.SetStateAction<boolean>>;
   copyDate: string;
@@ -43,10 +48,15 @@ export function useDailyMenuSync({
   selectedDate,
   setSelectedDate,
   dailyItemIds,
+  setDailyItemIds,
   dailyAdicionalIds,
+  setDailyAdicionalIds,
   dailyBebidaIds,
+  setDailyBebidaIds,
   dailyContornoIds,
+  setDailyContornoIds,
   platoDelDiaItemId,
+  setPlatoDelDiaItemId,
   isDirty,
   setIsDirty,
   copyDate,
@@ -58,64 +68,79 @@ export function useDailyMenuSync({
   clearModifiedItems,
 }: UseDailyMenuSyncParams): UseDailyMenuSyncReturn {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [saving, setSaving] = useState(false);
 
-  function handleSave() {
-    if (!isDirty || isPending) return;
+  async function handleSave() {
+    if (!isDirty || saving) return;
+    setSaving(true);
 
-    startTransition(async () => {
-      try {
-        // Generate save promises ONLY for items whose contornos were actually modified
-        const contornoPromises = modifiedItemIds.map((itemId) => {
-          const selections = itemContornoSelections[itemId] || [];
-          return saveMenuItemContornosAction({
-            menuItemId: itemId,
-            items: selections.map((c) => ({
-              contornoId: c.id,
-              removable: c.removable,
-              substituteContornoIds: c.substituteContornoIds || [],
-            })),
-          }).then((r) => {
-            if (r?.serverError || r?.validationErrors) {
-              throw new Error(r.serverError || `Error al guardar contornos del ítem ${itemId}`);
-            }
-            return r;
-          });
+    try {
+      // Generate save promises ONLY for items whose contornos were actually modified
+      const contornoPromises = modifiedItemIds.map((itemId) => {
+        const selections = itemContornoSelections[itemId] || [];
+        return saveMenuItemContornosAction({
+          menuItemId: itemId,
+          items: selections.map((c) => ({
+            contornoId: c.id,
+            removable: c.removable,
+            substituteContornoIds: c.substituteContornoIds || [],
+          })),
+        }).then((r) => {
+          if (r?.serverError || r?.validationErrors) {
+            throw new Error(r.serverError || `Error al guardar contornos del ítem ${itemId}`);
+          }
+          return r;
         });
+      });
 
-        await Promise.all([
-          syncDailyMenuAction({ date: selectedDate, menuItemIds: dailyItemIds, platoDelDiaId: platoDelDiaItemId })
-            .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación menú"); return r; }),
-          syncDailyAdicionalesAction({ date: selectedDate, adicionalIds: dailyAdicionalIds })
-            .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación adicionales"); return r; }),
-          syncDailyBebidasAction({ date: selectedDate, bebidaIds: dailyBebidaIds })
-            .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación bebidas"); return r; }),
-          syncDailyContornosAction({ date: selectedDate, contornoIds: dailyContornoIds })
-            .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación contornos"); return r; }),
-          ...contornoPromises,
-        ]);
+      await Promise.all([
+        syncDailyMenuAction({ date: selectedDate, menuItemIds: dailyItemIds, platoDelDiaId: platoDelDiaItemId })
+          .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación menú"); return r; }),
+        syncDailyAdicionalesAction({ date: selectedDate, adicionalIds: dailyAdicionalIds })
+          .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación adicionales"); return r; }),
+        syncDailyBebidasAction({ date: selectedDate, bebidaIds: dailyBebidaIds })
+          .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación bebidas"); return r; }),
+        syncDailyContornosAction({ date: selectedDate, contornoIds: dailyContornoIds })
+          .then(r => { if (r?.serverError || r?.validationErrors) throw new Error(r.serverError || "Error de validación contornos"); return r; }),
+        ...contornoPromises,
+      ]);
 
-        clearModifiedItems();
-        setIsDirty(false);
-        router.refresh();
-      } catch (error) {
-        console.error("Error saving daily menu:", error);
-      }
-    });
+      clearModifiedItems();
+      setIsDirty(false);
+      router.refresh();
+    } catch (error) {
+      console.error("Error saving daily menu:", error);
+      alert(error instanceof Error ? error.message : "Error al guardar el menú");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleCopyFrom() {
     if (!copyDate) return;
     setCopying(true);
-    const result = await copyDailyMenuFromAction({ fromDate: copyDate, toDate: selectedDate });
-    setCopying(false);
-    if (result?.serverError || result?.validationErrors) {
-      console.error(result.serverError || "Error de validación al copiar");
-      return;
-    }
-    if (result?.data?.success) {
-      router.refresh();
-      setCopyDate("");
+    try {
+      const result = await copyDailyMenuFromAction({ fromDate: copyDate, toDate: selectedDate });
+      if (result?.serverError || result?.validationErrors) {
+        console.error(result.serverError || "Error de validación al copiar");
+        alert(result.serverError || "Error al copiar el menú");
+        return;
+      }
+      if (result?.data?.success && result.data.data) {
+        const d = result.data.data;
+        setDailyItemIds(d.menuItemIds);
+        setDailyAdicionalIds(d.adicionalIds);
+        setDailyBebidaIds(d.bebidaIds);
+        setDailyContornoIds(d.contornoIds);
+        setPlatoDelDiaItemId(d.platoDelDiaId);
+        setIsDirty(false);
+        setCopyDate("");
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Error copying daily menu:", error);
+    } finally {
+      setCopying(false);
     }
   }
 
@@ -129,7 +154,7 @@ export function useDailyMenuSync({
   }
 
   return {
-    isPending,
+    isPending: saving,
     copying,
     handleSave,
     handleCopyFrom,
