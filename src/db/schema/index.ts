@@ -26,3 +26,5 @@ export {
   tvEventAssignments,
   tvDisplayMedia,
 } from "./tv";
+export { menuTemplates } from "./menu-templates";
+

@@ -32,6 +32,7 @@ export const menuItems = pgTable(
     hideAdicionales: boolean("hide_adicionales").notNull().default(false),
     hideBebidas: boolean("hide_bebidas").notNull().default(false),
     alwaysShowIfAssigned: boolean("always_show_if_assigned").notNull().default(false),
+    defaultActive: boolean("default_active").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

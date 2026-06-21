@@ -12,8 +12,9 @@ import { formatDateLabel } from "./DailyMenu.types";
 import { DailyMenuHeader } from "./DailyMenuHeader";
 import { DailyMenuPlatosTab } from "./DailyMenuPlatosTab";
 import { DailyMenuSimpleTab } from "./DailyMenuSimpleTab";
-import type { DailyMenuClientProps } from "./DailyMenu.types";
+import type { DailyMenuClientProps, MenuTemplate } from "./DailyMenu.types";
 import { toggleContornoAlwaysShowAction } from "@/actions/contornos";
+import { saveMenuTemplateAction, deleteMenuTemplateAction } from "@/actions/menu-templates";
 
 export function DailyMenuClient({
   allItems,
@@ -27,6 +28,8 @@ export function DailyMenuClient({
   selectedDate: initialDate,
   today,
   platoDelDiaItemId: initialPlatoDelDiaItemId,
+  templates,
+  isNewDaySugerido,
 }: DailyMenuClientProps) {
   const state = useDailyMenuState({
     allItems,
@@ -36,7 +39,119 @@ export function DailyMenuClient({
     initialDailyContornoIds,
     initialDate,
     initialPlatoDelDiaItemId,
+    isNewDaySugerido,
   });
+
+  const router = useRouter();
+  const [highRiskItemIds, setHighRiskItemIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetch("/api/admin/availability/sellout-risk")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.riskMap) {
+          const highRisk = new Set<string>();
+          for (const [itemId, pct] of Object.entries(data.riskMap)) {
+            if ((pct as number) >= 8) {
+              highRisk.add(itemId);
+            }
+          }
+          setHighRiskItemIds(highRisk);
+        }
+      })
+      .catch((err) => console.error("Error loading sellout risk:", err));
+  }, []);
+
+  const mappedAllItems = allItems.map((item) => ({
+    ...item,
+    isHighRisk: highRiskItemIds.has(item.id),
+  }));
+
+  // Secure Confirmation (Paso 6)
+  useEffect(() => {
+    if (!state.isDirty) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    const handleAnchorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const anchor = target.closest("a");
+      if (anchor) {
+        if (anchor.target === "_blank" || anchor.hasAttribute("download")) {
+          return;
+        }
+        const confirmLeave = window.confirm(
+          "Tienes cambios sin guardar en el menú del día. ¿Seguro que deseas salir?"
+        );
+        if (!confirmLeave) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleAnchorClick, true);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleAnchorClick, true);
+    };
+  }, [state.isDirty]);
+
+  const handleApplyTemplate = (template: MenuTemplate) => {
+    const confirmApply = window.confirm(
+      `¿Estás seguro de que deseas reemplazar la selección actual con la plantilla "${template.name}"?`
+    );
+    if (!confirmApply) return;
+
+    state.setDailyItemIds(template.data.menuItemIds || []);
+    state.setDailyAdicionalIds(template.data.adicionalIds || []);
+    state.setDailyBebidaIds(template.data.bebidaIds || []);
+    state.setDailyContornoIds(template.data.contornoIds || []);
+
+    if (state.platoDelDiaItemId && !template.data.menuItemIds.includes(state.platoDelDiaItemId)) {
+      state.setPlatoDelDiaItemId(null);
+    }
+
+    state.setIsDirty(true);
+  };
+
+  const handleSaveTemplate = async (name: string, description: string | null) => {
+    const data = {
+      menuItemIds: state.dailyItemIds,
+      adicionalIds: state.dailyAdicionalIds,
+      bebidaIds: state.dailyBebidaIds,
+      contornoIds: state.dailyContornoIds,
+    };
+
+    const res = await saveMenuTemplateAction({
+      name,
+      description,
+      data,
+    });
+
+    if (res?.data?.success) {
+      router.refresh();
+      return { success: true };
+    }
+    return { success: false, error: res?.serverError || "Error al guardar la plantilla" };
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    const confirmDelete = window.confirm("¿Seguro que deseas eliminar esta plantilla?");
+    if (!confirmDelete) return;
+
+    const res = await deleteMenuTemplateAction({ id });
+    if (res?.data?.success) {
+      router.refresh();
+    } else {
+      alert(res?.serverError || "Error al eliminar la plantilla");
+    }
+  };
 
   const [localContornos, setLocalContornos] = useState(allContornos);
 
@@ -44,7 +159,6 @@ export function DailyMenuClient({
     setLocalContornos(allContornos);
   }, [allContornos]);
 
-  const router = useRouter();
   const [, startToggleTransition] = useTransition();
 
   function handleToggleAlwaysShowContorno(id: string, alwaysShow: boolean) {
@@ -72,10 +186,15 @@ export function DailyMenuClient({
     selectedDate: state.selectedDate,
     setSelectedDate: state.setSelectedDate,
     dailyItemIds: state.dailyItemIds,
+    setDailyItemIds: state.setDailyItemIds,
     dailyAdicionalIds: state.dailyAdicionalIds,
+    setDailyAdicionalIds: state.setDailyAdicionalIds,
     dailyBebidaIds: state.dailyBebidaIds,
+    setDailyBebidaIds: state.setDailyBebidaIds,
     dailyContornoIds: state.dailyContornoIds,
+    setDailyContornoIds: state.setDailyContornoIds,
     platoDelDiaItemId: state.platoDelDiaItemId,
+    setPlatoDelDiaItemId: state.setPlatoDelDiaItemId,
     isDirty: state.isDirty,
     setIsDirty: state.setIsDirty,
     copyDate: state.copyDate,
@@ -161,6 +280,10 @@ export function DailyMenuClient({
         onGeneratePdf={pdf.generate}
         onDownloadPdf={pdf.download}
         onResetPdf={pdf.reset}
+        templates={templates}
+        onApplyTemplate={handleApplyTemplate}
+        onSaveTemplate={handleSaveTemplate}
+        onDeleteTemplate={handleDeleteTemplate}
       />
 
       {/* Tab bar */}
@@ -201,7 +324,7 @@ export function DailyMenuClient({
       {/* Tab content */}
       {state.activeTab === "platos" && (
         <DailyMenuPlatosTab
-          allItems={allItems}
+          allItems={mappedAllItems}
           dailyItemIds={state.dailyItemIds}
           allContornos={allContornos}
           dailyContornoIds={state.dailyContornoIds}
@@ -227,6 +350,8 @@ export function DailyMenuClient({
           copying={sync.copying}
           platoDelDiaItemId={state.platoDelDiaItemId}
           onSetPlatoDelDia={handleSetPlatoDelDia}
+          hideAssigned={state.hideAssigned}
+          onHideAssignedChange={state.setHideAssigned}
         />
       )}
       {state.activeTab === "adicionales" && (

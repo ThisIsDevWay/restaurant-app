@@ -152,6 +152,7 @@ export async function getMenuWithOptionsAndComponents(): Promise<MenuWithCompone
         imageUrl: menuItems.imageUrl,
         sortOrder: menuItems.sortOrder,
         isPrepackaged: menuItems.isPrepackaged,
+        defaultActive: menuItems.defaultActive,
       })
       .from(menuItems)
       .innerJoin(categories, eq(menuItems.categoryId, categories.id))
@@ -351,6 +352,7 @@ export async function getMenuItemsWithOptionsAndComponents(ids: string[]): Promi
         imageUrl: menuItems.imageUrl,
         sortOrder: menuItems.sortOrder,
         isPrepackaged: menuItems.isPrepackaged,
+        defaultActive: menuItems.defaultActive,
       })
       .from(menuItems)
       .innerJoin(categories, eq(menuItems.categoryId, categories.id))

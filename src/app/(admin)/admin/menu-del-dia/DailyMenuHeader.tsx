@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Loader2, CheckCircle2, FileDown, X, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { MenuTemplate } from "./DailyMenu.types";
 
 interface DailyMenuHeaderProps {
   itemCount: number;
@@ -18,6 +20,10 @@ interface DailyMenuHeaderProps {
   onGeneratePdf: () => void;
   onDownloadPdf: () => void;
   onResetPdf: () => void;
+  templates: MenuTemplate[];
+  onApplyTemplate: (template: MenuTemplate) => void;
+  onSaveTemplate: (name: string, description: string | null) => Promise<{ success: boolean; error?: string }>;
+  onDeleteTemplate: (id: string) => void;
 }
 
 export function DailyMenuHeader({
@@ -34,7 +40,36 @@ export function DailyMenuHeader({
   onGeneratePdf,
   onDownloadPdf,
   onResetPdf,
+  templates,
+  onApplyTemplate,
+  onSaveTemplate,
+  onDeleteTemplate,
 }: DailyMenuHeaderProps) {
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDesc, setTemplateDesc] = useState("");
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const handleConfirmSaveTemplate = async () => {
+    if (!templateName.trim()) return;
+    setIsSavingTemplate(true);
+    setSaveError("");
+    try {
+      const res = await onSaveTemplate(templateName.trim(), templateDesc.trim() || null);
+      if (res.success) {
+        setShowSaveDialog(false);
+        setTemplateName("");
+        setTemplateDesc("");
+      } else {
+        setSaveError(res.error || "Error al guardar la plantilla.");
+      }
+    } catch (err) {
+      setSaveError("Ocurrió un error inesperado.");
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
   const hasItems = itemCount > 0;
 
   const stats = [
@@ -58,6 +93,57 @@ export function DailyMenuHeader({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Template select */}
+          <div className="flex items-center gap-1.5">
+            <select
+              value=""
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) return;
+                if (val === "save_new") {
+                  setTemplateName("");
+                  setTemplateDesc("");
+                  setSaveError("");
+                  setShowSaveDialog(true);
+                } else {
+                  const t = templates.find((x) => x.id === val);
+                  if (t) onApplyTemplate(t);
+                }
+                e.target.value = ""; // Reset
+              }}
+              className="h-[38px] rounded-full border border-border bg-white px-4 text-[12px] font-bold text-text-muted outline-none hover:border-primary focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="">Plantillas (Presets) ▼</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+              <option value="save_new" className="font-bold text-primary">
+                + Guardar selección actual...
+              </option>
+            </select>
+            {templates.length > 0 && (
+              <select
+                value=""
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val) onDeleteTemplate(val);
+                  e.target.value = "";
+                }}
+                className="h-[38px] w-10 flex items-center justify-center rounded-full border border-border bg-white text-[12px] font-bold text-text-muted outline-none hover:border-error hover:text-error cursor-pointer"
+                title="Eliminar plantilla..."
+              >
+                <option value="">✕</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
           {/* PDF button */}
           <button
             type="button"
@@ -193,6 +279,78 @@ export function DailyMenuHeader({
               >
                 <Download size={14} />
                 Descargar PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Save Template Modal */}
+      {showSaveDialog && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowSaveDialog(false)}
+        >
+          <div
+            className="flex w-[90%] max-w-[420px] flex-col overflow-hidden rounded-modal bg-white shadow-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <h2 className="font-display text-base font-black text-text-main">
+                Guardar como plantilla
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowSaveDialog(false)}
+                aria-label="Cerrar"
+                className="rounded-lg p-2 text-text-muted transition-colors hover:bg-bg-app hover:text-text-main"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {saveError && (
+                <p className="text-xs text-error font-semibold bg-error/5 border border-error/20 p-2.5 rounded-lg">
+                  {saveError}
+                </p>
+              )}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted uppercase">Nombre</label>
+                <input
+                  type="text"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="Ej: Menú Fin de Semana"
+                  className="w-full h-9 rounded-lg border border-border px-3 text-[13px] outline-none focus:border-primary"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted uppercase">Descripción (Opcional)</label>
+                <textarea
+                  value={templateDesc}
+                  onChange={(e) => setTemplateDesc(e.target.value)}
+                  placeholder="Ej: Incluye pastas premium y adicionales del domingo"
+                  rows={2}
+                  className="w-full rounded-lg border border-border p-2.5 text-[13px] outline-none focus:border-primary resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-3.5 bg-bg-app">
+              <button
+                type="button"
+                onClick={() => setShowSaveDialog(false)}
+                className="rounded-full border border-border bg-white px-4 py-2 text-[12px] font-bold text-text-muted hover:border-primary hover:text-primary"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSaveTemplate}
+                disabled={!templateName.trim() || isSavingTemplate}
+                className="rounded-full bg-primary px-4 py-2 text-[12px] font-bold text-white hover:bg-primary-hover disabled:opacity-50"
+              >
+                {isSavingTemplate ? "Guardando..." : "Guardar"}
               </button>
             </div>
           </div>

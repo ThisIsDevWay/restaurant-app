@@ -9,6 +9,9 @@ export interface CatalogItem {
   priceUsdCents: number;
   imageUrl: string | null;
   contornos: ContornoSelection[];
+  defaultActive: boolean;
+  isHighRisk: boolean;
+  includedNote?: string | null;
 }
 
 export interface SimpleItem {
@@ -17,6 +20,18 @@ export interface SimpleItem {
   priceUsdCents: number;
   isAvailable: boolean;
   alwaysShowIfAssigned?: boolean;
+}
+
+export interface MenuTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  data: {
+    menuItemIds: string[];
+    adicionalIds: string[];
+    bebidaIds: string[];
+    contornoIds: string[];
+  };
 }
 
 export interface DailyMenuClientProps {
@@ -31,6 +46,8 @@ export interface DailyMenuClientProps {
   selectedDate: string;
   today: string;
   platoDelDiaItemId: string | null;
+  templates: MenuTemplate[];
+  isNewDaySugerido: boolean;
 }
 
 export const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];

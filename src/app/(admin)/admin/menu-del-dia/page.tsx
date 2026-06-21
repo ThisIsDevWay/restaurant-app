@@ -11,6 +11,7 @@ import { getAllBebidas } from "@/db/queries/bebidas";
 import { getAllContornos } from "@/db/queries/contornos";
 import { DailyMenuClient } from "./DailyMenuClient";
 import { todayCaracas } from "@/lib/utils/date";
+import { getMenuTemplates } from "@/db/queries/menu-templates";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ export default async function DailyMenuPage({
     allContornos,
     dailyContornoIds,
     platoDelDiaItemId,
+    templates,
   ] = await Promise.all([
     getMenuWithOptionsAndComponents(),
     getDailyMenuItemIds(selectedDate),
@@ -43,7 +45,14 @@ export default async function DailyMenuPage({
     getAllContornos(),
     getDailyContornoIds(selectedDate),
     getDailyPlatoDelDiaItemId(selectedDate),
+    getMenuTemplates(),
   ]);
+
+  const isNewDay = dailyItemIds.length === 0;
+  const isNewDaySugerido = isNewDay;
+  const initialDailyItemIds = isNewDay
+    ? allItems.filter((item) => item.defaultActive).map((item) => item.id)
+    : dailyItemIds;
 
   return (
     <DailyMenuClient
@@ -55,6 +64,9 @@ export default async function DailyMenuPage({
           categoryName: item.categoryName,
           priceUsdCents: item.priceUsdCents,
           imageUrl: item.imageUrl,
+          defaultActive: item.defaultActive ?? false,
+          isHighRisk: false, // Resolved asynchronously on client
+          includedNote: item.includedNote,
           contornos: item.contornos.map((c: any) => ({
             id: c.id,
             name: c.name,
@@ -62,7 +74,7 @@ export default async function DailyMenuPage({
             substituteContornoIds: c.substituteContornoIds,
           })),
         }))}
-      dailyItemIds={dailyItemIds}
+      dailyItemIds={initialDailyItemIds}
       allAdicionales={allAdicionales.map((a) => ({
         id: a.id,
         name: a.name,
@@ -88,6 +100,13 @@ export default async function DailyMenuPage({
       selectedDate={selectedDate}
       today={today}
       platoDelDiaItemId={platoDelDiaItemId}
+      templates={templates.map((t) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        data: t.data as any,
+      }))}
+      isNewDaySugerido={isNewDaySugerido}
     />
   );
 }

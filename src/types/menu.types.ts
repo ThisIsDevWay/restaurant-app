@@ -73,6 +73,7 @@ export interface MenuItemWithComponents {
   imageUrl: string | null;
   sortOrder: number;
   isPlatoDelDia?: boolean;
+  defaultActive?: boolean;
   optionGroups: OptionGroupWithOptions[];
   adicionales: SimpleComponent[];
   bebidas: SimpleComponent[];
