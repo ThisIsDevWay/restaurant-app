@@ -467,6 +467,62 @@ export function SettingsPaymentsTab({ form, updateField }: SettingsPaymentsTabPr
                 </div>
               </div>
             )}
+
+            {/* Pabilo BDV Personal */}
+            {form.activePaymentProvider === "pabilo_bdv" && (
+              <div className="space-y-4 animate-in slide-in-from-top-2 w-full">
+                <h4 className="font-bold text-sm flex items-center gap-2 text-text-main border-b border-border/30 pb-2.5">
+                  <Key className="h-4 w-4 text-primary" /> Credenciales Pabilo (BDV Personal)
+                </h4>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-text-muted uppercase tracking-wider">Pabilo API Key</Label>
+                  <Input
+                    type="password"
+                    value={form.pabiloApiKey || ""}
+                    onChange={(e) => updateField("pabiloApiKey", e.target.value)}
+                    className="rounded-xl border-border/60 focus-visible:ring-primary/20 h-10 font-mono text-xs font-semibold"
+                    placeholder="••••••••••••••••••••••••••••••••"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-text-muted uppercase tracking-wider">User Bank ID (Banco BDV registrado)</Label>
+                  <Input
+                    value={form.pabiloUserBankId || ""}
+                    onChange={(e) => updateField("pabiloUserBankId", e.target.value)}
+                    className="rounded-xl border-border/60 focus-visible:ring-primary/20 h-10 text-sm font-semibold"
+                    placeholder="bank_user_..."
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Pabilo Notificaciones SMS */}
+            {form.activePaymentProvider === "pabilo_notifications" && (
+              <div className="space-y-4 animate-in slide-in-from-top-2 w-full">
+                <h4 className="font-bold text-sm flex items-center gap-2 text-text-main border-b border-border/30 pb-2.5">
+                  <Key className="h-4 w-4 text-primary" /> Credenciales Pabilo (Notificaciones SMS)
+                </h4>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-text-muted uppercase tracking-wider">Pabilo API Key</Label>
+                  <Input
+                    type="password"
+                    value={form.pabiloApiKey || ""}
+                    onChange={(e) => updateField("pabiloApiKey", e.target.value)}
+                    className="rounded-xl border-border/60 focus-visible:ring-primary/20 h-10 font-mono text-xs font-semibold"
+                    placeholder="••••••••••••••••••••••••••••••••"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-text-muted uppercase tracking-wider">Notification Bank ID (Cuenta de Notificaciones)</Label>
+                  <Input
+                    value={form.pabiloNotificationsBankId || ""}
+                    onChange={(e) => updateField("pabiloNotificationsBankId", e.target.value)}
+                    className="rounded-xl border-border/60 focus-visible:ring-primary/20 h-10 text-sm font-semibold"
+                    placeholder="bank_notif_..."
+                  />
+                </div>
+              </div>
+            )}
             
           </div>
           
