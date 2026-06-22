@@ -1,16 +1,1 @@
-{
-    "crons": [
-        {
-            "path": "/api/cron/update-rate",
-            "schedule": "0 23 * * *"
-        },
-        {
-            "path": "/api/cron/expire-orders",
-            "schedule": "0 2 * * *"
-        },
-        {
-            "path": "/api/cron/expire-tv-pairings",
-            "schedule": "0 3 * * *"
-        }
-    ]
-}
+{}
