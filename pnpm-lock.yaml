@@ -20,6 +20,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.1.1
         version: 5.2.2(react-hook-form@7.71.2(react@19.2.4))
+      '@pabilo/sdk':
+        specifier: ^0.1.12
+        version: 0.1.12
       '@radix-ui/react-label':
         specifier: ^2.1.8
         version: 2.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1645,6 +1648,9 @@ packages:
     engines: {node: ^18.19.0 || >=20.6.0}
     peerDependencies:
       '@opentelemetry/api': ^1.1.0
+
+  '@pabilo/sdk@0.1.12':
+    resolution: {integrity: sha512-q8P3AhIJ4AHdHVX8Kw+27Z7Lce17sTZMuWog3URY6gkH9oGCQnWDukZAOexlddFEbC7ILVhwtkO7BGdue4mVGw==}
 
   '@panva/hkdf@1.2.1':
     resolution: {integrity: sha512-6oclG6Y3PiDFcoyk8srjLfVKyMfVCKJ27JwNPViuXziFpmdz+MZnZN/aKY0JGXgYuO/VghU0jcOAZgWXZ1Dmrw==}
@@ -6777,6 +6783,8 @@ snapshots:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 2.6.0(@opentelemetry/api@1.9.0)
+
+  '@pabilo/sdk@0.1.12': {}
 
   '@panva/hkdf@1.2.1': {}
 

@@ -5,7 +5,9 @@ export type ProviderId =
   | "banesco_reference"
   | "mercantil_c2p"
   | "bnc_feed"
-  | "whatsapp_manual";
+  | "whatsapp_manual"
+  | "pabilo_bdv"
+  | "pabilo_notifications";
 
 export type PaymentInitResult =
   | {
@@ -37,7 +39,8 @@ export type PaymentConfirmInput =
   | { type: "reference"; reference: string; orderId: string }
   | { type: "webhook_c2p"; rawBody: string; signature: string }
   | { type: "feed_event"; event: unknown; signature: string }
-  | { type: "manual"; adminUserId: string; orderId: string };
+  | { type: "manual"; adminUserId: string; orderId: string }
+  | { type: "notification_reconciliation"; reference: string; orderId: string; notificationRaw: unknown };
 
 export type PaymentConfirmResult =
   | { success: true; providerRaw: unknown; reference?: string }
