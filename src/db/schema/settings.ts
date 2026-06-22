@@ -44,6 +44,9 @@ export const settings = pgTable("settings", {
   mercantilIntegratorId: text("mercantil_integrator_id"),
   mercantilTerminalId: text("mercantil_terminal_id"),
   bncApiKey: text("bnc_api_key"),
+  pabiloApiKey: text("pabilo_api_key"),
+  pabiloUserBankId: text("pabilo_user_bank_id"),
+  pabiloNotificationsBankId: text("pabilo_notifications_bank_id"),
   whatsappNumber: text("whatsapp_number").notNull().default(""),
   whatsappMicroserviceUrl: text("whatsapp_microservice_url")
     .notNull()

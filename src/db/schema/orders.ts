@@ -92,6 +92,8 @@ export const orders = pgTable("orders", {
       | "mercantil_c2p"
       | "bnc_feed"
       | "whatsapp_manual"
+      | "pabilo_bdv"
+      | "pabilo_notifications"
     >(),
   paymentReference: text("payment_reference"),
   paymentLogId: uuid("payment_log_id").references(() => paymentsLog.id),
