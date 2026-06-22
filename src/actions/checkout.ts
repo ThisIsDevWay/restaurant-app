@@ -143,3 +143,47 @@ export const registerComprobanteAction = actionClient
       return { success: false, error: "Error al registrar comprobante" };
     }
   });
+
+export const fallbackToWhatsAppAction = actionClient
+  .schema(v.object({ orderId: v.pipe(v.string(), v.uuid()) }))
+  .action(async ({ parsedInput: { orderId } }) => {
+    try {
+      const { db } = await import("@/db");
+      const { orders } = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const { getSettings } = await import("@/db/queries/settings");
+      const { getOrderById } = await import("@/db/queries/orders");
+      const { WhatsAppManualProvider } = await import("@/lib/payment-providers/whatsapp-manual");
+
+      const order = await getOrderById(orderId);
+      if (!order) throw new Error("Orden no encontrada");
+
+      const settings = await getSettings();
+      if (!settings) throw new Error("Configuración no encontrada");
+
+      // Update order to manual WhatsApp status and manual provider
+      await db
+        .update(orders)
+        .set({
+          paymentProvider: "whatsapp_manual",
+          status: "whatsapp",
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, orderId));
+
+      const updatedOrder = {
+        ...order,
+        paymentProvider: "whatsapp_manual" as const,
+        status: "whatsapp" as const,
+      };
+
+      const provider = new WhatsAppManualProvider(settings);
+      const initResult = await provider.initiatePayment(updatedOrder, settings);
+
+      return { success: true, initResult };
+    } catch (error: any) {
+      logger.error("fallbackToWhatsAppAction error", { error: error.message, orderId });
+      return { success: false, error: error.message || "Error al cambiar a WhatsApp" };
+    }
+  });
+

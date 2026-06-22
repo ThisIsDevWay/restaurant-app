@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
-import { processCheckoutAction, type CheckoutResult } from "@/actions/checkout";
+import { processCheckoutAction, fallbackToWhatsAppAction, type CheckoutResult } from "@/actions/checkout";
 import { type CheckoutItem } from "@/lib/types/checkout";
 import { useCheckoutSurcharges } from "@/hooks/useCheckoutSurcharges";
 import type { PaymentInitResult } from "@/lib/payment-providers/types";
@@ -397,6 +397,32 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
     clearCheckoutToken();
   }, [state.orderId, totalBsCents, setState, clearCart, clearCheckoutToken]);
 
+  const handleFallbackWhatsApp = useCallback(async () => {
+    if (!state.orderId) return;
+    try {
+      const res = await fallbackToWhatsAppAction({ orderId: state.orderId });
+      const data = res?.data;
+      if (data?.success && data.initResult) {
+        setState((prev) => ({
+          ...prev,
+          initResult: data.initResult ?? null,
+          error: null,
+        }));
+      } else {
+        const errorMsg = data?.error || res?.serverError || "Error al cambiar a WhatsApp";
+        setState((prev) => ({
+          ...prev,
+          error: errorMsg,
+        }));
+      }
+    } catch {
+      setState((prev) => ({
+        ...prev,
+        error: "Ocurrió un error al cambiar a WhatsApp",
+      }));
+    }
+  }, [state.orderId, setState]);
+
   // ── New order / reset ────────────────────────────────────────
   const handleNewOrder = useCallback(() => {
     clearCart();
@@ -589,6 +615,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
               grandTotalUsdCents={grandTotalUsdCents}
               onConfirmed={handlePaid}
               onError={(msg) => setState((prev) => ({ ...prev, error: msg }))}
+              onFallbackWhatsApp={handleFallbackWhatsApp}
               paymentMethod={state.payment}
               cashAmountUsd={state.cashAmountUsd || null}
               acceptChangeBs={state.acceptChangeBs}

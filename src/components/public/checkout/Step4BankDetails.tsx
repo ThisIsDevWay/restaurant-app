@@ -20,6 +20,7 @@ interface Step4BankDetailsProps {
   grandTotalUsdCents: number;
   onConfirmed: () => void;
   onError: (msg: string) => void;
+  onFallbackWhatsApp: () => void;
   paymentMethod: string | null;
   fallbackBankDetails?: BankDetails | null;
   cashAmountUsd?: string | null;
@@ -35,6 +36,7 @@ export function Step4BankDetails({
   grandTotalUsdCents,
   onConfirmed,
   onError,
+  onFallbackWhatsApp,
   paymentMethod,
   fallbackBankDetails,
   cashAmountUsd,
@@ -360,6 +362,7 @@ export function Step4BankDetails({
             checkoutToken={checkoutToken}
             onConfirmed={onConfirmed}
             onError={onError}
+            onFallbackWhatsApp={onFallbackWhatsApp}
           />
         </div>
       )}

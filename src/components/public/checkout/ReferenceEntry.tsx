@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ReferenceEntryProps {
@@ -10,6 +9,7 @@ interface ReferenceEntryProps {
   checkoutToken: string;
   onConfirmed: () => void;
   onError: (message: string) => void;
+  onFallbackWhatsApp: () => void;
 }
 
 export function ReferenceEntry({
@@ -17,51 +17,26 @@ export function ReferenceEntry({
   checkoutToken,
   onConfirmed,
   onError,
+  onFallbackWhatsApp,
 }: ReferenceEntryProps) {
-  const [digits, setDigits] = useState<string[]>(["", "", "", ""]);
+  const [reference, setReference] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
-  const [allValid, setAllValid] = useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
+  const [attempts, setAttempts] = useState(0);
+  const [isTransitioningToWa, setIsTransitioningToWa] = useState(false);
 
-  const reference = digits.join("");
-  const isComplete = digits.every((d) => d.length === 1);
+  const MAX_ATTEMPTS = 3;
+  const isValidLength = reference.length >= 4 && reference.length <= 20;
 
-  useEffect(() => {
-    setAllValid(isComplete);
-  }, [isComplete]);
-
-  const handleDigitChange = (index: number, value: string) => {
-    const digit = value.replace(/\D/g, "").slice(-1);
-    const newDigits = [...digits];
-    newDigits[index] = digit;
-    setDigits(newDigits);
+  const handleChange = (val: string) => {
+    // Only allow digits
+    const cleaned = val.replace(/\D/g, "");
+    setReference(cleaned);
     setVerifyError(null);
-
-    if (digit && index < 3) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !digits[index] && index > 0) {
-      const newDigits = [...digits];
-      newDigits[index - 1] = "";
-      setDigits(newDigits);
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4);
-    if (pasted.length === 4) {
-      setDigits(pasted.split(""));
-    }
   };
 
   const handleVerify = async () => {
-    if (!isComplete) return;
+    if (!isValidLength || isVerifying) return;
     setIsVerifying(true);
     setVerifyError(null);
 
@@ -80,57 +55,57 @@ export function ReferenceEntry({
         const msg = data.message || "No se pudo verificar el pago";
         setVerifyError(msg);
         onError(msg);
+        setAttempts((prev) => prev + 1);
       }
     } catch {
       setVerifyError("Error de conexión. Intenta de nuevo.");
+      setAttempts((prev) => prev + 1);
     } finally {
       setIsVerifying(false);
+    }
+  };
+
+  const handleFallback = async () => {
+    setIsTransitioningToWa(true);
+    try {
+      await onFallbackWhatsApp();
+    } catch {
+      setVerifyError("Error al iniciar confirmación por WhatsApp.");
+    } finally {
+      setIsTransitioningToWa(false);
     }
   };
 
   return (
     <div className="space-y-4">
       <div>
-        <p className="font-sans text-[10px] uppercase tracking-[0.12em] text-text-muted pl-1 mb-3">
-          Últimos 4 dígitos de la referencia
+        <p className="font-sans text-[10px] uppercase tracking-[0.12em] text-text-muted pl-1 mb-2">
+          Ingresa la referencia bancaria
         </p>
 
-        <div className="flex gap-2.5 justify-center" onPaste={handlePaste}>
-          {digits.map((digit, i) => (
-            <input
-              key={i}
-              ref={(el) => { inputRefs.current[i] = el; }}
-              type="text"
-              inputMode="numeric"
-              value={digit}
-              maxLength={1}
-              onChange={(e) => handleDigitChange(i, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(i, e)}
-              disabled={isVerifying}
-              className={cn(
-                "w-[56px] h-[64px] rounded-[14px] border-2 text-center font-sans text-[28px] font-bold tabular-nums outline-none transition-all duration-150",
-                !digit
-                  ? "bg-surface-section border-border text-text-muted"
-                  : allValid && !verifyError
-                  ? "bg-[#E8EFE3] border-[#3F6B4A] text-[#3F6B4A]"
-                  : verifyError
-                  ? "bg-surface-section border-primary text-primary"
-                  : "bg-bg-card border-text-main text-text-main",
-                "focus:border-primary focus:shadow-[0_0_0_4px_rgba(187,0,5,0.2)] focus:bg-bg-card"
-              )}
-            />
-          ))}
-        </div>
-
-        {/* Placeholder dots for empty cells */}
-        {digits.every((d) => !d) && (
-          <p className="text-center text-[11px] text-text-muted mt-2">
-            Ingresa los 4 dígitos de la referencia
-          </p>
-        )}
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={reference}
+          onChange={(e) => handleChange(e.target.value)}
+          disabled={isVerifying || isTransitioningToWa}
+          placeholder="Mínimo 4 dígitos de la referencia"
+          className={cn(
+            "w-full h-14 px-5 rounded-[16px] border-2 font-sans text-[18px] font-bold tabular-nums outline-none transition-all duration-150",
+            !reference
+              ? "bg-surface-section border-border text-text-muted"
+              : isValidLength && !verifyError
+              ? "bg-[#E8EFE3] border-[#3F6B4A] text-[#3F6B4A]"
+              : verifyError
+              ? "bg-surface-section border-primary text-primary"
+              : "bg-bg-card border-text-main text-text-main",
+            "focus:border-primary focus:shadow-[0_0_0_4px_rgba(187,0,5,0.2)] focus:bg-bg-card"
+          )}
+        />
 
         {verifyError && (
-          <p className="text-center text-[12px] text-primary font-semibold mt-2">
+          <p className="text-center text-[12px] text-primary font-semibold mt-2.5">
             {verifyError}
           </p>
         )}
@@ -138,10 +113,10 @@ export function ReferenceEntry({
 
       <button
         onClick={handleVerify}
-        disabled={!isComplete || isVerifying}
+        disabled={!isValidLength || isVerifying || isTransitioningToWa}
         className={cn(
           "w-full h-14 rounded-full font-semibold text-base transition-all active:scale-[0.98]",
-          isComplete && !isVerifying
+          isValidLength && !isVerifying && !isTransitioningToWa
             ? "bg-primary text-white shadow-elevated"
             : "bg-surface-section text-text-muted cursor-not-allowed"
         )}
@@ -149,12 +124,35 @@ export function ReferenceEntry({
         {isVerifying ? (
           <span className="flex items-center justify-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Verificando...
+            Verificando pago...
           </span>
         ) : (
-          "Confirmar pago →"
+          "Verificar pago automático →"
         )}
       </button>
+
+      {attempts >= MAX_ATTEMPTS && (
+        <button
+          onClick={handleFallback}
+          disabled={isVerifying || isTransitioningToWa}
+          className={cn(
+            "w-full h-14 rounded-full font-bold text-[14px] uppercase tracking-wider transition-all active:scale-[0.98] border-2 border-[#25D366] text-[#25D366] bg-transparent flex items-center justify-center gap-2",
+            isTransitioningToWa && "opacity-75"
+          )}
+        >
+          {isTransitioningToWa ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Cargando WhatsApp...
+            </>
+          ) : (
+            <>
+              <Phone className="w-4 h-4" />
+              Verificar por WhatsApp manual
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
