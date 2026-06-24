@@ -16,6 +16,7 @@ interface WizardCartChipProps {
   cartOpen: boolean;
   onOpenCart: () => void;
   onCloseCart: () => void;
+  step?: number;
 }
 
 function MiniPlate({ item, index }: { item: CartItem; index: number }) {
@@ -43,45 +44,66 @@ export function WizardCartChip({
   cartOpen,
   onOpenCart,
   onCloseCart,
+  step,
 }: WizardCartChipProps) {
   const visibleItems = cartItems.slice(0, 3);
   const extraCount = cartItems.length > 3 ? cartItems.length - 3 : 0;
+  const isStep4 = step === 4;
 
   return (
     <>
       {/* Chip bar */}
       <button
         onClick={onOpenCart}
-        className="w-full flex items-center gap-3 px-4 py-2.5 bg-surface-section border-b border-border text-left cursor-pointer active:bg-[#ffe8d6]/60 transition-colors"
+        className={cn(
+          "w-full flex items-center text-left cursor-pointer active:bg-[#ffe8d6]/60 transition-colors",
+          isStep4
+            ? "px-4 py-2 bg-surface-section border-b border-border/60 justify-between gap-2"
+            : "px-4 py-2.5 bg-surface-section border-b border-border gap-3"
+        )}
         aria-label="Ver pedido"
       >
-        {/* Mini-plates overlapping */}
-        <div className="flex items-center">
-          {visibleItems.map((item, i) => (
-            <MiniPlate key={`${item.id}-${i}`} item={item} index={i} />
-          ))}
-          {extraCount > 0 && (
-            <div
-              className="w-7 h-7 rounded-full border-2 border-bg-app bg-surface-section flex items-center justify-center text-[10px] font-bold text-text-muted"
-              style={{ marginLeft: -10, zIndex: 0 }}
-            >
-              +{extraCount}
+        {isStep4 ? (
+          <div className="flex-1 leading-normal flex items-center justify-between">
+            <span className="font-sans text-[13px] font-semibold text-text-main">
+              Resumen del pedido
+            </span>
+            <span className="font-sans text-[12px] text-text-muted flex items-center gap-1">
+              {totalPlatos} {totalPlatos === 1 ? "plato" : "platos"}
+              <ChevronRight className="w-3.5 h-3.5 rotate-90 shrink-0 text-text-muted/70" />
+            </span>
+          </div>
+        ) : (
+          <>
+            {/* Mini-plates overlapping */}
+            <div className="flex items-center">
+              {visibleItems.map((item, i) => (
+                <MiniPlate key={`${item.id}-${i}`} item={item} index={i} />
+              ))}
+              {extraCount > 0 && (
+                <div
+                  className="w-7 h-7 rounded-full border-2 border-bg-app bg-surface-section flex items-center justify-center text-[10px] font-bold text-text-muted"
+                  style={{ marginLeft: -10, zIndex: 0 }}
+                >
+                  +{extraCount}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Labels */}
-        <div className="flex-1 leading-[1.1]">
-          <div className="font-sans text-[10px] uppercase tracking-[0.12em] text-text-muted">
-            Tu pedido
-          </div>
-          <div className="font-sans text-[13px] font-semibold text-text-main">
-            {totalPlatos} {totalPlatos === 1 ? "plato" : "platos"} · Ver detalle
-          </div>
-        </div>
+            {/* Labels */}
+            <div className="flex-1 leading-[1.1]">
+              <div className="font-sans text-[10px] uppercase tracking-[0.12em] text-text-muted">
+                Tu pedido
+              </div>
+              <div className="font-sans text-[13px] font-semibold text-text-main">
+                {totalPlatos} {totalPlatos === 1 ? "plato" : "platos"} · Ver detalle
+              </div>
+            </div>
 
-        {/* Chevron up */}
-        <ChevronRight className="w-4 h-4 text-text-muted -rotate-90 shrink-0" />
+            {/* Chevron up */}
+            <ChevronRight className="w-4 h-4 text-text-muted -rotate-90 shrink-0" />
+          </>
+        )}
       </button>
 
       {/* Bottom sheet overlay */}

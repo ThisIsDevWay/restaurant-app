@@ -142,7 +142,7 @@ export async function expirePendingOrders() {
     .where(
       and(
         inArray(orders.status, ["pending", "whatsapp"]),
-        lt(orders.expiresAt, new Date()),
+        lt(orders.expiresAt, new Date(Date.now() - 10 * 60 * 1000)),
       ),
     );
   return result;

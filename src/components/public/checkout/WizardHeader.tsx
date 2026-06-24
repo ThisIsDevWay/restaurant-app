@@ -18,6 +18,7 @@ interface WizardHeaderProps {
   onClose?: () => void;
   backDisabled?: boolean;
   hideBack?: boolean;
+  title?: string;
 }
 
 export function WizardHeader({
@@ -27,10 +28,11 @@ export function WizardHeader({
   onClose,
   backDisabled,
   hideBack,
+  title,
 }: WizardHeaderProps) {
   return (
     <header className="sticky top-0 z-20 bg-bg-app border-b border-border">
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className="flex items-center gap-3 px-4 py-2">
         {/* Back button */}
         <div className="w-[38px] flex items-center">
           {!hideBack && (
@@ -56,7 +58,7 @@ export function WizardHeader({
             Paso {step} de {totalSteps}
           </p>
           <p className="font-sans text-[13px] font-semibold text-text-main leading-none">
-            {STEP_LABELS[step]}
+            {title || STEP_LABELS[step]}
           </p>
         </div>
 

@@ -9,6 +9,8 @@ import { useCheckoutSurcharges } from "@/hooks/useCheckoutSurcharges";
 import type { PaymentInitResult } from "@/lib/payment-providers/types";
 import type { GpsCoords, OrderMode } from "@/components/public/checkout/CheckoutForm.types";
 import { AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useKeyboardOpen } from "@/hooks/useKeyboardOpen";
 
 // New wizard chrome
 import { WizardHeader } from "@/components/public/checkout/WizardHeader";
@@ -153,8 +155,17 @@ const INITIAL_STATE: WizardState = {
   initResult: null,
 };
 
+const paymentTitles: Record<string, string> = {
+  pago_movil: "Pago Móvil",
+  transfer: "Transferencia",
+  zelle: "Zelle",
+  binance: "Binance Pay",
+  efectivo: "Efectivo",
+};
+
 export default function CheckoutClient({ initialSettings }: { initialSettings: CheckoutSettings }) {
   const router = useRouter();
+  const { isKeyboardOpen, keyboardHeight } = useKeyboardOpen();
 
   // Cart
   const items = useCartStore((s) => s.items);
@@ -187,6 +198,8 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
     }
     ensureCheckoutToken();
   }, [ensureCheckoutToken]);
+
+
 
   // Customer lookup with debounce
   const lookupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -391,11 +404,46 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
       orders.unshift({ id: state.orderId, totalBsCents, createdAt: Date.now() });
       localStorage.setItem("gm_orders", JSON.stringify(orders.slice(0, 10)));
     }
-    setState((prev) => ({ ...prev, step: 5 }));
+    setState((prev) => ({ ...prev, step: 5, error: null }));
     clearPersistedCheckout();
     clearCart();
     clearCheckoutToken();
   }, [state.orderId, totalBsCents, setState, clearCart, clearCheckoutToken]);
+
+  // Poll order status when on step 4 to auto-transition on background match
+  useEffect(() => {
+    if (state.step !== 4 || !state.orderId) return;
+
+    let timeoutId: NodeJS.Timeout;
+    let active = true;
+
+    const poll = async () => {
+      if (!active) return;
+      try {
+        const res = await fetch(`/api/orders/${state.orderId}/status`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === "paid" && active) {
+            handlePaid();
+            return;
+          }
+        }
+      } catch {
+        // ignore errors
+      }
+
+      if (active) {
+        timeoutId = setTimeout(poll, 4000); // Sondear cada 4 segundos
+      }
+    };
+
+    poll();
+
+    return () => {
+      active = false;
+      clearTimeout(timeoutId);
+    };
+  }, [state.step, state.orderId, handlePaid]);
 
   const handleFallbackWhatsApp = useCallback(async () => {
     if (!state.orderId) return;
@@ -477,6 +525,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
           cartOpen={cartOpen}
           onOpenCart={() => setCartOpen(true)}
           onCloseCart={() => setCartOpen(false)}
+          step={state.step}
         />
       )}
 
@@ -488,14 +537,15 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
           backDisabled={state.submitting}
           hideBack={!showBack}
           onClose={() => router.push("/")}
+          title={state.step === 4 && state.payment ? paymentTitles[state.payment] : undefined}
         />
       )}
 
       {/* Progress dots */}
-      {state.step < 5 && <WizardProgress step={state.step} />}
+      {state.step < 4 && <WizardProgress step={state.step} />}
 
       {/* Error banner */}
-      {state.error && (
+      {state.error && state.step < 4 && (
         <div className="mx-5 mt-3 px-4 py-3 bg-primary/10 border border-primary/20 text-primary text-[13px] rounded-[14px] animate-in fade-in">
           {state.error}
         </div>
@@ -533,7 +583,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
         {/* Step 2 — Customer data */}
         {state.step === 2 && (
           <>
-            <div className="mb-6">
+            <div className={cn("transition-all duration-150 ease-in-out", isKeyboardOpen ? "mb-0 h-0 opacity-0 overflow-hidden" : "mb-6")}>
               <p className="font-sans text-[10px] uppercase tracking-[0.14em] text-text-muted mb-1">
                 {state.orderMode ? `${state.orderMode === "on_site" ? "En sitio" : state.orderMode === "take_away" ? "Para llevar" : "Delivery"} · datos del cliente` : "Tus datos"}
               </p>
@@ -559,6 +609,8 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
               customerFieldsVisible={state.customerFieldsVisible}
               isSubmitting={state.submitting}
               deliveryCoverage={initialSettings.deliveryCoverage}
+              step2Ready={step2Ready}
+              onContinue={goNext}
             />
           </>
         )}
@@ -619,6 +671,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
               paymentMethod={state.payment}
               cashAmountUsd={state.cashAmountUsd || null}
               acceptChangeBs={state.acceptChangeBs}
+              activeProviderId={initialSettings.activePaymentProvider}
               fallbackBankDetails={{
                 bankName: initialSettings.bankName,
                 bankCode: initialSettings.bankCode,
@@ -650,7 +703,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
       </div>
 
       {/* ── STICKY CTA (steps 1-3) ── */}
-      {state.step === 1 && (
+      {state.step === 1 && !isKeyboardOpen && (
         <StickyCta
           label="Continuar →"
           onClick={goNext}
@@ -661,7 +714,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
         />
       )}
 
-      {state.step === 2 && (
+      {state.step === 2 && !isKeyboardOpen && (
         <StickyCta
           label="Continuar al pago →"
           onClick={goNext}
@@ -672,7 +725,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
         />
       )}
 
-      {state.step === 3 && (
+      {state.step === 3 && !isKeyboardOpen && (
         <StickyCta
           label="Ver instrucciones de pago →"
           onClick={handleSubmitOrder}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Loader2, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useKeyboardOpen } from "@/hooks/useKeyboardOpen";
 
 interface ReferenceEntryProps {
   orderId: string;
@@ -10,6 +11,7 @@ interface ReferenceEntryProps {
   onConfirmed: () => void;
   onError: (message: string) => void;
   onFallbackWhatsApp: () => void;
+  activeProviderId?: string;
 }
 
 export function ReferenceEntry({
@@ -18,6 +20,7 @@ export function ReferenceEntry({
   onConfirmed,
   onError,
   onFallbackWhatsApp,
+  activeProviderId,
 }: ReferenceEntryProps) {
   const [reference, setReference] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
@@ -25,8 +28,12 @@ export function ReferenceEntry({
   const [attempts, setAttempts] = useState(0);
   const [isTransitioningToWa, setIsTransitioningToWa] = useState(false);
 
+  const { isKeyboardOpen } = useKeyboardOpen();
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const MAX_ATTEMPTS = 3;
-  const isValidLength = reference.length >= 4 && reference.length <= 20;
+  const minLengthRequired = 4;
+  const isValidLength = reference.length >= minLengthRequired && reference.length <= 20;
 
   const handleChange = (val: string) => {
     // Only allow digits
@@ -46,6 +53,13 @@ export function ReferenceEntry({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, reference, checkoutToken }),
       });
+
+      if (res.status === 429) {
+        const msg = "Demasiados intentos. Por favor espera un momento antes de volver a verificar.";
+        setVerifyError(msg);
+        onError(msg);
+        return;
+      }
 
       const data = await res.json();
 
@@ -84,11 +98,24 @@ export function ReferenceEntry({
         </p>
 
         <input
+          ref={inputRef}
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
+          enterKeyHint="go"
           value={reference}
           onChange={(e) => handleChange(e.target.value)}
+          onFocus={() => {
+            setTimeout(() => {
+              inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 150);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && isValidLength && !isVerifying) {
+              e.preventDefault();
+              handleVerify();
+            }
+          }}
           disabled={isVerifying || isTransitioningToWa}
           placeholder="Mínimo 4 dígitos de la referencia"
           className={cn(
@@ -111,47 +138,107 @@ export function ReferenceEntry({
         )}
       </div>
 
-      <button
-        onClick={handleVerify}
-        disabled={!isValidLength || isVerifying || isTransitioningToWa}
-        className={cn(
-          "w-full h-14 rounded-full font-semibold text-base transition-all active:scale-[0.98]",
-          isValidLength && !isVerifying && !isTransitioningToWa
-            ? "bg-primary text-white shadow-elevated"
-            : "bg-surface-section text-text-muted cursor-not-allowed"
-        )}
-      >
-        {isVerifying ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Verificando pago...
-          </span>
-        ) : (
-          "Verificar pago automático →"
-        )}
-      </button>
+      {/* Simple help line in scrollable content */}
+      {(activeProviderId === "local_notifications" || activeProviderId === "pabilo_notifications") && (
+        <p className="text-center font-sans text-[11px] text-text-muted/85 mt-2 leading-normal px-2 select-none animate-in fade-in duration-300">
+          💡 Si ya transferiste, mantén abierta esta pantalla. Se actualizará sola.
+        </p>
+      )}
 
-      {attempts >= MAX_ATTEMPTS && (
-        <button
-          onClick={handleFallback}
-          disabled={isVerifying || isTransitioningToWa}
-          className={cn(
-            "w-full h-14 rounded-full font-bold text-[14px] uppercase tracking-wider transition-all active:scale-[0.98] border-2 border-[#25D366] text-[#25D366] bg-transparent flex items-center justify-center gap-2",
-            isTransitioningToWa && "opacity-75"
+      {/* Botón contextual inline cuando el teclado está abierto */}
+      {isKeyboardOpen && (
+        <div className="pt-2 flex flex-col gap-2 animate-in fade-in duration-150">
+          <button
+            onClick={handleVerify}
+            disabled={!isValidLength || isVerifying || isTransitioningToWa}
+            className={cn(
+              "w-full h-13 rounded-full font-semibold text-base shadow-elevated transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer",
+              isValidLength && !isVerifying && !isTransitioningToWa
+                ? "bg-primary text-white"
+                : "bg-surface-section text-text-muted cursor-not-allowed"
+            )}
+          >
+            {isVerifying ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Verificando pago...
+              </span>
+            ) : (
+              "Verificar pago automático →"
+            )}
+          </button>
+
+          {attempts >= MAX_ATTEMPTS && (
+            <button
+              onClick={handleFallback}
+              disabled={isVerifying || isTransitioningToWa}
+              className={cn(
+                "w-full h-11 rounded-full font-bold text-[12px] uppercase tracking-wider transition-all duration-150 active:scale-[0.98] border border-[#25D366] text-[#25D366] bg-transparent flex items-center justify-center gap-2 cursor-pointer",
+                isTransitioningToWa && "opacity-75"
+              )}
+            >
+              {isTransitioningToWa ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Cargando WhatsApp...
+                </>
+              ) : (
+                <>
+                  <Phone className="w-3.5 h-3.5" />
+                  Verificar por WhatsApp manual
+                </>
+              )}
+            </button>
           )}
-        >
-          {isTransitioningToWa ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Cargando WhatsApp...
-            </>
-          ) : (
-            <>
-              <Phone className="w-4 h-4" />
-              Verificar por WhatsApp manual
-            </>
+        </div>
+      )}
+
+      {/* Sticky/Fixed footer for the verification and WhatsApp fallback buttons (solo si el teclado está cerrado) */}
+      {!isKeyboardOpen && (
+        <div className="fixed bottom-0 inset-x-0 z-30 px-5 pt-3.5 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-bg-app/95 backdrop-blur-xl border-t border-border flex flex-col gap-2">
+          <button
+            onClick={handleVerify}
+            disabled={!isValidLength || isVerifying || isTransitioningToWa}
+            className={cn(
+              "w-full h-14 rounded-full font-semibold text-base shadow-elevated transition-all active:scale-[0.98] cursor-pointer",
+              isValidLength && !isVerifying && !isTransitioningToWa
+                ? "bg-primary text-white"
+                : "bg-surface-section text-text-muted cursor-not-allowed"
+            )}
+          >
+            {isVerifying ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Verificando pago...
+              </span>
+            ) : (
+              "Verificar pago automático →"
+            )}
+          </button>
+
+          {attempts >= MAX_ATTEMPTS && (
+            <button
+              onClick={handleFallback}
+              disabled={isVerifying || isTransitioningToWa}
+              className={cn(
+                "w-full h-11 rounded-full font-bold text-[12px] uppercase tracking-wider transition-all active:scale-[0.98] border border-[#25D366] text-[#25D366] bg-transparent flex items-center justify-center gap-2 cursor-pointer",
+                isTransitioningToWa && "opacity-75"
+              )}
+            >
+              {isTransitioningToWa ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Cargando WhatsApp...
+                </>
+              ) : (
+                <>
+                  <Phone className="w-3.5 h-3.5" />
+                  Verificar por WhatsApp manual
+                </>
+              )}
+            </button>
           )}
-        </button>
+        </div>
       )}
     </div>
   );
