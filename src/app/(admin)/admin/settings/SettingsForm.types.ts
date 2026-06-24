@@ -30,6 +30,7 @@ export interface SettingsFormData {
   pabiloApiKey?: string;
   pabiloUserBankId?: string;
   pabiloNotificationsBankId?: string;
+  localDeviceToken?: string;
   orderExpirationMinutes: number;
   maxPendingOrders: number;
   maxQuantityPerItem: number;
@@ -111,6 +112,7 @@ export const PAYMENT_PROVIDERS = [
   { id: "bnc_feed" as const satisfies ProviderId, label: "BNC (Smart Pay)" },
   { id: "pabilo_bdv" as const satisfies ProviderId, label: "Pabilo (BDV Personal)" },
   { id: "pabilo_notifications" as const satisfies ProviderId, label: "Pabilo (Notificaciones SMS)" },
+  { id: "local_notifications" as const satisfies ProviderId, label: "Pasarela Local (SmsForwarder)" },
   { id: "whatsapp_manual" as const satisfies ProviderId, label: "Confirmación WhatsApp" },
 ] as const;
 // ^ Using `satisfies ProviderId` ensures TypeScript errors immediately if any id drifts from the canonical type

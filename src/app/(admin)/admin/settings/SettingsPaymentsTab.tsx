@@ -1,6 +1,6 @@
 "use client";
  
-import { CreditCard, Smartphone, DollarSign, Bitcoin, Banknote, ShieldCheck, Key, Settings, Info } from "lucide-react";
+import { CreditCard, Smartphone, DollarSign, Bitcoin, Banknote, ShieldCheck, Key, Settings, Info, Copy, RefreshCw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { SettingsFormData } from "./SettingsForm.types";
 import { PAYMENT_PROVIDERS } from "./SettingsForm.types";
+import { generateDeviceTokenAction } from "@/actions/settings";
  
 interface SettingsPaymentsTabProps {
   form: SettingsFormData;
@@ -520,6 +521,49 @@ export function SettingsPaymentsTab({ form, updateField }: SettingsPaymentsTabPr
                     className="rounded-xl border-border/60 focus-visible:ring-primary/20 h-10 text-sm font-semibold"
                     placeholder="bank_notif_..."
                   />
+                </div>
+              </div>
+            )}
+
+            {/* Pasarela Local (SmsForwarder) */}
+            {form.activePaymentProvider === "local_notifications" && (
+              <div className="space-y-4 animate-in slide-in-from-top-2 w-full">
+                <h4 className="font-bold text-sm flex items-center gap-2 text-text-main border-b border-border/30 pb-2.5">
+                  <Smartphone className="h-4 w-4 text-primary" /> Pasarela Local (SmsForwarder)
+                </h4>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-text-muted uppercase tracking-wider block">Token de Autenticación Privado</Label>
+                  <div className="flex gap-2 items-center bg-white border border-border/60 rounded-xl px-3 py-1.5 shadow-sm">
+                    <span className="font-mono text-xs font-bold text-text-main break-all flex-1 select-all">
+                      {form.localDeviceToken || "Sin token generado"}
+                    </span>
+                    {form.localDeviceToken && (
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText(form.localDeviceToken || "")}
+                        className="p-2 hover:bg-bg-app rounded-lg text-primary transition-colors shrink-0 cursor-pointer"
+                        title="Copiar token"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const res = await generateDeviceTokenAction({});
+                        if (res?.data?.token) {
+                          updateField("localDeviceToken", res.data.token);
+                        }
+                      }}
+                      className="p-2 hover:bg-bg-app rounded-lg text-text-muted transition-colors shrink-0 cursor-pointer"
+                      title="Generar nuevo token"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-text-muted leading-tight mt-1">
+                    Este token secreto debe colocarse en las cabeceras de SmsForwarder como <code>X-Device-Token</code>.
+                  </p>
                 </div>
               </div>
             )}

@@ -58,6 +58,7 @@ export default async function SettingsPage() {
               pabiloApiKey: settings.pabiloApiKey ?? "",
               pabiloUserBankId: settings.pabiloUserBankId ?? "",
               pabiloNotificationsBankId: settings.pabiloNotificationsBankId ?? "",
+              localDeviceToken: settings.localDeviceToken ?? "",
               whatsappNumber: settings.whatsappNumber,
               whatsappMicroserviceUrl: settings.whatsappMicroserviceUrl ?? "",
               instagramUrl: settings.instagramUrl ?? "",

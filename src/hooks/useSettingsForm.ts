@@ -36,6 +36,7 @@ const DEFAULT_FORM: SettingsFormData = {
   pabiloApiKey: "",
   pabiloUserBankId: "",
   pabiloNotificationsBankId: "",
+  localDeviceToken: "",
   orderExpirationMinutes: 30,
   maxPendingOrders: 99,
   maxQuantityPerItem: 10,

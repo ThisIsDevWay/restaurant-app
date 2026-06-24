@@ -146,4 +146,17 @@ export const fetchCheckoutSettings = async () => {
   };
 }
 
+export const generateDeviceTokenAction = adminActionClient
+  .schema(v.object({}))
+  .action(async () => {
+    try {
+      const { randomBytes } = await import("crypto");
+      const token = randomBytes(16).toString("hex");
+      return { success: true, token };
+    } catch (error) {
+      logger.error("Generate token error", { error });
+      return { success: false, error: "Error al generar token" };
+    }
+  });
+
 

@@ -178,3 +178,7 @@ export const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
   paid: "kitchen",
   kitchen: "delivered",
 };
+
+export function translateStatus(status: string): string {
+  return STATUS_STYLES[status as OrderStatus]?.label || status;
+}
