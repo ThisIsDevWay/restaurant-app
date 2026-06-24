@@ -33,12 +33,20 @@ function createLimiter(maxRequests: number, windowMs: number) {
         globalStore.set(identifier, win);
       }
 
+      if (win.count >= maxRequests) {
+        return {
+          success: false,
+          limit: maxRequests,
+          remaining: 0,
+          reset: win.resetAt,
+        };
+      }
+
       win.count++;
-      const remaining = Math.max(0, maxRequests - win.count);
-      const success = win.count <= maxRequests;
+      const remaining = maxRequests - win.count;
 
       return {
-        success,
+        success: true,
         limit: maxRequests,
         remaining,
         reset: win.resetAt,
@@ -48,10 +56,10 @@ function createLimiter(maxRequests: number, windowMs: number) {
 }
 
 export const rateLimiters = {
-  paymentWebhook: createLimiter(100, 60_000),  // 100 req/min
-  orderStatus: createLimiter(30, 60_000),  // 30 req/min
-  checkout: createLimiter(10, 60_000),  // 10 req/min
-  lookup: createLimiter(20, 60_000),  // 20 req/min
+  paymentWebhook: createLimiter(30, 60_000),  // 30 req/min
+  orderStatus: createLimiter(100, 60_000), // 100 req/min
+  checkout: createLimiter(30, 60_000),     // 30 req/min
+  lookup: createLimiter(40, 60_000),       // 40 req/min
   imagekitUpload: createLimiter(5, 60_000),   // 5 uploads/min per IP
   tvPairCheck: createLimiter(60, 60_000),     // 60 checks/min per IP — TV polls every 4s (15/min); headroom for several TVs behind one NAT. Still trivially safe vs brute-force on a short-lived 6-char code.
 };

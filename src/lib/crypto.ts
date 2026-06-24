@@ -25,3 +25,20 @@ export async function verifyWebhookSignature(
     return false;
   }
 }
+
+/**
+ * Compara dos tokens de dispositivo de forma segura contra ataques de temporización.
+ */
+export function verifyDeviceToken(received: string, expected: string): boolean {
+  try {
+    const receivedBuffer = Buffer.from(received, "utf8");
+    const expectedBuffer = Buffer.from(expected, "utf8");
+    if (receivedBuffer.length !== expectedBuffer.length) {
+      return false;
+    }
+    return timingSafeEqual(receivedBuffer, expectedBuffer);
+  } catch {
+    return false;
+  }
+}
+
