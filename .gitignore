@@ -73,6 +73,7 @@ diff.txt
 filtered_diff.txt
 diff_stat.txt
 diff_checkout.txt
+nul
 
 # Removed artifacts
 .7z
