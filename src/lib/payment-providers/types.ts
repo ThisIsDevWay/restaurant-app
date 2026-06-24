@@ -7,7 +7,8 @@ export type ProviderId =
   | "bnc_feed"
   | "whatsapp_manual"
   | "pabilo_bdv"
-  | "pabilo_notifications";
+  | "pabilo_notifications"
+  | "local_notifications";
 
 export type PaymentInitResult =
   | {

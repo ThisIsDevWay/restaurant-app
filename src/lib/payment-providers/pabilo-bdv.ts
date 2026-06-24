@@ -13,6 +13,7 @@ import { orders, paymentsLog } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import * as Sentry from "@sentry/nextjs";
 import { logger } from "@/lib/logger";
+import { translateStatus } from "@/lib/constants/order-status";
 
 export class PabiloBdvProvider implements PaymentProvider {
   readonly id = "pabilo_bdv" as const;
@@ -83,11 +84,13 @@ export class PabiloBdvProvider implements PaymentProvider {
       return {
         success: false,
         reason: "already_used",
-        message: `La orden ya tiene estado: ${order.status}`,
+        message: `La orden ya tiene estado: ${translateStatus(order.status)}`,
       };
     }
 
-    if (order.expiresAt < new Date()) {
+    const expirationToleranceMs = 10 * 60 * 1000;
+    const isExpired = order.expiresAt.getTime() + expirationToleranceMs < Date.now();
+    if (isExpired) {
       return {
         success: false,
         reason: "expired",

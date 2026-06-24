@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import * as Sentry from "@sentry/nextjs";
 import { logger } from "@/lib/logger";
 import { mercantilEncrypt } from "./mercantil-crypto";
+import { translateStatus } from "@/lib/constants/order-status";
 
 export class MercantilC2PProvider implements PaymentProvider {
   readonly id = "mercantil_c2p" as const;
@@ -82,11 +83,13 @@ export class MercantilC2PProvider implements PaymentProvider {
       return {
         success: false,
         reason: "already_used",
-        message: `La orden ya tiene estado: ${order.status}`,
+        message: `La orden ya tiene estado: ${translateStatus(order.status)}`,
       };
     }
 
-    if (order.expiresAt < new Date()) {
+    const expirationToleranceMs = 10 * 60 * 1000;
+    const isExpired = order.expiresAt.getTime() + expirationToleranceMs < Date.now();
+    if (isExpired) {
       return {
         success: false,
         reason: "expired",

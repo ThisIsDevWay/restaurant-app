@@ -11,6 +11,7 @@ import { orders, paymentsLog } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 import { buildOrderMessage, type SurchargesInfo } from "@/lib/whatsapp/messages";
+import { translateStatus } from "@/lib/constants/order-status";
 
 export class WhatsAppManualProvider implements PaymentProvider {
   readonly id = "whatsapp_manual" as const;
@@ -108,7 +109,7 @@ export class WhatsAppManualProvider implements PaymentProvider {
       return {
         success: false,
         reason: "already_used",
-        message: `La orden ya tiene estado: ${order.status}`,
+        message: `La orden ya tiene estado: ${translateStatus(order.status)}`,
       };
     }
 

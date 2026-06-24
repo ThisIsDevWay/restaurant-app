@@ -5,6 +5,7 @@ import { BNCFeedProvider } from "./bnc-feed";
 import { WhatsAppManualProvider } from "./whatsapp-manual";
 import { PabiloBdvProvider } from "./pabilo-bdv";
 import { PabiloNotificationsProvider } from "./pabilo-notifications";
+import { LocalNotificationsProvider } from "./local-notifications";
 
 /** Resuelve el proveedor configurado en settings (usado durante checkout) */
 export function getActiveProvider(settings: SettingsRow): PaymentProvider {
@@ -35,6 +36,8 @@ function resolveProvider(providerId: string, settings: SettingsRow): PaymentProv
       return new PabiloBdvProvider(settings);
     case "pabilo_notifications":
       return new PabiloNotificationsProvider(settings);
+    case "local_notifications":
+      return new LocalNotificationsProvider(settings);
     default:
       return new BanescoReferenceProvider(settings);
   }

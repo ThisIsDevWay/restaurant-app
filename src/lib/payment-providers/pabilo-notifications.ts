@@ -8,11 +8,12 @@ import type {
   OrderRow,
 } from "./types";
 import { db } from "@/db";
-import { orders, paymentsLog } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { orders, paymentsLog, bankNotifications } from "@/db/schema";
+import { eq, or, like, sql, and, isNotNull } from "drizzle-orm";
 import * as Sentry from "@sentry/nextjs";
 import { logger } from "@/lib/logger";
-import { parseDecimalStringToCents } from "@/services/payment.service";
+import { parseDecimalStringToCents, reconcileSingleOrder } from "@/services/payment.service";
+import { translateStatus } from "@/lib/constants/order-status";
 
 export class PabiloNotificationsProvider implements PaymentProvider {
   readonly id = "pabilo_notifications" as const;
@@ -79,19 +80,70 @@ export class PabiloNotificationsProvider implements PaymentProvider {
       };
     }
 
+    if (order.status === "paid") {
+      return {
+        success: true,
+        reference: order.paymentReference || cleanRef,
+        providerRaw: { verified: true, alreadyPaid: true },
+      };
+    }
+
     if (order.status !== "pending") {
       return {
         success: false,
         reason: "already_used",
-        message: `La orden ya tiene estado: ${order.status}`,
+        message: `La orden ya tiene estado: ${translateStatus(order.status)}`,
       };
     }
 
-    if (order.expiresAt < new Date()) {
+    const expirationToleranceMs = 10 * 60 * 1000;
+    const isExpired = order.expiresAt.getTime() + expirationToleranceMs < Date.now();
+    if (isExpired) {
       return {
         success: false,
         reason: "expired",
         message: "La orden ha expirado",
+      };
+    }
+
+    // Check if the reference has already been used in another payment (cruzado bidireccional)
+    const [existingLog] = await db
+      .select()
+      .from(paymentsLog)
+      .where(
+        and(
+          isNotNull(paymentsLog.reference),
+          or(
+            eq(paymentsLog.reference, cleanRef),
+            sql`reference LIKE ${"%" + cleanRef} OR ${cleanRef} LIKE concat('%', reference)`
+          )
+        )
+      )
+      .limit(1);
+
+    if (existingLog) {
+      return {
+        success: false,
+        reason: "already_used",
+        message: "Esta referencia ya fue utilizada",
+      };
+    }
+
+    // Check if the reference exists in bankNotifications but has a different amount
+    const matchedNotifs = await db
+      .select()
+      .from(bankNotifications)
+      .where(eq(bankNotifications.status, "pending"));
+
+    const sameRefNotif = matchedNotifs.find(
+      (n) => n.reference.endsWith(cleanRef) || cleanRef.endsWith(n.reference)
+    );
+
+    if (sameRefNotif && sameRefNotif.amountBsCents !== order.grandTotalBsCents) {
+      return {
+        success: false,
+        reason: "amount_mismatch",
+        message: "El monto del pago móvil recibido no coincide con el total de tu orden.",
       };
     }
 
@@ -151,85 +203,68 @@ export class PabiloNotificationsProvider implements PaymentProvider {
       }
 
       const { notifications } = await res.json();
-      const expectedAmountBsCents = order.grandTotalBsCents;
 
-      // Find a matching notification (amount exact check + reference endsWith check)
-      const match = notifications.find((notif: any) => {
-        if (notif.status !== "CONFIRMED") return false;
-        const notifRef = String(notif.reference ?? "").trim();
-        if (!notifRef) return false;
+      // Get all existing references in bankNotifications
+      const existingNotifs = await db
+        .select({ reference: bankNotifications.reference })
+        .from(bankNotifications);
 
-        const notifAmountBsCents = parseDecimalStringToCents(notif.amount);
-        return notifRef.endsWith(cleanRef) && notifAmountBsCents === expectedAmountBsCents;
-      });
-
-      if (match) {
-        // Mark as paid in transaction
-        const txResult = await db.transaction(async (tx) => {
-          // Double check paymentsLog for duplicate matching references
-          const [existingLog] = await tx
-            .select()
-            .from(paymentsLog)
-            .where(eq(paymentsLog.reference, match.reference))
-            .for("update")
-            .limit(1);
-
-          if (existingLog) {
-            logger.warn("Intento de reutilizar referencia detectado en Notificaciones Pabilo", { orderId, reference: match.reference });
-            return {
-              success: false as const,
-              reason: "already_used" as const,
-              message: "Esta referencia ya fue utilizada anteriormente en otro pedido",
-            };
-          }
-
-          await tx
-            .update(orders)
-            .set({
-              status: "paid",
-              paymentReference: match.reference,
-              updatedAt: new Date(),
-            })
-            .where(eq(orders.id, orderId));
-
-          await tx.insert(paymentsLog).values({
-            orderId,
-            providerId: this.id,
-            amountBsCents: expectedAmountBsCents,
-            reference: match.reference,
-            senderPhone: match.from || order.customerPhone,
-            providerRaw: match,
-            outcome: "confirmed",
-          });
-
-          return null;
+      // Save Pabilo's confirmed notifications into our unified bank_notifications table
+      const notificationsToInsert = notifications
+        .filter((notif: any) => notif.status === "CONFIRMED" && notif.reference)
+        .map((notif: any) => ({
+          source: "pabilo" as const,
+          sender: "pabilo",
+          message: notif.message || `Pago recibido de ${notif.from || "desconocido"} por ${notif.amount} Bs. Ref: ${notif.reference}`,
+          amountRaw: notif.amount,
+          amountBsCents: parseDecimalStringToCents(notif.amount),
+          reference: String(notif.reference).trim(),
+          senderPhone: notif.from || null,
+          rawPayload: notif,
+          status: "pending" as const,
+        }))
+        .filter((newNotif: any) => {
+          const newRef = newNotif.reference;
+          const duplicate = existingNotifs.some(
+            (existing) => existing.reference.endsWith(newRef) || newRef.endsWith(existing.reference)
+          );
+          return !duplicate;
         });
 
-        if (txResult) {
-          return txResult;
-        }
+      if (notificationsToInsert.length > 0) {
+        await db.insert(bankNotifications).values(notificationsToInsert).onConflictDoNothing();
+      }
+
+      // Save the reference entered by the client so we can reconcile
+      await db
+        .update(orders)
+        .set({
+          paymentReference: cleanRef,
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, orderId));
+
+      // 3. Try to reconcile using the unified reconciliation service
+      const reconciled = await reconcileSingleOrder(orderId, cleanRef);
+      if (reconciled) {
+        const [log] = await db
+          .select()
+          .from(paymentsLog)
+          .where(eq(paymentsLog.orderId, orderId))
+          .limit(1);
 
         return {
           success: true,
-          reference: match.reference,
-          providerRaw: match,
-        };
-      } else {
-        // Save the reference entered by the client so the cron can find it later
-        await db
-          .update(orders)
-          .set({
-            paymentReference: cleanRef,
-            updatedAt: new Date(),
-          })
-          .where(eq(orders.id, orderId));
-
-        return {
-          success: false,
-          reason: "invalid_reference",
-          message: "Pago aún no detectado. Si ya transferiste, espera 1-2 minutos y presiona verificar de nuevo.",
+          reference: log?.reference || cleanRef,
+          providerRaw: log?.providerRaw || {},
         };
       }
+
+      return {
+        success: false,
+        reason: "invalid_reference",
+        message: "Pago aún no detectado. Si ya transferiste, espera 1-2 minutos y presiona verificar de nuevo.",
+      };
     } catch (err: any) {
       logger.error("Error in Pabilo notifications confirmPayment", { error: err.message, orderId });
       Sentry.captureException(err, { extra: { context: "pabilo-notifications-confirm", orderId } });
