@@ -8,10 +8,11 @@ import {
   unique,
   index,
 } from "drizzle-orm/pg-core";
+import { orders } from "./orders";
 
 export const paymentsLog = pgTable("payments_log", {
   id: uuid("id").primaryKey().defaultRandom(),
-  orderId: uuid("order_id").notNull(),
+  orderId: uuid("order_id").references((): any => orders.id, { onDelete: "set null" }),
   providerId: text("provider_id").notNull(),
   amountBsCents: integer("amount_bs_cents").notNull(),
   reference: text("reference"),
@@ -31,3 +32,4 @@ export const paymentsLog = pgTable("payments_log", {
   orderIdIdx: index("payments_log_order_id_idx").on(table.orderId),
   orderIdCreatedIdx: index("payments_log_order_id_created_idx").on(table.orderId, table.createdAt),
 }));
+

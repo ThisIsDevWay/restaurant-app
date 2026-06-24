@@ -27,4 +27,5 @@ export {
   tvDisplayMedia,
 } from "./tv";
 export { menuTemplates } from "./menu-templates";
+export { bankNotifications } from "./bank-notifications";
 

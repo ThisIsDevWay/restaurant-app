@@ -47,6 +47,7 @@ export const settings = pgTable("settings", {
   pabiloApiKey: text("pabilo_api_key"),
   pabiloUserBankId: text("pabilo_user_bank_id"),
   pabiloNotificationsBankId: text("pabilo_notifications_bank_id"),
+  localDeviceToken: text("local_device_token"),
   whatsappNumber: text("whatsapp_number").notNull().default(""),
   whatsappMicroserviceUrl: text("whatsapp_microservice_url")
     .notNull()

@@ -94,9 +94,10 @@ export const orders = pgTable("orders", {
       | "whatsapp_manual"
       | "pabilo_bdv"
       | "pabilo_notifications"
+      | "local_notifications"
     >(),
   paymentReference: text("payment_reference"),
-  paymentLogId: uuid("payment_log_id").references(() => paymentsLog.id),
+  paymentLogId: uuid("payment_log_id").references((): any => paymentsLog.id),
   orderMode: text("order_mode")
     .$type<"on_site" | "take_away" | "delivery">(),
   deliveryAddress: text("delivery_address"),
