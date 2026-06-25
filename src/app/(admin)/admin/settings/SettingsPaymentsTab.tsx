@@ -1,5 +1,6 @@
 "use client";
  
+import { useState } from "react";
 import { CreditCard, Smartphone, DollarSign, Bitcoin, Banknote, ShieldCheck, Key, Settings, Info, Copy, RefreshCw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { SettingsFormData } from "./SettingsForm.types";
 import { PAYMENT_PROVIDERS } from "./SettingsForm.types";
-import { generateDeviceTokenAction } from "@/actions/settings";
+import { generateDeviceTokenAction, registerPabiloBankAccount } from "@/actions/settings";
  
 interface SettingsPaymentsTabProps {
   form: SettingsFormData;
@@ -83,6 +84,46 @@ function PaymentSection({ enabled, onToggle, icon, title, badge, children, note 
 }
  
 export function SettingsPaymentsTab({ form, updateField }: SettingsPaymentsTabProps) {
+  const [bdvUser, setBdvUser] = useState("");
+  const [bdvPassword, setBdvPassword] = useState("");
+  const [bdvPhone, setBdvPhone] = useState("");
+  const [bdvDni, setBdvDni] = useState("");
+  const [bdvDesc, setBdvDesc] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
+
+  const handleRegisterBdv = async () => {
+    if (!bdvUser || !bdvPassword || !bdvPhone || !bdvDni || isRegistering) return;
+    setIsRegistering(true);
+    setRegisterError(null);
+
+    try {
+      const result = await registerPabiloBankAccount({
+        pabiloApiKey: form.pabiloApiKey || "",
+        username: bdvUser,
+        password: bdvPassword,
+        userBankPhone: bdvPhone,
+        userBankDni: bdvDni,
+        description: bdvDesc || undefined,
+      });
+
+      if (result && result.data && result.data.success && result.data.userBankId) {
+        updateField("pabiloUserBankId", result.data.userBankId);
+        setBdvUser("");
+        setBdvPassword("");
+        setBdvPhone("");
+        setBdvDni("");
+        setBdvDesc("");
+      } else {
+        setRegisterError(result?.data?.error || result?.serverError || "No se pudo registrar la cuenta.");
+      }
+    } catch (err: any) {
+      setRegisterError("Error de comunicación. Intenta de nuevo.");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
  
@@ -485,15 +526,117 @@ export function SettingsPaymentsTab({ form, updateField }: SettingsPaymentsTabPr
                     placeholder="••••••••••••••••••••••••••••••••"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-text-muted uppercase tracking-wider">User Bank ID (Banco BDV registrado)</Label>
-                  <Input
-                    value={form.pabiloUserBankId || ""}
-                    onChange={(e) => updateField("pabiloUserBankId", e.target.value)}
-                    className="rounded-xl border-border/60 focus-visible:ring-primary/20 h-10 text-sm font-semibold"
-                    placeholder="bank_user_..."
-                  />
-                </div>
+
+                {form.pabiloUserBankId ? (
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-text-muted uppercase tracking-wider">User Bank ID (Banco BDV registrado)</Label>
+                      <Input
+                        value={form.pabiloUserBankId || ""}
+                        readOnly
+                        className="rounded-xl border-border/60 bg-bg-app/50 h-10 text-sm font-semibold select-all font-mono"
+                        placeholder="bank_user_..."
+                      />
+                    </div>
+                    <div className="p-3.5 bg-success/5 border border-success/15 rounded-xl text-success font-sans text-xs flex flex-col gap-1.5">
+                      <span className="font-bold">✓ Cuenta vinculada con éxito.</span>
+                      <p className="text-text-muted font-medium">Si necesitas cambiar de cuenta o tu contraseña bancaria expiró, puedes desvincularla para registrar de nuevo.</p>
+                      <button
+                        type="button"
+                        onClick={() => updateField("pabiloUserBankId", "")}
+                        className="mt-1 self-start px-3 py-1.5 bg-primary/10 hover:bg-primary/25 text-primary text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                      >
+                        Desvincular Cuenta
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 p-4 border border-border/60 rounded-2xl bg-bg-app/5">
+                    <h5 className="font-bold text-xs text-text-main">Vincular Nueva Cuenta BDV Personal</h5>
+                    <p className="text-[11px] text-text-muted leading-relaxed font-medium">
+                      Dado que Pabilo no permite agregar cuentas personales desde su dashboard web, utiliza este formulario para registrarla vía API. Tus credenciales se envían de forma segura y directa a Pabilo, nunca se almacenan en este servidor.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Usuario BDV en Línea</Label>
+                        <Input
+                          value={bdvUser}
+                          onChange={(e) => { setBdvUser(e.target.value); setRegisterError(null); }}
+                          className="rounded-xl border-border/60 h-9 text-xs font-semibold"
+                          placeholder="MiUsuario123"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Contraseña BDV en Línea</Label>
+                        <Input
+                          type="password"
+                          value={bdvPassword}
+                          onChange={(e) => { setBdvPassword(e.target.value); setRegisterError(null); }}
+                          className="rounded-xl border-border/60 h-9 text-xs font-semibold"
+                          placeholder="••••••••"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Teléfono de Pago Móvil</Label>
+                        <Input
+                          value={bdvPhone}
+                          onChange={(e) => { setBdvPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); setRegisterError(null); }}
+                          className="rounded-xl border-border/60 h-9 text-xs font-semibold font-mono"
+                          placeholder="04241234567"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Cédula del Titular</Label>
+                        <Input
+                          value={bdvDni}
+                          onChange={(e) => { setBdvDni(e.target.value.replace(/\D/g, "").slice(0, 9)); setRegisterError(null); }}
+                          className="rounded-xl border-border/60 h-9 text-xs font-semibold font-mono"
+                          placeholder="12345678"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Descripción de Cuenta (Opcional)</Label>
+                      <Input
+                        value={bdvDesc}
+                        onChange={(e) => setBdvDesc(e.target.value)}
+                        className="rounded-xl border-border/60 h-9 text-xs font-semibold"
+                        placeholder="BDV Personal Principal"
+                      />
+                    </div>
+
+                    {registerError && (
+                      <p className="text-xs text-primary font-bold text-center mt-1">
+                        ⚠ {registerError}
+                      </p>
+                    )}
+
+                    <button
+                      type="button"
+                      disabled={isRegistering || !bdvUser || !bdvPassword || !bdvPhone || !bdvDni}
+                      onClick={handleRegisterBdv}
+                      className={cn(
+                        "w-full h-10 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                        isRegistering
+                          ? "bg-bg-app text-text-muted cursor-not-allowed border border-border"
+                          : (!bdvUser || !bdvPassword || !bdvPhone || !bdvDni)
+                          ? "bg-bg-app/60 text-text-muted/60 cursor-not-allowed border border-border/40"
+                          : "bg-primary text-white hover:bg-primary/95 active:scale-[0.98]"
+                      )}
+                    >
+                      {isRegistering ? (
+                        <>
+                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                          Registrando y Vinculando cuenta...
+                        </>
+                      ) : (
+                        "Registrar y Vincular en Pabilo"
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

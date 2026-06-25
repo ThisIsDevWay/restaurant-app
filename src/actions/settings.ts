@@ -12,6 +12,7 @@ import { adminActionClient } from "@/lib/safe-action";
 import { deleteFile } from "@/lib/imagekit/server";
 import { logger } from "@/lib/logger";
 import * as Sentry from "@sentry/nextjs";
+import { PabiloClient, PabiloError } from "@pabilo/sdk";
 
 type ActionResult =
   | { success: true; error?: never }
@@ -158,5 +159,71 @@ export const generateDeviceTokenAction = adminActionClient
       return { success: false, error: "Error al generar token" };
     }
   });
+
+const registerPabiloSchema = v.object({
+  pabiloApiKey: v.pipe(v.string(), v.minLength(1, "API Key requerida")),
+  username: v.pipe(v.string(), v.minLength(1, "Usuario requerido")),
+  password: v.pipe(v.string(), v.minLength(1, "Contraseña requerida")),
+  userBankPhone: v.pipe(v.string(), v.regex(/^04\d{9}$/, "Formato de teléfono inválido (Ej: 04121234567)")),
+  userBankDni: v.pipe(v.string(), v.regex(/^\d+$/, "Cédula debe contener solo dígitos")),
+  description: v.optional(v.string()),
+});
+
+export const registerPabiloBankAccount = adminActionClient
+  .schema(registerPabiloSchema)
+  .action(async ({ parsedInput: { pabiloApiKey, username, password, userBankPhone, userBankDni, description } }) => {
+    try {
+      const apiKey = pabiloApiKey.trim() || process.env.PABILO_API_KEY;
+      if (!apiKey) {
+        return { success: false, error: "La API Key de Pabilo no está configurada." };
+      }
+
+      const client = new PabiloClient({ apiKey });
+      const bank = await client.bankAccounts.create({
+        bankProvider: "VE_BAN",
+        description: description || "Cuenta BDV Personal",
+        userBankPhone,
+        userBankDni,
+        username,
+        password,
+      });
+
+      return { success: true, userBankId: bank.id };
+    } catch (err: any) {
+      if (err instanceof PabiloError) {
+        logger.error("registerPabiloBankAccount Pabilo SDK error", {
+          code: err.code,
+          status: err.statusCode,
+          raw: err.raw,
+        });
+        Sentry.captureException(err, { extra: { context: "pabilo-register-bank" } });
+
+        switch (err.code) {
+          case "USER_BANCK_BAD_PASSWORD":
+            return { success: false, error: "Las credenciales del portal BDV son incorrectas." };
+          case "USER_BANCK_PASSWORD_EXPIRED":
+            return { success: false, error: "La contraseña del portal BDV ha expirado. Actualízala en el portal de tu banco." };
+          case "USER_BANK_ALREADY_EXISTS":
+            return { success: false, error: "Esta cuenta BDV ya está registrada en Pabilo." };
+          case "NOT_ENOUGH_CREDITS":
+          case "PLAN_IS_NOT_ACTIVE":
+          case "REQUEST_LIMIT_REACHED":
+          case "BANK_ACCOUNT_LIMIT_REACHED":
+            return { success: false, error: "Límite o créditos de tu plan Pabilo alcanzados." };
+          case "UNAUTHORIZED":
+            return { success: false, error: "Pabilo API Key inválida." };
+          case "NETWORK_ERROR":
+          case "INTERNAL_ERROR":
+          default:
+            return { success: false, error: "Error de conexión con Pabilo. Intenta de nuevo." };
+        }
+      } else {
+        logger.error("Unhandled Pabilo bank account registration error", { error: err.message });
+        Sentry.captureException(err, { extra: { context: "pabilo-register-bank-unhandled" } });
+        return { success: false, error: "Error inesperado al registrar cuenta. Intenta de nuevo." };
+      }
+    }
+  });
+
 
 
