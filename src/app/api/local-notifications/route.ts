@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Error de parsing" }, { status: 422 });
     }
 
-    const { amountRaw, reference, phone } = parsed;
+    const { amountRaw, reference, phone, document } = parsed;
     const cleanRef = reference.trim();
 
     // Check SMS Age if receiveTime is provided
@@ -63,7 +63,9 @@ export async function POST(req: Request) {
         await db.insert(bankNotifications).values({
           source: source === "app_notification" ? "local_app" : "local_sms",
           sender, message, amountRaw, amountBsCents: amountCents,
-          reference: "FAILED_OLD_" + Date.now(), senderPhone: phone || null,
+          reference: "FAILED_OLD_" + Date.now(), 
+          senderPhone: phone || null,
+          senderDocument: document || null,
           status: "failed", rawPayload: json
         });
         return NextResponse.json({ error: "SMS muy antiguo" }, { status: 400 });
@@ -88,7 +90,11 @@ export async function POST(req: Request) {
     await db.insert(bankNotifications).values({
       source: source === "app_notification" ? "local_app" : "local_sms",
       sender, message, amountRaw, amountBsCents: amountCents,
-      reference: cleanRef, senderPhone: phone || null, status: "pending", rawPayload: json
+      reference: cleanRef, 
+      senderPhone: phone || null, 
+      senderDocument: document || null,
+      status: "pending", 
+      rawPayload: json
     });
 
     // Ejecutar pipeline
