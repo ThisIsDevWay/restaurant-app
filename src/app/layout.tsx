@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Epilogue, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -74,6 +76,8 @@ export default function RootLayout({
         <QueryProvider>
           <ThemeManager />
           {children}
+          <SpeedInsights />
+          <Analytics />
           <Toaster
             position="bottom-center"
             richColors
