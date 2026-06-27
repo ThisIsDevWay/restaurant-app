@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { tvPairingSessions } from "@/db/schema";
-import {
-  PAIRING_TTL_MS,
-  expireStalePairings,
-  generatePairingCode,
-} from "@/lib/services/tv-pairing";
+import { PAIRING_TTL_MS, expireStalePairings, generatePairingCode } from "@/lib/services/tv-pairing";
+import { rateLimiters, getIP } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +15,15 @@ export const dynamic = "force-dynamic";
  * Body (optional): { deviceFingerprint?: string }
  */
 export async function POST(req: Request) {
+  const ip = getIP(req);
+  const { success } = await rateLimiters.tvPairInit.limit(ip);
+  if (!success) {
+    return NextResponse.json(
+      { error: "Demasiadas solicitudes. Intente más tarde." },
+      { status: 429 },
+    );
+  }
+
   let deviceFingerprint: string | undefined;
   try {
     const body = (await req.json().catch(() => ({}))) as {
@@ -52,7 +59,7 @@ export async function POST(req: Request) {
       sessionId: session.id,
     });
   } catch (err) {
-    console.error("[tv/pair/init] failed", err);
+    logger.error("TV pair init failed", { err });
     return NextResponse.json(
       { error: "No se pudo generar el código. Intenta de nuevo." },
       { status: 500 },

@@ -62,6 +62,7 @@ export const rateLimiters = {
   lookup: createLimiter(40, 60_000),       // 40 req/min
   imagekitUpload: createLimiter(5, 60_000),   // 5 uploads/min per IP
   tvPairCheck: createLimiter(60, 60_000),     // 60 checks/min per IP — TV polls every 4s (15/min); headroom for several TVs behind one NAT. Still trivially safe vs brute-force on a short-lived 6-char code.
+  tvPairInit: createLimiter(5, 60_000),       // 5 requests/min per IP
 };
 
 export function getIP(request: Request): string {

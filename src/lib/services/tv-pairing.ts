@@ -11,8 +11,9 @@ export const DISPLAY_TOKEN_PREFIX = "tv_";
 const PAIRING_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 /**
- * Generates a unique 4-digit numeric pairing code that
- * doesn't collide with any currently-pending session. Up to 10 retries, then throws.
+ * Generates a unique 6-character alphanumeric pairing code (charset: A-Z, 2-9, sin I/O/0/1).
+ * Espacio de claves: 32^6 ≈ 1.07e9. Evita colisiones con sesiones pending activas.
+ * Hasta 10 reintentos, luego lanza.
  */
 export async function generatePairingCode(): Promise<string> {
   for (let attempt = 0; attempt < 10; attempt++) {
@@ -91,70 +92,78 @@ export async function validatePairingCode(params: {
 > {
   const { code, displayName, validatedByUserId } = params;
 
-  // Read current session state.
-  const [session] = await db
-    .select()
-    .from(tvPairingSessions)
-    .where(eq(tvPairingSessions.pairingCode, code))
-    .orderBy(sql`${tvPairingSessions.createdAt} DESC`)
-    .limit(1);
+  try {
+    return await db.transaction(async (tx) => {
+      // Read current session state.
+      const [session] = await tx
+        .select()
+        .from(tvPairingSessions)
+        .where(eq(tvPairingSessions.pairingCode, code))
+        .orderBy(sql`${tvPairingSessions.createdAt} DESC`)
+        .limit(1);
 
-  if (!session) return { ok: false, reason: "not_found" };
-  if (session.status === "linked")
-    return { ok: false, reason: "already_linked" };
-  if (
-    session.status === "expired" ||
-    session.expiresAt.getTime() < Date.now()
-  ) {
-    return { ok: false, reason: "expired" };
+      if (!session) return { ok: false, reason: "not_found" as const };
+      if (session.status === "linked")
+        return { ok: false, reason: "already_linked" as const };
+      if (
+        session.status === "expired" ||
+        session.expiresAt.getTime() < Date.now()
+      ) {
+        return { ok: false, reason: "expired" as const };
+      }
+
+      // Create the display first (assigned the next displayOrder).
+      const displayToken = generateDisplayToken();
+      const [maxRow] = await tx
+        .select({ maxOrder: max(tvDisplays.displayOrder) })
+        .from(tvDisplays);
+      const nextOrder = (maxRow?.maxOrder ?? -1) + 1;
+      const [display] = await tx
+        .insert(tvDisplays)
+        .values({
+          name: displayName.trim() || "TV sin nombre",
+          displayToken,
+          linkedByUserId: validatedByUserId,
+          lastSeenAt: new Date(),
+          displayOrder: nextOrder,
+        })
+        .returning();
+
+      // Atomic claim of the session: update only if still pending.
+      const updated = await tx
+        .update(tvPairingSessions)
+        .set({
+          status: "linked",
+          linkedDisplayId: display.id,
+          finalAccessToken: displayToken,
+          validatedByUserId,
+          validatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(tvPairingSessions.id, session.id),
+            eq(tvPairingSessions.status, "pending"),
+          ),
+        )
+        .returning();
+
+      if (updated.length === 0) {
+        // Lost the race: another admin already linked this session.
+        // Throwing will rollback the display creation automatically.
+        throw new Error("RACE_LOST");
+      }
+
+      return {
+        ok: true,
+        displayId: display.id,
+        displayToken,
+        displayName: display.name,
+      };
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "RACE_LOST") {
+      return { ok: false, reason: "already_linked" as const };
+    }
+    throw err;
   }
-
-  // Create the display first (assigned the next displayOrder).
-  const displayToken = generateDisplayToken();
-  const [maxRow] = await db
-    .select({ maxOrder: max(tvDisplays.displayOrder) })
-    .from(tvDisplays);
-  const nextOrder = (maxRow?.maxOrder ?? -1) + 1;
-  const [display] = await db
-    .insert(tvDisplays)
-    .values({
-      name: displayName.trim() || "TV sin nombre",
-      displayToken,
-      linkedByUserId: validatedByUserId,
-      lastSeenAt: new Date(),
-      displayOrder: nextOrder,
-    })
-    .returning();
-
-  // Atomic claim of the session: update only if still pending.
-  const updated = await db
-    .update(tvPairingSessions)
-    .set({
-      status: "linked",
-      linkedDisplayId: display.id,
-      finalAccessToken: displayToken,
-      validatedByUserId,
-      validatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(tvPairingSessions.id, session.id),
-        eq(tvPairingSessions.status, "pending"),
-      ),
-    )
-    .returning();
-
-  if (updated.length === 0) {
-    // Lost the race: another admin already linked this session.
-    // Roll back the display we just created to avoid orphans.
-    await db.delete(tvDisplays).where(eq(tvDisplays.id, display.id));
-    return { ok: false, reason: "already_linked" };
-  }
-
-  return {
-    ok: true,
-    displayId: display.id,
-    displayToken,
-    displayName: display.name,
-  };
 }
