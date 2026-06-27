@@ -417,7 +417,7 @@ function EmptyState({
         @keyframes tv-glow { 0%,100% { opacity: .10; transform: scale(1); } 50% { opacity: .18; transform: scale(1.08); } }
       `}</style>
 
-      {ready && logoLoaded && (
+      {ready && (
         <>
           {/* Ambient glow */}
           <div style={{
@@ -444,7 +444,7 @@ function EmptyState({
           }}>
 
             {/* Logo */}
-            {logoUrl && (
+            {logoUrl && logoLoaded && (
               <div style={{ animation: "tv-fade 1s ease both", opacity: 0, marginBottom: S(1) }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={logoUrl} alt="" draggable={false} style={{
