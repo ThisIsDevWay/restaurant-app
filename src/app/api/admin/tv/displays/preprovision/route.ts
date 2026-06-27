@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db";
-import { tvDisplays } from "@/db/schema";
+import { tvDisplays, tvPairingSessions } from "@/db/schema";
 import { max } from "drizzle-orm";
 import { generateDisplayToken } from "@/lib/services/tv-pairing";
 
@@ -20,22 +20,36 @@ export async function POST(req: NextRequest) {
     /* body is optional */
   }
 
-  const displayToken = generateDisplayToken();
+  const { display, displayToken } = await db.transaction(async (tx) => {
+    const [maxRow] = await tx
+      .select({ maxOrder: max(tvDisplays.displayOrder) })
+      .from(tvDisplays);
+    const nextOrder = (maxRow?.maxOrder ?? -1) + 1;
 
-  const [maxRow] = await db
-    .select({ maxOrder: max(tvDisplays.displayOrder) })
-    .from(tvDisplays);
-  const nextOrder = (maxRow?.maxOrder ?? -1) + 1;
+    const token = generateDisplayToken();
+    const [newDisplay] = await tx
+      .insert(tvDisplays)
+      .values({
+        name: displayName,
+        displayToken: token,
+        linkedByUserId: session.user?.id as string | undefined,
+        displayOrder: nextOrder,
+      })
+      .returning();
 
-  const [display] = await db
-    .insert(tvDisplays)
-    .values({
-      name: displayName,
-      displayToken,
-      linkedByUserId: session.user?.id as string | undefined,
-      displayOrder: nextOrder,
-    })
-    .returning();
+    await tx.insert(tvPairingSessions).values({
+      pairingCode: `PRE-${newDisplay.id.slice(0, 6).toUpperCase()}`,
+      status: "linked",
+      linkedDisplayId: newDisplay.id,
+      finalAccessToken: token,
+      validatedByUserId: session.user?.id as string | undefined,
+      validatedAt: new Date(),
+      expiresAt: new Date(),
+      source: "preprovision",
+    });
+
+    return { display: newDisplay, displayToken: token };
+  });
 
   const origin = req.headers.get("origin") ?? req.nextUrl.origin;
   const previewUrl = `${origin}/tv?token=${encodeURIComponent(displayToken)}`;

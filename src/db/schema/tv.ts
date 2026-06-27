@@ -81,7 +81,7 @@ export const tvPairingSessions = pgTable(
   "tv_pairing_sessions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    /** 4 numeric digits, e.g. "4812" */
+    /** 6-char base32 (A-Z, 2-9, sin I/O/0/1), e.g. "AB3X7Q". Constraint: ^[A-Z2-9]{6}$ */
     pairingCode: text("pairing_code").notNull(),
     /** 'pending' | 'linked' | 'expired' */
     status: text("status")
@@ -105,6 +105,10 @@ export const tvPairingSessions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    source: text("source")
+      .notNull()
+      .default("pairing_code")
+      .$type<"pairing_code" | "preprovision">(),
   },
   (table) => [
     // Partial unique: only enforce uniqueness for sessions still pending.
@@ -120,6 +124,10 @@ export const tvPairingSessions = pgTable(
     check(
       "tv_pairing_status_check",
       sql`${table.status} IN ('pending', 'linked', 'expired')`,
+    ),
+    check(
+      "tv_pairing_source_check",
+      sql`${table.source} IN ('pairing_code', 'preprovision')`,
     ),
   ],
 );
