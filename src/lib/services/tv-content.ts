@@ -12,6 +12,8 @@ import { and, asc, desc, eq, isNull, lte, gte, or, sql } from "drizzle-orm";
 import type { TvMenuBoardConfig } from "@/db/schema/tv";
 import { isItemActiveNow } from "./tv-dayparting";
 import { resolveMenuBoard, type MenuBoardData } from "./tv-menu-board";
+import { logger } from "@/lib/logger";
+import * as Sentry from "@sentry/nextjs";
 
 export type ResolvedItem = {
   id: string;
@@ -111,7 +113,7 @@ export async function resolveContentForDisplay(
         ),
       ),
     )
-    .orderBy(desc(tvEvents.createdAt))
+    .orderBy(desc(tvEvents.createdAt), desc(tvEvents.id))
     .limit(1);
 
   if (matchingEvents.length > 0) {
@@ -224,7 +226,8 @@ async function materializeItems(
       try {
         pages = await resolveMenuBoard(row.slideConfig, orientationHint);
       } catch (err) {
-        console.error("Failed to resolve menu board", row.id, err);
+        logger.error("Failed to resolve menu board", { slideId: row.id, err });
+        Sentry.captureException(err, { tags: { component: "tv-content", slideId: row.id } });
         continue;
       }
       // Each page becomes its own carousel item so the display auto-advances
@@ -262,14 +265,19 @@ async function materializeItems(
  * filters add/remove items, so the bucket isn't needed for time transitions.
  */
 function hashItems(items: ResolvedItem[], _now: Date): string {
-  if (items.length === 0) return "empty";
+  if (items.length === 0) {
+    // Hash empty status with a 15-minute bucket to ensure periodically refreshing
+    // even if the admin doesn't change anything, avoiding sticky empty ETag.
+    const bucket = Math.floor(_now.getTime() / (15 * 60 * 1000));
+    return `empty-${bucket}`;
+  }
   const payload = items
     .map((i) => {
       if (i.type === "menu_board") {
         const mb = i.menuBoard;
         const sig = mb
           ? mb.items
-              .map((m) => `${m.id}:${m.priceUsdCents}`)
+              .map((m) => `${m.id}:${m.name}:${m.description ?? ""}:${m.imageUrl ?? ""}:${m.priceUsdCents}`)
               .join(",")
           : "";
         return `mb:${i.id}:${i.durationSeconds}:${sig}`;
@@ -333,6 +341,6 @@ export async function updateDisplayHeartbeat(params: {
         )
       );
   } catch (err) {
-    console.error("Failed to update tv heartbeat", err);
+    logger.error("Failed to update tv heartbeat", { displayId, err });
   }
 }

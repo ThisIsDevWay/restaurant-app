@@ -9,6 +9,8 @@
  * TV client already has open.
  */
 
+import { logger } from "@/lib/logger";
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
@@ -48,11 +50,9 @@ export async function broadcastTvConfigChange(
       }),
     });
     if (!res.ok) {
-      console.warn(
-        `[tv-broadcast] Broadcast failed for display ${displayId}: ${res.status}`,
-      );
+      logger.warn("TV broadcast failed", { displayId, status: res.status });
     }
   } catch (err) {
-    console.error("[tv-broadcast] Broadcast error:", err);
+    logger.error("TV broadcast error", { displayId, err });
   }
 }
