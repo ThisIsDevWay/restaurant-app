@@ -67,7 +67,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               // 'unsafe-inline' y 'unsafe-eval' son necesarios para Next.js
               // Monitorear si se puede eliminar en futuras versiones
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
               "style-src 'self' 'unsafe-inline'",
               `img-src ${cspImgSrc}`,
               `media-src ${cspMediaSrc}`,
