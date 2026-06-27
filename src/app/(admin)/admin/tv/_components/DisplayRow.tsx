@@ -25,7 +25,7 @@ export function DisplayRow({
   onConfigureMedia,
   onChange,
 }: {
-  display: TvDisplay;
+  display: TvDisplay & { hasOwnMedia?: boolean };
   isOnline: boolean;
   onEdit: () => void;
   onConfigureMedia: () => void;
@@ -111,16 +111,23 @@ export function DisplayRow({
               {!display.isActive ? (
                 <Badge variant="destructive" className="text-[9px] px-1.5 h-4.5 font-bold uppercase tracking-wider">Revocada</Badge>
               ) : (
-                <Badge
-                  className={cn(
-                    "text-[9px] px-1.5 h-4.5 border font-bold uppercase tracking-wider",
-                    isOnline
-                      ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                      : "bg-slate-50 border-slate-200 text-slate-600"
+                <>
+                  <Badge
+                    className={cn(
+                      "text-[9px] px-1.5 h-4.5 border font-bold uppercase tracking-wider",
+                      isOnline
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                        : "bg-slate-50 border-slate-200 text-slate-600"
+                    )}
+                  >
+                    {isOnline ? "Online" : "Offline"}
+                  </Badge>
+                  {!display.hasOwnMedia && (
+                    <Badge variant="outline" className="text-[9px] px-1.5 h-4.5 border-amber-500/40 text-amber-700 bg-amber-500/5 font-bold uppercase tracking-wider">
+                      Contenido global
+                    </Badge>
                   )}
-                >
-                  {isOnline ? "Online" : "Offline"}
-                </Badge>
+                </>
               )}
             </div>
 

@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { tvDisplays, tvMedia, tvEvents, tvEventMedia, categories } from "@/db/schema";
+import { tvDisplays, tvMedia, tvEvents, tvEventMedia, categories, tvDisplayMedia } from "@/db/schema";
 import { count, eq, desc, asc } from "drizzle-orm";
 import { TvDashboardClient } from "./_components/TvDashboardClient";
 import { Suspense } from "react";
@@ -7,11 +7,31 @@ import { Suspense } from "react";
 export const dynamic = "force-dynamic";
 
 async function getTvData() {
-  const [displaysList, globalMedia, eventMediaRows, categoryList, activeEventsCount] =
+  const [displaysListRaw, globalMedia, eventMediaRows, categoryList, activeEventsCount] =
     await Promise.all([
       db
-        .select()
+        .select({
+          id: tvDisplays.id,
+          name: tvDisplays.name,
+          displayToken: tvDisplays.displayToken,
+          orientation: tvDisplays.orientation,
+          rotationDegrees: tvDisplays.rotationDegrees,
+          lastSeenAt: tvDisplays.lastSeenAt,
+          lastReportedOrientation: tvDisplays.lastReportedOrientation,
+          lastReportedSize: tvDisplays.lastReportedSize,
+          isActive: tvDisplays.isActive,
+          audioEnabled: tvDisplays.audioEnabled,
+          volumePercent: tvDisplays.volumePercent,
+          linkedByUserId: tvDisplays.linkedByUserId,
+          notes: tvDisplays.notes,
+          displayOrder: tvDisplays.displayOrder,
+          createdAt: tvDisplays.createdAt,
+          updatedAt: tvDisplays.updatedAt,
+          ownMediaCount: count(tvDisplayMedia.id),
+        })
         .from(tvDisplays)
+        .leftJoin(tvDisplayMedia, eq(tvDisplayMedia.displayId, tvDisplays.id))
+        .groupBy(tvDisplays.id)
         .orderBy(asc(tvDisplays.displayOrder), desc(tvDisplays.createdAt)),
 
       db
@@ -72,6 +92,11 @@ async function getTvData() {
         .where(eq(tvEvents.isActive, true))
         .then((rows) => rows[0]?.count ?? 0),
     ]);
+
+  const displaysList = displaysListRaw.map((row) => ({
+    ...row,
+    hasOwnMedia: Number(row.ownMediaCount) > 0,
+  }));
 
   return {
     displaysList,
