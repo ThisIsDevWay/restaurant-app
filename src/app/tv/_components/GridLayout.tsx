@@ -28,7 +28,7 @@ export function GridCell({
         flexDirection: "column", 
         minHeight: 0, 
         overflow: "hidden", 
-        gap: cu(6, unit * 1.6, 48),
+        gap: data.layout === "grid2" ? cu(3, unit * 0.9, 24) : cu(6, unit * 1.6, 48),
         alignItems: "center",
         justifyContent: "center",
         height: "100%",
@@ -38,7 +38,7 @@ export function GridCell({
       {reserveSlot && (
         <div 
           style={{ 
-            flex: data.layout === "grid2" ? "0 0 72%" : "0 0 68%", 
+            flex: 1,
             width: "100%",
             minHeight: 0,
             display: "flex",
@@ -78,7 +78,7 @@ export function GridCell({
           flexShrink: 0, 
           display: "flex", 
           flexDirection: "column", 
-          gap: data.layout === "grid2" ? cu(6, unit * 1.8, 48) : cu(4, unit * 1.2, 32),
+          gap: data.layout === "grid2" ? cu(3, unit * 0.9, 24) : cu(4, unit * 1.2, 32),
           alignItems: "center",
           textAlign: "center"
         }}
@@ -181,7 +181,7 @@ export function GridCell({
 
         {/* Price — below text, centered */}
         {data.showPrices && (
-          <div style={{ marginTop: data.layout === "grid2" ? cu(5, unit * 1.0, 24) : cu(3, unit * 0.6, 16) }}>
+          <div style={{ marginTop: data.layout === "grid2" ? cu(3, unit * 0.6, 16) : cu(3, unit * 0.6, 16) }}>
             <PriceTag item={item} data={data} unit={unit} variant="grid" />
           </div>
         )}

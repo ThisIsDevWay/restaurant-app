@@ -72,7 +72,9 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
   const anyHasImage = data.items.some((it) => !!it.imageUrl);
   const reserveSlot = data.showImages && anyHasImage;
 
-  const pad = cu(8, unit * 3.5, 80);
+  const pad = data.layout === "grid2" && !isPortrait
+    ? cu(4, unit * 1.8, 40)
+    : cu(8, unit * 3.5, 80);
 
   return (
     <div
@@ -102,15 +104,27 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
         }
       `}</style>
       {/* ── Header ── */}
-      <div style={{ textAlign: "center", marginBottom: cu(6, unit * 2.5, 64), flexShrink: 0 }}>
+      <div
+        style={{
+          textAlign: "center",
+          marginBottom: data.layout === "grid2" && !isPortrait
+            ? cu(3, unit * 1.2, 24)
+            : cu(6, unit * 2.5, 64),
+          flexShrink: 0,
+        }}
+      >
         <div
           style={{
-            fontSize: cu(12, unit * 2.8, 72),
+            fontSize: data.layout === "grid2" && !isPortrait
+              ? cu(8, unit * 1.8, 44)
+              : cu(12, unit * 2.8, 72),
             color: "#fff8f3",
             letterSpacing: "0.4em",
             textTransform: "uppercase",
             fontWeight: 700,
-            marginBottom: cu(3, unit * 0.8, 16),
+            marginBottom: data.layout === "grid2" && !isPortrait
+              ? cu(2, unit * 0.5, 12)
+              : cu(3, unit * 0.8, 16),
             fontFamily: "var(--font-display), system-ui, sans-serif",
           }}
         >
@@ -118,7 +132,9 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
         </div>
         <h1
           style={{
-            fontSize: cu(22, unit * 5.2, 160),
+            fontSize: data.layout === "grid2" && !isPortrait
+              ? cu(16, unit * 3.8, 110)
+              : cu(22, unit * 5.2, 160),
             fontWeight: 800,
             lineHeight: 1.05,
             margin: 0,
@@ -134,9 +150,13 @@ export function MenuBoardSlide({ data }: { data: MenuBoardData }) {
         {data.subtitle && (
           <div
             style={{
-              fontSize: cu(9, unit * 1.5, 44),
+              fontSize: data.layout === "grid2" && !isPortrait
+                ? cu(7, unit * 1.1, 32)
+                : cu(9, unit * 1.5, 44),
               color: "rgba(255, 248, 243, 0.78)",
-              marginTop: cu(3, unit * 1, 22),
+              marginTop: data.layout === "grid2" && !isPortrait
+                ? cu(2, unit * 0.6, 14)
+                : cu(3, unit * 1, 22),
               fontWeight: 600,
               letterSpacing: "0.32em",
               textTransform: "uppercase",
