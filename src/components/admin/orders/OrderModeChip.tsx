@@ -21,12 +21,12 @@ const MODE_CONFIG: Record<
         className: "bg-blue-50 text-blue-700 border-blue-100",
     },
     take_away: {
-        label: "Retira en el local",
+        label: "Retiro en local",
         icon: ShoppingBag,
         className: "bg-purple-50 text-purple-700 border-purple-100",
     },
     pickup: {
-        label: "Retira en el local",
+        label: "Retiro en local",
         icon: ShoppingBag,
         className: "bg-purple-50 text-purple-700 border-purple-100",
     },

@@ -52,7 +52,7 @@ const AVAILABLE_VARIABLES = [
   { key: "{items}", label: "Detalle del Pedido", sample: "__ITEMS__" },
   { key: "{telefono}", label: "Teléfono", sample: "04141234567" },
   { key: "{restaurantName}", label: "Restaurante", sample: "Mi Restaurante" },
-  { key: "{modoPedido}", label: "Modo pedido", sample: "📦 Retira en el local" },
+  { key: "{modoPedido}", label: "Modo pedido", sample: "📦 Retiro en local" },
   { key: "{tiempoEstimado}", label: "Tiempo est.", sample: "25 min" },
   // Financial
   { key: "{total}", label: "Total Bs.", sample: "Bs. 15.340,58" },

@@ -36,7 +36,7 @@ const MODE_LABELS: Record<string, string> = {
 
 const MODE_DESCRIPTIONS: Record<string, string> = {
   on_site: "Para comer en el local",
-  take_away: "Retira en el local",
+  take_away: "Retiro en local",
   delivery: "A domicilio",
 };
 

@@ -95,7 +95,7 @@ export function Step5Success({
     };
   }, [orderId, onPaid]);
 
-  const waLink = screen === "whatsapp" ? initResult.waLink : null;
+  const cleanWaLink = screen === "whatsapp" ? initResult.waLink : null;
   const trackerItems = ORDER_TRACKER(orderMode);
 
   return (
@@ -139,9 +139,7 @@ export function Step5Success({
           <p className="font-sans text-[14px] text-text-muted mt-1 max-w-[280px] mx-auto leading-relaxed">
             {dbStatus === "whatsapp" || dbStatus === "pending"
               ? (initResult.screen === "whatsapp"
-                ? (clickedWa
-                  ? "Si el chat no se abrió o el mensaje no se prellenó, por favor vuelve a intentarlo."
-                  : "Envía tu pedido y el comprobante por WhatsApp para confirmarlo.")
+                ? "Hemos registrado tu pedido en nuestro sistema. En breve nos comunicaremos contigo por WhatsApp para coordinar el pago y la entrega."
                 : "Esperando confirmación automática del pago")
               : dbStatus === "paid"
                 ? "Tu pago ha sido confirmado exitosamente"
@@ -237,40 +235,25 @@ export function Step5Success({
 
       {/* Action buttons */}
       <div className="w-full flex flex-col gap-3 mt-2">
-        {waLink && (dbStatus === "whatsapp" || dbStatus === "pending") && (
-          <div className="p-4 bg-amber-50/80 border border-amber-200/50 rounded-[16px] text-left flex items-start gap-3 mb-1 animate-in fade-in duration-300">
-            <AlertTriangle className="w-5 h-5 text-[#B8893A] shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-[12px] font-bold text-amber-900 leading-tight uppercase tracking-wider">
-                ¿Problemas al abrir WhatsApp?
-              </p>
-              <p className="text-[11px] text-amber-800/80 mt-1 leading-snug font-medium">
-                Si la aplicación no abrió el chat o el mensaje listo para enviar no se cargó, regresa a esta pantalla y presiona <strong>&quot;Volver a enviar&quot;</strong>.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {waLink && (
-          <a
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setClickedWa(true)}
-            className="w-full h-14 bg-[#25D366] text-white rounded-full flex items-center justify-center gap-2.5 font-semibold text-[15px] shadow-elevated active:scale-[0.98] transition-all"
-          >
-            <ExternalLink className="w-5 h-5" />
-            {clickedWa ? "Volver a enviar por WhatsApp" : "Enviar pedido por WhatsApp"}
-          </a>
-        )}
-
         <button
           onClick={onNewOrder}
-          className="w-full h-14 bg-bg-card border border-border text-text-main rounded-full flex items-center justify-center gap-2.5 font-semibold text-[15px] active:bg-surface-section transition-all"
+          className="w-full h-14 bg-primary text-white rounded-full flex items-center justify-center gap-2.5 font-semibold text-[15px] hover:bg-primary/95 shadow-elevated active:scale-[0.98] transition-all"
         >
           Volver al menú (Seguir en vivo)
-          <ArrowRight className="w-5 h-5 text-text-muted" />
+          <ArrowRight className="w-5 h-5" />
         </button>
+
+        {cleanWaLink && (dbStatus === "whatsapp" || dbStatus === "pending") && (
+          <a
+            href={cleanWaLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full h-14 bg-bg-card border border-border text-[#25D366] hover:bg-[#25D366]/5 rounded-full flex items-center justify-center gap-2.5 font-semibold text-[15px] active:scale-[0.98] transition-all"
+          >
+            <ExternalLink className="w-5 h-5 text-[#25D366]" />
+            Escribir al WhatsApp de la tienda
+          </a>
+        )}
       </div>
     </div>
   );
