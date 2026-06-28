@@ -43,6 +43,7 @@ export function ReferenceDialog({
   onBlur,
   onConfirm,
   onClose,
+  onForceManual,
 }: {
   open: boolean;
   fields: RefFields;
@@ -53,6 +54,7 @@ export function ReferenceDialog({
   onBlur: (key: keyof RefFields) => void;
   onConfirm: () => void;
   onClose: () => void;
+  onForceManual?: () => void;
 }) {
   const refOk = fields.paymentReference.trim().length >= 3;
   const phoneOk = fields.phone.trim().length >= 7;
@@ -134,32 +136,51 @@ export function ReferenceDialog({
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-5 pt-2 flex items-center justify-between gap-3 border-t border-border/40">
-          <button
-            onClick={onClose}
-            disabled={isPending}
-            className="text-sm text-text-muted hover:text-text-main transition-colors disabled:opacity-40"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isPending || !isValid}
-            className={cn(
-              "inline-flex items-center gap-2 px-5 py-2 rounded-xl",
-              "font-bold text-sm text-white",
-              "bg-red-600 hover:bg-red-700 active:bg-red-800",
-              "shadow-sm shadow-red-500/20",
-              "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50",
-              "disabled:opacity-40 disabled:cursor-not-allowed",
-            )}
-          >
-            {isPending ? (
-              <><Loader2 className="h-4 w-4 animate-spin" />Confirmando...</>
-            ) : (
-              <><CheckCircle2 className="h-4 w-4" />Confirmar pago</>
-            )}
-          </button>
+        <div className="px-6 pb-5 pt-2 flex flex-col gap-3 border-t border-border/40">
+          {onForceManual && isValid && errors.paymentReference && (
+            <div className="flex flex-col gap-1.5 p-3 bg-amber-50/50 border border-amber-100 rounded-xl animate-in fade-in duration-300">
+              <p className="text-[11px] text-amber-800 font-medium leading-tight">
+                ¿El reenvío automático está caído? Puedes autorizar este pago de forma manual si ya lo verificaste en tu teléfono.
+              </p>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  onForceManual();
+                }}
+                disabled={isPending}
+                className="w-full py-2 px-4 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition-colors text-center disabled:opacity-50"
+              >
+                {isPending ? "Confirmando..." : "Forzar aprobación manual"}
+              </button>
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-3">
+            <button
+              onClick={onClose}
+              disabled={isPending}
+              className="text-sm text-text-muted hover:text-text-main transition-colors disabled:opacity-40"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isPending || !isValid}
+              className={cn(
+                "inline-flex items-center gap-2 px-5 py-2 rounded-xl",
+                "font-bold text-sm text-white",
+                "bg-red-600 hover:bg-red-700 active:bg-red-800",
+                "shadow-sm shadow-red-500/20",
+                "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50",
+                "disabled:opacity-40 disabled:cursor-not-allowed",
+              )}
+            >
+              {isPending ? (
+                <><Loader2 className="h-4 w-4 animate-spin" />Confirmando...</>
+              ) : (
+                <><CheckCircle2 className="h-4 w-4" />Confirmar pago</>
+              )}
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

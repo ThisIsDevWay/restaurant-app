@@ -10,7 +10,7 @@ import type {
 import { PabiloClient, PabiloError } from "@pabilo/sdk";
 import { db } from "@/db";
 import { orders, paymentsLog } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import * as Sentry from "@sentry/nextjs";
 import { logger } from "@/lib/logger";
 import { translateStatus } from "@/lib/constants/order-status";
@@ -46,6 +46,66 @@ export class PabiloBdvProvider implements PaymentProvider {
   async confirmPayment(
     input: PaymentConfirmInput,
   ): Promise<PaymentConfirmResult> {
+    if (input.type === "manual") {
+      const { adminUserId, orderId } = input;
+      const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .limit(1);
+
+      if (!order) {
+        return {
+          success: false,
+          reason: "invalid_reference",
+          message: "Orden no encontrada",
+        };
+      }
+
+      if (order.status === "paid") {
+        return {
+          success: true,
+          reference: order.paymentReference || "",
+          providerRaw: { verified: true, alreadyPaid: true },
+        };
+      }
+
+      if (order.status !== "pending") {
+        return {
+          success: false,
+          reason: "already_used",
+          message: `La orden ya tiene estado: ${translateStatus(order.status)}`,
+        };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(orders)
+          .set({
+            status: "paid",
+            paidAt: new Date(),
+            updatedAt: new Date(),
+            paymentMetadata: sql`coalesce(payment_metadata, '{}'::jsonb) || '{"outcome": "manual"}'::jsonb`,
+          })
+          .where(eq(orders.id, orderId));
+
+        await tx.insert(paymentsLog).values({
+          orderId,
+          providerId: this.id,
+          amountBsCents: order.grandTotalBsCents,
+          senderPhone: order.customerPhone,
+          providerRaw: { confirmedBy: adminUserId },
+          outcome: "manual",
+          confirmedBy: adminUserId,
+        });
+      });
+
+      return {
+        success: true,
+        providerRaw: { confirmedBy: adminUserId },
+      };
+    }
+
     if (input.type !== "reference") {
       return {
         success: false,
@@ -77,6 +137,14 @@ export class PabiloBdvProvider implements PaymentProvider {
         success: false,
         reason: "invalid_reference",
         message: "Orden no encontrada",
+      };
+    }
+
+    if (order.status === "paid") {
+      return {
+        success: true,
+        reference: order.paymentReference || cleanRef,
+        providerRaw: { verified: true, alreadyPaid: true },
       };
     }
 
@@ -267,7 +335,9 @@ export class PabiloBdvProvider implements PaymentProvider {
         .set({
           status: "paid",
           paymentReference: cleanRef,
+          paidAt: new Date(),
           updatedAt: new Date(),
+          paymentMetadata: sql`coalesce(payment_metadata, '{}'::jsonb) || '{"outcome": "confirmed"}'::jsonb`,
         })
         .where(eq(orders.id, orderId));
 

@@ -35,7 +35,7 @@ export function useOrderActionMutation({
       const config = ACTION_ENDPOINTS[actionType];
       const url = config.url(orderId);
       const body =
-        actionType === "confirm_with_ref" && refPayload
+        (actionType === "confirm_with_ref" || actionType === "confirm_manual") && refPayload
           ? {
               paymentReference: refPayload.paymentReference,
               phone: refPayload.phone,
@@ -52,12 +52,15 @@ export function useOrderActionMutation({
         body: JSON.stringify(body),
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || "Error al actualizar la orden");
       }
+      if (data && data.success === false) {
+        throw new Error(data.message || data.error || "Error al actualizar la orden");
+      }
 
-      return res.json();
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });

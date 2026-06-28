@@ -15,7 +15,7 @@ const paramsSchema = v.object({
 });
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
@@ -34,6 +34,9 @@ export async function POST(
   const { id: orderId } = paramsResult.output;
 
   try {
+    const body = await req.json().catch(() => ({}));
+    const paymentReference = body?.paymentReference ? String(body.paymentReference).trim() : undefined;
+
     const order = await getOrderById(orderId);
     if (!order) {
       return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
@@ -58,6 +61,22 @@ export async function POST(
     });
 
     if (result.success) {
+      if (paymentReference) {
+        const { db: database } = await import("@/db");
+        const { orders: ordersTable, paymentsLog: paymentsLogTable } = await import("@/db/schema");
+        const { eq: equalTo } = await import("drizzle-orm");
+
+        await database
+          .update(ordersTable)
+          .set({ paymentReference })
+          .where(equalTo(ordersTable.id, orderId));
+
+        await database
+          .update(paymentsLogTable)
+          .set({ reference: paymentReference })
+          .where(equalTo(paymentsLogTable.orderId, orderId));
+      }
+
       const customer = await getCustomerByPhone(order.customerPhone);
       const snapshotItems = order.itemsSnapshot as SnapshotItem[];
       const surchargesSnapshot = order.surchargesSnapshot as {

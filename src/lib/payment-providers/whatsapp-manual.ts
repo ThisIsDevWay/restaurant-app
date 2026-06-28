@@ -8,7 +8,7 @@ import type {
 } from "./types";
 import { db } from "@/db";
 import { orders, paymentsLog } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 import { buildOrderMessage, type SurchargesInfo } from "@/lib/whatsapp/messages";
 import { translateStatus } from "@/lib/constants/order-status";
@@ -119,6 +119,7 @@ export class WhatsAppManualProvider implements PaymentProvider {
         .set({
           status: "paid",
           updatedAt: new Date(),
+          paymentMetadata: sql`coalesce(payment_metadata, '{}'::jsonb) || '{"outcome": "manual"}'::jsonb`,
         })
         .where(eq(orders.id, orderId));
 

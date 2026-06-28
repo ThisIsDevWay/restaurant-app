@@ -114,6 +114,16 @@ function WebOrderCard({
       setRefDialogOpen(false);
       onConfirmed?.();
     },
+    onError: (err) => {
+      setErrors((prev) => ({
+        ...prev,
+        paymentReference: err.message,
+      }));
+      setTouched((prev) => ({
+        ...prev,
+        paymentReference: true,
+      }));
+    },
   });
 
   function setField(key: keyof RefFields, value: string) {
@@ -144,6 +154,10 @@ function WebOrderCard({
     setTouched({ paymentReference: true, phone: true });
     if (!validate()) return;
     mutation.mutate({ actionType: "confirm_with_ref", refPayload: fields });
+  }
+
+  function handleForceManual() {
+    mutation.mutate({ actionType: "confirm_manual", refPayload: fields });
   }
 
   async function handleCancel() {
@@ -338,6 +352,7 @@ function WebOrderCard({
         onBlur={(k) => setTouched((t) => ({ ...t, [k]: true }))}
         onConfirm={handleConfirmWithRef}
         onClose={() => setRefDialogOpen(false)}
+        onForceManual={handleForceManual}
       />
     </div>
   );

@@ -437,6 +437,12 @@ export function OrderActions({
       setConfirmKey(null);
       setRefDialogOpen(false);
     },
+    onError: (err) => {
+      setRefErrors((prev) => ({
+        ...prev,
+        paymentReference: err.message,
+      }));
+    },
   });
 
   function handleAction(key: string) {
@@ -619,6 +625,34 @@ export function OrderActions({
             />
           </div>
         </div>
+
+        {/* Force Manual Fallback */}
+        {refFields.paymentReference.trim().length >= 3 && refFields.phone.trim().length >= 7 && refErrors.paymentReference && (
+          <div style={{
+            margin: "0 22px 12px",
+            padding: "12px 14px",
+            borderRadius: 12,
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}>
+            <p style={{ margin: 0, fontSize: 11, color: "#92400e", lineHeight: 1.5, fontWeight: 500 }}>
+              ¿El reenvío automático está caído? Puedes autorizar este pago de forma manual si ya lo verificaste en tu teléfono.
+            </p>
+            <HButton
+              tier="secondary"
+              size="sm"
+              loading={mutation.isPending}
+              disabled={mutation.isPending}
+              onClick={() => mutation.mutate({ actionType: "confirm_manual", refPayload: refFields })}
+              style={{ background: "#d97706", color: "#fff", border: "none", boxShadow: "0 2px 4px rgba(217,119,6,0.2)" }}
+            >
+              Forzar aprobación manual
+            </HButton>
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{

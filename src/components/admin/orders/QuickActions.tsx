@@ -71,6 +71,16 @@ export function QuickActions({
     onSuccess: () => {
       setRefDialogOpen(false);
     },
+    onError: (err) => {
+      setErrors((prev) => ({
+        ...prev,
+        paymentReference: err.message,
+      }));
+      setTouched((prev) => ({
+        ...prev,
+        paymentReference: true,
+      }));
+    },
   });
 
   function handleAction(actionType: ActionType, e?: React.MouseEvent) {
@@ -129,6 +139,10 @@ export function QuickActions({
     }
   };
 
+  function handleForceManual() {
+    mutation.mutate({ actionType: "confirm_manual", refPayload: fields });
+  }
+
   const dialog = (
     <ReferenceDialog
       open={refDialogOpen}
@@ -140,6 +154,7 @@ export function QuickActions({
       onBlur={(k) => setTouched((t) => ({ ...t, [k]: true }))}
       onConfirm={handleConfirmWithRef}
       onClose={() => setRefDialogOpen(false)}
+      onForceManual={handleForceManual}
     />
   );
 

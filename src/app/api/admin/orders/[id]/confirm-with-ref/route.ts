@@ -62,6 +62,10 @@ export async function POST(
             return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
         }
 
+        if (order.status === "paid") {
+            return NextResponse.json({ success: true, status: "paid" });
+        }
+
         if (order.status !== "pending") {
             return NextResponse.json(
                 { error: `Solo se puede confirmar con referencia desde estado pendiente. Estado actual: ${order.status}` },
@@ -99,6 +103,11 @@ export async function POST(
                 reason: result.reason,
                 message: result.message,
             });
+        }
+
+        // Si ya fue pagada por auto-conciliación en segundo plano, omitir duplicados
+        if (result.providerRaw && typeof result.providerRaw === "object" && "alreadyPaid" in result.providerRaw && result.providerRaw.alreadyPaid) {
+            return NextResponse.json({ success: true, status: "paid" });
         }
 
         // Enviar mensaje "paid" al cliente tras verificación exitosa

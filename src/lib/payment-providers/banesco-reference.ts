@@ -9,7 +9,7 @@ import type {
 } from "./types";
 import { db } from "@/db";
 import { orders, paymentsLog } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import * as Sentry from "@sentry/nextjs";
 import { logger } from "@/lib/logger";
 import { translateStatus } from "@/lib/constants/order-status";
@@ -37,7 +37,7 @@ export class BanescoReferenceProvider implements PaymentProvider {
 
     return {
       screen: "enter_reference",
-      totalBsCents: order.subtotalBsCents,
+      totalBsCents: order.grandTotalBsCents,
       bankDetails,
     };
   }
@@ -45,6 +45,66 @@ export class BanescoReferenceProvider implements PaymentProvider {
   async confirmPayment(
     input: PaymentConfirmInput,
   ): Promise<PaymentConfirmResult> {
+    if (input.type === "manual") {
+      const { adminUserId, orderId } = input;
+      const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .limit(1);
+
+      if (!order) {
+        return {
+          success: false,
+          reason: "invalid_reference",
+          message: "Orden no encontrada",
+        };
+      }
+
+      if (order.status === "paid") {
+        return {
+          success: true,
+          reference: order.paymentReference || "",
+          providerRaw: { verified: true, alreadyPaid: true },
+        };
+      }
+
+      if (order.status !== "pending") {
+        return {
+          success: false,
+          reason: "already_used",
+          message: `La orden ya tiene estado: ${translateStatus(order.status)}`,
+        };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(orders)
+          .set({
+            status: "paid",
+            paidAt: new Date(),
+            updatedAt: new Date(),
+            paymentMetadata: sql`coalesce(payment_metadata, '{}'::jsonb) || '{"outcome": "manual"}'::jsonb`,
+          })
+          .where(eq(orders.id, orderId));
+
+        await tx.insert(paymentsLog).values({
+          orderId,
+          providerId: this.id,
+          amountBsCents: order.grandTotalBsCents,
+          senderPhone: order.customerPhone,
+          providerRaw: { confirmedBy: adminUserId },
+          outcome: "manual",
+          confirmedBy: adminUserId,
+        });
+      });
+
+      return {
+        success: true,
+        providerRaw: { confirmedBy: adminUserId },
+      };
+    }
+
     if (input.type !== "reference") {
       return {
         success: false,
@@ -74,6 +134,14 @@ export class BanescoReferenceProvider implements PaymentProvider {
         success: false,
         reason: "invalid_reference",
         message: "Orden no encontrada",
+      };
+    }
+
+    if (order.status === "paid") {
+      return {
+        success: true,
+        reference: order.paymentReference || reference.trim(),
+        providerRaw: { verified: true, alreadyPaid: true },
       };
     }
 
@@ -168,7 +236,7 @@ export class BanescoReferenceProvider implements PaymentProvider {
 
     // Verify amount (tolerance ±1 centavo)
     const apiAmount = (apiResponse as { amount: number }).amount;
-    const expectedAmount = order.subtotalBsCents / 100;
+    const expectedAmount = order.grandTotalBsCents / 100;
     if (Math.abs(apiAmount - expectedAmount) > 0.01) {
       return {
         success: false,
@@ -199,14 +267,16 @@ export class BanescoReferenceProvider implements PaymentProvider {
         .set({
           status: "paid",
           paymentReference: reference.trim(),
+          paidAt: new Date(),
           updatedAt: new Date(),
+          paymentMetadata: sql`coalesce(payment_metadata, '{}'::jsonb) || '{"outcome": "confirmed"}'::jsonb`,
         })
         .where(eq(orders.id, orderId));
 
       await tx.insert(paymentsLog).values({
         orderId,
         providerId: this.id,
-        amountBsCents: order.subtotalBsCents,
+        amountBsCents: order.grandTotalBsCents,
         reference: reference.trim(),
         senderPhone: order.customerPhone,
         providerRaw: apiResponse,
