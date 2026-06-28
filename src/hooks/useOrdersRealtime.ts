@@ -16,16 +16,16 @@ import { supabaseBrowser } from "@/lib/supabase-client";
  * data flow secure (full order details are still served through the auth-gated
  * API route) and avoids trusting the Realtime payload shape.
  */
-export function useOrdersRealtime(onOrderChange: () => void) {
+export function useOrdersRealtime(onOrderChange: (payload?: any) => void) {
   const onChangeRef = useRef(onOrderChange);
   onChangeRef.current = onOrderChange;
 
   useEffect(() => {
     let debounce: ReturnType<typeof setTimeout> | null = null;
 
-    const scheduleRefetch = () => {
+    const scheduleRefetch = (payload: any) => {
       if (debounce) clearTimeout(debounce);
-      debounce = setTimeout(() => onChangeRef.current(), 300);
+      debounce = setTimeout(() => onChangeRef.current(payload), 300);
     };
 
     const channel = supabaseBrowser
@@ -33,12 +33,12 @@ export function useOrdersRealtime(onOrderChange: () => void) {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "orders" },
-        scheduleRefetch,
+        (payload) => scheduleRefetch(payload),
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "orders" },
-        scheduleRefetch,
+        (payload) => scheduleRefetch(payload),
       )
       .subscribe();
 

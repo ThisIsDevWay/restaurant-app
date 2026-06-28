@@ -18,6 +18,45 @@ interface TabCounts {
   history: number;
 }
 
+function playAudioAlert(type: "new_order" | "auto_reconciled") {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+
+    if (type === "new_order") {
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(587.33, now); // D5
+      osc1.frequency.exponentialRampToValueAtTime(880, now + 0.15); // A5
+      gain1.gain.setValueAtTime(0.15, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.4);
+    } else if (type === "auto_reconciled") {
+      [0, 0.08, 0.16].forEach((delay, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        const freq = idx === 0 ? 1046.50 : idx === 1 ? 1318.51 : 1567.98; // C6, E6, G6
+        osc.frequency.setValueAtTime(freq, now + delay);
+        gain.gain.setValueAtTime(0.1, now + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + delay);
+        osc.stop(now + delay + 0.25);
+      });
+    }
+  } catch {
+    // Ignore autoplay restriction errors
+  }
+}
+
 export function OrdersClient({ orders, initialDate }: { orders: OrderListItem[], initialDate: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,9 +69,21 @@ export function OrdersClient({ orders, initialDate }: { orders: OrderListItem[],
 
   const queryClient = useQueryClient();
 
-  useOrdersRealtime(() => {
+  useOrdersRealtime((payload) => {
     queryClient.invalidateQueries({ queryKey: ["orders", "list", initialDate] });
     queryClient.invalidateQueries({ queryKey: ["orders", "counts", initialDate] });
+
+    if (payload) {
+      if (payload.eventType === "INSERT") {
+        playAudioAlert("new_order");
+      } else if (payload.eventType === "UPDATE") {
+        const oldStatus = payload.old?.status;
+        const newStatus = payload.new?.status;
+        if (newStatus === "paid" && oldStatus !== "paid") {
+          playAudioAlert("auto_reconciled");
+        }
+      }
+    }
   });
 
   const { data: counts } = useQuery<TabCounts>({

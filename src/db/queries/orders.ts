@@ -18,6 +18,7 @@ export const ORDER_LIST_COLUMNS = {
   tableNumber: orders.tableNumber,
   grandTotalUsdCents: orders.grandTotalUsdCents,
   paymentMetadata: orders.paymentMetadata,
+  expiresAt: orders.expiresAt,
 } as const;
 
 export async function getOrderById(id: string) {

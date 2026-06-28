@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { formatBs } from "@/lib/money";
 import { formatPhone, cn, isRealPhone } from "@/lib/utils";
 import { formatOrderTime } from "@/lib/utils/format-relative-time";
@@ -16,11 +17,49 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Clock } from "lucide-react";
 import type { OrderListItem } from "@/components/admin/orders/OrderCard";
 import { STATUS_STYLES, type OrderStatus } from "@/lib/constants/order-status";
 
+function OrderCountdown({ expiresAt, status }: { expiresAt: Date | string | null | undefined; status: string }) {
+  const [timeLeft, setTimeLeft] = useState<string>("");
 
+  useEffect(() => {
+    if (status !== "pending" && status !== "whatsapp") return;
+    if (!expiresAt) return;
+
+    const target = new Date(expiresAt).getTime();
+
+    const update = () => {
+      const diff = target - Date.now();
+      if (diff <= 0) {
+        setTimeLeft("Expirado");
+        return;
+      }
+      const mins = Math.floor(diff / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${mins}:${String(secs).padStart(2, "0")}`);
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt, status]);
+
+  if ((status !== "pending" && status !== "whatsapp") || !expiresAt || !timeLeft) return null;
+
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border tabular-nums leading-none shrink-0",
+      timeLeft === "Expirado"
+        ? "bg-red-50 text-red-700 border-red-200"
+        : "bg-amber-50 text-amber-700 border-amber-200 animate-pulse"
+    )}>
+      <Clock className="w-2.5 h-2.5" />
+      {timeLeft}
+    </span>
+  );
+}
 
 const USD_METHODS = ["Zelle", "Binance", "Efectivo $"];
 
@@ -153,6 +192,17 @@ export function OrderTable({
                     {order.tableNumber && order.orderMode === "delivery" && (
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-bold text-[10px] tracking-tight border border-violet-200 max-w-[9rem] truncate">
                         {order.tableNumber}
+                      </span>
+                    )}
+                    <OrderCountdown expiresAt={order.expiresAt} status={order.status} />
+                    {order.paymentMetadata?.outcome === "confirmed" && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] border border-emerald-200 leading-none">
+                        Auto
+                      </span>
+                    )}
+                    {order.paymentMetadata?.outcome === "manual" && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 font-bold text-[10px] border border-sky-200 leading-none">
+                        Manual
                       </span>
                     )}
                   </div>
