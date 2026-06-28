@@ -2,7 +2,7 @@ export function parseReceiveTime(receiveTime: string): Date | null {
   if (/^\d+$/.test(receiveTime)) {
     return new Date(Number(receiveTime));
   }
-  const hasTimezone = /[Zz]|\+|-/g.test(receiveTime.substring(10));
+  const hasTimezone = /[Zz]$|([+-]\d{2}(:?\d{2})?)$/.test(receiveTime.trim());
   if (hasTimezone) {
     const d = new Date(receiveTime);
     return isNaN(d.getTime()) ? null : d;

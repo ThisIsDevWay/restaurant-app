@@ -12,6 +12,7 @@ import * as Sentry from "@sentry/nextjs";
 import { logger } from "@/lib/logger";
 import { eq, or, sql, and, gt } from "drizzle-orm";
 import { parseReceiveTime } from "./utils";
+import { randomUUID } from "crypto";
 
 export async function POST(req: Request) {
   try {
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
       await db.insert(bankNotifications).values({
         source: source === "app_notification" ? "local_app" : "local_sms",
         sender, message, amountRaw: "", amountBsCents: 0,
-        reference: "FAILED_" + Date.now(), status: "failed", rawPayload: json
+        reference: "FAILED_" + randomUUID(), status: "failed", rawPayload: { ...json, error: "Parsing failed" }
       });
       return NextResponse.json({ error: "Error de parsing" }, { status: 422 });
     }
@@ -63,10 +64,10 @@ export async function POST(req: Request) {
         await db.insert(bankNotifications).values({
           source: source === "app_notification" ? "local_app" : "local_sms",
           sender, message, amountRaw, amountBsCents: amountCents,
-          reference: "FAILED_OLD_" + Date.now(), 
+          reference: "FAILED_OLD_" + randomUUID(), 
           senderPhone: phone || null,
           senderDocument: document || null,
-          status: "failed", rawPayload: json
+          status: "failed", rawPayload: { ...json, error: "SMS too old" }
         });
         return NextResponse.json({ error: "SMS muy antiguo" }, { status: 400 });
       }
