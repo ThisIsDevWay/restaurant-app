@@ -6,11 +6,17 @@ import { Clock } from "lucide-react";
 
 export default function ExpiredPage() {
   const [waNumber, setWaNumber] = useState<string | null>(null);
+  const [expirationMinutes, setExpirationMinutes] = useState<number>(30);
 
   useEffect(() => {
     fetch("/api/settings/public")
       .then((r) => r.json())
-      .then((d) => setWaNumber(d.whatsappNumber))
+      .then((d) => {
+        setWaNumber(d.whatsappNumber);
+        if (typeof d.orderExpirationMinutes === "number") {
+          setExpirationMinutes(d.orderExpirationMinutes);
+        }
+      })
       .catch(() => setWaNumber(null));
   }, []);
 
@@ -24,7 +30,7 @@ export default function ExpiredPage() {
 
       <div className="max-w-[280px]">
         <p className="text-[14px] leading-relaxed text-text-muted">
-          Pasaron más de 30 minutos sin recibir la transferencia.
+          Pasaron más de {expirationMinutes} minutos sin recibir la transferencia.
         </p>
         <p className="mt-3 text-[14px] leading-relaxed text-text-muted">
           Si ya pagaste, guarda tu número de referencia y muéstraselo al cajero

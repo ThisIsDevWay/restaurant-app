@@ -9,6 +9,7 @@ interface ReferenceEntryProps {
   orderId: string;
   checkoutToken: string;
   onConfirmed: () => void;
+  onExpired?: () => void;
   onError: (message: string) => void;
   onFallbackWhatsApp: () => void;
   activeProviderId?: string;
@@ -18,6 +19,7 @@ export function ReferenceEntry({
   orderId,
   checkoutToken,
   onConfirmed,
+  onExpired,
   onError,
   onFallbackWhatsApp,
   activeProviderId,
@@ -65,6 +67,13 @@ export function ReferenceEntry({
 
       if (data.success) {
         onConfirmed();
+      } else if (data.reason === "expired") {
+        const msg = data.message || "Tu pedido ha expirado.";
+        setVerifyError(msg);
+        onError(msg);
+        setTimeout(() => {
+          onExpired?.();
+        }, 1500);
       } else {
         const msg = data.message || "No se pudo verificar el pago";
         setVerifyError(msg);

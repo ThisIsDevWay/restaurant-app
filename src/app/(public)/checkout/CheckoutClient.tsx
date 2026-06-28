@@ -75,7 +75,7 @@ function persistCheckout(state: WizardState) {
     if (state.step < 4) return; // Only persist post-order states
     const payload: PersistedCheckout = { state, savedAt: Date.now() };
     sessionStorage.setItem(CHECKOUT_STORAGE_KEY, JSON.stringify(payload));
-  } catch {}
+  } catch { }
 }
 
 function restoreCheckout(): Partial<WizardState> | null {
@@ -98,7 +98,7 @@ function restoreCheckout(): Partial<WizardState> | null {
 }
 
 function clearPersistedCheckout() {
-  try { sessionStorage.removeItem(CHECKOUT_STORAGE_KEY); } catch {}
+  try { sessionStorage.removeItem(CHECKOUT_STORAGE_KEY); } catch { }
 }
 
 interface CheckoutSettings {
@@ -203,6 +203,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
 
   // Customer lookup with debounce
   const lookupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollAttemptsRef = useRef(0);
 
   const lookupCustomer = useCallback(async (phoneNumber: string) => {
     try {
@@ -416,6 +417,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
 
     let timeoutId: NodeJS.Timeout;
     let active = true;
+    pollAttemptsRef.current = 0;
 
     const poll = async () => {
       if (!active) return;
@@ -427,13 +429,22 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
             handlePaid();
             return;
           }
+          if (["expired", "cancelled", "failed"].includes(data.status) && active) {
+            active = false;
+            clearTimeout(timeoutId);
+            clearPersistedCheckout();
+            router.push("/checkout/expired");
+            return;
+          }
         }
       } catch {
         // ignore errors
       }
 
       if (active) {
-        timeoutId = setTimeout(poll, 4000); // Sondear cada 4 segundos
+        pollAttemptsRef.current++;
+        const nextMs = Math.min(4000 + pollAttemptsRef.current * 2000, 16000);
+        timeoutId = setTimeout(poll, nextMs);
       }
     };
 
@@ -443,7 +454,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
       active = false;
       clearTimeout(timeoutId);
     };
-  }, [state.step, state.orderId, handlePaid]);
+  }, [state.step, state.orderId, handlePaid, router]);
 
   const handleFallbackWhatsApp = useCallback(async () => {
     if (!state.orderId) return;
@@ -505,7 +516,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
   // ── Available order modes ────────────────────────────────────
   const availableModes = [
     { id: "on_site" as OrderMode, label: "En sitio", icon: null as any, enabled: initialSettings.orderModeOnSiteEnabled !== false, description: "Para comer en el local" },
-    { id: "take_away" as OrderMode, label: "Para llevar", icon: null as any, enabled: initialSettings.orderModeTakeAwayEnabled !== false, description: "Retira en el local" },
+    { id: "take_away" as OrderMode, label: "Para llevar", icon: null as any, enabled: initialSettings.orderModeTakeAwayEnabled !== false, description: "Retiro en local" },
     { id: "delivery" as OrderMode, label: "Delivery", icon: null as any, enabled: initialSettings.orderModeDeliveryEnabled !== false, description: "A domicilio" },
   ].filter((m) => m.enabled);
 
@@ -666,6 +677,10 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
               grandTotalBsCents={grandTotalBsCents}
               grandTotalUsdCents={grandTotalUsdCents}
               onConfirmed={handlePaid}
+              onExpired={() => {
+                clearPersistedCheckout();
+                router.push("/checkout/expired");
+              }}
               onError={(msg) => setState((prev) => ({ ...prev, error: msg }))}
               onFallbackWhatsApp={handleFallbackWhatsApp}
               paymentMethod={state.payment}

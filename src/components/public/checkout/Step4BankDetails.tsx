@@ -19,6 +19,7 @@ interface Step4BankDetailsProps {
   grandTotalBsCents: number;
   grandTotalUsdCents: number;
   onConfirmed: () => void;
+  onExpired?: () => void;
   onError: (msg: string) => void;
   onFallbackWhatsApp: () => void;
   paymentMethod: string | null;
@@ -36,6 +37,7 @@ export function Step4BankDetails({
   grandTotalBsCents,
   grandTotalUsdCents,
   onConfirmed,
+  onExpired,
   onError,
   onFallbackWhatsApp,
   paymentMethod,
@@ -77,13 +79,14 @@ export function Step4BankDetails({
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
+          onExpired?.();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [expiresAt, secondsLeft]);
+  }, [expiresAt, secondsLeft, onExpired]);
 
   const [detailsCopied, setDetailsCopied] = useState(false);
 
@@ -215,16 +218,22 @@ export function Step4BankDetails({
           </p>
         )}
 
-        {expiresAt && secondsLeft > 0 && (
+        {expiresAt && (
           <div
             className={cn(
               "mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold transition-colors",
-              secondsLeft < 300 ? "text-yellow-300 animate-pulse" : "text-white/50"
+              secondsLeft === 0
+                ? "text-primary animate-pulse"
+                : secondsLeft < 300
+                ? "text-yellow-300 animate-pulse"
+                : "text-white/50"
             )}
           >
             <Clock className="w-3 h-3" />
             <span>
-              {secondsLeft < 300
+              {secondsLeft === 0
+                ? "Pedido expirado"
+                : secondsLeft < 300
                 ? `¡Expira pronto! ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`
                 : `Expira en ${Math.floor(secondsLeft / 60)} min`}
             </span>
@@ -507,6 +516,7 @@ export function Step4BankDetails({
             orderId={orderId}
             checkoutToken={checkoutToken}
             onConfirmed={onConfirmed}
+            onExpired={onExpired}
             onError={onError}
             onFallbackWhatsApp={onFallbackWhatsApp}
             activeProviderId={activeProviderId}
