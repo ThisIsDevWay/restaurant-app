@@ -1,20 +1,20 @@
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
 import { todayCaracas } from "@/lib/utils/date";
 import {
   getHourlySalesCurve,
   getDailySalesHistory,
   getWeeklySales,
   getProductRanking,
+  getPaymentMethodsSummary,
+  getReconciliationReport,
+  getIgtfSummary,
+  getOrderLineDetail,
+  getCashBreakdown,
+  getIgtfTransactions,
 } from "@/db/queries/reports";
-import { HourlySalesChart } from "@/components/admin/reports/HourlySalesChart";
-import { DailySalesChart } from "@/components/admin/reports/DailySalesChart";
-import { WeeklySalesChart } from "@/components/admin/reports/WeeklySalesChart";
-import { ProductRankingTable } from "@/components/admin/reports/ProductRankingTable";
+import { getSettings } from "@/db/queries/settings";
+import { ReportesClient } from "./ReportesClient";
+import * as v from "valibot";
+import { dateStringSchema } from "@/lib/validations/date";
 
 /** Resta `days` días a una fecha 'YYYY-MM-DD' Caracas y devuelve 'YYYY-MM-DD'. */
 function caracasDaysAgo(toDate: string, days: number): string {
@@ -27,69 +27,84 @@ function caracasDaysAgo(toDate: string, days: number): string {
 
 export const dynamic = "force-dynamic";
 
-export default async function ReportesPage() {
-  const toDate = todayCaracas();
-  const fromDate = caracasDaysAgo(toDate, 30);
+export default async function ReportesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const rawFrom = resolvedSearchParams.fromDate as string | undefined;
+  const rawTo = resolvedSearchParams.toDate as string | undefined;
+  const rawTab = resolvedSearchParams.tab as string | undefined;
+  const rawRole = resolvedSearchParams.createdByRole as string | undefined;
 
-  const [hourly, daily, weekly, ranking] = await Promise.all([
-    getHourlySalesCurve(fromDate, toDate),
-    getDailySalesHistory(fromDate, toDate),
-    getWeeklySales(fromDate, toDate),
-    getProductRanking(fromDate, toDate, 20),
+  const today = todayCaracas();
+  let toDate = today;
+  let fromDate = caracasDaysAgo(toDate, 30);
+  const activeTab = rawTab || "sales";
+  
+  let createdByRole: "admin" | "waiter" | "cashier" | null = null;
+  if (rawRole === "admin" || rawRole === "waiter" || rawRole === "cashier") {
+    createdByRole = rawRole;
+  }
+
+  if (rawTo) {
+    const result = v.safeParse(dateStringSchema, rawTo);
+    if (result.success) {
+      toDate = result.output;
+    }
+  }
+
+  if (rawFrom) {
+    const result = v.safeParse(dateStringSchema, rawFrom);
+    if (result.success) {
+      fromDate = result.output;
+    }
+  }
+
+  // Fetch all reports and settings in parallel
+  const [
+    hourly,
+    daily,
+    weekly,
+    ranking,
+    orderDetail,
+    paymentMethods,
+    cashBreakdown,
+    reconciliation,
+    igtf,
+    igtfTransactions,
+    settingsRow,
+  ] = await Promise.all([
+    getHourlySalesCurve(fromDate, toDate, createdByRole),
+    getDailySalesHistory(fromDate, toDate, createdByRole),
+    getWeeklySales(fromDate, toDate, createdByRole),
+    getProductRanking(fromDate, toDate, 20, createdByRole),
+    getOrderLineDetail(fromDate, toDate, createdByRole, 200),
+    getPaymentMethodsSummary(fromDate, toDate, createdByRole),
+    getCashBreakdown(fromDate, toDate, createdByRole),
+    getReconciliationReport(fromDate, toDate, createdByRole),
+    getIgtfSummary(fromDate, toDate, createdByRole),
+    getIgtfTransactions(fromDate, toDate, createdByRole, 200),
+    getSettings(),
   ]);
 
+  const restaurantName = settingsRow?.restaurantName ?? "G&M";
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-epilogue text-2xl font-bold text-ink">Reportes</h1>
-        <p className="text-sm text-text-muted">
-          Últimos 30 días · {fromDate} → {toDate}
-        </p>
-      </div>
-
-      {/* Fila 1: curva horaria · ventas diarias */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="ring-1 ring-border">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="font-epilogue text-ink">
-              Curva de ventas por hora
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <HourlySalesChart data={hourly} />
-          </CardContent>
-        </Card>
-
-        <Card className="ring-1 ring-border">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="font-epilogue text-ink">Ventas diarias</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <DailySalesChart data={daily} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Fila 2: tendencia semanal · top 20 productos */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="ring-1 ring-border">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="font-epilogue text-ink">Tendencia semanal</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <WeeklySalesChart data={weekly} />
-          </CardContent>
-        </Card>
-
-        <Card className="ring-1 ring-border">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="font-epilogue text-ink">Top 20 productos</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <ProductRankingTable data={ranking} />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <ReportesClient
+      fromDate={fromDate}
+      toDate={toDate}
+      activeTab={activeTab}
+      createdByRole={createdByRole}
+      restaurantName={restaurantName}
+      salesData={{ hourly, daily, weekly, ranking }}
+      orderDetail={orderDetail}
+      paymentMethods={paymentMethods}
+      cashBreakdown={cashBreakdown}
+      reconciliation={reconciliation}
+      igtf={igtf}
+      igtfTransactions={igtfTransactions}
+    />
   );
 }
