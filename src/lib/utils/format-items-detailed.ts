@@ -3,6 +3,7 @@ export interface SnapshotItem {
   name: string;
   priceUsdCents: number;
   priceBsCents: number;
+  costUsdCents?: number | null;
   quantity: number;
   includedNote?: string | null;
   fixedContornos: Array<{ id: string; name: string; priceUsdCents: number; priceBsCents: number }>;

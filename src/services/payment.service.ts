@@ -3,12 +3,13 @@ import { getSettings } from "@/db/queries/settings";
 import { getActiveProvider, getProviderById } from "@/lib/payment-providers";
 import { db } from "@/db";
 import { orders, paymentsLog, bankNotifications } from "@/db/schema";
-import { eq, and, gt, desc } from "drizzle-orm";
+import { eq, and, gt, desc, sql } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 import * as Sentry from "@sentry/nextjs";
 import { printReceipt } from "@/lib/print/enqueue";
+import { getReferenceSuffix } from "@/lib/reconciliation-rules";
 
 /**
  * Convierte un string decimal simple ("150.75" o "150,00") a centavos enteros sin usar floats.
@@ -139,12 +140,13 @@ export async function reconcilePabiloNotifications(): Promise<{
 
     const { notifications } = await res.json();
 
-    // Get all existing references in bankNotifications
+    // Get all existing references in bankNotifications (limited to 48 hours for performance)
     const existingNotifs = await db
       .select({ reference: bankNotifications.reference })
-      .from(bankNotifications);
+      .from(bankNotifications)
+      .where(gt(bankNotifications.createdAt, new Date(Date.now() - 48 * 60 * 60 * 1000)));
 
-    // Map and insert, avoiding duplicates bidirectionally
+    // Map and insert, avoiding duplicates using suffix-4 comparison
     const notificationsToInsert = notifications
       .filter((notif: any) => notif.status === "CONFIRMED" && notif.reference)
       .map((notif: any) => ({
@@ -161,7 +163,7 @@ export async function reconcilePabiloNotifications(): Promise<{
       .filter((newNotif: any) => {
         const newRef = newNotif.reference;
         const duplicate = existingNotifs.some(
-          (existing) => existing.reference.endsWith(newRef) || newRef.endsWith(existing.reference)
+          (existing) => getReferenceSuffix(existing.reference) === getReferenceSuffix(newRef)
         );
         return !duplicate;
       });
@@ -279,6 +281,7 @@ export async function reconcileOrderWithNotification(
       paymentReference: cleanRef,
       paidAt: new Date(),
       updatedAt: new Date(),
+      paymentMetadata: sql`coalesce(payment_metadata, '{}'::jsonb) || '{"outcome": "confirmed"}'::jsonb`,
     })
     .where(and(eq(orders.id, orderId), eq(orders.status, "pending")))
     .returning();
@@ -361,7 +364,7 @@ export async function reconcileSingleOrder(orderId: string, cleanRef: string): P
     .where(eq(bankNotifications.status, "pending"));
 
   // A1: Comparar exclusivamente por sufijo de 4 dígitos
-  const matches = matchedNotifs.filter((n) => n.reference.slice(-4) === cleanRef.slice(-4));
+  const matches = matchedNotifs.filter((n) => getReferenceSuffix(n.reference) === getReferenceSuffix(cleanRef));
   
   if (matches.length === 0) return false;
 
@@ -369,7 +372,7 @@ export async function reconcileSingleOrder(orderId: string, cleanRef: string): P
   if (matches.length > 1) {
     logger.warn("Ambigüedad en verificación manual — requiere revisión humana", { orderId, cleanRef });
     Sentry.captureMessage(
-      `Ambigüedad en verificación manual para la orden ${orderId}: Múltiples notificaciones de Pago Móvil terminan en "${cleanRef.slice(-4)}"`,
+      `Ambigüedad en verificación manual para la orden ${orderId}: Múltiples notificaciones de Pago Móvil terminan en "${getReferenceSuffix(cleanRef)}"`,
       "warning"
     );
     return false;
@@ -442,7 +445,7 @@ export async function runReconciliationPipeline(providerFilter: "pabilo_notifica
       if (order.paymentReference) {
         const clientRef = order.paymentReference.trim();
         // A1: Comparación exacta del sufijo de 4 dígitos
-        return n.reference.slice(-4) === clientRef.slice(-4);
+        return getReferenceSuffix(n.reference) === getReferenceSuffix(clientRef);
       }
       // M3: Remoción del fallback por teléfono
       return false;
