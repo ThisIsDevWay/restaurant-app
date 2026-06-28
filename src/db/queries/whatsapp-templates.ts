@@ -98,22 +98,7 @@ export async function seedDefaultTemplates() {
     {
       key: "checkout_manual",
       label: "Pago Manual Cliente",
-      body: [
-        "🍔 *Nuevo pedido {restaurantName}*",
-        "{modoPedido}",
-        "",
-        "📋 Detalle:",
-        "{items}",
-        "{packagingFee}",
-        "",
-        "💰 Total: *{total}* ({ref})",
-        "📱 Teléfono: {telefono}",
-        "",
-        "¿Cómo deseas pagar?",
-        "□ Pago Móvil",
-        "□ Transferencia",
-        "□ Efectivo al recibir",
-      ].join("\n"),
+      body: "¡Hola! Acabo de realizar el pedido {numeroPedido} en {restaurantName}.",
     },
     {
       key: "cancelled",

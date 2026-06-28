@@ -101,7 +101,7 @@ export interface OrderMessageContext {
 
 const ORDER_MODE_LABELS: Record<string, string> = {
   on_site: "🏠 Comer en el local",
-  take_away: "📦 Retira en el local",
+  take_away: "📦 Retiro en local",
   delivery: "🛵 Delivery",
 };
 
@@ -139,6 +139,14 @@ export async function buildOrderMessage(
     const normalizedPhone = ctx.phone.replace(/\D/g, "").replace(/^58/, "0");
     const customer = await getCustomerByPhone(normalizedPhone);
     customerName = customer?.name ?? null;
+  }
+
+  // Fallback: Si el nombre del restaurante no viene en el contexto, lo cargamos de settings
+  let restaurantName = ctx.restaurantName;
+  if (!restaurantName) {
+    const { getSettings } = await import("@/db/queries/settings");
+    const settings = await getSettings();
+    restaurantName = settings?.restaurantName ?? "";
   }
 
   const totalBs = ctx.grandTotalBsCents;
@@ -186,7 +194,7 @@ export async function buildOrderMessage(
       ? ORDER_MODE_LABELS[ctx.surcharges.orderMode] ?? ctx.surcharges.orderMode
       : "",
     telefono: ctx.phone,
-    restaurantName: ctx.restaurantName ?? "",
+    restaurantName: restaurantName ?? "",
     packagingFee: ctx.surcharges && ctx.surcharges.packagingUsdCents > 0
       ? formatBs(Math.round(ctx.surcharges.packagingUsdCents * ctx.surcharges.rate))
       : undefined,
