@@ -133,8 +133,6 @@ export function POSItemDetailModal({
     !item.categoryName.toLowerCase().includes("bebida") &&
     (dailyBebidas?.filter((b) => b.isAvailable).length ?? 0) > 0;
 
-  if (!isOpen && !modal.closing) return null;
-
   const showTabOpciones = showContornos || showOpciones;
   const showTabAdicionales = showAdicionales;
   const showTabBebidas = showBebidas;
@@ -157,6 +155,8 @@ export function POSItemDetailModal({
       }
     }
   }, [isOpen, showTabOpciones, showTabAdicionales, showTabBebidas]);
+
+  if (!isOpen && !modal.closing) return null;
 
   // Flatten selected contornos based on their quantities
   const selectedContornos = availableContornos.flatMap((c) => {
