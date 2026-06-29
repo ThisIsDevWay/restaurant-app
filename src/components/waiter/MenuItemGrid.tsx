@@ -1,12 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { UtensilsCrossed, Plus, ChevronRight, Search, X } from "lucide-react";
 import { type MenuItemWithComponents } from "@/types/menu.types";
 import { type CartItem } from "@/store/cartStore";
 import { type SimpleItem } from "@/components/customer/ItemDetailModal.types";
 import { formatBs, formatRef } from "@/lib/money";
-import Image from "next/image";
 
 // Helper components that stay local to the grid for now as they are very specific
 function PriceTag({ usdCents, rate, size = "sm" }: { usdCents: number; rate: number; size?: "sm" | "md" | "lg" }) {
@@ -63,6 +63,12 @@ export function MenuItemGrid({
   getEmoji,
   needsModal,
 }: MenuItemGridProps) {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const frequentCategories = categories.slice(0, 5);
+  const remainingCategories = categories.slice(5);
+  const isExtraActive = remainingCategories.some(c => c.id === activeCategory);
+  const activeExtraCategory = remainingCategories.find(c => c.id === activeCategory);
+
   const filteredItems = items.filter(item => {
     const matchesCategory = activeCategory === "all" || item.categoryId === activeCategory;
     const matchesSearch = !search || item.name.toLowerCase().includes(search.toLowerCase());
@@ -101,7 +107,7 @@ export function MenuItemGrid({
         </div>
 
         {/* Category tabs */}
-        <div className="flex gap-2 overflow-x-auto px-3 pb-3 scrollbar-none" style={{ scrollbarWidth: "none" }}>
+        <div className="flex flex-wrap gap-2 px-3 pb-3">
           <button
             onClick={() => setActiveCategory("all")}
             className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
@@ -112,19 +118,69 @@ export function MenuItemGrid({
           >
             Todos
           </button>
-          {categories.map(cat => (
+          {frequentCategories.map(cat => (
             <button
               key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
+              onClick={() => {
+                setActiveCategory(cat.id);
+                setDropdownOpen(false);
+              }}
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                 activeCategory === cat.id
-                  ? "bg-[var(--color-primary)] text-white"
-                  : "border border-[var(--color-border)] bg-white text-[var(--color-text-main)]"
+                  ? "bg-[var(--color-primary)] text-white shadow-sm"
+                  : "border border-[var(--color-border)] bg-white text-[var(--color-text-main)] hover:bg-slate-50"
               }`}
             >
               {getEmoji(cat.name)} {cat.name}
             </button>
           ))}
+
+          {/* Más Categorías */}
+          {remainingCategories.length > 0 && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 border ${
+                  isExtraActive
+                    ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm"
+                    : "border-[var(--color-border)] bg-white text-[var(--color-text-main)] hover:bg-slate-50"
+                }`}
+              >
+                <span>{isExtraActive ? `${getEmoji(activeExtraCategory?.name ?? "")} ${activeExtraCategory?.name}` : "Más"}</span>
+                <span className="text-[8px] opacity-70">▼</span>
+              </button>
+
+              {dropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+                  <div className="absolute left-0 mt-1.5 w-48 rounded-xl border border-[var(--color-border)] bg-white py-1 shadow-lg z-50 max-h-60 overflow-y-auto">
+                    {remainingCategories.map(cat => {
+                      const selected = activeCategory === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveCategory(cat.id);
+                            setDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3.5 py-2 text-xs transition-colors flex items-center gap-1.5 ${
+                            selected
+                              ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold"
+                              : "text-[var(--color-text-main)] hover:bg-slate-50"
+                          }`}
+                        >
+                          <span>{getEmoji(cat.name)}</span>
+                          <span className="truncate">{cat.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -167,51 +223,42 @@ export function MenuItemGrid({
                   onClick={() => item.isAvailable && onItemPress(item)}
                   disabled={!item.isAvailable}
                   className={cn(
-                    "group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-white text-left transition-all",
+                    "group relative flex flex-col overflow-hidden rounded-xl border bg-white text-left transition-all duration-200",
                     item.isAvailable ? "hover:shadow-md active:scale-[0.97]" : "opacity-60 grayscale-[0.5] cursor-not-allowed"
                   )}
                   style={{
                     borderColor: inCartQty > 0 ? "var(--color-primary)" : "var(--color-border-ghost)",
                     boxShadow: inCartQty > 0
                       ? "0 4px 12px rgba(187,0,5,0.12)"
-                      : undefined,
+                      : "0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)",
                   }}
                 >
-                  <div
-                    className="relative flex items-center justify-center overflow-hidden"
-                    style={{
-                      height: "clamp(4rem, 14vw, 6rem)",
-                      background: "linear-gradient(135deg, var(--color-bg-app) 0%, var(--color-surface-section) 100%)",
-                    }}
-                  >
-                    {item.imageUrl ? (
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.name}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 25vw, 100px"
-                      />
-                    ) : (
-                      <span style={{ fontSize: "clamp(1.5rem, 5vw, 2.5rem)" }}>
-                        {getEmoji(item.categoryName)}
-                      </span>
-                    )}
+                  <div className="flex flex-1 flex-col justify-between" style={{ padding: "clamp(0.5rem, 1.5vw, 0.75rem)" }}>
+                    <div className="flex items-start justify-between gap-1.5">
+                      <p className="font-display font-bold leading-snug text-[var(--color-text-main)] line-clamp-2" style={{ fontSize: "clamp(0.7rem, 1.8vw, 0.8rem)" }}>
+                        {getEmoji(item.categoryName)} {item.name}
+                      </p>
+                      {inCartQty > 0 && (
+                        <div className="flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full px-1 text-[0.6rem] font-black text-white" style={{ background: "var(--color-primary)" }}>
+                          {inCartQty}
+                        </div>
+                      )}
+                    </div>
 
-                    {!item.isAvailable && (
-                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                        <span className="rounded-lg bg-white px-2 py-1 text-[10px] font-black uppercase tracking-widest text-black shadow-xl">
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      {!item.isAvailable && (
+                        <span className="rounded bg-rose-50 px-1 py-0.5 text-[8px] font-black uppercase tracking-wider text-rose-700 border border-rose-100">
                           Agotado
                         </span>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                      {quickAdd && item.isAvailable && (
+                        <span className="rounded px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-100">
+                          Fijo
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="flex flex-1 flex-col justify-between" style={{ padding: "clamp(0.4rem, 1.5vw, 0.625rem)" }}>
-                    <p className="font-display font-bold leading-snug text-[var(--color-text-main)] line-clamp-2" style={{ fontSize: "clamp(0.7rem, 1.8vw, 0.8rem)" }}>
-                      {item.name}
-                    </p>
-                    <div className="mt-1.5 flex items-end justify-between">
+                    <div className="mt-2.5 flex items-end justify-between">
                       <PriceTag usdCents={item.priceUsdCents} rate={rate} size="sm" />
                       <div 
                         className={cn(
@@ -227,18 +274,6 @@ export function MenuItemGrid({
                       </div>
                     </div>
                   </div>
-
-                  {inCartQty > 0 && (
-                    <div className="absolute right-1.5 top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[0.6rem] font-black text-white" style={{ background: "var(--color-primary)" }}>
-                      {inCartQty}
-                    </div>
-                  )}
-
-                  {!quickAdd && (
-                    <div className="absolute left-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-wide text-white" style={{ background: "rgba(37,26,7,0.55)" }}>
-                      personalizar
-                    </div>
-                  )}
                 </button>
               );
             })}

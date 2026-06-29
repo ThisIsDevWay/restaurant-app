@@ -135,6 +135,29 @@ export function POSItemDetailModal({
 
   if (!isOpen && !modal.closing) return null;
 
+  const showTabOpciones = showContornos || showOpciones;
+  const showTabAdicionales = showAdicionales;
+  const showTabBebidas = showBebidas;
+
+  const tabs = [];
+  if (showTabOpciones) tabs.push({ id: "opciones" as const, label: "Opciones" });
+  if (showTabAdicionales) tabs.push({ id: "adicionales" as const, label: "Adicionales" });
+  if (showTabBebidas) tabs.push({ id: "bebidas" as const, label: "Bebidas" });
+
+  const [activeTab, setActiveTab] = useState<"opciones" | "adicionales" | "bebidas">("opciones");
+
+  useEffect(() => {
+    if (isOpen) {
+      if (showTabOpciones) {
+        setActiveTab("opciones");
+      } else if (showTabAdicionales) {
+        setActiveTab("adicionales");
+      } else if (showTabBebidas) {
+        setActiveTab("bebidas");
+      }
+    }
+  }, [isOpen, showTabOpciones, showTabAdicionales, showTabBebidas]);
+
   // Flatten selected contornos based on their quantities
   const selectedContornos = availableContornos.flatMap((c) => {
     const qty = contornoQuantities[c.id] ?? 0;
@@ -230,63 +253,97 @@ export function POSItemDetailModal({
           </button>
         </div>
 
+        {/* Tabs Bar */}
+        {tabs.length > 1 && (
+          <div className="flex shrink-0 border-b border-[var(--color-border)] bg-slate-50 px-5 py-2.5 gap-2">
+            {tabs.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 rounded-xl py-2 text-xs font-black uppercase tracking-wider transition-all border ${
+                    active
+                      ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm"
+                      : "bg-white text-[var(--color-text-muted)] border-[var(--color-border)] hover:bg-slate-50 hover:text-[var(--color-text-main)]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Scrollable content */}
         <div className="flex-1 divide-y divide-[var(--color-border)] overflow-y-auto" style={{ overscrollBehavior: "contain" }}>
-          {item.includedNote && (
-            <div className="px-5 py-3">
-              <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900">
-                <span className="mr-1 text-[10px] font-black uppercase tracking-wide text-emerald-700">Incluye:</span>
-                {item.includedNote}
-              </p>
-            </div>
+          {activeTab === "opciones" && (
+            <>
+              {item.includedNote && (
+                <div className="px-5 py-3">
+                  <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900">
+                    <span className="mr-1 text-[10px] font-black uppercase tracking-wide text-emerald-700">Incluye:</span>
+                    {item.includedNote}
+                  </p>
+                </div>
+              )}
+
+              {showContornos && (
+                <POSContornoSelector
+                  availableContornos={availableContornos}
+                  selectedQuantities={contornoQuantities}
+                  onChange={changeContornoQty}
+                  rate={rate}
+                />
+              )}
+
+              {showOpciones && cart.optionGroupsToRender.map((group) => (
+                <section key={group.id} className="px-5 py-4">
+                  <h3 className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+                    {group.name}
+                    {group.required && <span className="ml-1 text-[var(--color-primary)]">*</span>}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {group.options.filter((o) => o.isAvailable).map((opt) => {
+                      const selected = modal.selectedRadio[group.id] === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => modal.setSelectedRadio((prev) => ({ ...prev, [group.id]: opt.id }))}
+                          className={`flex min-h-[48px] items-center justify-between gap-2 rounded-xl border-2 px-3 py-2 text-left transition-transform duration-75 active:scale-95 ${
+                            selected ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5" : "border-[var(--color-border)] bg-white"
+                          }`}
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-bold text-[var(--color-text-main)]">{opt.name}</span>
+                            {opt.priceUsdCents > 0 && (
+                              <span className="block text-[10px] font-bold text-[var(--color-text-muted)]">+{formatBs(Math.round(opt.priceUsdCents * rate))}</span>
+                            )}
+                          </span>
+                          {selected && (
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-white">
+                              <Check size={14} strokeWidth={3} />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+
+              {!showContornos && !showOpciones && (
+                <div className="flex flex-col items-center justify-center py-12 text-center text-slate-400">
+                  <p className="text-sm font-bold">Este plato no requiere personalización.</p>
+                  <p className="text-xs mt-1">Puedes agregar adicionales o bebidas desde las otras pestañas.</p>
+                </div>
+              )}
+            </>
           )}
 
-          {showContornos && (
-            <POSContornoSelector
-              availableContornos={availableContornos}
-              selectedQuantities={contornoQuantities}
-              onChange={changeContornoQty}
-              rate={rate}
-            />
-          )}
-
-          {showOpciones && cart.optionGroupsToRender.map((group) => (
-            <section key={group.id} className="px-5 py-4">
-              <h3 className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                {group.name}
-                {group.required && <span className="ml-1 text-[var(--color-primary)]">*</span>}
-              </h3>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {group.options.filter((o) => o.isAvailable).map((opt) => {
-                  const selected = modal.selectedRadio[group.id] === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => modal.setSelectedRadio((prev) => ({ ...prev, [group.id]: opt.id }))}
-                      className={`flex min-h-[48px] items-center justify-between gap-2 rounded-xl border-2 px-3 py-2 text-left transition-transform duration-75 active:scale-95 ${
-                        selected ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5" : "border-[var(--color-border)] bg-white"
-                      }`}
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-bold text-[var(--color-text-main)]">{opt.name}</span>
-                        {opt.priceUsdCents > 0 && (
-                          <span className="block text-[10px] font-bold text-[var(--color-text-muted)]">+{formatBs(Math.round(opt.priceUsdCents * rate))}</span>
-                        )}
-                      </span>
-                      {selected && (
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-white">
-                          <Check size={14} strokeWidth={3} />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
-
-          {showAdicionales && (
+          {activeTab === "adicionales" && showAdicionales && (
             <section className="px-5 py-4">
               <h3 className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">Extras</h3>
               <div className="flex flex-col gap-2">
@@ -309,7 +366,7 @@ export function POSItemDetailModal({
             </section>
           )}
 
-          {showBebidas && (
+          {activeTab === "bebidas" && showBebidas && (
             <section className="px-5 py-4">
               <h3 className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">Bebidas</h3>
               <div className="flex flex-col gap-2">
