@@ -13,6 +13,7 @@ import {
   Eye,
   Loader2,
   Printer,
+  Check,
 } from "lucide-react";
 import { useOrderActionMutation } from "@/hooks/useOrderActionMutation";
 import { reprintOrderAction } from "@/actions/print";
@@ -46,14 +47,26 @@ const SHORT_LABEL: Partial<Record<ActionType, string>> = {
 export function QuickActions({
   orderId,
   orderStatus,
+  paymentMethod,
   compact = false,
 }: {
   orderId: string;
   orderStatus: OrderStatus;
+  paymentMethod?: string | null;
   compact?: boolean;
 }) {
   const router = useRouter();
-  const actions = ACTION_MAP[orderStatus] ?? [];
+  const isEfectivo = paymentMethod === "Efectivo $";
+  const actions = orderStatus === "pending" && isEfectivo
+    ? [
+        {
+          label: "Confirmar Efectivo",
+          icon: Check,
+          action: "confirm_manual" as ActionType,
+          variant: "default" as const,
+        },
+      ]
+    : (ACTION_MAP[orderStatus] ?? []);
   const primary = actions[0];
 
   const [refDialogOpen, setRefDialogOpen] = useState(false);

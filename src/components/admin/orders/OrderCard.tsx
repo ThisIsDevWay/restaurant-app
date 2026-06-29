@@ -210,6 +210,7 @@ export function OrderCard({ order }: { order: OrderListItem }) {
         <QuickActions
           orderId={order.id}
           orderStatus={order.status as OrderStatus}
+          paymentMethod={order.paymentMethod}
           compact
         />
       </div>

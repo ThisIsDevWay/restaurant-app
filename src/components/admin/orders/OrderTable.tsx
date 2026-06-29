@@ -289,6 +289,7 @@ export function OrderTable({
                     <QuickActions
                       orderId={order.id}
                       orderStatus={order.status as OrderStatus}
+                      paymentMethod={order.paymentMethod}
                     />
                   </div>
                 </TableCell>

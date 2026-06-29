@@ -95,6 +95,7 @@ export interface OrderMessageContext {
   restaurantName?: string;
   deliveryAddress?: string | null;
   gpsCoords?: { lat: number; lng: number; accuracy?: number } | null;
+  paymentMetadata?: any;
 }
 
 // ─── Order mode labels ────────────────────────────────────────────────────────
@@ -111,6 +112,8 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   whatsapp: "💬 Acordado por WhatsApp",
   cash: "💵 Efectivo",
   pos: "💳 Punto de Venta",
+  "Efectivo $": "💵 Efectivo $",
+  efectivo: "💵 Efectivo $",
 };
 
 // ─── Core: build message string ───────────────────────────────────────────────
@@ -202,9 +205,27 @@ export async function buildOrderMessage(
       ? formatBs(Math.round(ctx.surcharges.deliveryUsdCents * ctx.surcharges.rate))
       : undefined,
     orderRef: ctx.orderId ? ctx.orderId.slice(0, 8).toUpperCase() : undefined,
-    metodoPago: ctx.paymentMethod
-      ? PAYMENT_METHOD_LABELS[ctx.paymentMethod] ?? ctx.paymentMethod
-      : undefined,
+    metodoPago: (() => {
+      let metodoPagoStr = ctx.paymentMethod
+        ? PAYMENT_METHOD_LABELS[ctx.paymentMethod] ?? ctx.paymentMethod
+        : "";
+      if (metodoPagoStr && (ctx.paymentMethod === "Efectivo $" || ctx.paymentMethod === "efectivo")) {
+        const meta = ctx.paymentMetadata as { cashAmountUsd?: string | null; acceptChangeBs?: boolean | null } | null;
+        const cashAmount = meta?.cashAmountUsd;
+        const changeBs = meta?.acceptChangeBs;
+        const details: string[] = [];
+        if (cashAmount) {
+          details.push(`paga con $${parseFloat(cashAmount).toFixed(2)}`);
+        }
+        if (changeBs !== undefined && changeBs !== null) {
+          details.push(changeBs ? "cambio en Bs." : "cambio en USD");
+        }
+        if (details.length > 0) {
+          metodoPagoStr += ` (${details.join(", ")})`;
+        }
+      }
+      return metodoPagoStr || undefined;
+    })(),
     direccion: ctx.deliveryAddress || undefined,
     ubicacionGps: ctx.gpsCoords
       ? `https://maps.google.com/?q=${ctx.gpsCoords.lat.toFixed(6)},${ctx.gpsCoords.lng.toFixed(6)}`

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { formatBs } from "@/lib/money";
+import { formatBs, usdCentsToBsCents } from "@/lib/money";
 import { formatOrderTime } from "@/lib/utils/format-relative-time";
 import { cn } from "@/lib/utils";
 import { OrderModeChip } from "@/components/admin/orders/OrderModeChip";
@@ -22,6 +22,23 @@ import { ReferenceDialog, type RefFields } from "@/components/admin/orders/Refer
 import { useOrderActionMutation } from "@/hooks/useOrderActionMutation";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ACTION_MAP, STATUS_STYLES, type OrderStatus } from "@/lib/constants/order-status";
+
+function getItemTotalUsdCents(item: any): number {
+  let total = item.priceUsdCents * item.quantity;
+  for (const c of item.fixedContornos ?? []) {
+    total += c.priceUsdCents * item.quantity;
+  }
+  for (const a of item.selectedAdicionales ?? []) {
+    total += a.priceUsdCents * (a.quantity ?? 1);
+  }
+  for (const b of item.selectedBebidas ?? []) {
+    total += b.priceUsdCents * (b.quantity ?? 1);
+  }
+  for (const r of item.removedComponents ?? []) {
+    total += r.priceUsdCents * item.quantity;
+  }
+  return total;
+}
 
 interface WebOrdersSheetProps {
   isOpen: boolean;
@@ -175,19 +192,29 @@ function WebOrderCard({
     );
   }
 
-  const actions = ACTION_MAP[status] ?? [];
+  const isEfectivo = order.paymentMethod === "Efectivo $";
+  const actions = status === "pending" && isEfectivo
+    ? [
+        {
+          label: "Confirmar Efectivo",
+          icon: ChefHat,
+          action: "confirm_manual" as const,
+          variant: "default" as const,
+        },
+      ]
+    : (ACTION_MAP[status] ?? []);
   const canCancel = status === "pending" || status === "whatsapp";
   const canSendToKitchen = status === "paid";
 
   return (
     <div
       className={cn(
-        "w-full bg-white rounded-2xl p-4 shadow-sm border-l-4 border border-transparent",
+        "w-full bg-white rounded-xl p-3 shadow-sm border-l-4 border border-transparent",
         STATUS_STYLES[status]?.borderAccent ?? "border-l-slate-200",
       )}
     >
       {/* Row 1: # + Mode + Location + Status */}
-      <div className="flex items-center justify-between mb-3 gap-2">
+      <div className="flex items-center justify-between mb-2 gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 text-primary font-black text-sm tracking-tight border border-primary/10 shrink-0">
             #{order.orderNumber}
@@ -199,13 +226,13 @@ function WebOrderCard({
       </div>
 
       {/* Row 2: Customer */}
-      <div className="mb-3">
+      <div className="mb-1.5">
         <CustomerInfo order={order} />
       </div>
 
       {/* Items snapshot — auditoría inline (no carga al carrito) */}
       {items.length > 0 && (
-        <div className="mb-3 space-y-1 pl-2 border-l-2 border-slate-100 text-xs text-slate-600">
+        <div className="mb-2 space-y-0.5 pl-2 border-l-2 border-slate-100 text-xs text-slate-600">
           {items.map((item, idx) => {
             const extras = [
               ...(item.selectedAdicionales ?? []).map(
@@ -227,8 +254,9 @@ function WebOrderCard({
                     </span>
                   )}
                 </span>
-                <span className="font-mono text-slate-500 shrink-0">
-                  {formatBs(item.itemTotalBsCents)}
+                <span className="font-mono text-slate-500 shrink-0 text-right">
+                  <span className="block text-slate-700">{formatBs(item.itemTotalBsCents)}</span>
+                  <span className="block text-[10px] text-slate-400">Ref. ${(getItemTotalUsdCents(item) / 100).toFixed(2)}</span>
                 </span>
               </div>
             );
@@ -236,11 +264,44 @@ function WebOrderCard({
         </div>
       )}
 
+      {/* Surcharges (Packaging & Delivery) */}
+      {((order.packagingUsdCents && order.packagingUsdCents > 0) || (order.deliveryUsdCents && order.deliveryUsdCents > 0)) && (() => {
+        const rate = parseFloat(order.rateSnapshotBsPerUsd || "0") || 1;
+        return (
+          <details className="group mb-2 border-t border-dashed border-slate-200">
+            <summary className="flex items-center justify-between py-1.5 px-2 text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer select-none">
+              <span>📋 Ver recargos (Empaque / Delivery)</span>
+              <span className="text-[9px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="pb-2 px-2 text-xs text-slate-500 space-y-1 pl-4 border-l border-slate-100">
+              {order.packagingUsdCents > 0 && (
+                <div className="flex justify-between gap-2">
+                  <span>📦 Empaque</span>
+                  <span className="font-mono text-right">
+                    <span className="block text-slate-600">{formatBs(usdCentsToBsCents(order.packagingUsdCents, rate))}</span>
+                    <span className="block text-[10px] text-slate-400">Ref. ${(order.packagingUsdCents / 100).toFixed(2)}</span>
+                  </span>
+                </div>
+              )}
+              {order.deliveryUsdCents > 0 && (
+                <div className="flex justify-between gap-2">
+                  <span>🛵 Delivery</span>
+                  <span className="font-mono text-right">
+                    <span className="block text-slate-600">{formatBs(usdCentsToBsCents(order.deliveryUsdCents, rate))}</span>
+                    <span className="block text-[10px] text-slate-400">Ref. ${(order.deliveryUsdCents / 100).toFixed(2)}</span>
+                  </span>
+                </div>
+              )}
+            </div>
+          </details>
+        );
+      })()}
+
       {/* Comprobante */}
       {comprobanteUrl && (
         <button
           onClick={() => setLightboxOpen(true)}
-          className="mb-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors active:scale-95"
+          className="mb-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors active:scale-95"
         >
           <Receipt className="h-3.5 w-3.5" />
           Ver comprobante
@@ -248,7 +309,7 @@ function WebOrderCard({
       )}
 
       {/* Row 3: Time + Total + Method */}
-      <div className="flex items-center justify-between pt-3 border-t border-slate-100 gap-2">
+      <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
         <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-50 px-2 py-1 rounded-full shrink-0">
           <Clock size={10} />
           <span>{formatOrderTime(order.createdAt)}</span>
@@ -257,17 +318,39 @@ function WebOrderCard({
           <span className="text-base font-black text-slate-900 leading-tight">
             {formatBs(order.grandTotalBsCents)}
           </span>
+          {order.grandTotalUsdCents != null && (
+            <span className="text-xs font-bold text-slate-500 mt-0.5">
+              Ref. ${(order.grandTotalUsdCents / 100).toFixed(2)}
+            </span>
+          )}
           {order.paymentMethod && (
             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
               {order.paymentMethod}
             </span>
           )}
+          {(order.paymentMethod === "Efectivo $" || order.paymentMethod === "efectivo") && (() => {
+            const meta = order.paymentMetadata as { cashAmountUsd?: string | null; acceptChangeBs?: boolean | null } | null;
+            if (!meta) return null;
+            const details = [];
+            if (meta.cashAmountUsd) {
+              details.push(`Paga con: $${parseFloat(meta.cashAmountUsd).toFixed(2)}`);
+            }
+            if (meta.acceptChangeBs !== undefined && meta.acceptChangeBs !== null) {
+              details.push(meta.acceptChangeBs ? "Vuelto en Bs" : "Vuelto en USD");
+            }
+            if (details.length === 0) return null;
+            return (
+              <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded mt-0.5 whitespace-nowrap">
+                {details.join(" • ")}
+              </span>
+            );
+          })()}
         </div>
       </div>
 
       {/* Actions */}
       {(actions.length > 0 || canCancel || canSendToKitchen) && (
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
+        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
           {canSendToKitchen && (
             <button
               onClick={() =>

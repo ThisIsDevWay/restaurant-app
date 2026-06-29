@@ -9,6 +9,9 @@ import { logger } from "@/lib/logger";
 import type { SnapshotItem } from "@/lib/utils/format-items-detailed";
 import * as v from "valibot";
 import { printReceipt } from "@/lib/print/enqueue";
+import { db } from "@/db";
+import { orders, paymentsLog } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 const confirmSchema = v.object({
   orderId: v.pipe(v.string(), v.uuid()),
@@ -64,6 +67,76 @@ export async function POST(req: Request) {
     const bufB = Buffer.from(order.checkoutToken, "utf8");
     if (bufA.length !== bufB.length || !timingSafeEqual(bufA, bufB)) {
       return NextResponse.json({ success: false, error: "Token inválido" }, { status: 401 });
+    }
+
+    // Si es pago en efectivo, confirmamos directamente
+    if (order.paymentMethod === "Efectivo $" && reference === "EFECTIVO") {
+      const cashRef = `EFECTIVO-${order.orderNumber}`;
+      await db.transaction(async (tx) => {
+        await tx
+          .update(orders)
+          .set({
+            status: "paid",
+            paymentReference: cashRef,
+            paidAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(orders.id, orderId));
+
+        await tx.insert(paymentsLog).values({
+          orderId: order.id,
+          providerId: order.paymentProvider,
+          amountBsCents: order.grandTotalBsCents,
+          reference: cashRef,
+          providerRaw: {},
+          outcome: "confirmed",
+        });
+      });
+
+      const settings = await getSettings();
+      if (settings) {
+        const snapshotItems = order.itemsSnapshot as SnapshotItem[];
+        const surchargesSnapshot = order.surchargesSnapshot as {
+          packagingUsdCents: number;
+          deliveryUsdCents: number;
+          orderMode: string;
+        } | null;
+        const rate = parseFloat(order.rateSnapshotBsPerUsd);
+
+        await sendOrderMessage({
+          templateKey: "cash_confirmed",
+          phone: order.customerPhone,
+          orderId: order.id,
+          paymentMethod: order.paymentMethod,
+          orderNumber: String(order.orderNumber),
+          customerName: null,
+          items: snapshotItems,
+          grandTotalBsCents: order.grandTotalBsCents,
+          surcharges: surchargesSnapshot
+            ? {
+                packagingUsdCents: surchargesSnapshot.packagingUsdCents,
+                deliveryUsdCents: surchargesSnapshot.deliveryUsdCents,
+                rate,
+                orderMode: surchargesSnapshot.orderMode,
+              }
+            : undefined,
+          baseUrl: settings.whatsappMicroserviceUrl,
+          paymentMetadata: order.paymentMetadata,
+        }).catch((err) => {
+          logger.error("WhatsApp Error en confirmación de efectivo", { error: String(err) });
+        });
+      }
+
+      // Imprimir recibo
+      const paidOrder = await getOrderById(orderId);
+      await printReceipt(paidOrder ?? order).catch((err) => {
+        logger.error("Print error (recibo efectivo confirm)", { error: String(err), orderId });
+      });
+
+      return NextResponse.json({
+        success: true,
+        reference: "EFECTIVO",
+      });
     }
 
     const result = await confirmPayment(orderId, reference);

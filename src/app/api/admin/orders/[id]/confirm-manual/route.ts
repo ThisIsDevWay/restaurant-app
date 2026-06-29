@@ -61,19 +61,22 @@ export async function POST(
     });
 
     if (result.success) {
-      if (paymentReference) {
+      const isEfectivo = order.paymentMethod === "Efectivo $";
+      const finalReference = paymentReference || (isEfectivo ? `EFECTIVO-${order.orderNumber}` : undefined);
+
+      if (finalReference) {
         const { db: database } = await import("@/db");
         const { orders: ordersTable, paymentsLog: paymentsLogTable } = await import("@/db/schema");
         const { eq: equalTo } = await import("drizzle-orm");
 
         await database
           .update(ordersTable)
-          .set({ paymentReference })
+          .set({ paymentReference: finalReference })
           .where(equalTo(ordersTable.id, orderId));
 
         await database
           .update(paymentsLogTable)
-          .set({ reference: paymentReference })
+          .set({ reference: finalReference })
           .where(equalTo(paymentsLogTable.orderId, orderId));
       }
 
@@ -87,7 +90,7 @@ export async function POST(
       const rate = parseFloat(order.rateSnapshotBsPerUsd);
 
       await sendOrderMessage({
-        templateKey: "paid",
+        templateKey: isEfectivo ? "cash_confirmed" : "paid",
         phone: order.customerPhone,
         orderId: order.id,
         paymentMethod: order.paymentMethod,
@@ -104,6 +107,7 @@ export async function POST(
           }
           : undefined,
         baseUrl: settings.whatsappMicroserviceUrl,
+        paymentMetadata: order.paymentMetadata,
       }).catch((err) => {
         logger.error("WhatsApp Error:", { error: String(err) });
       });

@@ -10,6 +10,7 @@ import {
   Info,
   Save,
   XCircle,
+  Banknote,
 } from "lucide-react";
 import { saveTemplateAction, toggleTemplateAction } from "@/actions/whatsapp-templates";
 import { Switch } from "@/components/ui/switch";
@@ -29,6 +30,7 @@ interface Template {
 const TEMPLATE_ICONS: Record<string, any> = {
   received: MessageCircle,
   paid: Check,
+  cash_confirmed: Banknote,
   kitchen: Info,
   delivered: Info,
   checkout_manual: MessageCircle,
@@ -38,6 +40,7 @@ const TEMPLATE_ICONS: Record<string, any> = {
 const TEMPLATE_DESCRIPTIONS: Record<string, string> = {
   received: "Confirmación inicial de recepción de pedido",
   paid: "Notificación de pago verificado con éxito",
+  cash_confirmed: "Confirmación de pedido en efectivo (USD)",
   kitchen: "Aviso de que el pedido ha pasado a preparación",
   delivered: "Notificación de que el pedido va en camino",
   checkout_manual: "Instrucciones para pagos manuales",

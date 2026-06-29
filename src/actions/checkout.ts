@@ -71,8 +71,9 @@ export const processCheckoutAction = actionClient
         // vía WhatsApp con comprobante, así que tampoco enviamos aquí.
         const isWhatsAppManual = settings.activePaymentProvider === "whatsapp_manual";
         const isPagoMovil = parsed.output.paymentMethod === "pago_movil";
+        const isEfectivo = parsed.output.paymentMethod === "efectivo";
 
-        const shouldSendNow = isWhatsAppManual && !isPagoMovil;
+        const shouldSendNow = isWhatsAppManual && !isPagoMovil && !isEfectivo;
         if (!shouldSendNow) return;
 
         try {

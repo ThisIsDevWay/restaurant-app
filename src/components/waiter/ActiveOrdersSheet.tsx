@@ -144,12 +144,17 @@ export function ActiveOrdersSheet({
           ) : (
             orders.map((order) => {
               const isLocked = isOrderLockedByCashier(order);
+              const isWebOrder = !!order.checkoutToken;
               return (
                 <div
                   key={order.id}
                   role="button"
                   tabIndex={0}
                   onClick={() => {
+                    if (isWebOrder) {
+                      toast.error("Los pedidos realizados desde la web no se pueden editar en caja.");
+                      return;
+                    }
                     if (isWaiter && isLocked) {
                       toast.error("El pedido está cargado en Caja y no puede ser modificado.");
                       return;
@@ -158,6 +163,10 @@ export function ActiveOrdersSheet({
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
+                      if (isWebOrder) {
+                        toast.error("Los pedidos realizados desde la web no se pueden editar en caja.");
+                        return;
+                      }
                       if (isWaiter && isLocked) {
                         toast.error("El pedido está cargado en Caja y no puede ser modificado.");
                         return;
@@ -170,7 +179,7 @@ export function ActiveOrdersSheet({
                     "border-l-4 border border-transparent",
                     "hover:shadow-md hover:border-primary/30 transition-all group",
                     STATUS_ACCENT[order.status as string] ?? "border-l-slate-200",
-                    isWaiter && isLocked && "opacity-60 cursor-not-allowed hover:shadow-sm hover:border-transparent"
+                    ((isWaiter && isLocked) || isWebOrder) && "opacity-70 cursor-not-allowed hover:shadow-sm hover:border-transparent"
                   )}
                 >
                   {/* Row 1: # + Mode + Status */}
@@ -183,6 +192,11 @@ export function ActiveOrdersSheet({
                       <OrderModeChip mode={order.orderMode ?? "on_site"} />
                       <LocationBadge order={order} />
                       <PaymentBadge order={order} />
+                      {isWebOrder && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-100 text-sky-700 font-bold text-[10px] tracking-tight border border-sky-200 shrink-0">
+                          🌐 Web
+                        </span>
+                      )}
                       {isLocked && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 font-bold text-[10px] tracking-tight border border-rose-200 shrink-0">
                           🔒 En Caja

@@ -13,6 +13,7 @@ interface Step5SuccessProps {
   orderId: string;
   initResult: PaymentInitResult;
   orderMode: OrderMode | null;
+  paymentMethod?: string | null;
   onNewOrder: () => void;
   onPaid?: () => void;
 }
@@ -24,9 +25,11 @@ const PHASE_DELAYS: Record<Phase, number> = {
   done: 6000,
 };
 
-const ORDER_TRACKER = (mode: OrderMode | null) => [
+const ORDER_TRACKER = (mode: OrderMode | null, isEfectivo: boolean) => [
   { label: "Pedido registrado", desc: "Recibimos tu solicitud" },
-  { label: "Verificando pago", desc: "En breve confirmaremos tu pago" },
+  isEfectivo
+    ? { label: "Pago contra entrega", desc: "Pagas al recibir tu pedido" }
+    : { label: "Verificando pago", desc: "En breve confirmaremos tu pago" },
   { label: "En cocina", desc: "Preparando tu comida" },
   {
     label: mode === "delivery" ? "En camino" : mode === "take_away" ? "Listo para retirar" : "Servido",
@@ -38,11 +41,13 @@ export function Step5Success({
   orderId,
   initResult,
   orderMode,
+  paymentMethod,
   onNewOrder,
   onPaid,
 }: Step5SuccessProps) {
+  const isEfectivo = paymentMethod === "efectivo";
   const [dbStatus, setDbStatus] = useState<string>(
-    initResult.screen === "whatsapp" ? "whatsapp" : "pending"
+    isEfectivo ? "paid" : (initResult.screen === "whatsapp" ? "whatsapp" : "pending")
   );
   const [clickedWa, setClickedWa] = useState(false);
   const shortId = orderId.slice(-6).toUpperCase();
@@ -96,7 +101,7 @@ export function Step5Success({
   }, [orderId, onPaid]);
 
   const cleanWaLink = screen === "whatsapp" ? initResult.waLink : null;
-  const trackerItems = ORDER_TRACKER(orderMode);
+  const trackerItems = ORDER_TRACKER(orderMode, isEfectivo);
 
   return (
     <div className="flex flex-col items-center gap-6 pb-10">
@@ -129,7 +134,7 @@ export function Step5Success({
             {dbStatus === "whatsapp" || dbStatus === "pending"
               ? "¡Pedido recibido!"
               : dbStatus === "paid"
-                ? "¡Pago verificado!"
+                ? (isEfectivo ? "¡Pedido confirmado!" : "¡Pago verificado!")
                 : dbStatus === "kitchen"
                   ? "¡En preparación!"
                   : dbStatus === "delivered"
@@ -142,7 +147,7 @@ export function Step5Success({
                 ? "Hemos registrado tu pedido en nuestro sistema. En breve nos comunicaremos contigo por WhatsApp para coordinar el pago y la entrega."
                 : "Esperando confirmación automática del pago")
               : dbStatus === "paid"
-                ? "Tu pago ha sido confirmado exitosamente"
+                ? (isEfectivo ? "Tu pedido ha sido recibido y se pagará en efectivo al recibir." : "Tu pago ha sido confirmado exitosamente")
                 : dbStatus === "kitchen"
                   ? "Tu pedido ya está siendo preparado en cocina"
                   : dbStatus === "delivered"
