@@ -153,27 +153,31 @@ export function buildTicket(order: OrderRow, profile: PrinterTarget, opts: Build
   // ── ORDER META ──
   if (s.orderMeta) {
     const { date, time } = formatTicketDate(opts.date ?? new Date(order.createdAt));
+    const leftDate = `${date} ${time}`;
+
     if (showPrices && order.paymentMethod) {
       const method = PAYMENT_LABELS[order.paymentMethod] || "PENDIENTE";
-      text += justify(`#${order.orderNumber}`, `PAGO: ${method}`) + "\n";
+      text += justify(`ORDEN #${order.orderNumber}`, `PAGO: ${method}`) + "\n";
     } else {
-      text += `#${order.orderNumber}` + "\n";
+      text += justify(`ORDEN #${order.orderNumber}`, "") + "\n";
     }
-    text += justify(date, time) + "\n";
-    if (opts.waiterName) text += center(`MESERO: ${sanitize(opts.waiterName).toUpperCase()}`) + "\n";
-    // Comprobante de pago (referencia) en el recibo de caja. Etiqueta distinta
-    // de "REF." (que es la referencia en USD) para no confundir.
+
     if (showPrices && order.paymentReference) {
-      text += justify("COMPROBANTE:", sanitize(order.paymentReference)) + "\n";
+      text += justify(`${leftDate}    COMPROBANTE:`, sanitize(order.paymentReference)) + "\n";
+    } else {
+      text += justify(leftDate, "") + "\n";
     }
+
+    if (opts.waiterName) text += center(`MESERO: ${sanitize(opts.waiterName).toUpperCase()}`) + "\n";
   }
 
   // ── LOCATION (nombre + mesa + modo) ──
   if (s.location) {
     const mesa = order.tableNumber ? `MESA: ${sanitize(order.tableNumber).toUpperCase()}` : "";
     const cliente = order.customerName ? `CLIENTE: ${sanitize(order.customerName).toUpperCase()}` : "";
-    if (mesa && cliente) text += justify(mesa, cliente) + "\n";
-    else if (mesa || cliente) text += center(mesa || cliente) + "\n";
+    if (mesa || cliente) {
+      text += justify(mesa, cliente) + "\n";
+    }
 
     if (order.orderMode) {
       const modeStr =
