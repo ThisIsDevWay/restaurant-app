@@ -443,7 +443,9 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
         grandTotalUsdCents,
         grandTotalBsCents,
         surchargesSnapshot,
-        status: provider.id === "whatsapp_manual" ? "whatsapp" : "pending",
+        status: input.paymentMethod === "efectivo"
+            ? "pending"
+            : (provider.id === "whatsapp_manual" ? "whatsapp" : "pending"),
         paymentMethod:
             input.paymentMethod === "transfer"
                 ? "Transf."
@@ -471,8 +473,13 @@ export async function processCheckout({ items, input }: ProcessCheckoutParams) {
     if (!order) throw new Error("Error al crear la orden");
 
     // 3.5. Persist customer data before payment initiation
-    if (input.name || input.cedula) {
-        await upsertCustomer(input.phone, input.name ?? null, input.cedula ?? null);
+    if (input.name || input.cedula || input.deliveryAddress) {
+        await upsertCustomer(
+            input.phone, 
+            input.name ?? null, 
+            input.cedula ?? null, 
+            input.deliveryAddress ?? null
+        );
     }
 
     // 4. Initiate payment — use grand total, not subtotal

@@ -61,6 +61,7 @@ export default async function SettingsPage() {
               localDeviceToken: settings.localDeviceToken ?? "",
               whatsappNumber: settings.whatsappNumber,
               whatsappMicroserviceUrl: settings.whatsappMicroserviceUrl ?? "",
+              deliveryWhatsappNumber: settings.deliveryWhatsappNumber ?? "",
               instagramUrl: settings.instagramUrl ?? "",
               logoUrl: settings.logoUrl ?? "",
               logoImagekitFileId: settings.logoImagekitFileId ?? "",

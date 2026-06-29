@@ -52,6 +52,7 @@ export const settings = pgTable("settings", {
   whatsappMicroserviceUrl: text("whatsapp_microservice_url")
     .notNull()
     .default(""),
+  deliveryWhatsappNumber: text("delivery_whatsapp_number"),
   adicionalesEnabled: boolean("adicionales_enabled").notNull().default(true),
   bebidasEnabled: boolean("bebidas_enabled").notNull().default(true),
   maxQuantityPerItem: integer("max_quantity_per_item").notNull().default(10),

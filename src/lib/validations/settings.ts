@@ -45,6 +45,7 @@ export const settingsSchema = v.object({
   pabiloNotificationsBankId: v.optional(v.string()),
   whatsappNumber: v.optional(v.string()),
   whatsappMicroserviceUrl: v.optional(v.string()),
+  deliveryWhatsappNumber: v.optional(v.string()),
   adicionalesEnabled: v.optional(v.boolean()),
   bebidasEnabled: v.optional(v.boolean()),
   instagramUrl: v.optional(v.string()),

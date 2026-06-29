@@ -66,6 +66,21 @@ export function SettingsMessagingTab({ form, updateField, templates }: SettingsM
                 Endpoint API encargado del envío de mensajes y la generación del código QR.
               </p>
             </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-text-muted uppercase tracking-wider">
+                Número WhatsApp del Repartidor
+              </Label>
+              <Input
+                value={form.deliveryWhatsappNumber}
+                onChange={(e) => updateField("deliveryWhatsappNumber", e.target.value)}
+                placeholder="Ej. 584141234567"
+                className="rounded-xl h-10 text-sm font-semibold"
+              />
+              <p className="text-[10px] text-text-muted">
+                Cuando una orden de delivery entra a cocina, se enviará un mensaje automático a este número con los datos del pedido y entrega.
+              </p>
+            </div>
           </div>
         </div>
       </Card>

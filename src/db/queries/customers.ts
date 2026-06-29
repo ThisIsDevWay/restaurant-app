@@ -15,6 +15,7 @@ export async function upsertCustomer(
   phone: string,
   name?: string | null,
   cedula?: string | null,
+  deliveryAddress?: string | null,
 ) {
   const existing = await getCustomerByPhone(phone);
 
@@ -24,6 +25,7 @@ export async function upsertCustomer(
       .set({
         name: name ?? existing.name,
         cedula: cedula ?? existing.cedula,
+        lastDeliveryAddress: deliveryAddress ?? existing.lastDeliveryAddress,
         updatedAt: new Date(),
       })
       .where(eq(customers.phone, phone))
@@ -33,7 +35,12 @@ export async function upsertCustomer(
 
   const [row] = await db
     .insert(customers)
-    .values({ phone, name: name ?? null, cedula: cedula ?? null })
+    .values({ 
+      phone, 
+      name: name ?? null, 
+      cedula: cedula ?? null,
+      lastDeliveryAddress: deliveryAddress ?? null,
+    })
     .returning();
   return row;
 }

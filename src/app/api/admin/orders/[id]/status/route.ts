@@ -98,6 +98,7 @@ export async function POST(
       } | null;
       const rate = parseFloat(order.rateSnapshotBsPerUsd);
 
+      // 1. Mensaje al cliente (con dirección y GPS corregidos)
       await sendOrderMessage({
         templateKey,
         phone: order.customerPhone,
@@ -115,10 +116,45 @@ export async function POST(
             orderMode: surchargesSnapshot.orderMode,
           }
           : undefined,
+        deliveryAddress: order.deliveryAddress,
+        gpsCoords: order.gpsCoords,
         baseUrl: settings?.whatsappMicroserviceUrl,
+        paymentMetadata: order.paymentMetadata,
       }).catch((err) => {
         logger.error("WhatsApp Error", { error: String(err) });
       });
+
+      // 2. Dispatch al repartidor si la orden es delivery, cambia a kitchen y hay número configurado
+      if (
+        newStatus === "kitchen" &&
+        order.orderMode === "delivery" &&
+        settings?.deliveryWhatsappNumber
+      ) {
+        sendOrderMessage({
+          templateKey: "delivery_dispatch",
+          phone: settings.deliveryWhatsappNumber,
+          orderId: order.id,
+          paymentMethod: order.paymentMethod,
+          orderNumber: String(order.orderNumber),
+          customerName: customer?.name ?? null,
+          items: snapshotItems,
+          grandTotalBsCents: order.grandTotalBsCents,
+          surcharges: surchargesSnapshot
+            ? {
+                packagingUsdCents: surchargesSnapshot.packagingUsdCents,
+                deliveryUsdCents: surchargesSnapshot.deliveryUsdCents,
+                rate,
+                orderMode: surchargesSnapshot.orderMode,
+              }
+            : undefined,
+          deliveryAddress: order.deliveryAddress,
+          gpsCoords: order.gpsCoords,
+          baseUrl: settings.whatsappMicroserviceUrl,
+          paymentMetadata: order.paymentMetadata,
+        }).catch((err) => {
+          logger.error("WhatsApp Error (delivery_dispatch)", { error: String(err), orderId: order.id });
+        });
+      }
     }
 
     return NextResponse.json({ success: true, status: newStatus });

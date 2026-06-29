@@ -47,6 +47,7 @@ export interface SettingsFormData {
   mercantilTerminalId: string;
   whatsappNumber: string;
   whatsappMicroserviceUrl: string;
+  deliveryWhatsappNumber: string;
   instagramUrl: string;
   logoUrl: string;
   logoImagekitFileId: string;

@@ -96,10 +96,12 @@ export function useCheckoutForm({
       if (data.found) {
         setName(data.name ?? "");
         setCedula(data.cedula ?? "");
+        setDeliveryAddress(data.address ?? "");
         setIsReturning(true);
       } else {
         setName("");
         setCedula("");
+        setDeliveryAddress("");
         setIsReturning(false);
       }
       setCustomerFieldsVisible(true);

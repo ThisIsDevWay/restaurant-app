@@ -35,6 +35,7 @@ export async function GET(req: Request) {
       found: true,
       name: customer.name,
       cedula: customer.cedula,
+      address: customer.lastDeliveryAddress,
     });
   } catch {
     return NextResponse.json(

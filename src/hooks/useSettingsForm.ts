@@ -53,6 +53,7 @@ const DEFAULT_FORM: SettingsFormData = {
   mercantilTerminalId: "",
   whatsappNumber: "",
   whatsappMicroserviceUrl: "",
+  deliveryWhatsappNumber: "",
   instagramUrl: "",
   logoUrl: "",
   logoImagekitFileId: "",

@@ -8,7 +8,7 @@ import { type CheckoutItem } from "@/lib/types/checkout";
 import { useCheckoutSurcharges } from "@/hooks/useCheckoutSurcharges";
 import type { PaymentInitResult } from "@/lib/payment-providers/types";
 import type { GpsCoords, OrderMode } from "@/components/public/checkout/CheckoutForm.types";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useKeyboardOpen } from "@/hooks/useKeyboardOpen";
 
@@ -179,6 +179,9 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
 
   const [state, setStateRaw] = useState<WizardState>(INITIAL_STATE);
   const [cartOpen, setCartOpen] = useState(false);
+  const [isConfirmingCash, setIsConfirmingCash] = useState(false);
+  const [isVerifyingCash, setIsVerifyingCash] = useState(false);
+  const [cashError, setCashError] = useState<string | null>(null);
 
   // Persist post-order state
   const setState = useCallback((next: WizardState | ((prev: WizardState) => WizardState)) => {
@@ -214,6 +217,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
         ...prev,
         name: data.found ? (data.name ?? "") : "",
         cedula: data.found ? (data.cedula ?? "") : "",
+        address: data.found ? (data.address ?? "") : "",
         isReturning: data.found,
         customerFieldsVisible: true,
       }));
@@ -410,6 +414,41 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
     clearCart();
     clearCheckoutToken();
   }, [state.orderId, totalBsCents, setState, clearCart, clearCheckoutToken]);
+
+  const handleConfirmCashOrder = async () => {
+    if (isVerifyingCash || !state.orderId) return;
+    setIsVerifyingCash(true);
+    setCashError(null);
+
+    try {
+      const res = await fetch("/api/payment-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: state.orderId,
+          reference: "EFECTIVO",
+          checkoutToken: checkoutToken,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Error al confirmar el pedido");
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        setIsConfirmingCash(false);
+        handlePaid();
+      } else {
+        throw new Error(data.message || "No se pudo confirmar el pedido");
+      }
+    } catch (err: any) {
+      setCashError(err.message || "Error de conexión. Intenta de nuevo.");
+    } finally {
+      setIsVerifyingCash(false);
+    }
+  };
 
   // Poll order status when on step 4 to auto-transition on background match
   useEffect(() => {
@@ -623,6 +662,12 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
               step2Ready={step2Ready}
               onContinue={goNext}
             />
+
+            {!isKeyboardOpen && (
+              <p className="text-[10px] text-text-muted mt-5 text-center leading-relaxed max-w-sm mx-auto pl-1">
+                Al hacer clic en Confirmar Pedido, aceptas nuestros Términos de Servicio y el uso de tu nombre, cédula, teléfono y última dirección para esta y futuras compras (Art. 28 Const. - Habeas Data). Elimina tus datos cuando quieras vía WhatsApp.
+              </p>
+            )}
           </>
         )}
 
@@ -711,6 +756,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
             orderId={state.orderId}
             initResult={state.initResult}
             orderMode={state.orderMode}
+            paymentMethod={state.payment}
             onNewOrder={handleNewOrder}
             onPaid={handlePaid}
           />
@@ -755,11 +801,63 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
 
       {/* Step 4: CTA only for waiting_auto */}
       {state.step === 4 && state.initResult?.screen === "waiting_auto" && (
-        <StickyCta
-          label="Ya realicé el pago →"
-          onClick={() => setState((prev) => ({ ...prev, step: 5 }))}
-          showTotal={false}
-        />
+        state.payment === "efectivo" ? (
+          <StickyCta
+            label="Confirmar pedido en efectivo →"
+            onClick={() => setIsConfirmingCash(true)}
+            loading={isVerifyingCash}
+            loadingLabel="Confirmando..."
+            showTotal={false}
+          />
+        ) : (
+          <StickyCta
+            label="Ya realicé el pago →"
+            onClick={() => setState((prev) => ({ ...prev, step: 5 }))}
+            showTotal={false}
+          />
+        )
+      )}
+
+      {isConfirmingCash && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-bg-card rounded-[24px] border border-border/80 p-6 shadow-elevated flex flex-col gap-4 animate-in zoom-in-95 duration-200">
+            <h3 className="font-display text-xl font-bold text-text-main">
+              ¿Confirmar pedido en efectivo?
+            </h3>
+            <p className="font-sans text-[13px] text-text-muted leading-relaxed">
+              Tu pedido será enviado directamente a la cocina para su preparación. Deberás entregar el pago de{" "}
+              <strong className="text-text-main font-bold">
+                {state.cashAmountUsd ? `$${parseFloat(state.cashAmountUsd).toFixed(2)}` : `$${(grandTotalUsdCents / 100).toFixed(2)}`}
+              </strong>{" "}
+              en efectivo al recibir tu entrega.
+            </p>
+            {cashError && (
+              <p className="font-sans text-xs text-primary font-semibold">{cashError}</p>
+            )}
+            <div className="flex gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsConfirmingCash(false);
+                  setCashError(null);
+                }}
+                disabled={isVerifyingCash}
+                className="flex-1 h-12 rounded-full border border-border font-sans font-semibold text-[14px] text-text-muted hover:bg-bg-app active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCashOrder}
+                disabled={isVerifyingCash}
+                className="flex-1 h-12 rounded-full bg-primary text-white font-sans font-semibold text-[14px] shadow-elevated active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isVerifyingCash && <Loader2 className="w-4 h-4 animate-spin" />}
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

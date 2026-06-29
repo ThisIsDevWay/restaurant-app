@@ -53,6 +53,7 @@ export const updateOrderStatusAction = authenticatedActionClient
           } | null;
           const rate = parseFloat(order.rateSnapshotBsPerUsd);
 
+          // 1. Mensaje al cliente (con dirección y GPS corregidos)
           await sendOrderMessage({
             templateKey,
             phone: order.customerPhone,
@@ -70,8 +71,46 @@ export const updateOrderStatusAction = authenticatedActionClient
                   orderMode: surchargesSnapshot.orderMode,
                 }
               : undefined,
+            deliveryAddress: order.deliveryAddress,
+            gpsCoords: order.gpsCoords,
             baseUrl: settings.whatsappMicroserviceUrl,
+            paymentMetadata: order.paymentMetadata,
           });
+
+          // 2. Dispatch al repartidor si la orden es delivery, cambia a kitchen y hay número configurado
+          if (
+            parsedInput.status === "kitchen" &&
+            order.orderMode === "delivery" &&
+            settings.deliveryWhatsappNumber
+          ) {
+            await sendOrderMessage({
+              templateKey: "delivery_dispatch",
+              phone: settings.deliveryWhatsappNumber,
+              orderId: order.id,
+              paymentMethod: order.paymentMethod,
+              orderNumber: String(order.orderNumber),
+              customerName: customer?.name ?? null,
+              items: snapshotItems,
+              grandTotalBsCents: order.grandTotalBsCents,
+              surcharges: surchargesSnapshot
+                ? {
+                    packagingUsdCents: surchargesSnapshot.packagingUsdCents,
+                    deliveryUsdCents: surchargesSnapshot.deliveryUsdCents,
+                    rate,
+                    orderMode: surchargesSnapshot.orderMode,
+                  }
+                : undefined,
+              deliveryAddress: order.deliveryAddress,
+              gpsCoords: order.gpsCoords,
+              baseUrl: settings.whatsappMicroserviceUrl,
+              paymentMetadata: order.paymentMetadata,
+            });
+            logger.info("[delivery_dispatch] Mensaje de despacho enviado al repartidor", {
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              deliveryPhone: settings.deliveryWhatsappNumber,
+            });
+          }
         } catch (err) {
           logger.error("WhatsApp Error in updateOrderStatusAction", { error: String(err), orderId: parsedInput.orderId });
         }
