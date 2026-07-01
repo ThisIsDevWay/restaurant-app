@@ -166,6 +166,15 @@ export class LocalNotificationsProvider implements PaymentProvider {
       };
     }
 
+    // Save the client's reference immediately so it is captured regardless of any subsequent checks/failures!
+    await db
+      .update(orders)
+      .set({
+        paymentReference: cleanRef,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId));
+
     // Check if the reference exists in bankNotifications (A1: suffix-4 match)
     const matchedNotifs = await db
       .select()
@@ -217,15 +226,6 @@ export class LocalNotificationsProvider implements PaymentProvider {
       };
     }
 
-    // 2. Save the reference entered by the client first
-    await db
-      .update(orders)
-      .set({
-        paymentReference: cleanRef,
-        updatedAt: new Date(),
-      })
-      .where(eq(orders.id, orderId));
-
     // 3. Try to reconcile using the single order service
     const reconciled = await reconcileSingleOrder(orderId, cleanRef);
     if (reconciled) {
@@ -246,7 +246,7 @@ export class LocalNotificationsProvider implements PaymentProvider {
     return {
       success: false,
       reason: "invalid_reference",
-      message: "Pago no detectado. Si ya transferiste, espera 1–2 minutos y presiona verificar.",
+      message: "Pago no detectado. Si ya transferiste, espera 45 segundos y presiona verificar.",
     };
   }
 }

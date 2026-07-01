@@ -29,6 +29,7 @@ export interface OrderListItem {
   orderMode: string | null;
   tableNumber?: string | null;
   paymentMetadata?: { uploadedUrl?: string; cashAmountUsd?: string; acceptChangeBs?: boolean; outcome?: "confirmed" | "manual"; [key: string]: any } | null;
+  paymentReference?: string | null;
   expiresAt?: Date | string | null;
 }
 
@@ -206,6 +207,11 @@ export function OrderCard({ order }: { order: OrderListItem }) {
             </span>
           )}
           <span className="text-[10px] text-text-muted/70 mt-0.5 font-medium">{order.paymentMethod}</span>
+          {order.paymentReference && (
+            <span className="text-[10px] text-text-muted font-bold font-mono mt-0.5">
+              Ref: {order.paymentReference}
+            </span>
+          )}
         </div>
         <QuickActions
           orderId={order.id}

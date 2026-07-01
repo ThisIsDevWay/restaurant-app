@@ -167,6 +167,15 @@ export class PabiloNotificationsProvider implements PaymentProvider {
       };
     }
 
+    // Save the client's reference immediately so it is captured regardless of any subsequent checks/failures!
+    await db
+      .update(orders)
+      .set({
+        paymentReference: cleanRef,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId));
+
     // Check if the reference has already been used in another payment (cruzado bidireccional)
     const [existingLog] = await db
       .select()
@@ -296,15 +305,6 @@ export class PabiloNotificationsProvider implements PaymentProvider {
       if (notificationsToInsert.length > 0) {
         await db.insert(bankNotifications).values(notificationsToInsert).onConflictDoNothing();
       }
-
-      // Save the reference entered by the client so we can reconcile
-      await db
-        .update(orders)
-        .set({
-          paymentReference: cleanRef,
-          updatedAt: new Date(),
-        })
-        .where(eq(orders.id, orderId));
 
       // 3. Try to reconcile using the unified reconciliation service
       const reconciled = await reconcileSingleOrder(orderId, cleanRef);

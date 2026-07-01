@@ -18,6 +18,7 @@ export const ORDER_LIST_COLUMNS = {
   tableNumber: orders.tableNumber,
   grandTotalUsdCents: orders.grandTotalUsdCents,
   paymentMetadata: orders.paymentMetadata,
+  paymentReference: orders.paymentReference,
   expiresAt: orders.expiresAt,
 } as const;
 
