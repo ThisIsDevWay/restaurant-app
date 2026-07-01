@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const phone = url.searchParams.get("phone");
 
-  if (!phone || !/^(0414|0424|0412|0416|0426)\d{7}$/.test(phone)) {
+  if (!phone || !/^(0414|0424|0412|0422|0416|0426)\d{7}$/.test(phone)) {
     return NextResponse.json({ found: false });
   }
 

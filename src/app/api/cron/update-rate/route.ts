@@ -4,7 +4,7 @@ import { exchangeRates, settings } from "@/db/schema";
 import { invalidateSettingsCache } from "@/db/queries/settings";
 import { logger } from "@/lib/logger";
 import { fetchBCVRates } from "@/lib/bcv";
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { todayCaracas } from "@/lib/utils/date";
 
 export async function GET(req: Request) {
@@ -21,56 +21,91 @@ export async function GET(req: Request) {
     const results: { currency: string; rate: number | null; success: boolean }[] = [];
 
     await db.transaction(async (tx) => {
+      // Serialize execution of update-rate to prevent concurrent insertions from parallel cron triggers
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('update_rate_cron'), 1)`);
+
       // Insert USD rate
       if (bcvRates.usd) {
-        const [usdRate] = await tx
-          .insert(exchangeRates)
-          .values({
-            rateBsPerUsd: bcvRates.usd.rate.toString(),
-            currency: "usd",
-            validDate,
-            source: bcvRates.usd.source,
-          })
-          .returning();
+        const [existingUsd] = await tx
+          .select()
+          .from(exchangeRates)
+          .where(
+            and(
+              eq(exchangeRates.currency, "usd"),
+              eq(exchangeRates.validDate, validDate)
+            )
+          )
+          .limit(1);
 
-        // Update settings to point to USD rate
-        const s = await tx.select().from(settings).limit(1);
-        const currentCurrency = s[0]?.rateCurrency ?? "usd";
-        if (currentCurrency === "usd") {
-          await tx
-            .update(settings)
-            .set({ currentRateId: usdRate.id, updatedAt: new Date() })
-            .where(eq(settings.id, 1));
+        if (!existingUsd) {
+          const [usdRate] = await tx
+            .insert(exchangeRates)
+            .values({
+              rateBsPerUsd: bcvRates.usd.rate.toString(),
+              currency: "usd",
+              validDate,
+              source: bcvRates.usd.source,
+            })
+            .returning();
+
+          // Update settings to point to USD rate
+          const s = await tx.select().from(settings).limit(1);
+          const currentCurrency = s[0]?.rateCurrency ?? "usd";
+          if (currentCurrency === "usd") {
+            await tx
+              .update(settings)
+              .set({ currentRateId: usdRate.id, updatedAt: new Date() })
+              .where(eq(settings.id, 1));
+          }
+
+          results.push({ currency: "usd", rate: bcvRates.usd.rate, success: true });
+          logger.info("USD rate updated", { rate: bcvRates.usd.rate });
+        } else {
+          results.push({ currency: "usd", rate: bcvRates.usd.rate, success: true });
+          logger.info("USD rate already exists for today, skipping insert", { rate: bcvRates.usd.rate });
         }
-
-        results.push({ currency: "usd", rate: bcvRates.usd.rate, success: true });
-        logger.info("USD rate updated", { rate: bcvRates.usd.rate });
       }
 
       // Insert EUR rate
       if (bcvRates.eur) {
-        const [eurRate] = await tx
-          .insert(exchangeRates)
-          .values({
-            rateBsPerUsd: bcvRates.eur.rate.toString(),
-            currency: "eur",
-            validDate,
-            source: bcvRates.eur.source,
-          })
-          .returning();
+        const [existingEur] = await tx
+          .select()
+          .from(exchangeRates)
+          .where(
+            and(
+              eq(exchangeRates.currency, "eur"),
+              eq(exchangeRates.validDate, validDate)
+            )
+          )
+          .limit(1);
 
-        // Update settings to point to EUR rate if that's the active currency
-        const s = await tx.select().from(settings).limit(1);
-        const currentCurrency = s[0]?.rateCurrency ?? "usd";
-        if (currentCurrency === "eur") {
-          await tx
-            .update(settings)
-            .set({ currentRateId: eurRate.id, updatedAt: new Date() })
-            .where(eq(settings.id, 1));
+        if (!existingEur) {
+          const [eurRate] = await tx
+            .insert(exchangeRates)
+            .values({
+              rateBsPerUsd: bcvRates.eur.rate.toString(),
+              currency: "eur",
+              validDate,
+              source: bcvRates.eur.source,
+            })
+            .returning();
+
+          // Update settings to point to EUR rate if that's the active currency
+          const s = await tx.select().from(settings).limit(1);
+          const currentCurrency = s[0]?.rateCurrency ?? "usd";
+          if (currentCurrency === "eur") {
+            await tx
+              .update(settings)
+              .set({ currentRateId: eurRate.id, updatedAt: new Date() })
+              .where(eq(settings.id, 1));
+          }
+
+          results.push({ currency: "eur", rate: bcvRates.eur.rate, success: true });
+          logger.info("EUR rate updated", { rate: bcvRates.eur.rate });
+        } else {
+          results.push({ currency: "eur", rate: bcvRates.eur.rate, success: true });
+          logger.info("EUR rate already exists for today, skipping insert", { rate: bcvRates.eur.rate });
         }
-
-        results.push({ currency: "eur", rate: bcvRates.eur.rate, success: true });
-        logger.info("EUR rate updated", { rate: bcvRates.eur.rate });
       }
     });
 
