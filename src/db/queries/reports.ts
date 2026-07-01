@@ -681,9 +681,9 @@ export async function getIgtfSummary(
 
 /** Convierte `created_by_role` en etiqueta legible para canal de origen. */
 export function channelLabel(role: string | null | undefined): string {
-  if (!role) return "Web / Cliente";
+  if (!role) return "Pedido Web";
   switch (role) {
-    case "cashier": return "Caja POS";
+    case "cashier": return "Caja";
     case "waiter": return "Mesero";
     case "admin": return "Admin";
     default: return role;

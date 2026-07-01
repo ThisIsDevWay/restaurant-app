@@ -15,8 +15,8 @@ const statusLabels: Record<string, { label: string; cls: string }> = {
 };
 
 const channelColors: Record<string, string> = {
-  "Web / Cliente": "bg-indigo-100 text-indigo-800 border-indigo-200",
-  "Caja POS": "bg-emerald-100 text-emerald-800 border-emerald-200",
+  "Pedido Web": "bg-indigo-100 text-indigo-800 border-indigo-200",
+  "Caja": "bg-emerald-100 text-emerald-800 border-emerald-200",
   "Mesero": "bg-orange-100 text-orange-800 border-orange-200",
   "Admin": "bg-slate-100 text-slate-800 border-slate-200",
 };
