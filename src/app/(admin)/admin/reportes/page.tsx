@@ -40,7 +40,7 @@ export default async function ReportesPage({
 
   const today = todayCaracas();
   let toDate = today;
-  let fromDate = caracasDaysAgo(toDate, 30);
+  let fromDate = today;
   const activeTab = rawTab || "sales";
   
   let createdByRole: "admin" | "waiter" | "cashier" | null = null;

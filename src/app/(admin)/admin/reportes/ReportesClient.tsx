@@ -36,8 +36,15 @@ import type {
   CashBreakdownRow,
   IgtfTransactionRow,
 } from "@/db/queries/reports";
-import { formatOrderDate } from "@/lib/utils";
-import { obfuscatePhone } from "@/lib/utils";
+import { obfuscatePhone, formatOrderDate } from "@/lib/utils";
+
+const MODE_TRANSLATIONS: Record<string, string> = {
+  on_site: "Comer en el local",
+  dine_in: "Comer en el local",
+  take_away: "Retiro en local",
+  pickup: "Retiro en local",
+  delivery: "Delivery",
+};
 
 interface ReportesClientProps {
   fromDate: string;
@@ -213,7 +220,7 @@ export function ReportesClient({
               className="h-8 text-xs border border-border rounded-lg bg-bg-app px-2 font-semibold text-text-main focus-visible:ring-1 focus-visible:ring-primary outline-none"
             >
               <option value="all">Todas</option>
-              <option value="cashier">Caja POS</option>
+              <option value="cashier">Caja</option>
               <option value="waiter">Meseros</option>
               <option value="admin">Admin</option>
             </select>
@@ -242,9 +249,17 @@ export function ReportesClient({
               className="h-8 px-3 text-xs bg-bg-app border-border font-medium">
               Aplicar
             </Button>
+            <Button size="sm" variant="ghost" onClick={() => handlePreset(0)}
+              className="h-8 px-2 text-xs text-text-muted font-medium hover:bg-bg-app">
+              Hoy
+            </Button>
             <Button size="sm" variant="ghost" onClick={() => handlePreset(7)}
               className="h-8 px-2 text-xs text-text-muted font-medium hover:bg-bg-app">
               7d
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => handlePreset(15)}
+              className="h-8 px-2 text-xs text-text-muted font-medium hover:bg-bg-app">
+              15d
             </Button>
             <Button size="sm" variant="ghost" onClick={() => handlePreset(30)}
               className="h-8 px-2 text-xs text-text-muted font-medium hover:bg-bg-app">
@@ -491,20 +506,20 @@ export function ReportesClient({
               </CardHeader>
               <CardContent className="pt-4">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-[11px] text-left text-text-main min-w-[1250px] table-auto">
+                  <table className="w-full text-[11px] text-left text-text-main min-w-[1000px] table-auto">
                     <thead>
                       <tr className="border-b border-border uppercase tracking-wide text-text-muted font-semibold text-[10px]">
                         <th className="px-3 py-2.5">Estado</th>
                         <th className="px-3 py-2.5"># Orden</th>
+                        <th className="px-3 py-2.5 text-right">Fecha</th>
                         <th className="px-3 py-2.5">Cliente</th>
                         <th className="px-3 py-2.5 text-center">Canal</th>
                         <th className="px-3 py-2.5">Modo</th>
                         <th className="px-3 py-2.5">Pago</th>
                         <th className="px-3 py-2.5 text-right">Monto Pedido</th>
-                        <th className="px-4 py-2.5 border-l border-border/60 bg-bg-app/40 font-semibold text-text-main">Ref. Banco</th>
-                        <th className="px-3 py-2.5 text-right bg-bg-app/40 font-semibold text-text-main">Monto Banco</th>
+                        <th className="px-3 py-2.5 text-right border-l border-border/60 bg-bg-app/40 font-semibold text-text-main">Monto Banco</th>
+                        <th className="px-4 py-2.5 bg-bg-app/40 font-semibold text-text-main">Ref. Banco</th>
                         <th className="px-3 py-2.5 bg-bg-app/40 font-semibold text-text-main">Fuente</th>
-                        <th className="px-3 py-2.5 text-right">Fecha</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -535,21 +550,23 @@ export function ReportesClient({
                                 </span>
                               </td>
                               <td className="px-3 py-2.5 font-bold">{row.orderNumber ? `#${row.orderNumber}` : "—"}</td>
+                              <td className="px-3 py-2.5 text-right tabular-nums text-text-muted">{formatOrderDate(row.createdAt)}</td>
                               <td className="px-3 py-2.5 max-w-[140px] truncate">
                                 {row.customerName || (row.customerPhone ? obfuscatePhone(row.customerPhone) : "—")}
                               </td>
                               <td className="px-3 py-2.5 text-center text-text-muted">{row.channel || "—"}</td>
-                              <td className="px-3 py-2.5 text-text-muted">{row.orderMode || "—"}</td>
+                              <td className="px-3 py-2.5 text-text-muted">
+                                {row.orderMode ? (MODE_TRANSLATIONS[row.orderMode.toLowerCase()] || row.orderMode) : "—"}
+                              </td>
                               <td className="px-3 py-2.5 text-text-muted">{row.paymentMethod || "—"}</td>
                               <td className={`px-3 py-2.5 text-right tabular-nums ${amountMismatch ? "text-red-600 font-bold" : ""}`}>
                                 {row.orderTotalBsCents ? formatBs(row.orderTotalBsCents) : "—"}
                               </td>
-                              <td className="px-4 py-2.5 font-mono text-text-muted border-l border-border/60 bg-bg-app/10">{row.notificationReference || "—"}</td>
-                              <td className={`px-3 py-2.5 text-right tabular-nums bg-bg-app/10 ${amountMismatch ? "text-red-600 font-bold" : ""}`}>
+                              <td className={`px-3 py-2.5 text-right tabular-nums border-l border-border/60 bg-bg-app/10 ${amountMismatch ? "text-red-600 font-bold" : ""}`}>
                                 {row.notificationAmountBsCents ? formatBs(row.notificationAmountBsCents) : "—"}
                               </td>
+                              <td className="px-4 py-2.5 font-mono text-text-muted bg-bg-app/10">{row.notificationReference || "—"}</td>
                               <td className="px-3 py-2.5 text-text-muted capitalize bg-bg-app/10">{row.notificationSource || "—"}</td>
-                              <td className="px-3 py-2.5 text-right tabular-nums text-text-muted">{formatOrderDate(row.createdAt)}</td>
                             </tr>
                           );
                         })

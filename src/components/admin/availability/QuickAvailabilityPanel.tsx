@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { 
   X, 
   Search, 
@@ -26,6 +27,7 @@ interface AvailabilityItem {
 }
 
 export function QuickAvailabilityPanel({ className }: { className?: string }) {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -96,6 +98,10 @@ export function QuickAvailabilityPanel({ className }: { className?: string }) {
     }
     setTogglingId(null);
   };
+
+  if (pathname === "/admin/reportes") {
+    return null;
+  }
 
   const filteredItems = items
     .filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
