@@ -82,7 +82,7 @@ export function useCheckoutForm({
   }, []);
 
   function validatePhone(value: string): string | null {
-    if (!/^(0414|0424|0412|0416|0426)\d{7}$/.test(value)) {
+    if (!/^(0414|0424|0412|0422|0416|0426)\d{7}$/.test(value)) {
       return "Número de teléfono venezolano inválido";
     }
     return null;
@@ -144,7 +144,7 @@ export function useCheckoutForm({
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!orderMode) return;
-    
+
     const phoneErr = validatePhone(phone);
     if (phoneErr) {
       document.getElementById('phone-input')?.focus();

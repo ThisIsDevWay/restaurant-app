@@ -231,7 +231,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
 
     if (lookupTimeoutRef.current) clearTimeout(lookupTimeoutRef.current);
 
-    if (raw.length === 11 && /^(0414|0424|0412|0416|0426)\d{7}$/.test(raw)) {
+    if (raw.length === 11 && /^(0414|0424|0412|0422|0416|0426)\d{7}$/.test(raw)) {
       lookupTimeoutRef.current = setTimeout(() => lookupCustomer(raw), 400);
       setState((prev) => ({ ...prev, customerFieldsVisible: false, isReturning: false }));
     } else {
@@ -262,7 +262,7 @@ export default function CheckoutClient({ initialSettings }: { initialSettings: C
   // Derive phone validity
   const phoneValid =
     state.phone.length === 11 &&
-    /^(0414|0424|0412|0416|0426)\d{7}$/.test(state.phone);
+    /^(0414|0424|0412|0422|0416|0426)\d{7}$/.test(state.phone);
 
   // Step 2 ready
   const step2Ready =

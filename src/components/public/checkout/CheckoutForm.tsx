@@ -34,7 +34,7 @@ const ORDER_MODE_LABELS: Record<OrderMode, string> = {
 };
 
 function validatePhone(value: string): boolean {
-  return /^(0414|0424|0412|0416|0426)\d{7}$/.test(value);
+  return /^(0414|0424|0422|0412|0416|0426)\d{7}$/.test(value);
 }
 
 function formatPhone(raw: string): string {

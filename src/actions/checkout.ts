@@ -6,7 +6,7 @@ import { upsertCustomer } from "@/db/queries/customers";
 import { sendOrderMessage } from "@/lib/whatsapp/messages";
 import { checkoutSchema } from "@/lib/validations/checkout";
 import { actionClient } from "@/lib/safe-action";
-import { rateLimiters } from "@/lib/rate-limit";
+import { rateLimiters, getIPFromHeaders } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { headers } from "next/headers";
 import * as v from "valibot";
@@ -28,7 +28,7 @@ export const processCheckoutAction = actionClient
       // Rate limit
       let ip = "127.0.0.1";
       try {
-        ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "127.0.0.1";
+        ip = getIPFromHeaders(await headers());
       } catch {
         // No request context
       }

@@ -14,7 +14,7 @@ export const checkoutSchema = v.object({
   phone: v.pipe(
     v.string(),
     v.regex(
-      /^(0414|0424|0412|0416|0426)\d{7}$/,
+      /^(0414|0424|0412|0422|0416|0426)\d{7}$/,
       "Numero de telefono venezolano invalido",
     ),
   ),
