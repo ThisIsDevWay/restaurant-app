@@ -8,12 +8,13 @@ import {
   Ban,
   ChefHat,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { formatBs, usdCentsToBsCents } from "@/lib/money";
 import { formatOrderTime } from "@/lib/utils/format-relative-time";
-import { cn } from "@/lib/utils";
+import { cn, formatPhone, isRealPhone } from "@/lib/utils";
 import { OrderModeChip } from "@/components/admin/orders/OrderModeChip";
 import { OrderStatusBadge } from "@/components/admin/orders/OrderStatusBadge";
 import { LocationBadge, CustomerInfo } from "@/components/waiter/ActiveOrdersSheet";
@@ -195,13 +196,13 @@ function WebOrderCard({
   const isEfectivo = order.paymentMethod === "Efectivo $";
   const actions = status === "pending" && isEfectivo
     ? [
-        {
-          label: "Confirmar Efectivo",
-          icon: ChefHat,
-          action: "confirm_manual" as const,
-          variant: "default" as const,
-        },
-      ]
+      {
+        label: "Confirmar Efectivo",
+        icon: ChefHat,
+        action: "confirm_manual" as const,
+        variant: "default" as const,
+      },
+    ]
     : (ACTION_MAP[status] ?? []);
   const canCancel = status === "pending" || status === "whatsapp";
   const canSendToKitchen = status === "paid";
@@ -209,148 +210,173 @@ function WebOrderCard({
   return (
     <div
       className={cn(
-        "w-full bg-white rounded-xl p-3 shadow-sm border-l-4 border border-transparent",
+        "w-full bg-white rounded-xl p-3.5 shadow-sm border-l-4 border border-transparent space-y-2",
         STATUS_STYLES[status]?.borderAccent ?? "border-l-slate-200",
       )}
     >
-      {/* Row 1: # + Mode + Location + Status */}
-      <div className="flex items-center justify-between mb-2 gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-wrap">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 text-primary font-black text-sm tracking-tight border border-primary/10 shrink-0">
-            #{order.orderNumber}
+      {/* Fila 1: # · Modo · Mesa/Para llevar y Pagado */}
+      <div className="flex items-center justify-between text-xs text-slate-500 font-sans font-semibold">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[#bb0005] font-black">#{order.orderNumber}</span>
+          <span>·</span>
+          <span className="text-slate-700 font-bold">
+            {order.orderMode === "on_site" ? "Comer en el local" : order.orderMode === "take_away" ? "Retiro en Local" : "Delivery"}
           </span>
-          <OrderModeChip mode={order.orderMode ?? "on_site"} />
-          <LocationBadge order={order} />
+          <span>·</span>
+          <span className="text-slate-600 font-semibold">
+            {order.orderMode === "on_site" ? (order.tableNumber ? `Mesa ${order.tableNumber}` : "En sitio") : (order.tableNumber || "Para llevar")}
+          </span>
         </div>
         <OrderStatusBadge status={order.status} />
       </div>
 
-      {/* Row 2: Customer */}
-      <div className="mb-1.5">
-        <CustomerInfo order={order} />
+      {/* Fila 2: Cliente + Teléfono y Tiempo transcurrido */}
+      <div className="flex items-center justify-between text-xs text-slate-500 font-sans">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="font-bold text-slate-800 truncate">{order.customerName || "Cliente Web"}</span>
+          {order.customerPhone && isRealPhone(order.customerPhone) && (
+            <>
+              <span className="text-slate-300">·</span>
+              <span className="font-mono text-slate-500">{formatPhone(order.customerPhone)}</span>
+            </>
+          )}
+        </div>
+        <span className="shrink-0">{formatOrderTime(order.createdAt)}</span>
       </div>
 
-      {/* Items snapshot — auditoría inline (no carga al carrito) */}
+      {/* Separador */}
+      <div className="border-t border-slate-100 my-1" />
+
+      {/* Fila 3: items y modificadores */}
       {items.length > 0 && (
-        <div className="mb-2 space-y-0.5 pl-2 border-l-2 border-slate-100 text-xs text-slate-600">
+        <div className="space-y-1.5 pl-2 border-l-2 border-slate-100 text-sm">
           {items.map((item, idx) => {
             const extras = [
+              ...(item.fixedContornos ?? []).map((c: any) => c.name),
+              ...(item.contornoSubstitutions ?? []).map(
+                (s: any) => `${s.substituteName} (por ${s.originalName})`
+              ),
               ...(item.selectedAdicionales ?? []).map(
-                (a: any) => `+ ${a.name}${a.quantity > 1 ? ` (x${a.quantity})` : ""}`,
+                (a: any) => `+${a.name}${a.quantity > 1 ? ` (x${a.quantity})` : ""}`
               ),
               ...(item.selectedBebidas ?? []).map(
-                (b: any) => `+ ${b.name}${b.quantity > 1 ? ` (x${b.quantity})` : ""}`,
+                (b: any) => `+${b.name}${b.quantity > 1 ? ` (x${b.quantity})` : ""}`
               ),
+              ...(item.removedComponents ?? []).map((r: any) => `Sin ${r.name}`),
             ];
             return (
-              <div key={idx} className="flex justify-between gap-2">
-                <span className="min-w-0">
-                  <span className="font-semibold text-slate-700">
+              <div key={idx} className="space-y-0.5">
+                <div className="flex justify-between gap-2">
+                  <span className="font-bold text-slate-800">
                     {item.quantity}x {item.name}
                   </span>
-                  {extras.length > 0 && (
-                    <span className="block pl-3 text-[10px] text-slate-400">
-                      {extras.join(", ")}
-                    </span>
-                  )}
-                </span>
-                <span className="font-mono text-slate-500 shrink-0 text-right">
-                  <span className="block text-slate-700">{formatBs(item.itemTotalBsCents)}</span>
-                  <span className="block text-[10px] text-slate-400">Ref. ${(getItemTotalUsdCents(item) / 100).toFixed(2)}</span>
-                </span>
+                  <span className="font-mono font-semibold text-slate-700 shrink-0 text-right">
+                    {formatBs(item.itemTotalBsCents)}
+                  </span>
+                </div>
+                {extras.length > 0 && (
+                  <p className="text-xs text-slate-400 pl-2.5 leading-relaxed">
+                    {extras.join(", ")}
+                  </p>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Surcharges (Packaging & Delivery) */}
-      {((order.packagingUsdCents && order.packagingUsdCents > 0) || (order.deliveryUsdCents && order.deliveryUsdCents > 0)) && (() => {
-        const rate = parseFloat(order.rateSnapshotBsPerUsd || "0") || 1;
-        return (
-          <details className="group mb-2 border-t border-dashed border-slate-200">
-            <summary className="flex items-center justify-between py-1.5 px-2 text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer select-none">
-              <span>📋 Ver recargos (Empaque / Delivery)</span>
-              <span className="text-[9px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
-            </summary>
-            <div className="pb-2 px-2 text-xs text-slate-500 space-y-1 pl-4 border-l border-slate-100">
-              {order.packagingUsdCents > 0 && (
-                <div className="flex justify-between gap-2">
-                  <span>📦 Empaque</span>
-                  <span className="font-mono text-right">
-                    <span className="block text-slate-600">{formatBs(usdCentsToBsCents(order.packagingUsdCents, rate))}</span>
-                    <span className="block text-[10px] text-slate-400">Ref. ${(order.packagingUsdCents / 100).toFixed(2)}</span>
-                  </span>
-                </div>
-              )}
-              {order.deliveryUsdCents > 0 && (
-                <div className="flex justify-between gap-2">
-                  <span>🛵 Delivery</span>
-                  <span className="font-mono text-right">
-                    <span className="block text-slate-600">{formatBs(usdCentsToBsCents(order.deliveryUsdCents, rate))}</span>
-                    <span className="block text-[10px] text-slate-400">Ref. ${(order.deliveryUsdCents / 100).toFixed(2)}</span>
-                  </span>
-                </div>
-              )}
-            </div>
-          </details>
-        );
-      })()}
+      {/* Fila 4: Pago, Ref, Recargos y Totales */}
+      <div className="flex items-start justify-between text-xs text-slate-500 font-sans border-t border-slate-100 pt-2.5">
+        {/* Left Column: Pago, Ref, Recargos and Comprobante */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {order.paymentMethod && (
+              <span className="font-bold text-slate-700">
+                {order.paymentMethod.toLowerCase() === "pago_movil" ? "Pago Móvil" : order.paymentMethod.toLowerCase() === "efectivo" ? "Efectivo" : order.paymentMethod}
+              </span>
+            )}
+            {order.paymentReference && (
+              <>
+                <span className="text-slate-300">·</span>
+                <span className="font-mono text-slate-600 font-semibold">
+                  Ref: {order.paymentReference}
+                </span>
+              </>
+            )}
+            {(order.paymentMethod === "Efectivo $" || order.paymentMethod === "efectivo") && (() => {
+              const meta = order.paymentMetadata as { cashAmountUsd?: string | null; acceptChangeBs?: boolean | null } | null;
+              if (!meta) return null;
+              const details = [];
+              if (meta.cashAmountUsd) details.push(`Paga: $${parseFloat(meta.cashAmountUsd).toFixed(2)}`);
+              if (meta.acceptChangeBs !== undefined && meta.acceptChangeBs !== null) {
+                details.push(meta.acceptChangeBs ? "Vuelto Bs" : "Vuelto USD");
+              }
+              if (details.length === 0) return null;
+              return (
+                <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-1 rounded-sm">
+                  {details.join(" • ")}
+                </span>
+              );
+            })()}
+          </div>
 
-      {/* Comprobante */}
-      {comprobanteUrl && (
-        <button
-          onClick={() => setLightboxOpen(true)}
-          className="mb-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors active:scale-95"
-        >
-          <Receipt className="h-3.5 w-3.5" />
-          Ver comprobante
-        </button>
-      )}
+          <div className="flex items-center gap-2">
+            {/* Recargos details */}
+            {((order.packagingUsdCents && order.packagingUsdCents > 0) || (order.deliveryUsdCents && order.deliveryUsdCents > 0)) ? (() => {
+              const rate = parseFloat(order.rateSnapshotBsPerUsd || "0") || 1;
+              return (
+                <details className="group shrink-0 relative">
+                  <summary className="flex items-center gap-0.5 text-slate-500 font-bold cursor-pointer select-none">
+                    <span>↳ Ver recargos</span>
+                    <ChevronDown className="h-3 w-3 text-slate-400 group-open:rotate-180 transition-transform" />
+                  </summary>
+                  <div className="absolute left-0 bottom-full mb-1 z-20 w-48 bg-white border border-slate-200 rounded-lg p-2 shadow-lg space-y-1 text-[11px] text-slate-600">
+                    {order.packagingUsdCents > 0 && (
+                      <div className="flex justify-between gap-1">
+                        <span>📦 Empaque</span>
+                        <span className="font-mono text-right font-bold">{formatBs(usdCentsToBsCents(order.packagingUsdCents, rate))}</span>
+                      </div>
+                    )}
+                    {order.deliveryUsdCents > 0 && (
+                      <div className="flex justify-between gap-1">
+                        <span>🛵 Delivery</span>
+                        <span className="font-mono text-right font-bold">{formatBs(usdCentsToBsCents(order.deliveryUsdCents, rate))}</span>
+                      </div>
+                    )}
+                  </div>
+                </details>
+              );
+            })() : <div />}
 
-      {/* Row 3: Time + Total + Method */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
-        <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-50 px-2 py-1 rounded-full shrink-0">
-          <Clock size={10} />
-          <span>{formatOrderTime(order.createdAt)}</span>
+            {/* Comprobante */}
+            {comprobanteUrl && (
+              <button
+                onClick={() => setLightboxOpen(true)}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold hover:bg-slate-200 transition-colors active:scale-95 shrink-0"
+              >
+                <Receipt className="h-3 w-3" />
+                <span>Comprobante</span>
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex flex-col items-end">
-          <span className="text-base font-black text-slate-900 leading-tight">
+
+        {/* Right Column: Total & Ref USD */}
+        <div className="text-right shrink-0">
+          <span className="font-black text-slate-800 text-base block leading-none">
             {formatBs(order.grandTotalBsCents)}
           </span>
           {order.grandTotalUsdCents != null && (
-            <span className="text-xs font-bold text-slate-500 mt-0.5">
-              Ref. ${(order.grandTotalUsdCents / 100).toFixed(2)}
+            <span className="font-semibold text-[11px] text-slate-400 block mt-1">
+              (Ref ${(order.grandTotalUsdCents / 100).toFixed(2)})
             </span>
           )}
-          {order.paymentMethod && (
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
-              {order.paymentMethod}
-            </span>
-          )}
-          {(order.paymentMethod === "Efectivo $" || order.paymentMethod === "efectivo") && (() => {
-            const meta = order.paymentMetadata as { cashAmountUsd?: string | null; acceptChangeBs?: boolean | null } | null;
-            if (!meta) return null;
-            const details = [];
-            if (meta.cashAmountUsd) {
-              details.push(`Paga con: $${parseFloat(meta.cashAmountUsd).toFixed(2)}`);
-            }
-            if (meta.acceptChangeBs !== undefined && meta.acceptChangeBs !== null) {
-              details.push(meta.acceptChangeBs ? "Vuelto en Bs" : "Vuelto en USD");
-            }
-            if (details.length === 0) return null;
-            return (
-              <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded mt-0.5 whitespace-nowrap">
-                {details.join(" • ")}
-              </span>
-            );
-          })()}
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Fila 5: Botones de Acción (Full Width, py-3) */}
       {(actions.length > 0 || canCancel || canSendToKitchen) && (
-        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+        <div className="flex flex-col gap-1.5 mt-2 border-t border-slate-100/50 pt-2">
           {canSendToKitchen && (
             <button
               onClick={() =>
@@ -360,7 +386,7 @@ function WebOrderCard({
                 )
               }
               disabled={mutation.isPending}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-orange-600 text-white text-xs font-bold uppercase tracking-tight hover:bg-orange-700 active:bg-orange-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-1.5 py-3 rounded-lg bg-orange-600 text-white text-sm font-black uppercase tracking-wide hover:bg-orange-700 active:bg-orange-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {mutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ChefHat className="h-3.5 w-3.5" />}
               Enviar a cocina
@@ -371,30 +397,30 @@ function WebOrderCard({
             const onClick =
               action.action === "confirm_with_ref"
                 ? () => {
-                    setFields({
-                      paymentReference: "",
-                      phone: order.customerPhone ?? "",
-                      customerName: order.customerName ?? "",
-                      cedula: "",
-                    });
-                    setErrors({});
-                    setTouched({});
-                    setRefDialogOpen(true);
-                  }
+                  setFields({
+                    paymentReference: "",
+                    phone: order.customerPhone ?? "",
+                    customerName: order.customerName ?? "",
+                    cedula: "",
+                  });
+                  setErrors({});
+                  setTouched({});
+                  setRefDialogOpen(true);
+                }
                 : () =>
-                    mutation.mutate(
-                      { actionType: action.action },
-                      {
-                        onSuccess: () =>
-                          toast.success(`Pedido #${order.orderNumber} actualizado`),
-                      },
-                    );
+                  mutation.mutate(
+                    { actionType: action.action },
+                    {
+                      onSuccess: () =>
+                        toast.success(`Pedido #${order.orderNumber} actualizado`),
+                    },
+                  );
             return (
               <button
                 key={action.action}
                 onClick={onClick}
                 disabled={mutation.isPending}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-red-600 text-white text-xs font-bold uppercase tracking-tight hover:bg-red-700 active:bg-red-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full inline-flex items-center justify-center gap-1.5 py-3 rounded-lg bg-red-600 text-white text-sm font-black uppercase tracking-wide hover:bg-red-700 active:bg-red-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {mutation.isPending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -410,10 +436,10 @@ function WebOrderCard({
             <button
               onClick={handleCancel}
               disabled={mutation.isPending}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-red-300 text-red-600 text-xs font-bold uppercase tracking-tight hover:bg-red-50 active:bg-red-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-1.5 py-3 rounded-lg border border-red-200 text-red-600 text-sm font-black uppercase tracking-wide hover:bg-red-50 active:bg-red-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Ban className="h-3.5 w-3.5" />
-              Cancelar
+              Cancelar pedido
             </button>
           )}
         </div>
