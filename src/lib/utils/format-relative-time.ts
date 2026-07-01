@@ -7,13 +7,9 @@ export function formatOrderTime(date: Date | string): string {
   if (diffMin < 1) return "Ahora";
   if (diffMin < 60) return `hace ${diffMin} min`;
 
-  const isToday = d.toDateString() === now.toDateString();
-  if (isToday) {
-    return d.toLocaleTimeString("es-VE", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) {
+    return `hace ${diffHr} ${diffHr === 1 ? "hora" : "horas"}`;
   }
 
   return d.toLocaleDateString("es-VE", { day: "numeric", month: "short" });
